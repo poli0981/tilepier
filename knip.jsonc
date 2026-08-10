@@ -27,6 +27,15 @@
 		// drift the single-source rule exists to prevent.
 		"src/lib/shared-constants.ts",
 
+		// Same reasoning as shared-constants: db.ts is a transcription of doc 05
+		// §3's schema, not a module that grows consumers organically. Its row
+		// types are consumed one widget at a time between Weeks 2 and 7, and
+		// deleting the ones nobody imports yet — then re-deriving them later
+		// from the doc — is exactly the drift the single-source rule exists to
+		// prevent. A shipped `version(n)` block can never be edited, so the
+		// schema has to be right the first time and complete in one place.
+		"src/lib/core/storage/db.ts",
+
 		"scripts/*.mjs",
 		"static/boot.js"
 	],

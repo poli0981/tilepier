@@ -80,6 +80,58 @@ manual inspection.
   "session mode" + make blob-import primary everywhere (UX cost noted in
   doc 09).
 
+### Findings — 2026-08-10 · **GREEN for path B; path A needs a manual check**
+
+Harness at `src/routes/spike/s2/`, ingestion in
+`src/lib/widgets/music/{library,tag-worker}.ts`, six assertions in
+`e2e/s2-fsa.e2e.ts`.
+
+**Measured (path B, import):** 200 WAV files parsed and written to Dexie in
+**857 ms** against a 10 s budget, with **82 requestAnimationFrame ticks
+recorded during the scan** — the UI thread never stalled. Metadata is really
+parsed, not filename-guessed: all 200 rows carry a duration read from the WAV
+header. Quota estimate available and shown (2.2 MB of 6146 MB).
+
+The rAF counter is worth keeping. "UI responsive" is the easiest criterion in
+the whole spike suite to assert without evidence; counting frames during the
+scan turns it into a number that fails if anyone moves tag parsing back onto
+the main thread.
+
+**What automation cannot cover, stated plainly.** `showDirectoryPicker()`
+opens an OS folder dialog. No browser automation can operate it, and there is
+no headless equivalent — so path A's *end-to-end* flow (pick → persist →
+restart → re-link → scan) is a **manual check**, not a covered one. The
+harness exists to make it a one-minute check rather than a vague intention.
+The two claims underneath it *are* automated:
+
+- `showDirectoryPicker`, `FileSystemDirectoryHandle` and
+  `queryPermission` are all present in Chromium, verified by real feature
+  detection rather than a user-agent sniff.
+- **A directory handle survives a structured clone into IndexedDB** — the
+  claim doc 05 §3 rests on — proven by round-tripping the OPFS root handle,
+  which the same interface backs, and checking `instanceof` and `.kind` on the
+  way out. This is the part most likely to break, and it does not need a
+  picker.
+
+So the fallback is not triggered: nothing observed suggests handle persistence
+is flaky. Confirm on real hardware before Week 7 by running through
+`/spike/s2` once: pick a folder, restart the browser, reload, and check the
+readout shows `handle: yes` with `permission: prompt`, then that "re-link"
+grants in one click.
+
+**Cover-art dedupe** is by SHA-256 of the picture bytes, so a 200-track album
+stores one image. The WAV fixtures carry no artwork, so that path is exercised
+by construction but not by count — worth a look during the manual pass.
+
+**Ranged reads confirmed as the right call:** `parseBlob` slices the file
+rather than loading it, which is what keeps memory flat. Handing it an
+ArrayBuffer would defeat that, and is the obvious "simplification" to guard
+against in review.
+
+TypeScript's `lib.dom` still lacks `showDirectoryPicker`, `queryPermission`
+and `requestPermission`; `src/fsa.d.ts` declares them so the call sites stay
+type-checked instead of casting.
+
 ## S3 · API quota & cache reality check — 1 day
 
 - **Build:** deploy a scratch Worker with the doc 11 pipeline for
