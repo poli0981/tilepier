@@ -46,21 +46,15 @@
 		// never imported from source, so knip cannot see the edge.
 		"@fontsource/be-vietnam-pro",
 		"@fontsource/jetbrains-mono",
-		// Week 1: Paraglide EN/VI wiring (doc 14), gridstack grid (doc 06 §5),
-		// Dexie storage layer (doc 05 §3).
+		// Week 1: Paraglide EN/VI wiring (doc 14).
 		"@inlang/paraglide-js",
-		"gridstack",
-		"dexie",
 		// Week 2: component tests and API mocking (doc 19 §1); notes markdown
 		// (doc 07 §4) — DOMPurify is mandatory before any {@html} (doc 15 §4).
 		"msw",
 		"vitest-browser-svelte",
 		"marked",
 		"dompurify",
-		// Week 4: ECharts bridge, built with the weather detail (doc 23 Week 4).
-		"echarts",
-		// Week 6: map widget and the RSS parser in the Worker (doc 10 §6-§7).
-		"maplibre-gl",
+		// Week 6: the RSS parser in the Worker (doc 10 §7).
 		"fast-xml-parser",
 		// Week 7: music library tag parsing in a Web Worker (doc 09 §2).
 		"music-metadata"

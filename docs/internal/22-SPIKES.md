@@ -107,6 +107,54 @@ manual inspection.
   maplibre over → accept 340 KB with a doc note (map is opt-in interaction)
   — budgets are guardrails, adjust consciously in one place.
 
+### Findings — 2026-08-10 · **GREEN**, no fallback needed
+
+Harness at `src/routes/spike/s4/` pulls each heavy library through a real
+`() => import()` thunk behind a button, mirroring the manifest contract in
+doc 06 §1. Measuring a statically-imported bundle would have said nothing about
+the shape the product ships.
+
+| Budget | Measured (gz) | Limit | Headroom |
+|---|---|---|---|
+| Entry | 1.7 KB | 200 KB | 99 % |
+| CSS total | 6.2 KB | 45 KB | 86 % |
+| Fonts (raw) | 148.4 KB | 220 KB | 33 % |
+| echarts shared chunk | **183.4 KB** | 330 KB | 44 % |
+| maplibre chunk | **263.8 KB** | 300 KB | **12 %** |
+
+echarts came in far under budget with the tree-shaken import set
+(core + line + bar + candlestick + grid + tooltip + dataZoom + canvas renderer),
+so neither documented fallback is needed — dataZoom stays on weather.
+
+**maplibre has only 12 % headroom.** It is one library at one version with no
+tree-shaking to give, so treat 300 KB as effectively fixed: a maplibre major
+bump is the realistic way this row goes red, and doc 22's "accept 340 KB with a
+doc note" is the answer if it does. Entry is at 1 % because the deck is still a
+placeholder — that number means nothing until Week 1 lands the real shell.
+
+**The chunk-naming criterion was wrong, and so was the first budget script.**
+Doc 22 asked for "chunk naming stable for `rolldownOptions` configuration".
+SvelteKit owns `output.chunkFileNames` for the client build and overrides a
+user-supplied one; the emitted names are pure content hashes. The
+`build.rolldownOptions` block written for this was silently ineffective and has
+been removed rather than left as decoration.
+
+The fix is that filenames were never the right handle. `scripts/check-budgets.mjs`
+now identifies chunks by the **source module** that produced them, read from
+`.svelte-kit/output/client/.vite/manifest.json` — which is what doc 20 §6 said
+all along ("reading the Rolldown manifest"). The first implementation matched
+filenames and reported four rows as "no matching chunk" while the chunks were
+sitting right there: a budget report that says PASS while measuring nothing is
+worse than no budget at all.
+
+Non-optional rows now fail when they match nothing, so a moved module cannot
+quietly disable its own budget.
+
+`e2e/s4-budgets.e2e.ts` guards the part sizes cannot: nothing over 60 KB is
+fetched before any interaction, and each library arrives only when its code
+runs. A static `import 'echarts'` added to a widget would break doc 06 §1
+without moving a single budget number — this is what catches that.
+
 ## S5 · vite-plugin-pwa × adapter-cloudflare — 0.5 day
 
 - **Build:** add plugin, precache shell, offline fallback route, deploy to

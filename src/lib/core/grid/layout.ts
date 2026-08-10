@@ -26,8 +26,6 @@ export interface TpLayout {
 	grid: TpTile[];
 }
 
-export const EMPTY_LAYOUT: TpLayout = { schemaVersion: 1, grid: [] };
-
 /** Tile → the shape `grid.addWidget()` wants. */
 export function toGridStackWidget(tile: TpTile): GridStackWidget {
 	return { id: tile.instanceId, x: tile.x, y: tile.y, w: tile.w, h: tile.h };
