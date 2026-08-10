@@ -22,8 +22,8 @@ workflows do not reliably inherit them. Every stub below includes them.
 | `ci.yml` | PR + push main | `wf-node-ci.yml` | pnpm install → lint → svelte-check → knip → vitest (coverage gates) → build → budgets |
 | `e2e.yml` | PR + push main + nightly | `wf-playwright.yml` | Playwright smoke matrix |
 | `codeql.yml` | push main + weekly | `wf-codeql.yml` (js-ts) | static analysis |
-| `deploy.yml` | push main (after CI) | `wf-cf-deploy.yml` | wrangler deploy to production |
-| `preview.yml` | PR | `wf-cf-preview.yml` | wrangler versions upload → preview URL comment |
+| ~~`deploy.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
+| ~~`preview.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
 | `release.yml` | tag `v*` | `wf-release.yml` | GitHub Release + changelog |
 | `notify.yml` | release published | `wf-notify.yml` | Discord/Telegram ping |
 
@@ -72,16 +72,34 @@ are the exception, not the rule (suite consistency).
 
 ## 4. Deploy pipeline (Cloudflare Workers)
 
-- `pnpm build` (adapter-cloudflare output) → `wrangler deploy` using
-  repo secrets `CLOUDFLARE_API_TOKEN` (scoped: Workers Scripts:Edit, KV:Edit
-  for the two namespaces, zone tilepier route) + `CLOUDFLARE_ACCOUNT_ID`.
-- `wrangler.toml`: worker name `tilepier`, custom domain
-  `tilepier.win`, KV binding `TILEPIER_CACHE`
-  (+ `_preview` namespace for preview deploys), secrets `FINNHUB_KEY`,
-  `TWELVEDATA_KEY` set via `wrangler secret put` (never in repo/CI logs).
-- Preview: `wrangler versions upload` → preview URL; KV points at the
-  preview namespace so cache experiments can't pollute prod.
-- Rollback: `wrangler rollback` runbook note + previous version retained.
+**Changed 2026-08-10: Cloudflare builds and deploys, GitHub Actions does not.**
+The Workers Git integration is connected in the dashboard and triggers on push,
+so an Actions deploy job on the same event shipped the same commit twice. Both
+`deploy.yml` and `preview.yml` are removed; Cloudflare also produces preview
+URLs for non-production branches, which is what `preview.yml` existed to do.
+
+Consequences worth keeping straight:
+
+- **The dashboard owns routing.** The custom domain `tilepier.win` is bound
+  there, and the `routes` key is deliberately absent from `wrangler.jsonc` —
+  declaring it in both places is how a deploy silently rebinds a hostname.
+- **No Cloudflare credentials in GitHub.** `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID` are no longer needed as repo secrets; Cloudflare
+  builds with its own credentials. One fewer place a token can leak.
+- CI (`ci.yml`) still gates every push and PR — lint, knip, tests, build,
+  budgets, secret grep. It just no longer ships anything.
+- `pnpm run deploy:prod` remains for a deliberate manual deploy from a
+  developer machine; it builds first, because `wrangler deploy` on its own
+  fails with "entry-point file … was not found".
+
+`wrangler.jsonc` carries: worker name `tilepier`, KV binding `TILEPIER_CACHE`
+(+ `preview_id` so branch builds cannot pollute the production cache), and the
+`compatibility_date` pinned to what the installed workerd supports. Secrets
+`FINNHUB_KEY` / `TWELVEDATA_KEY` are set with `wrangler secret put` and never
+appear in the repo.
+
+Rollback: previous versions are retained — roll back from the dashboard, or
+`wrangler rollback` locally.
 
 ## 5. Client-bundle secret gate
 

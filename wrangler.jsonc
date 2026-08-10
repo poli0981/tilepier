@@ -14,12 +14,6 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 
-	// Apex domain on its own Cloudflare zone (doc 01 decisions log, 2026-08-10).
-	// The zone and route were provisioned in the dashboard first; declaring the
-	// route here keeps config as the source of truth so a deploy cannot silently
-	// drift from it.
-	"routes": [{ "pattern": "tilepier.win", "custom_domain": true }],
-
 	// Edge cache + fx snapshots + soft rate-limit counters (doc 03 §Environment,
 	// doc 11 §4-§7). Preview deploys point at the preview namespace so cache
 	// experiments cannot pollute production (doc 21 §4).
