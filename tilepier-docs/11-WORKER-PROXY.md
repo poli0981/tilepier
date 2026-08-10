@@ -1,0 +1,117 @@
+# 11 · Worker Proxy (`/api/*`)
+
+## 1. Principles
+
+1. Stateless, anonymous, boring. No auth, no cookies, no user IDs, no
+   persisted logs (doc 16 §3).
+2. Every endpoint: validate → rate-gate → KV read → upstream (maybe) →
+   normalize → KV write → respond. One shared pipeline in `routes/api/_lib`.
+3. The Worker is the **only** holder of API keys.
+4. Responses are our normalized shapes with a stable envelope — upstream
+   quirks die at the edge.
+
+## 2. Response envelope
+
+```jsonc
+// 200
+{ "ok": true, "data": { ... }, "meta": { "cachedAt": 1756500000, "source": "open-meteo", "stale": false } }
+// error
+{ "ok": false, "error": { "code": "UPSTREAM_DOWN" | "RATE_LIMITED" | "BAD_REQUEST" | "QUOTA_EXHAUSTED", "retryAfterS": 30 } }
+```
+Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
+(lets the CF CDN + browser absorb repeat hits too), `retry-after` on 429/503.
+
+## 3. Endpoints
+
+| Route | Params | Upstream (doc 10) |
+|-------|--------|-------------------|
+| `GET /api/weather` | lat, lon (2 dp) | Open-Meteo forecast + AQI (parallel) |
+| `GET /api/geocode` | q, lang | Photon → Nominatim |
+| `GET /api/fx` | — (full USD table) | ER-API + snapshot side-effect |
+| `GET /api/fx/history` | pair, days≤365 | KV snapshots only |
+| `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
+| `GET /api/crypto/klines` | symbol, interval, limit≤500 | Binance klines |
+| `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
+| `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data → Stooq |
+| `GET /api/stock/search` | q | Finnhub search |
+| `GET /api/rss` | url (https) | arbitrary feed (guarded, doc 15 §5) |
+
+All GET, all side-effect-free from the client's perspective (fx snapshot is
+an idempotent internal write). Non-GET → 405.
+
+## 4. KV cache TTLs (authoritative)
+
+| Key prefix | TTL | Stale-serve window |
+|------------|-----|--------------------|
+| `wx:v1:*` | 600 s | 24 h |
+| `aqi:v1:*` (bundled into wx payload) | 1800 s | 24 h |
+| `geo:v1:<lang>:<q-norm>` | 24 h | 7 d |
+| `fx:v1:USD` | 12 h (capped by upstream next-update) | 48 h |
+| `fx:snap:<date>` | none (permanent) | — |
+| `cr:tick:v1:<set-hash>` | 30 s | 10 min |
+| `cr:kl:v1:<sym>:<int>` | 300 s (5m int) / 900 s (1h+) | 6 h |
+| `st:q:v1:<sym>` | 90 s | 12 h |
+| `st:se:v1:<sym>:15min` | 900 s | 24 h |
+| `st:se:v1:<sym>:1day` | 21600 s (6 h) | 7 d |
+| `rss:v1:<url-hash>` | 1200 s | 24 h |
+
+Implementation: KV `put(key, body, { expirationTtl: ttl + staleWindow })`
+with `cachedAt` inside the value; freshness = `now - cachedAt <= ttl`;
+between ttl and staleWindow the value is served **only** when upstream
+fails (`stale: true` in meta) or the breaker is open.
+
+KV consistency note: KV is eventually consistent (~60 s cross-PoP). For
+cache purposes that's fine — worst case a few PoPs refetch. Never use KV
+for anything requiring strict counters (see §6 for how the soft limiter
+copes).
+
+## 5. Stock quota model (Twelve Data 800/day)
+
+- Steady-state cost per warm symbol-interval: 15 min TTL → ≤ 96 calls/day;
+  1 day TTL 6 h → ≤ 4 calls/day.
+- Popularity concentration: watchlists share KV — 500 DAU with the default
+  4-symbol list costs the same as 1 user. Long-tail risk is many unique
+  symbols; mitigations: per-instance watchlist cap 12, series fetched only
+  when a detail view opens (not for tiles), and the breaker below.
+- Budget guard: maintain `st:budget:<utc-date>` counter (KV, best-effort).
+  At ≥ 720 (90%), stop MISS fetches for *intraday* (serve stale/Stooq);
+  daily series keep going to 780; at 780 full stop until UTC reset. Also
+  trust upstream truth: parse `api-credits-left` header each response and
+  fold into the same guard (min of both signals).
+
+## 6. Circuit breaker (per upstream)
+
+State in KV `brk:<upstream>` `{state: closed|open, openedAt, reason}`.
+- Open on: 3 consecutive 5xx/timeouts, any 429/418, or quota guard trip.
+- While open (cool-down 120 s; quota trips → until UTC midnight): skip
+  upstream, serve stale, else `QUOTA_EXHAUSTED`/`UPSTREAM_DOWN` envelope.
+- Half-open: first request after cool-down probes upstream; success closes.
+Best-effort across PoPs (KV consistency) — acceptable: the goal is bulk
+back-off, not perfection.
+
+## 7. Rate limiting (defense in depth)
+
+1. **Cloudflare zone rule (free plan, 1 rule):** path `/api/*`,
+   60 req / 1 min per IP → block 60 s. Coarse hard wall.
+2. **In-Worker soft limiter:** KV counter `rl:<ipHash>:<bucket10s>`
+   (ipHash = SHA-256(ip + daily rotating salt), TTL 60 s) — over 30/10 s →
+   429 + `retry-after`. Eventual consistency makes it approximate; that's
+   fine (the zone rule is the wall). No raw IP is ever stored.
+3. **Client behavior:** on 429 respect `retry-after`, exponential backoff
+   (max 5 min), single global toast not per-widget spam (doc 17 §5).
+
+## 8. Validation & limits
+
+- Query params validated first (hand validators, shared with client types).
+  Coordinate rounding enforced server-side too (privacy + cache keying).
+- Upstream fetches: 8 s timeout via `AbortSignal.timeout`, 1 MB response
+  cap (`content-length` check + streamed count), gzip accepted.
+- `waitUntil()` used for KV writes and fx snapshots so responses don't wait
+  on cache persistence.
+
+## 9. Observability (privacy-respecting)
+
+No third-party telemetry. Rely on Cloudflare's built-in Workers metrics
+(requests, errors, CPU) + `wrangler tail` during incidents. A dev-only
+`GET /api/_health` returns breaker states and today's stock-budget counter
+— gated by `env.DEV_DASH_TOKEN` query secret; absent in docs/UI.

@@ -1,0 +1,97 @@
+# 09 · Widget Specs — Tier 3 (heavy)
+
+## 1. `markets` — Crypto + US Stocks
+
+### Data model (see doc 10 §4–5, doc 11 §5)
+
+| Need | Source | Path |
+|------|--------|------|
+| Crypto quote + 24 h stats | Binance public | `/api/crypto/ticker` |
+| Crypto candles | Binance klines | `/api/crypto/klines` |
+| US stock quote | Finnhub `/quote` (free) | `/api/stock/quote` |
+| US stock candles/series | Twelve Data `/time_series` | `/api/stock/series` |
+| Symbol search | Finnhub `/search` (stocks) + static top-list (crypto) | `/api/stock/search` |
+
+Finnhub free **does not** include `/stock/candle` (403) — the split above is
+mandatory, not an optimization.
+
+- **Watchlist:** ordered list in widget settings, default
+  `[BTCUSDT, ETHUSDT, AAPL, MSFT]`, max 12 in v1 (quota model, doc 11 §7).
+  Each entry `{ kind: 'crypto'|'stock', symbol, display }`.
+- **Tile:** watchlist rows — symbol, last price, 24 h (crypto) / day (stock)
+  change % chip colored by sign (colors from tokens, color-blind-checked
+  pair, doc 12 §4), micro-sparkline at w≥3 from cached series (no extra
+  fetch: reuse the series cache, downsampled).
+- **Refresh:** 60 s while the tab is visible (scheduler pauses hidden);
+  quotes only — series refresh on-demand in detail.
+- **Detail:** symbol header (price, change, day range), **candlestick +
+  volume** via ECharts (`candlestick` + `bar` on shared axis, dataZoom),
+  range presets: 1D (crypto 5 m klines / stock 15 m intraday), 1W, 1M, 1Y
+  (daily), MAX (stock daily via Twelve Data EOD depth). Watchlist manager
+  with search-add. Stocks show a "delayed/cached — not for trading" footnote
+  (doc 16 §4).
+- **Degradation ladder (stocks):** Twelve Data quota breaker open →
+  serve KV stale with badge → if none, Stooq EOD fallback (daily only,
+  ranges 1D collapses to 1W) → if none, quote-only view with explanatory
+  empty chart state. Never a spinner that hangs.
+- **Formatting:** `Intl.NumberFormat` with per-asset precision (BTC 2 dp,
+  sub-$1 alts 4–6 dp, stocks 2 dp); percent always signed.
+- **Edge cases:** market closed (stock) → "as of close" timestamp; delisted
+  symbol → row error chip with remove shortcut; symbol valid on Finnhub but
+  missing on Twelve Data → quote-only mode for that symbol.
+
+## 2. `music` — Local Music Player
+
+### Library ingestion (Spike S2 governs)
+
+- **Path A — FSA (Chromium):** user picks a folder
+  (`showDirectoryPicker`), handle persisted in Dexie `fsaHandles`.
+  Scan walks the tree (audio extensions allowlist: mp3, m4a, flac, ogg,
+  opus, wav), extracts tags via `music-metadata` in a **Web Worker**
+  (main thread never parses), stores metadata in `tracks` (doc 05 §4),
+  covers deduped by hash. Session start: `queryPermission({mode:'read'})`
+  → if `prompt`, show a one-click "Re-link library" card (browser requires
+  a user gesture for `requestPermission`). Rescan button diffs by
+  path+size+mtime.
+- **Path B — import (all browsers):** multi-file/folder `<input>` →
+  metadata + audio blob into `trackBlobs`. Quota warning per doc 05 §7.
+  Feature-detect chooses the default path; both can coexist.
+
+### Playback
+
+- Single `HTMLAudioElement` app-wide (survives detail close; mini controls
+  in the tile). Source: FSA → `getFile()` → object URL (revoke on track
+  change); blob path → object URL from Dexie blob.
+- **Media Session API:** metadata (title/artist/album/cover), handlers for
+  play/pause/prev/next/seek → OS media keys + lockscreen.
+- Queue model: current playlist or ad-hoc queue; shuffle (Fisher–Yates over
+  remaining), repeat off/all/one. Position persisted (settings) every 10 s
+  and on pause → resume-where-left on reload.
+- **Tile:** cover, title/artist marquee-on-overflow, progress bar,
+  prev/play/next; h≥2 adds queue-peek line.
+- **Detail:** library table (virtualized ≥ 500 rows — simple windowing,
+  no dep), search, sort, playlists CRUD (drag to reorder), now-playing pane
+  with large cover. **Visualizer (Web Audio AnalyserNode) is the declared
+  cut-line** — ship v1.0 without it if Week 7 runs hot (charter risk #2).
+- **Edge cases:** file moved/deleted since scan → play error toast + mark
+  track missing (don't auto-delete; Rescan reconciles); unsupported codec →
+  skip-next with per-track error mark; autoplay policy → first play always
+  from user gesture (never autoplay on load).
+
+## 3. `media` — Local Video Player
+
+- Scope: play local video files; deliberately thin next to `music`.
+- **Ingestion:** per-session file open (FSA file picker or `<input>`);
+  optional "remember this file" (FSA handle in Dexie) for up to 5 recents.
+  No library scan, no blobs stored (video sizes).
+- **Tile:** last-played poster frame (captured to canvas → dataURL in
+  settings, ≤ 50 KB) + resume position; click → detail.
+- **Detail:** `<video>` with custom controls skinned to tokens: play/seek/
+  volume/speed (0.5–2×), PiP button (`requestPictureInPicture`), fullscreen,
+  keyboard map (space, ←→ 5 s, ↑↓ volume, F, M). Subtitle support: sideload
+  `.vtt` via file picker (`<track>`); `.srt` converted client-side
+  (tiny internal converter).
+- **Resume:** per-file position keyed by name+size hash in settings (cap 20).
+- **Edge cases:** codec unsupported (browser matrix varies for mkv/hevc) →
+  explicit "codec not supported by this browser" state with a hint, not a
+  silent black box; PiP unavailable → hide button.
