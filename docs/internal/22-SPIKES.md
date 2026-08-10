@@ -146,6 +146,60 @@ type-checked instead of casting.
   intraday still tight, 1D range ships crypto-only and stocks start at 1W
   (Stooq daily).
 
+### Findings — 2026-08-10 · **AMBER — pipeline built and verified; the quota
+### measurement still needs a keyed run against a deployed Worker**
+
+The doc 11 pipeline is real code, not a scratch: `routes/api/_lib/`
+(kv-cache, breaker, budget, ratelimit, upstream, respond, geohash) plus
+`/api/weather` as the reference endpoint. 49 unit assertions in
+`_lib/pipeline.test.ts` and 6 e2e checks in `e2e/s3-quota.e2e.ts`.
+
+**Verified against the real Cloudflare runtime:** the doc 11 §2 envelope
+including `x-tp-cache` and `cache-control: max-age=<ttl/2>`; server-side 2 dp
+coordinate rounding so two points a kilometre apart answer identically
+(doc 15 §7); `BAD_REQUEST` on every malformed coordinate; 405 on non-GET.
+
+**Verified by unit test with a controlled clock** — the parts that are pure
+logic and would be miserable to trigger against a live upstream: HIT/STALE
+boundaries straight from the doc 11 §4 table; the breaker opening on the third
+consecutive failure but immediately on 429/418; a quota trip holding to UTC
+midnight rather than the 120 s cool-down; the 720/780 tiers; taking the
+pessimistic view when `api-credits-left` disagrees with our own counter; the
+rate limiter's per-address bucketing; and — worth its own line — that **no raw
+IP is ever written to KV**, only a salted hash.
+
+**Blocking finding: `wrangler dev` cannot measure cache hit rate.** In local
+mode a KV `put` is not visible to a later `get` in the same process. Entries
+written by an *earlier* run read back fine, so persistence works and only
+same-process read-after-write does not. The symptom is quietly wrong rather
+than loud: every request in a burst reports `MISS` and the hit rate reads 0 %,
+with no error anywhere. Two hours went into chasing that.
+
+Doc 22's own wording turns out to be load-bearing — "deploy a scratch Worker …
+and script 50 virtual users against **it**". The load test is therefore written
+against a deployed origin and skips unless `S3_BASE_URL` is set:
+
+```
+S3_BASE_URL=https://tilepier.win pnpm exec playwright test s3-quota
+```
+
+**Still outstanding, and both need the keys:**
+
+1. The ≥ 85 % hit-rate measurement, against the deployed Worker (above).
+2. `/api/stock/*` — Twelve Data consumption against the model, live
+   `api-credits-left` parsing, and the documented proof that Finnhub's free
+   tier answers 403 on `/stock/candle`. `FINNHUB_KEY` and `TWELVEDATA_KEY` are
+   Worker secrets and are deliberately not on the build machine; a local run
+   needs them in `.dev.vars` (gitignored, doc 03).
+
+Nothing found so far argues for the fallback (raising TTLs). The arithmetic
+model is asserted in the suite so a TTL edit cannot silently break it: 50 users
+× 4 places × 8 h = 9600 client requests against **192** upstream fetches, a
+98 % hit rate, because upstream cost depends only on distinct places and the
+TTL. The default watchlist costs 200 Twelve Data credits/day against the 720
+intraday guard — the guard exists for the long tail of unique symbols, not for
+the default deck.
+
 ## S4 · Bundle budget on Vite 8 / Rolldown — 0.5 day
 
 - **Build:** scaffold app with echarts (tree-shaken core+candlestick+line+
