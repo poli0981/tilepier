@@ -80,9 +80,22 @@ eval — Rolldown output complies).
 - `pnpm` with lockfile, `--frozen-lockfile` in CI; Renovate PRs only.
 - `pnpm audit --prod` CI gate; `minimumReleaseAge`-style caution: Renovate
   configured with `stabilityDays=3` for non-security updates.
-- No postinstall scripts allowed (`pnpm.onlyBuiltDependencies` allowlist,
-  empty by default; esbuild not needed under Vite 8/Rolldown — verify at
-  install, extend only consciously).
+- No postinstall scripts allowed. **Mechanism updated 2026-08-10:** pnpm 11 no
+  longer reads the `pnpm` field from `package.json` and renamed the setting, so
+  the allowlist is `allowBuilds` in **`pnpm-workspace.yaml`**. Deny by default;
+  extend one package at a time with a written reason.
+  Currently allowed, each verified as required for the toolchain to run:
+  `workerd` (Cloudflare runtime binary — wrangler/miniflare cannot start
+  without it) and `esbuild`. **Correction:** this doc previously claimed
+  "esbuild not needed under Vite 8/Rolldown". Verified at install — that is
+  wrong: esbuild is a direct dependency of `vite@8.2.1` itself (and of
+  wrangler), used for TS transform and dependency pre-bundling. Rolldown owns
+  the production bundle, not the whole toolchain. `msw` is denied; its worker
+  script is generated deliberately with `pnpm exec msw init static/` when
+  component tests land, rather than as an install side effect.
+- pnpm 11 additionally gates packages published inside its minimum-release-age
+  window; conscious exceptions are listed in `minimumReleaseAgeExclude`. This
+  is the same caution asked of Renovate below, now enforced at install time.
 - No CDN scripts/fonts — everything bundled/self-hosted (also a CSP
   consequence). CI grep forbids `https://cdn`, `unpkg`, `jsdelivr`,
   `googleapis` in `src/` and build output.

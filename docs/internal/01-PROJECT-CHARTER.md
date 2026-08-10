@@ -85,6 +85,18 @@ suite stays the single source of truth.
   isolated) → S4 and S5 are unmeasurable without the real dependency set, so
   doc 22's throwaway-branch framing would mean scaffolding three times. The
   doc 22 gate itself is unchanged.
+- 2026-08-10 · Primary domain changed from the subdomain `tilepier.poli0981.dev`
+  to the apex domain **`tilepier.win`** → TilePier gets its own Cloudflare zone
+  instead of sharing the personal site's. Two consequences worth keeping:
+  the free-plan "1 rate-limit rule" budget (doc 11 §7) is now TilePier's alone
+  rather than competing with poli0981.dev, and there is no longer any risk of a
+  deploy colliding with the personal site's routes. Nominatim's mandatory
+  User-Agent (doc 10 §6) and the wrangler custom-domain binding (doc 21 §4)
+  both follow the new host.
+- 2026-08-10 · pnpm raised 10.x → 11.x (doc 02) → 11.15.1 is the installed
+  toolchain and nothing in v1 depends on 10.x behaviour. TypeScript stays on
+  6.0.x and gridstack on 12.6.x despite 7.0.2 / 13.0.2 shipping — each gets its
+  own PR, and gridstack's is gated on Spike S1 passing first (doc 02 note 7).
 - 2026-08-10 · CI workflows are authored locally in `.github/workflows/` and
   extracted to `poli0981/.github` later → the seven `wf-*.yml` reusable
   workflows doc 21 §1 calls **do not exist** in that org repo (verified

@@ -1,0 +1,29 @@
+# pnpm settings. Not a workspace declaration — TilePier is a single package
+# (doc 02 §Runtime & tooling). pnpm 11 no longer reads the `pnpm` field from
+# package.json, and it renamed `onlyBuiltDependencies` to `allowBuilds`, so the
+# doc 15 §6 supply-chain control lives here under the new name.
+
+# doc 15 §6: postinstall scripts are denied by default. Each entry below is an
+# explicit, reasoned exception — extend one package at a time, never in bulk.
+allowBuilds:
+  # Cloudflare Workers runtime binary. wrangler and miniflare cannot start
+  # without it, so `pnpm preview`, `wrangler dev`, and the platform-proxy KV
+  # path in doc 03 all depend on this build running.
+  workerd: true
+  # Ships the platform-native binary that Vite invokes for TS transform and
+  # dependency pre-bundling. NOTE: doc 15 §6 predicted "esbuild not needed
+  # under Vite 8/Rolldown"; verified 2026-08-10 that this is wrong — esbuild is
+  # a direct dependency of vite@8.2.1 itself (and of wrangler). Rolldown owns
+  # the production bundle, not the whole toolchain.
+  esbuild: true
+  # Denied for now. msw's postinstall writes mockServiceWorker.js into the
+  # project. Nothing imports msw until component tests land (Week 2); generate
+  # it deliberately then with `pnpm exec msw init static/` rather than letting
+  # install write files as a side effect.
+  msw: false
+
+# pnpm 11 gates packages published more recently than its minimum-release-age
+# threshold — the same caution doc 15 §6 asks Renovate for via stabilityDays.
+# Entries here are packages consciously taken before that window elapsed.
+minimumReleaseAgeExclude:
+  - knip@6.32.1

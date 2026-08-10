@@ -87,7 +87,7 @@ the client; grep-guard in CI, doc 21 §5).
   JSON URLs as constants.
 - Geocode via Worker: Photon `https://photon.komoot.io/api/?q=&limit=5&lang=`
   primary; Nominatim `https://nominatim.openstreetmap.org/search?format=jsonv2`
-  fallback with mandatory `User-Agent: TilePier/<ver> (tilepier.poli0981.dev)`
+  fallback with mandatory `User-Agent: TilePier/<ver> (tilepier.win)`
   and KV caching (their policy **requires** caching; our 24 h TTL satisfies
   it). Normalize both to `{name, displayName, lat, lon, type}`.
 - On-map attribution control must stay enabled (ODbL condition) — never

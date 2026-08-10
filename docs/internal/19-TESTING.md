@@ -4,14 +4,17 @@
 
 | Layer | Tool | Scope |
 |-------|------|-------|
-| Unit | Vitest 3 (node env) | pure logic: lunar engine, calc engine, swr, scheduler, migrations, formatters, QR/password/color utils, RSS normalizer, symbol validators |
-| Component | Vitest browser mode + @testing-library/svelte | widget states (loading/empty/stale/error), settings round-trips, a11y roles |
+| Unit | Vitest 4 (node env) | pure logic: lunar engine, calc engine, swr, scheduler, migrations, formatters, QR/password/color utils, RSS normalizer, symbol validators |
+| Component | Vitest 4 browser mode (`@vitest/browser-playwright` + `vitest-browser-svelte`) | widget states (loading/empty/stale/error), settings round-trips, a11y roles |
 | API (Worker) | Vitest + adapter platform-proxy (miniflare-backed) | endpoint validation, KV cache hit/miss/stale, breaker transitions, envelope shapes |
 | Mocked network | MSW 2 | upstream fixtures per API (recorded, trimmed) |
 | E2E | Playwright (Chromium + Firefox + WebKit) | smoke journeys (§4) |
 
 Test files co-located: `foo.ts` + `foo.test.ts`; fixtures in
-`src/lib/**/__fixtures__`.
+`src/lib/**/__fixtures__`. Vitest runs two projects (`vite.config.ts`): browser
+tests match `src/**/*.svelte.{test,spec}.{js,ts}`, node tests match everything
+else — so a component test **must** carry the `.svelte.` infix or it silently
+runs in node and fails on DOM access.
 
 ## 2. Coverage targets (CI-enforced via Vitest thresholds)
 

@@ -2,7 +2,7 @@
 
 **Project:** TilePier — a widget dashboard for the web
 **Repo:** `poli0981/tilepier` · **Prefix:** `Tp*` · **License:** GPL-3.0-only
-**Target domain:** `tilepier.poli0981.dev` (Cloudflare Workers custom domain)
+**Target domain:** `tilepier.win` (Cloudflare Workers custom domain)
 **Suite version:** 1.0 · **Date:** 2026-07-19
 **Status:** Pre-implementation. P0 spikes (doc 22) must pass before feature work.
 
@@ -63,5 +63,7 @@ New to the project: 01 → 02 → 03 → 04 → 06 → 12. Implementing a widget
    (Finnhub quotes + Twelve Data series). VN equities: out of scope v1.
 3. Standalone product; no OmniDeck branding or shared design tokens.
 4. Name **TilePier**; component prefix `Tp`; design system **"Đài quan trắc"**.
-5. Hosting: existing Cloudflare account, subdomain `tilepier.poli0981.dev`.
+5. Hosting: existing Cloudflare account. Apex domain **`tilepier.win`**
+   (changed 2026-08-10 from the `tilepier.poli0981.dev` subdomain — see doc 01
+   decisions log).
 6. License GPL-3.0-only for code. No CLA; DCO optional.

@@ -70,7 +70,7 @@ are the exception, not the rule (suite consistency).
   repo secrets `CLOUDFLARE_API_TOKEN` (scoped: Workers Scripts:Edit, KV:Edit
   for the two namespaces, zone tilepier route) + `CLOUDFLARE_ACCOUNT_ID`.
 - `wrangler.toml`: worker name `tilepier`, custom domain
-  `tilepier.poli0981.dev`, KV binding `TILEPIER_CACHE`
+  `tilepier.win`, KV binding `TILEPIER_CACHE`
   (+ `_preview` namespace for preview deploys), secrets `FINNHUB_KEY`,
   `TWELVEDATA_KEY` set via `wrangler secret put` (never in repo/CI logs).
 - Preview: `wrangler versions upload` → preview URL; KV points at the

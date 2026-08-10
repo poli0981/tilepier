@@ -12,7 +12,7 @@ GPL-3.0-only. Bilingual EN/VI. No accounts, no telemetry, no cookies.
 
 ## Stack (do not substitute)
 
-Node 24 LTS · pnpm 10 · SvelteKit ≥2.69.3 (adapter-cloudflare) · Svelte 5
+Node 24 LTS · pnpm 11 · SvelteKit ≥2.69.3 (adapter-cloudflare) · Svelte 5
 **runes only** · TypeScript 6 strict · Vite 8 (Rolldown —
 `build.rolldownOptions`) · Tailwind 4.3 (CSS-first `@theme`, no config js)
 · gridstack 12.6 · ECharts 6.1 (lazy, tree-shaken imports from

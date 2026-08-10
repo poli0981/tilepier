@@ -1,0 +1,20 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "tilepier",
+	"compatibility_date": "2026-08-10",
+	"compatibility_flags": ["nodejs_als"],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	// Apex domain, its own Cloudflare zone (doc 01 decisions log, 2026-08-10).
+	// Commented out until the zone is confirmed active — enabling this binds the
+	// hostname to this Worker, so it must not be a surprise. See doc 21 §4.
+	// "routes": [{ "pattern": "tilepier.win", "custom_domain": true }],
+	"workers_dev": true,
+	"preview_urls": true
+	// TODO(Block 2): KV namespace binding TILEPIER_CACHE + _preview namespace
+	// (doc 03 §Environment & bindings, doc 21 §4). Needs the namespace ids from
+	// `wrangler kv namespace create`.
+}
