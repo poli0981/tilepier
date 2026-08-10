@@ -78,6 +78,28 @@ so an Actions deploy job on the same event shipped the same commit twice. Both
 `deploy.yml` and `preview.yml` are removed; Cloudflare also produces preview
 URLs for non-production branches, which is what `preview.yml` existed to do.
 
+**The dashboard must be told how to build.** Cloudflare Workers Builds clones
+the repo, installs dependencies, then runs its *deploy* command. If the
+**build command is left empty**, nothing generates the adapter output and the
+deploy fails with:
+
+```
+✘ [ERROR] The entry-point file at ".svelte-kit/cloudflare/_worker.js" was not found.
+```
+
+Set it in Workers → tilepier → Settings → Builds:
+
+| Field | Value |
+|---|---|
+| Build command | `pnpm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | *(repo root)* |
+
+This cannot be committed to the repo: the installed Wrangler has no `build`
+key in its config schema, so there is no `wrangler.jsonc` hook to put it in —
+checked, rather than assumed. The equivalent for a human is
+`pnpm run deploy:prod`, which builds first for exactly this reason.
+
 Consequences worth keeping straight:
 
 - **The dashboard owns routing.** The custom domain `tilepier.win` is bound

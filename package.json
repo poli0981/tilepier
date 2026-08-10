@@ -15,7 +15,7 @@
 		"deploy:prod": "pnpm run build && wrangler deploy",
 		"prepare": "svelte-kit sync || echo ''",
 		"gen": "wrangler types",
-		"clean": "node -e \"fs.rmSync('.svelte-kit/output',{recursive:true,force:true});fs.rmSync('.svelte-kit/cloudflare',{recursive:true,force:true})\"",
+		"clean": "node -e \"const fs=require('node:fs');fs.rmSync('.svelte-kit/output',{recursive:true,force:true});fs.rmSync('.svelte-kit/cloudflare',{recursive:true,force:true})\"",
 		"check": "wrangler types --check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"lint": "prettier --check . && eslint . && pnpm run check",
 		"format": "prettier --write .",
