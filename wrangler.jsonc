@@ -25,7 +25,10 @@
 		}
 	],
 
-	"workers_dev": true,
+	// Off so the app has exactly one origin. A second reachable hostname would
+	// be indexable, would sit outside the tilepier.win zone's rules, and would
+	// give the legal gate and HSTS a second front door nobody audits.
+	"workers_dev": false,
 	"preview_urls": true
 
 	// Secrets FINNHUB_KEY and TWELVEDATA_KEY are set with `wrangler secret put`
