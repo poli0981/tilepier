@@ -102,12 +102,21 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 			attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
 		};
 
-		const written = await writeCache(kv, 'wx', key, payload, 'open-meteo');
-		await recordSuccess(kv, 'open-meteo');
+		// doc 11 §8: cache persistence rides on waitUntil so the response does
+		// not wait on it — and, just as importantly, so a throttled KV write
+		// cannot turn a good upstream fetch into a 500. Measured on the deployed
+		// Worker before this change: 11 of 200 concurrent requests failed.
+		const cachedAt = Date.now();
+		const persist = Promise.all([
+			writeCache(kv, 'wx', key, payload, 'open-meteo', cachedAt),
+			recordSuccess(kv, 'open-meteo')
+		]).catch(() => undefined);
+		if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
+		else void persist;
 
 		return ok(
 			payload,
-			{ cachedAt: Math.floor(written.cachedAt / 1000), source: 'open-meteo', stale: false },
+			{ cachedAt: Math.floor(cachedAt / 1000), source: 'open-meteo', stale: false },
 			'MISS',
 			ttlSeconds('wx')
 		);
@@ -117,7 +126,10 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		// 429/418 mean upstream is telling us to stop, so open immediately
 		// rather than after three strikes (doc 11 §6).
 		const immediate = upstream?.status === 429 || upstream?.status === 418;
-		await recordFailure(kv, 'open-meteo', upstream?.message ?? String(error), { immediate });
+		// Best-effort as well: breaker bookkeeping must not mask the real error.
+		await recordFailure(kv, 'open-meteo', upstream?.message ?? String(error), {
+			immediate
+		}).catch(() => undefined);
 
 		if (upstream?.status && upstream.status >= 400 && upstream.status < 500 && !immediate) {
 			return fail('BAD_REQUEST');

@@ -4,6 +4,15 @@ import { CACHE_POLICY, STOCK_BUDGET } from '../src/lib/shared-constants';
 /**
  * Spike S3 — API quota and cache reality check (doc 22 §S3).
  *
+ * **Every request here carries a unique `cb` parameter, and that is load
+ * bearing.** doc 11 §2 sets `cache-control: public, max-age=<ttl/2>` on
+ * purpose, so the CDN and the browser absorb repeat hits. The consequence is
+ * that two identical URLs never reach the Worker twice: the second gets the
+ * *first response replayed*, `x-tp-cache: MISS` header and all. Measuring the
+ * KV hit rate that way reports 0 % while the cache is working perfectly — it
+ * measures HTTP caching, not KV. The buster changes the CDN key and nothing
+ * else; the Worker derives its KV key from lat/lon alone.
+ *
  * **What this measures and what it cannot.** Open-Meteo needs no key, so
  * `/api/weather` is exercised against the real upstream through the real
  * worker with a real KV namespace. The Twelve Data and Finnhub halves need
@@ -25,6 +34,11 @@ const PLACES = [
 ];
 
 const VIRTUAL_USERS = 50;
+
+/** A URL the CDN has never seen, resolving to the same KV key. */
+let counter = 0;
+const uncached = (place: { lat: number; lon: number }) =>
+	`/api/weather?lat=${place.lat}&lon=${place.lon}&cb=${Date.now()}-${counter++}`;
 
 test.describe('S3 · cache behaviour under load', () => {
 	test.setTimeout(180_000);
@@ -49,7 +63,7 @@ test.describe('S3 · cache behaviour under load', () => {
 
 		// Warm each place once, serially, so the measurement is not racing itself.
 		for (const place of PLACES) {
-			const res = await api.get(`/api/weather?lat=${place.lat}&lon=${place.lon}`);
+			const res = await api.get(uncached(place));
 			expect(res.status(), 'the deployed worker refused the warm-up').toBe(200);
 		}
 
@@ -59,8 +73,8 @@ test.describe('S3 · cache behaviour under load', () => {
 		await Promise.all(
 			Array.from({ length: VIRTUAL_USERS }, async () => {
 				for (const place of PLACES) {
-					const res = await api.get(`/api/weather?lat=${place.lat}&lon=${place.lon}`);
-					statuses.push(res.headers()['x-tp-cache'] ?? 'none');
+					const res = await api.get(uncached(place));
+					statuses.push(res.headers()['x-tp-cache'] ?? `no-header:${res.status()}`);
 				}
 			})
 		);
@@ -71,8 +85,12 @@ test.describe('S3 · cache behaviour under load', () => {
 		const misses = statuses.filter((s) => s === 'MISS').length;
 		const hitRate = hits / total;
 
+		const breakdown = statuses.reduce<Record<string, number>>((acc, s) => {
+			acc[s] = (acc[s] ?? 0) + 1;
+			return acc;
+		}, {});
 		console.log(
-			`S3: ${total} requests · ${hits} HIT · ${misses} MISS · hit rate ${(hitRate * 100).toFixed(1)}%`
+			`S3: ${total} requests · hit rate ${(hitRate * 100).toFixed(1)}% · ${JSON.stringify(breakdown)}`
 		);
 
 		expect(hitRate, `hit rate ${(hitRate * 100).toFixed(1)}%`).toBeGreaterThanOrEqual(0.85);
@@ -84,8 +102,8 @@ test.describe('S3 · cache behaviour under load', () => {
 		// doc 11 §5 falls apart the moment a city has more than one user. The
 		// key derivation is unit-tested; this checks the endpoint honours the
 		// 2 dp rounding it is built on, so both requests land on the same key.
-		const a = await request.get('/api/weather?lat=21.028511&lon=105.804817');
-		const b = await request.get('/api/weather?lat=21.0301&lon=105.8009');
+		const a = await request.get(uncached({ lat: 21.028511, lon: 105.804817 }));
+		const b = await request.get(uncached({ lat: 21.0301, lon: 105.8009 }));
 
 		expect(a.status()).toBe(200);
 		expect(b.status()).toBe(200);
@@ -96,7 +114,7 @@ test.describe('S3 · cache behaviour under load', () => {
 	});
 
 	test('the envelope matches doc 11 §2 exactly', async ({ request }) => {
-		const res = await request.get('/api/weather?lat=21.03&lon=105.8');
+		const res = await request.get(uncached({ lat: 21.03, lon: 105.8 }));
 		const body = await res.json();
 
 		expect(body.ok).toBe(true);

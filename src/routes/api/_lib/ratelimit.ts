@@ -39,6 +39,17 @@ export interface RateVerdict {
 	retryAfterS: number;
 }
 
+/**
+ * **Fails open, always.** Every KV touch here is wrapped, because the counter
+ * is a single hot key per address per bucket and KV rate-limits writes to
+ * roughly one per second per key. Measured on the deployed Worker: a burst of
+ * 200 concurrent requests produced **11 HTTP 500s (5.5 %)** before this guard
+ * existed — the limiter meant to protect the service was taking it down, and
+ * the failed writes also meant the limit never actually engaged.
+ *
+ * doc 11 §7 already says the zone rule is the real wall and this is only a
+ * soft, approximate layer. A soft layer must never be able to fail a request.
+ */
 export async function checkRateLimit(
 	kv: KVNamespace,
 	request: Request,
@@ -48,22 +59,30 @@ export async function checkRateLimit(
 	// No address to key on (local dev, an internal call) — do not invent one.
 	if (!ip) return { allowed: true, retryAfterS: 0 };
 
-	const utcDate = new Date(now).toISOString().slice(0, 10);
-	const salt = await dailySalt(kv, utcDate);
-	const bucket = Math.floor(now / RATE_LIMIT.bucketMs);
-	const key = `kv:rl:${await hashIp(ip, salt)}:${bucket}`;
+	try {
+		const utcDate = new Date(now).toISOString().slice(0, 10);
+		const salt = await dailySalt(kv, utcDate);
+		const bucket = Math.floor(now / RATE_LIMIT.bucketMs);
+		const key = `kv:rl:${await hashIp(ip, salt)}:${bucket}`;
 
-	const count = Number((await kv.get(key)) ?? '0') + 1;
-	await kv.put(key, String(count), {
-		expirationTtl: Math.ceil(RATE_LIMIT.counterTtlMs / 1000)
-	});
+		const count = Number((await kv.get(key)) ?? '0') + 1;
 
-	if (count > RATE_LIMIT.maxPerBucket) {
-		const msIntoBucket = now % RATE_LIMIT.bucketMs;
-		return {
-			allowed: false,
-			retryAfterS: Math.max(1, Math.ceil((RATE_LIMIT.bucketMs - msIntoBucket) / 1000))
-		};
+		// Deliberately not awaited into the verdict: a throttled write must not
+		// change whether this request is allowed. Under-counting is the
+		// documented trade (doc 11 §7).
+		void kv
+			.put(key, String(count), { expirationTtl: Math.ceil(RATE_LIMIT.counterTtlMs / 1000) })
+			.catch(() => undefined);
+
+		if (count > RATE_LIMIT.maxPerBucket) {
+			const msIntoBucket = now % RATE_LIMIT.bucketMs;
+			return {
+				allowed: false,
+				retryAfterS: Math.max(1, Math.ceil((RATE_LIMIT.bucketMs - msIntoBucket) / 1000))
+			};
+		}
+	} catch {
+		// KV unavailable or throttled. Allow — the zone rule still applies.
 	}
 
 	return { allowed: true, retryAfterS: 0 };
