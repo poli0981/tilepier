@@ -29,11 +29,17 @@ workflows do not reliably inherit them. Every stub below includes them.
 
 ## 2. Permissions matrix (explicit in every caller)
 
+A caller must grant **at least** everything the called workflow's jobs declare —
+a reusable workflow cannot request more than it was given, and the run fails at
+startup with no logs when it tries. Read the target's job-level `permissions`
+block before writing a stub; the `packages: read` row below was learned that
+way on 2026-08-10.
+
 | Stub | permissions |
 |------|-------------|
 | ci.yml | `contents: read` |
 | e2e.yml | `contents: read` |
-| codeql.yml | `actions: read`, `contents: read`, `security-events: write` |
+| codeql.yml | `actions: read`, `contents: read`, `security-events: write`, `packages: read` |
 | deploy.yml | `contents: read`, `deployments: write` |
 | preview.yml | `contents: read`, `pull-requests: write` (URL comment) |
 | release.yml | `contents: write` |
