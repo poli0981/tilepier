@@ -85,9 +85,23 @@ The single most dangerous integration point. Fixed rules:
 5. View mode: `grid.enableMove(false); grid.enableResize(false)` — the grid
    is inert; hover shows nothing. Edit mode toggles both on (doc 13 §2).
 6. Destroy: on route leave / HMR dispose, `grid.destroy(false)` after
-   unmounting all hosts. S1 pass criterion: 50 add/move/resize/remove cycles
-   with zero detached-node leaks (Memory panel) and zero Svelte
-   `effect_orphan` warnings.
+   unmounting all hosts.
+7. **The setup effect must `untrack()` its body.** Mounting hosts reads the
+   widget map and the callback props, and callback props get fresh function
+   identities on every parent render — tracked, the effect depends on them and
+   tears down and rebuilds the entire grid in a loop. Depend on the container
+   element and nothing else. (Added 2026-08-10 from spike S1, where the
+   untracked version locked the page solid.)
+8. **Teardown must happen outside `batchUpdate()`.** gridstack 12.6 defers DOM
+   work while batching, so a batched `removeAll(true, …)` leaves every
+   `.grid-stack-item` in the document while removing it from the grid model —
+   measured growth 7 → 15 → 25 → 37 wrappers across three rebuilds, silently.
+   Unmount hosts and `removeAll()` first, then batch only the additions.
+
+S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
+criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
+wrapper count, mounted host count, and serialised tile count must agree after
+every batch, and fifty net-neutral cycles must leave all three at baseline.
 
 ## 6. Detail expansion handshake
 

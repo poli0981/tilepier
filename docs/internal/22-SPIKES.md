@@ -19,6 +19,52 @@ fallback, not schedule denial.
   svelte-grid-extended / hand-rolled CSS-grid drag (cost: ~1 wk, decide
   only on hard evidence).
 
+### Findings — 2026-08-10 · **GREEN**, no fallback needed
+
+Harness at `src/routes/spike/s1/`, measurements in `e2e/s1-grid.e2e.ts`
+(6 assertions, all passing). The DevTools-Memory criterion was replaced with
+something a build can enforce: count `.grid-stack-item` wrappers, mounted
+Svelte hosts, and serialised tiles after every batch and require all three to
+agree. A host outliving its wrapper is a detached Svelte tree; a wrapper
+outliving its host is a detached DOM node. The 50 cycles are net-neutral
+(+2 added, rebuild restores one, 2 removed), so "the counts never move" is a
+real invariant rather than a restatement of the script.
+
+The contract in doc 06 §5 was **correct but incomplete**. Two rules had to be
+added, both found by the harness, both silent in production:
+
+1. **The grid-setup effect must untrack its body.** Mounting a host reads the
+   `widgets` and callback props, and callback props are fresh function
+   identities on every parent render. Tracked, that makes the setup effect
+   depend on them: mount a host → notify the parent → parent re-renders → new
+   identity → effect re-runs → destroy and rebuild the whole grid → mount a
+   host → … The page locked hard enough that Playwright could not read `body`.
+
+2. **`removeAll()` must not be called inside `batchUpdate()`.** gridstack 12.6
+   defers DOM work while batching, and a batched `removeAll(true, …)` detaches
+   nodes from the grid model but leaves every `.grid-stack-item` in the
+   document. Measured growth across three rebuilds: 7 → 15 → 25 → 37 wrappers
+   while hosts and tiles stayed correct. Nothing throws and nothing warns.
+   Teardown now runs outside the batch; only additions are batched.
+
+Two smaller notes for whoever writes the real grid:
+
+- gridstack only adds a class for the **disabled** state
+  (`ui-draggable-disabled` / `ui-resizable-disabled`); there is no marker class
+  when interaction is enabled. Assert absence, or better, assert inertness by
+  attempting a drag and checking the layout did not move.
+- `exactOptionalPropertyTypes` (doc 20 §2) means optional callback props need
+  an explicit `| undefined` in their type, or passing one through fails to
+  compile.
+
+Layout JSON round-trips byte-stable, column collapse 1440 → 420 → 1440 keeps
+exactly one host per wrapper at every breakpoint, and view mode is genuinely
+inert — a real drag leaves the serialised layout unchanged.
+
+**Consequence for doc 02:** the gridstack 13.0.2 bump stays blocked on re-running
+this harness, which is now a cheap and meaningful acceptance test rather than a
+manual inspection.
+
 ## S2 · File System Access persistence + fallback — 1 day
 
 - **Build:** pick folder → persist handle in Dexie → reload →
