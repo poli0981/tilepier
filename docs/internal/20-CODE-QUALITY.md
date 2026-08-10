@@ -59,9 +59,17 @@ pushes acceptable for docs. Release tags `v1.0.0` semver.
 | Entry (shell + registry + tier-1 essentials) | ≤ 200 KB JS |
 | CSS total | ≤ 45 KB |
 | Each widget tile chunk | ≤ 40 KB |
-| Detail chunks w/ ECharts (weather, currency, markets, timer) | ≤ 350 KB each; echarts core split as a shared lazy chunk counted once |
+| Detail chunks w/ ECharts (weather, currency, markets) | ≤ 350 KB each, excluding the shared echarts chunk |
+| Shared echarts core chunk (lazy, counted once) | ≤ 330 KB |
 | maplibre chunk (map detail only) | ≤ 300 KB |
 | Fonts total (both families, subsets) | ≤ 220 KB |
+
+> Corrected 2026-08-10, two ways. `timer` was listed as an ECharts detail
+> chunk, but doc 07 §2 specifies its history view as an inline SVG bar
+> sparkline with no chart library — it now falls under the per-widget rows.
+> And the shared echarts chunk had no row of its own even though spike S4
+> (doc 22) measures it at ≤ 330 KB gz; that row now exists, so the budget the
+> spike checks is the budget this table states.
 
 Enforced by a `scripts/check-budgets.mjs` reading the Rolldown manifest in
 CI (`pnpm build && pnpm budgets`); budget table lives in one JSON consumed

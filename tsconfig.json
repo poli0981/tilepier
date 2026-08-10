@@ -14,5 +14,25 @@
 		"exactOptionalPropertyTypes": true,
 		"moduleResolution": "bundler",
 		"types": ["./worker-configuration.d.ts"]
-	}
+	},
+	// Restates the excludes from .svelte-kit/tsconfig.json, because a child
+	// `exclude` replaces the parent's rather than extending it, plus the build
+	// output directories.
+	//
+	// Note this does NOT stop svelte-check from reading build output: it walks
+	// the workspace directory itself, regardless of the tsconfig file set, so
+	// `pnpm build` followed by `pnpm lint` still reports hundreds of errors in
+	// the generated worker bundle. Run `pnpm clean` first, or lint before you
+	// build — which is the order doc 21 §1 already specifies for CI.
+	"exclude": [
+		"node_modules/**",
+		".svelte-kit/output/**",
+		".svelte-kit/cloudflare/**",
+		"src/service-worker.js",
+		"src/service-worker/**/*.js",
+		"src/service-worker.ts",
+		"src/service-worker/**/*.ts",
+		"src/service-worker.d.ts",
+		"src/service-worker/**/*.d.ts"
+	]
 }

@@ -70,11 +70,11 @@ scheduler.register(instanceId, { everyMs, run, runOnFocus = true })
 ## 4. Request lifecycle example — weather tile
 
 ```
-mount → swr('weather:21.02,105.85', fetchWeather, { ttlMs: 600_000 })
+mount → swr('wx:v1:w3gvk', fetchWeather, { ttlMs: 600_000 })
   ├─ Dexie hit (4 min old) → render immediately, status fresh
   └─ (nothing else; still fresh)
 +10 min tick → stale → GET /api/weather?lat=21.02&lon=105.85
-  Worker: key wx:v1:geohash5:daily-hourly
+  Worker: key wx:v1:w3gvk   ← same string, per §5
     ├─ KV hit (age 3 min) → 200, x-tp-cache: HIT
     └─ KV miss → Open-Meteo fetch → normalize → KV put (ttl 600)
 Client: render, persist apiCache, status fresh
@@ -86,12 +86,28 @@ Worker gets nothing (no stale, upstream down) → 503 JSON envelope
 
 ## 5. Data keys
 
-Convention `": "`-free, versioned: `<domain>:<v>:<params>` e.g.
-`wx:v1:w3gvk`, `fx:v1:USD`, `stock:series:v1:AAPL:1day`. Bump the `v`
-segment whenever the normalized payload shape changes — old cache entries
-then simply miss instead of poisoning new parsers. Same key string is used
-in the client `apiCache` and the Worker KV (prefixed `kv:` server-side)
-so debugging correlates 1:1.
+Convention: whitespace-free, versioned, `<domain>:<v>:<params>`. Bump the `v`
+segment whenever the normalized payload shape changes — old cache entries then
+simply miss instead of poisoning new parsers.
+
+**Doc 11 §4 is authoritative for key names as well as TTLs.** The same key
+string is used in the client `apiCache` and the Worker KV (prefixed `kv:`
+server-side) so debugging correlates 1:1 — which only holds if there is exactly
+one spelling per payload. Use the abbreviated prefixes from that table:
+`wx:v1:<geohash5>`, `fx:v1:USD`, `st:se:v1:<sym>:1day`, `st:q:v1:<sym>`,
+`cr:kl:v1:<sym>:<int>`, `cr:tick:v1:<set-hash>`, `geo:v1:<lang>:<q-norm>`,
+`rss:v1:<url-hash>`.
+
+Keys are never hand-written at call sites. `src/lib/shared-constants.ts`
+exports one builder per key family, imported by both the widget services and
+the Worker endpoints; a test asserts the builders' prefixes match doc 11 §4.
+
+> Corrected 2026-08-10. This section previously gave
+> `stock:series:v1:AAPL:1day` while doc 11 §4 names the same payload
+> `st:se:v1:<sym>:1day`, and §4's own worked example used
+> `weather:21.02,105.85` client-side against `wx:v1:geohash5:daily-hourly`
+> server-side — so the 1:1 guarantee above was contradicted twice, once inside
+> this very file. Single-spelling-via-builders is the fix.
 
 ## 6. Writes (user data)
 

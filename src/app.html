@@ -1,9 +1,17 @@
 <!doctype html>
-<html lang="en">
+<!--
+	lang and data-theme are the pre-JS defaults: Vietnamese-first (doc 14 §1)
+	and dark (doc 05 §2 settings default). Both are corrected client-side from
+	tp.settings.v1 before first paint; they are here so the prerendered shell
+	and the legal gate render correctly with JavaScript disabled (doc 16 §2).
+-->
+<html lang="vi" data-theme="dark">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<meta name="theme-color" content="#070A0E" media="(prefers-color-scheme: dark)" />
+		<meta name="theme-color" content="#F4F1EA" media="(prefers-color-scheme: light)" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
