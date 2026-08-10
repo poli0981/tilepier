@@ -50,10 +50,11 @@ New to the project: 01 → 02 → 03 → 04 → 06 → 12. Implementing a widget
 - "MUST/SHOULD/MAY" follow RFC-2119 intent.
 - All sizes in grid units are `w×h` on the 12-column grid (doc 06).
 - All cache TTLs are authoritative in doc 11; other docs reference it.
-- This suite is **internal planning documentation**. Recommended: keep in
-  `docs/internal/` and gitignore it (CommandForge pattern), or keep public —
-  decide at repo init. The public repo `README.md` is written separately at
-  Week 8 (doc 23).
+- This suite is **internal planning documentation**, but it lives at
+  `docs/internal/` and is **committed publicly** (decided at repo init,
+  2026-08-10 — see doc 01 decisions log). It is not gitignored. Write it as
+  though readers outside the project will see it. The public-facing repo
+  `README.md` is a separate document written at Week 8 (doc 23).
 
 ## Locked decisions (2026-07-19)
 

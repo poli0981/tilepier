@@ -31,7 +31,11 @@ pnpm test:e2e       # playwright
 pnpm lint           # eslint + prettier --check + svelte-check
 pnpm knip           # dead code (CI-blocking)
 pnpm i18n:check     # en/vi key parity (CI-blocking)
+pnpm i18n:audit     # hardcoded-string scan in .svelte markup (doc 14 §2)
+pnpm tokens:audit   # raw-hex-in-component scan (doc 20 §1)
 pnpm budgets        # bundle budget gate (after build)
+pnpm build:analyze  # rolldown stats → treemap, on demand (doc 20 §6)
+pnpm licenses:gen   # regenerate /legal/licenses register (doc 16 §5)
 ```
 
 ## Hard rules

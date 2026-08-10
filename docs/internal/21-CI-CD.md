@@ -5,6 +5,16 @@ reusable workflows from `poli0981/.github`. Known GitHub quirk (established
 2026-05): callers **must** declare explicit `permissions:` blocks — reusable
 workflows do not reliably inherit them. Every stub below includes them.
 
+> **Status 2026-08-10 — the reusable targets below do not exist yet.**
+> `poli0981/.github` was checked: it uses a `reusable-*.yml` naming convention
+> and ships nothing for Cloudflare deploy, Cloudflare preview, Playwright, or
+> release. Only CodeQL has a usable target today
+> (`reusable-codeql.yml` / `codeql.yml`). Until the `wf-*.yml` set is written,
+> **TilePier authors these workflows locally** in `.github/workflows/` with
+> the same jobs and the §2 permissions matrix, and they are extracted upward
+> once stable (doc 01 decisions log, 2026-08-10). Treat the "Reusable target"
+> column below as the target state, not the current one.
+
 ## 1. Workflow set
 
 | Stub | Trigger | Reusable target | Purpose |

@@ -77,3 +77,16 @@ suite stays the single source of truth.
   stays uncluttered; each tool too small to justify a tile.
 - 2026-07-19 · Currency history built by self-accumulated daily KV snapshots
   (no free API provides VND history) — doc 10 §3.
+- 2026-08-10 · This suite lives at `docs/internal/` and is committed publicly,
+  not gitignored → portfolio value outweighs the mild exposure of internal
+  scheduling notes; the suite README's open question is now closed.
+- 2026-08-10 · Week 0 runs as **bootstrap-then-spike**: the real repo is
+  scaffolded once and S1/S4/S5 run inside it on `spike/*` branches (S2/S3 stay
+  isolated) → S4 and S5 are unmeasurable without the real dependency set, so
+  doc 22's throwaway-branch framing would mean scaffolding three times. The
+  doc 22 gate itself is unchanged.
+- 2026-08-10 · CI workflows are authored locally in `.github/workflows/` and
+  extracted to `poli0981/.github` later → the seven `wf-*.yml` reusable
+  workflows doc 21 §1 calls **do not exist** in that org repo (verified
+  2026-08-10); blocking Week 1 on writing them there first was the worse
+  trade. Doc 21 §1 carries the deviation note.
