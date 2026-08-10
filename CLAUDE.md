@@ -27,7 +27,9 @@ ESLint 10 flat · Prettier 3 · knip.
 pnpm verify         # clean → lint → knip → test → build → budgets (what CI runs)
 pnpm dev            # dev server
 pnpm build          # clean + wrangler types + production build
-pnpm preview        # wrangler dev against the built worker
+pnpm preview        # build, then wrangler dev against the built worker
+pnpm run deploy:prod # build, then wrangler deploy (note: `pnpm deploy` is a
+                    #   pnpm builtin and would NOT run this script)
 pnpm gen            # regenerate worker-configuration.d.ts from wrangler.jsonc
 pnpm clean          # remove build output
 pnpm lint           # prettier --check + eslint + svelte-check

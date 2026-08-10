@@ -13,6 +13,13 @@ permissions:
   actions: read
   contents: read
   security-events: write
+  # Required, and not obvious: the org's reusable workflow declares
+  # `packages: read` on its job to fetch CodeQL packs. A called workflow cannot
+  # request more than the caller was granted, so omitting this fails the run at
+  # startup with no logs at all — which is exactly what happened on the first
+  # push (run 31392659984, "workflow file issue"). Doc 21 §2's matrix was
+  # missing this line.
+  packages: read
 
 jobs:
   codeql:
