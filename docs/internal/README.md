@@ -5,9 +5,8 @@
 **Target domain:** `tilepier.win` (Cloudflare Workers custom domain)
 **Suite version:** 1.0 · **Date:** 2026-07-19
 **Status:** Week 0 complete (2026-08-10) — the doc 22 spike gate is **open**.
-Four spikes green, S3 amber (its pipeline is verified; the quota *measurement*
-needs credentials and a deployed Worker). Week 1 may start. Findings and the
-adjusted backlog: doc 22 §Exit review.
+All five spikes green — S3's cache model measured on production at 94 % hit
+rate. Week 1 may start. Findings and the adjusted backlog: doc 22 §Exit review.
 
 TilePier is a local-first, account-free dashboard of movable/resizable widgets
 (weather, markets, music, notes, calendar with Vietnamese lunar dates, and more).

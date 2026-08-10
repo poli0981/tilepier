@@ -7,9 +7,11 @@ Milestone tags `v0.<week>` deployed to production domain from Week 1
 ## Week 0 (≈5 days) — Spikes · **COMPLETE 2026-08-10, gate open**
 S1–S5 per doc 22 + exit review. **Gate:** all spikes green-or-fallbacked.
 
-Four green, one amber (S3 — the pipeline is verified, the quota *measurement*
-needs credentials and a deployed Worker). No fallback was forced except S5's,
-which was taken deliberately. Findings and the adjusted Week 1 backlog are in
+All five green. S3's hit-rate measurement was completed on the deployed Worker
+on 2026-08-10 — **94 % against a ≥ 85 % criterion, 0 MISS after warm-up** — so
+the doc 11 §5 load model holds. Its stock half still needs a keyed run before
+Week 5, and one open question remains (~6 % HTTP 500 at 200-concurrency, cause
+not yet identified). No fallback was forced except S5's, taken deliberately. Findings and the adjusted Week 1 backlog are in
 doc 22 §Exit review.
 
 The budget was ≈4.5 days, which was arithmetic that omitted the exit review —

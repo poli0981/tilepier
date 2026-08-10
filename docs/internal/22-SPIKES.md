@@ -146,8 +146,8 @@ type-checked instead of casting.
   intraday still tight, 1D range ships crypto-only and stocks start at 1W
   (Stooq daily).
 
-### Findings — 2026-08-10 · **AMBER — pipeline built and verified; the quota
-### measurement still needs a keyed run against a deployed Worker**
+### Findings — 2026-08-10 · **GREEN for the keyless half** (weather measured on
+### production at 94 % hit rate); the stock half still needs a keyed run
 
 The doc 11 pipeline is real code, not a scratch: `routes/api/_lib/`
 (kv-cache, breaker, budget, ratelimit, upstream, respond, geohash) plus
@@ -168,29 +168,51 @@ pessimistic view when `api-credits-left` disagrees with our own counter; the
 rate limiter's per-address bucketing; and — worth its own line — that **no raw
 IP is ever written to KV**, only a salted hash.
 
-**Blocking finding: `wrangler dev` cannot measure cache hit rate.** In local
-mode a KV `put` is not visible to a later `get` in the same process. Entries
-written by an *earlier* run read back fine, so persistence works and only
-same-process read-after-write does not. The symptom is quietly wrong rather
-than loud: every request in a burst reports `MISS` and the hit rate reads 0 %,
-with no error anywhere. Two hours went into chasing that.
-
-Doc 22's own wording turns out to be load-bearing — "deploy a scratch Worker …
-and script 50 virtual users against **it**". The load test is therefore written
-against a deployed origin and skips unless `S3_BASE_URL` is set:
+**Measured 2026-08-10 against the deployed Worker: 94.0–94.5 % hit rate,
+0 MISS after warm-up, across 200 concurrent requests from 50 virtual users
+over 4 places.** The doc 11 §5 claim holds — user count does not multiply
+upstream calls, because upstream cost depends only on distinct places and the
+TTL. Pass criterion was ≥ 85 %.
 
 ```
 S3_BASE_URL=https://tilepier.win pnpm exec playwright test s3-quota
 ```
 
-**Still outstanding, and both need the keys:**
+> **Retraction.** An earlier version of this section claimed `wrangler dev`
+> could not do same-process KV read-after-write, and called it blocking. That
+> was wrong, and the real explanation is worth more than the mistake was:
+>
+> doc 11 §2 sets `cache-control: public, max-age=<ttl/2>` deliberately, so the
+> CDN and the browser absorb repeat hits. The consequence is that **two
+> identical URLs never reach the Worker twice** — the second gets the first
+> response replayed verbatim, `x-tp-cache: MISS` header and all. Every request
+> in a burst therefore reports MISS while the cache works perfectly. The tell
+> that broke it open was `meta.cachedAt` being *identical* across three
+> requests that all claimed MISS: a genuine miss would have re-fetched and
+> re-stamped. Confirmed by `CF-Cache-Status: HIT` alongside `x-tp-cache: MISS`,
+> and by a unique `cb` parameter — same KV key, new CDN key — immediately
+> returning `HIT`.
+>
+> The load test now busts the CDN on every request. Anyone measuring cache
+> behaviour on this codebase has to, or they will measure HTTP caching.
 
-1. The ≥ 85 % hit-rate measurement, against the deployed Worker (above).
-2. `/api/stock/*` — Twelve Data consumption against the model, live
-   `api-credits-left` parsing, and the documented proof that Finnhub's free
-   tier answers 403 on `/stock/candle`. `FINNHUB_KEY` and `TWELVEDATA_KEY` are
-   Worker secrets and are deliberately not on the build machine; a local run
-   needs them in `.dev.vars` (gitignored, doc 03).
+**Open: ~6 % of requests return HTTP 500 at 200-concurrency.** Reproducible
+(11/200 and 12/200 on two runs); not seen at 40 or 60 concurrent. The first
+hypothesis — the soft limiter's single hot KV key exceeding KV's ~1 write/s/key
+throttle — was acted on (the limiter now fails open with a fire-and-forget
+write, and cache persistence moved to `waitUntil` as doc 11 §8 always
+specified). **Both changes are correct on their own terms and neither removed
+the 500s**, so the cause is still unidentified. Next step is the Worker's own
+logs: `wrangler tail` from an interactive terminal, or the dashboard's Logs
+tab, while running the burst. Not gating — 50 users hitting one origin
+simultaneously is not a real traffic shape for a personal dashboard — but it
+must be understood before Week 5 puts markets behind the same pipeline.
+
+**Still outstanding, needing the keys:** `/api/stock/*` — Twelve Data
+consumption against the model, live `api-credits-left` parsing, and the
+documented proof that Finnhub's free tier answers 403 on `/stock/candle`.
+`FINNHUB_KEY` and `TWELVEDATA_KEY` are Worker secrets and deliberately not on
+the build machine; a local run needs them in `.dev.vars` (gitignored, doc 03).
 
 Nothing found so far argues for the fallback (raising TTLs). The arithmetic
 model is asserted in the suite so a TTL edit cannot silently break it: 50 users
@@ -335,11 +357,11 @@ delete spike branches (learnings live here, not in code).
 | S4 bundle budgets | **green** | no |
 | S5 PWA × adapter-cloudflare | **green, via the documented fallback** | yes, by design |
 | S2 FSA + import | **green** for import; FSA end-to-end is a manual check | no |
-| S3 API quota | **amber** — pipeline verified, the measurement is outstanding | no |
+| S3 API quota | **green** — 94 % hit rate measured on production; stock half needs a keyed run | no |
 
-Four green, one amber. The amber is a measurement that needs credentials and a
-deployed Worker, not an unanswered design question, and no spike produced
-evidence for changing the plan. **Week 1 may start.**
+All five green. S3 was amber until its measurement could run against a
+deployed Worker; that ran on 2026-08-10 at **94 % hit rate, 0 MISS**. No spike
+produced evidence for changing the plan. **Week 1 may start.**
 
 #### Docs changed by the findings
 
