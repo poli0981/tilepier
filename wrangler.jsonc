@@ -8,13 +8,27 @@
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
-	// Apex domain, its own Cloudflare zone (doc 01 decisions log, 2026-08-10).
-	// Commented out until the zone is confirmed active — enabling this binds the
-	// hostname to this Worker, so it must not be a surprise. See doc 21 §4.
-	// "routes": [{ "pattern": "tilepier.win", "custom_domain": true }],
+
+	// Apex domain on its own Cloudflare zone (doc 01 decisions log, 2026-08-10).
+	// The zone and route were provisioned in the dashboard first; declaring the
+	// route here keeps config as the source of truth so a deploy cannot silently
+	// drift from it.
+	"routes": [{ "pattern": "tilepier.win", "custom_domain": true }],
+
+	// Edge cache + fx snapshots + soft rate-limit counters (doc 03 §Environment,
+	// doc 11 §4-§7). Preview deploys point at the preview namespace so cache
+	// experiments cannot pollute production (doc 21 §4).
+	"kv_namespaces": [
+		{
+			"binding": "TILEPIER_CACHE",
+			"id": "1671381563ef4298997455c72f966db7",
+			"preview_id": "5e6dc952b15c45bd85b90f9941b55cf1"
+		}
+	],
+
 	"workers_dev": true,
 	"preview_urls": true
-	// TODO(Block 2): KV namespace binding TILEPIER_CACHE + _preview namespace
-	// (doc 03 §Environment & bindings, doc 21 §4). Needs the namespace ids from
-	// `wrangler kv namespace create`.
+
+	// Secrets FINNHUB_KEY and TWELVEDATA_KEY are set with `wrangler secret put`
+	// and never appear here or in CI logs (doc 15 §6, doc 21 §4).
 }

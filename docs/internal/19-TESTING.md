@@ -36,8 +36,13 @@ runs in node and fails on DOM access.
    old-shape→new-shape test + corrupt-JSON quarantine test.
 4. **swr/scheduler:** dedupe, stale flag math, visibility pause/resume
    (fake timers), backoff caps + jitter bounds.
-5. **Worker `_lib`:** TTL/stale windows per doc 11 §4 table (table-driven
-   test straight from a shared constants module so doc-drift breaks CI),
+5. **Worker `_lib`:** TTL/stale windows per doc 11 §4 table. The test
+   (`src/lib/shared-constants.test.ts`) **parses the markdown table out of
+   `docs/internal/11-WORKER-PROXY.md`** and compares it against
+   `shared-constants.ts`, so editing either side alone turns CI red. Reading
+   only the constants module — as this line previously described — could never
+   detect doc drift; corrected 2026-08-10 and verified by mutating a TTL in the
+   doc and watching the suite fail. Also covers
    breaker open/half-open/close, quota guard tiers (720/780), rate-limit
    bucketing, SSRF url rejections (each rule in doc 15 §5), envelope
    shapes.
