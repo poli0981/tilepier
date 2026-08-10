@@ -12,7 +12,17 @@ export default defineConfig({
 	use: {
 		baseURL: BASE_URL,
 		// wrangler's local https cert is self-signed.
-		ignoreHTTPSErrors: true
+		ignoreHTTPSErrors: true,
+		launchOptions: {
+			// `ignoreHTTPSErrors` covers page and API requests but NOT the fetch
+			// of a service worker script: Chromium enforces certificate validity
+			// there regardless, and registration fails with "An SSL certificate
+			// error occurred when fetching the script" — silently, since nothing
+			// rejects. The browser flag is the only way to test a service worker
+			// against wrangler's self-signed local cert. Local test rig only;
+			// production serves a real certificate.
+			args: ['--ignore-certificate-errors']
+		}
 	},
 	webServer: {
 		// `wrangler dev` against the built worker, so the suite exercises the real

@@ -165,6 +165,57 @@ without moving a single budget number — this is what catches that.
   includes writing its skeleton so the fallback is proven, not
   theoretical.
 
+### Findings — 2026-08-10 · **GREEN via the fallback**
+
+vite-plugin-pwa was tried first and abandoned inside the half-day box. The
+hand-rolled worker (`src/service-worker.ts`, ~110 lines) ships instead, and all
+four pass criteria hold — verified by `e2e/s5-pwa.e2e.ts`, 8 assertions against
+a real workerd runtime: `/offline` served for an unvisited route while offline,
+a precached page still rendering after `setOffline(true)`, no `/api/` URL in
+any cache, hashed immutable assets cached, and `skipWaiting` reachable only
+through the SKIP_WAITING message.
+
+**Why the plugin lost.** Two problems, in order:
+
+1. `@vite-pwa/sveltekit` builds its precache manifest from SvelteKit's internal
+   output layout — `client/…` and `prerendered/pages/…` — which adapter-static
+   preserves and **adapter-cloudflare flattens into the deployment root**. All
+   46 entries 404'd, the install step failed, and
+   `navigator.serviceWorker.ready` simply hung: nothing thrown, nothing logged.
+   A `manifestTransforms` URL rewrite fixed it, and is worth knowing about for
+   anyone who retries this.
+2. With URLs corrected the worker installed and activated, but its Workbox
+   module never ran. Inspected from inside the worker: `caches` empty, `define`
+   shim present, so the AMD `importScripts` of the workbox runtime never
+   registered its module. Not resolved in the box.
+
+**Why the fallback is arguably the better answer here.** `$service-worker`
+hands SvelteKit's own `build` / `files` / `prerendered` arrays — the URLs it
+*actually serves*. That removes the entire class of path-translation bugs above,
+drops a second runtime from the SW, and the whole thing is 3 KB (1.1 KB gz)
+against Workbox's 15 KB runtime. doc 17 §2 asks for exactly three behaviours;
+none of them needed a framework.
+
+**Precache is the app shell only,** as doc 17 §2 says. Left to defaults the
+plugin precached 2021 KiB across 46 entries — 1.5 MB of it the maplibre
+(1004 KB) and echarts (548 KB) chunks that every visitor would pay before ever
+opening a map or a chart. The hand-rolled worker precaches `build + files +
+prerendered` and lets the heavy lazy chunks fall to its cache-first rule, so
+they cache on first real use.
+
+**Test-rig notes, both of which cost real time:**
+
+- Service workers need a secure context, and `wrangler dev --local-protocol
+  https` uses a self-signed certificate. Playwright's `ignoreHTTPSErrors`
+  covers page and API requests but **not** the fetch of a service-worker
+  script — Chromium enforces certificate validity there regardless and fails
+  registration with "An SSL certificate error occurred when fetching the
+  script". The browser flag `--ignore-certificate-errors` is the only way
+  through locally.
+- `page.waitForFunction` with an **async** predicate evaluates to a Promise,
+  which is always truthy, so the wait returns instantly and the next assertion
+  runs against a worker that has not registered. Use `expect.poll`.
+
 ## Exit review
 
 Half-day: update docs 06/09/11/17/20 with findings, adjust Week 1 backlog,
