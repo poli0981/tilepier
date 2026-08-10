@@ -5,6 +5,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 // Adapter, CSP, and compilerOptions live in svelte.config.js (doc 03 §Repo
 // structure) so there is one place to look for framework configuration.
+//
+// No PWA plugin: the service worker is `src/service-worker.ts`, which SvelteKit
+// compiles directly. Spike S5 explains why the plugin route was abandoned —
+// see the header of that file and doc 22 §S5.
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	test: {

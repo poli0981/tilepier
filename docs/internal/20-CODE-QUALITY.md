@@ -73,7 +73,19 @@ pushes acceptable for docs. Release tags `v1.0.0` semver.
 
 Enforced by a `scripts/check-budgets.mjs` reading the Rolldown manifest in
 CI (`pnpm build && pnpm budgets`); budget table lives in one JSON consumed
-by both the script and this doc's regeneration. Bundle visualizer
+by both the script and this doc's regeneration.
+
+Measured 2026-08-10 by spike S4: entry 1.7 KB gz, CSS 6.2 KB gz, fonts
+148.4 KB raw, echarts 183.4 KB gz, maplibre 263.8 KB gz. Only maplibre is
+close to its limit (88 %), and it has no tree-shaking left to give — a major
+bump is what would push it over.
+
+Chunks are matched by the **source module** that produced them, taken from
+`.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit
+owns the emitted names and they are content hashes. A filename-matching budget
+stops measuring the moment a hash changes and still prints PASS. Rows that are
+not `optional` fail when they match nothing, so a module that moves cannot
+silently switch off its own budget. Bundle visualizer
 (`rolldown` stats → treemap) run on demand: `pnpm build:analyze`.
 
 ## 7. Performance conventions

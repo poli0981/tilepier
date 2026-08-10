@@ -27,9 +27,20 @@ correlate.
   (skipWaiting only on user action; never reload under the user).
 - Install: standard manifest (name, icons incl. maskable, theme colors both
   schemes); no install nagging — browser affordance only.
-- If vite-plugin-pwa fights adapter-cloudflare (S5 fail), fall back to a
-  ~80-line hand-rolled SW registered from the layout: same three behaviors,
-  nothing more.
+- **Resolved 2026-08-10 (spike S5): the fallback is what ships.**
+  vite-plugin-pwa does fight adapter-cloudflare. `@vite-pwa/sveltekit` builds
+  its precache manifest from SvelteKit's internal layout (`client/…`,
+  `prerendered/pages/…`), which adapter-cloudflare flattens — every entry 404s,
+  install fails, and `serviceWorker.ready` hangs silently. A
+  `manifestTransforms` rewrite fixes that, but the Workbox runtime then failed
+  to execute inside the worker and the spike's box ran out.
+
+  `src/service-worker.ts` implements the three behaviours above directly, using
+  `$service-worker`'s `build` / `files` / `prerendered` — the URLs SvelteKit
+  actually serves, which removes the path-translation problem at the root. It
+  is ~110 lines and 1.1 KB gz, against a 15 KB Workbox runtime. Registration
+  and the update prompt live in `src/lib/core/pwa.svelte.ts`; the toast is
+  `TpUpdateToast`. `e2e/s5-pwa.e2e.ts` asserts all four pass criteria.
 
 ## 3. Offline degradation contract (per widget class)
 

@@ -27,6 +27,15 @@
 		// drift the single-source rule exists to prevent.
 		"src/lib/shared-constants.ts",
 
+		// Same reasoning as shared-constants: db.ts is a transcription of doc 05
+		// §3's schema, not a module that grows consumers organically. Its row
+		// types are consumed one widget at a time between Weeks 2 and 7, and
+		// deleting the ones nobody imports yet — then re-deriving them later
+		// from the doc — is exactly the drift the single-source rule exists to
+		// prevent. A shipped `version(n)` block can never be edited, so the
+		// schema has to be right the first time and complete in one place.
+		"src/lib/core/storage/db.ts",
+
 		"scripts/*.mjs",
 		"static/boot.js"
 	],
@@ -46,21 +55,15 @@
 		// never imported from source, so knip cannot see the edge.
 		"@fontsource/be-vietnam-pro",
 		"@fontsource/jetbrains-mono",
-		// Week 1: Paraglide EN/VI wiring (doc 14), gridstack grid (doc 06 §5),
-		// Dexie storage layer (doc 05 §3).
+		// Week 1: Paraglide EN/VI wiring (doc 14).
 		"@inlang/paraglide-js",
-		"gridstack",
-		"dexie",
 		// Week 2: component tests and API mocking (doc 19 §1); notes markdown
 		// (doc 07 §4) — DOMPurify is mandatory before any {@html} (doc 15 §4).
 		"msw",
 		"vitest-browser-svelte",
 		"marked",
 		"dompurify",
-		// Week 4: ECharts bridge, built with the weather detail (doc 23 Week 4).
-		"echarts",
-		// Week 6: map widget and the RSS parser in the Worker (doc 10 §6-§7).
-		"maplibre-gl",
+		// Week 6: the RSS parser in the Worker (doc 10 §7).
 		"fast-xml-parser",
 		// Week 7: music library tag parsing in a Web Worker (doc 09 §2).
 		"music-metadata"

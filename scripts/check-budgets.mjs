@@ -1,26 +1,38 @@
 /**
  * Bundle budget gate, doc 20 §6. Run after `pnpm build`.
  *
- * Reads the built Cloudflare asset directory, gzips each file to get the size
- * a browser actually pays, and compares against scripts/budgets.json.
+ * Reads the client build manifest and gzips the emitted files to get the size
+ * a browser actually pays.
  *
- * Design notes:
- *  - Budgets marked `optional` do not fail when nothing matches. Most chunks
- *    they describe (echarts, maplibre, widget tiles, detail views) do not exist
- *    yet; the rows are here so the gate starts enforcing them the moment the
- *    code lands, rather than being remembered later. Every skipped row is
- *    printed — silent absence would read as "passing".
- *  - Non-optional rows fail if they match nothing, so a renamed entry chunk
- *    cannot quietly disable its own budget.
+ * Chunks are matched by the **source module** that produced them, taken from
+ * the manifest, rather than by filename. SvelteKit owns the emitted names and
+ * they are content hashes: a filename-matching budget stops measuring the
+ * moment a hash changes, and does so silently — which is worse than having no
+ * budget, because the report still says PASS. (An earlier version of this
+ * script matched names and reported four rows as "no matching chunk" while the
+ * chunks were sitting right there.)
+ *
+ * Budgets marked `optional` do not fail when nothing matches — most describe
+ * widget chunks that do not exist yet. Every skipped row is printed, because
+ * silent absence reads as success.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assetDir = join(root, '.svelte-kit', 'cloudflare');
+const manifestPath = join(root, '.svelte-kit', 'output', 'client', '.vite', 'manifest.json');
 const config = JSON.parse(readFileSync(join(root, 'scripts', 'budgets.json'), 'utf8'));
+
+if (!existsSync(assetDir) || !existsSync(manifestPath)) {
+	console.error(`No build output found — run \`pnpm build\` first.`);
+	process.exit(1);
+}
+
+/** @type {Record<string, { file: string, isEntry?: boolean, isDynamicEntry?: boolean }>} */
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
 function walk(dir) {
 	const out = [];
@@ -32,51 +44,54 @@ function walk(dir) {
 	return out;
 }
 
-let files;
-try {
-	files = walk(assetDir).map((full) => {
+const files = new Map(
+	walk(assetDir).map((full) => {
 		const raw = readFileSync(full);
-		return {
-			path: relative(assetDir, full).split(sep).join('/'),
-			rawBytes: raw.length,
-			gzipBytes: gzipSync(raw, { level: 9 }).length
-		};
-	});
-} catch {
-	console.error(`No build output at ${relative(root, assetDir)} — run \`pnpm build\` first.`);
-	process.exit(1);
-}
+		const path = relative(assetDir, full).split(sep).join('/');
+		return [path, { path, rawBytes: raw.length, gzipBytes: gzipSync(raw, { level: 9 }).length }];
+	})
+);
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
-/** Selects the files a budget row applies to. */
+/** Manifest keys whose emitted file exists, matched against a regex. */
+function modulesMatching(pattern) {
+	const re = new RegExp(pattern);
+	const out = [];
+	for (const [source, entry] of Object.entries(manifest)) {
+		if (!re.test(source)) continue;
+		const file = files.get(entry.file);
+		if (file) out.push({ source, ...file });
+	}
+	return out;
+}
+
 function select(budget) {
 	switch (budget.kind) {
 		case 'entry-js':
-			// SvelteKit names the browser entry `_app/immutable/entry/start.*` and
-			// `app.*`; both load on first paint, so they count together.
-			return files.filter((f) => /^_app\/immutable\/entry\/.*\.js$/.test(f.path));
+			// Everything the browser loads before it can render anything.
+			return [...files.values()].filter((f) => /^_app\/immutable\/entry\/.*\.js$/.test(f.path));
 		case 'css-total':
-			return files.filter((f) => f.path.endsWith('.css'));
+			return [...files.values()].filter((f) => f.path.endsWith('.css'));
 		case 'static-glob': {
 			const re = new RegExp('^' + budget.glob.replace(/\*/g, '[^/]*') + '$');
-			return files.filter((f) => re.test(f.path));
+			return [...files.values()].filter((f) => re.test(f.path));
 		}
-		case 'chunk-match':
-		case 'chunk-glob':
-			return files.filter((f) => f.path.includes(budget.match) && f.path.endsWith('.js'));
+		case 'module':
+		case 'module-each':
+			return modulesMatching(budget.module);
 		default:
 			throw new Error(`unknown budget kind: ${budget.kind}`);
 	}
 }
 
 /** Rows that cap a total sum rather than each file individually. */
-const SUMMED = new Set(['entry-js', 'css-total', 'static-glob']);
+const SUMMED = new Set(['entry-js', 'css-total', 'static-glob', 'module']);
 
 let failed = 0;
 let skipped = 0;
 
-console.log(`\nBundle budgets (doc 20 §6) — ${files.length} built files\n`);
+console.log(`\nBundle budgets (doc 20 §6) — ${files.size} built files\n`);
 
 for (const budget of config.budgets) {
 	const matched = select(budget);
@@ -92,7 +107,10 @@ for (const budget of config.budgets) {
 			continue;
 		}
 		failed += 1;
-		console.log(`  FAIL  ${budget.label}\n        matched no files; expected at least one`);
+		console.log(
+			`  FAIL  ${budget.label}\n        matched no files; expected at least one. ` +
+				`If the module moved, update its matcher in scripts/budgets.json.`
+		);
 		continue;
 	}
 
@@ -100,9 +118,10 @@ for (const budget of config.budgets) {
 		const total = matched.reduce((sum, f) => sum + sizeOf(f), 0);
 		const ok = total <= limit;
 		if (!ok) failed += 1;
+		const pct = Math.round((total / limit) * 100);
 		console.log(
 			`  ${ok ? 'PASS' : 'FAIL'}  ${budget.label}\n` +
-				`        ${kb(total)} ${unit} of ${kb(limit)} across ${matched.length} file(s)`
+				`        ${kb(total)} ${unit} of ${kb(limit)} (${pct}%) across ${matched.length} file(s)`
 		);
 		if (!ok) for (const f of matched) console.log(`          ${kb(sizeOf(f))}  ${f.path}`);
 		continue;
@@ -114,7 +133,8 @@ for (const budget of config.budgets) {
 	if (!ok) failed += 1;
 	console.log(
 		`  ${ok ? 'PASS' : 'FAIL'}  ${budget.label}\n` +
-			`        largest ${kb(sizeOf(worst))} ${unit} of ${kb(limit)} (${worst.path})`
+			`        largest ${kb(sizeOf(worst))} ${unit} of ${kb(limit)} ` +
+			`across ${matched.length} chunk(s) — ${worst.source}`
 	);
 }
 

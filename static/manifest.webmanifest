@@ -1,0 +1,15 @@
+{
+	"name": "TilePier",
+	"short_name": "TilePier",
+	"description": "Bảng điều khiển widget cục bộ — không tài khoản, không theo dõi.",
+	"lang": "vi",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#070A0E",
+	"theme_color": "#070A0E",
+	"icons": [
+		{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+		{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+	]
+}

@@ -1,9 +1,16 @@
 {
 	"$comment": [
-		"Bundle budgets, doc 20 §6. This file is the single source consumed by",
+		"Bundle budgets, doc 20 §6. Single source consumed by",
 		"scripts/check-budgets.mjs; the table in doc 20 §6 must match it.",
-		"All limits are GZIPPED bytes unless noted. Raising a number is a",
-		"conscious decision that belongs in the same PR as the doc edit."
+		"Limits are GZIPPED bytes unless the row says maxRawBytes.",
+		"",
+		"Chunks are identified by the SOURCE MODULE that produced them, read",
+		"from the Vite/Rolldown client manifest — not by filename. SvelteKit",
+		"owns the emitted names and they are content hashes, so a name-matching",
+		"budget silently stops measuring the moment a hash changes.",
+		"",
+		"Raising a number is a conscious decision that belongs in the same PR as",
+		"the doc 20 §6 edit."
 	],
 	"budgets": [
 		{
@@ -28,32 +35,30 @@
 		{
 			"id": "echarts",
 			"label": "Shared echarts core chunk (lazy, counted once)",
-			"kind": "chunk-match",
-			"match": "echarts",
-			"maxGzipBytes": 337920,
-			"optional": true
+			"kind": "module",
+			"module": "^src/lib/charts/echarts\\.ts$",
+			"maxGzipBytes": 337920
 		},
 		{
 			"id": "maplibre",
 			"label": "maplibre chunk (map detail only)",
-			"kind": "chunk-match",
-			"match": "maplibre",
-			"maxGzipBytes": 307200,
-			"optional": true
+			"kind": "module",
+			"module": "maplibre-gl",
+			"maxGzipBytes": 307200
 		},
 		{
 			"id": "widget-tile",
 			"label": "Each widget tile chunk",
-			"kind": "chunk-glob",
-			"match": "widget-",
+			"kind": "module-each",
+			"module": "^src/lib/widgets/[^/]+/Tp[A-Za-z]+Widget\\.svelte$",
 			"maxGzipBytes": 40960,
 			"optional": true
 		},
 		{
-			"id": "detail-echarts",
-			"label": "Detail chunks w/ ECharts (weather, currency, markets), excluding shared echarts",
-			"kind": "chunk-glob",
-			"match": "detail-",
+			"id": "detail",
+			"label": "Detail chunks (excluding the shared echarts chunk)",
+			"kind": "module-each",
+			"module": "^src/lib/widgets/[^/]+/Tp[A-Za-z]+Detail\\.svelte$",
 			"maxGzipBytes": 358400,
 			"optional": true
 		}
