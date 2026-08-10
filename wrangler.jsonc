@@ -29,7 +29,26 @@
 	// be indexable, would sit outside the tilepier.win zone's rules, and would
 	// give the legal gate and HSTS a second front door nobody audits.
 	"workers_dev": false,
-	"preview_urls": true
+	"preview_urls": true,
+
+	// Worker logs and traces, on so the ~6 % HTTP 500 at high concurrency
+	// recorded in doc 22 §S3 can be diagnosed from the Worker's own side
+	// rather than inferred from response codes. doc 11 §9 rules out
+	// third-party telemetry; this is Cloudflare's built-in observability, which
+	// stores no user identifiers.
+	//
+	// Note the shipped wrangler config-schema.json has no `observability` key —
+	// the schema lags the feature, so editor autocomplete will flag this even
+	// though `wrangler deploy` accepts it.
+	"observability": {
+		"logs": {
+			"enabled": true,
+			"invocation_logs": true
+		},
+		"traces": {
+			"enabled": true
+		}
+	}
 
 	// Secrets FINNHUB_KEY and TWELVEDATA_KEY are set with `wrangler secret put`
 	// and never appear here or in CI logs (doc 15 §6, doc 21 §4).
