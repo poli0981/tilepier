@@ -10,8 +10,8 @@ S1–S5 per doc 22 + exit review. **Gate:** all spikes green-or-fallbacked.
 All five green. S3's hit-rate measurement was completed on the deployed Worker
 on 2026-08-10 — **94 % against a ≥ 85 % criterion, 0 MISS after warm-up** — so
 the doc 11 §5 load model holds. Its stock half still needs a keyed run before
-Week 5, and one open question remains (~6 % HTTP 500 at 200-concurrency, cause
-not yet identified). No fallback was forced except S5's, taken deliberately. Findings and the adjusted Week 1 backlog are in
+Week 5. The ~6 % HTTP 500 seen at 200-concurrency was traced to the soft rate
+limiter's hot KV key and fixed; the final measurement is 100 %, 0 errors. No fallback was forced except S5's, taken deliberately. Findings and the adjusted Week 1 backlog are in
 doc 22 §Exit review.
 
 The budget was ≈4.5 days, which was arithmetic that omitted the exit review —

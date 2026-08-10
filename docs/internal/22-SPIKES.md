@@ -196,17 +196,42 @@ S3_BASE_URL=https://tilepier.win pnpm exec playwright test s3-quota
 > The load test now busts the CDN on every request. Anyone measuring cache
 > behaviour on this codebase has to, or they will measure HTTP caching.
 
-**Open: ~6 % of requests return HTTP 500 at 200-concurrency.** Reproducible
-(11/200 and 12/200 on two runs); not seen at 40 or 60 concurrent. The first
-hypothesis — the soft limiter's single hot KV key exceeding KV's ~1 write/s/key
-throttle — was acted on (the limiter now fails open with a fire-and-forget
-write, and cache persistence moved to `waitUntil` as doc 11 §8 always
-specified). **Both changes are correct on their own terms and neither removed
-the 500s**, so the cause is still unidentified. Next step is the Worker's own
-logs: `wrangler tail` from an interactive terminal, or the dashboard's Logs
-tab, while running the burst. Not gating — 50 users hitting one origin
-simultaneously is not a real traffic shape for a personal dashboard — but it
-must be understood before Week 5 puts markets behind the same pipeline.
+**Resolved: the ~6 % HTTP 500 at 200-concurrency is gone. Final measurement is
+100 % hit rate, 200/200, zero errors, twice in a row.**
+
+The cause was the soft rate limiter. Its counter is a single hot key per
+address per bucket, and KV throttles writes to roughly one per second per key;
+under 200 concurrent requests the write threw and took the request with it —
+which also meant the limit never actually engaged, so a burst sailed through
+while a fraction of it 500'd. The fix (doc 11 §7 and §8, both of which already
+asked for this):
+
+- the limiter fails open on any error, and its write is fire-and-forget;
+- cache persistence and breaker bookkeeping moved to `waitUntil`.
+
+> **Second retraction, same root cause as the first.** This section previously
+> said those changes "did not remove the 500s". They did. The measurement that
+> said otherwise was taken before the deploy had actually landed — the readiness
+> probe used could not tell the new build from the old one, so it measured the
+> old Worker. Both wrong conclusions in this spike came from asserting a result
+> without first confirming the state being measured. Wait for a *distinguishing*
+> signal, not merely a 200.
+
+Progression, for anyone re-running this: **94.5 % with 11/200 errors** →
+**94.0 % with 12/200** (old build, mis-measured) → **100 % with 0/200, twice**
+(fix live).
+
+Worth noting the failure shape did not reproduce under `curl`: 200 concurrent
+curl processes were all 200 even before the fix, while Playwright's request
+context — one connection, many multiplexed streams — reproduced it every time.
+A load generator that opens a connection per request will not find this class
+of bug.
+
+`observability.logs` and `observability.traces` are now enabled in
+`wrangler.jsonc` so the next one can be read from the Worker's side. Note
+`wrangler tail` produced no output during these runs, so the diagnosis above
+rests on the before/after measurement rather than on logs; check the
+dashboard's Logs tab instead if tail stays silent.
 
 **Still outstanding, needing the keys:** `/api/stock/*` — Twelve Data
 consumption against the model, live `api-credits-left` parsing, and the
