@@ -62,11 +62,11 @@ One sentence: **"Your new-tab page, if it were built like an instrument panel."*
 
 | # | Risk | Impact | Mitigation |
 |---|------|--------|-----------|
-| 1 | gridstack ↔ Svelte 5 DOM-ownership conflicts | Rework of core shell | Spike S1 before Week 1; imperative registry-driven mounting (doc 06 §5) |
+| 1 | ~~gridstack ↔ Svelte 5 DOM-ownership conflicts~~ **retired 2026-08-10** | Rework of core shell | S1 green. Two silent failure modes found and fixed (doc 06 §5.7–5.8); the contract is now enforced by `e2e/s1-grid.e2e.ts` |
 | 2 | Music: FSA handle persistence UX / non-Chromium fallback | Week 7 slip | Spike S2; fallback path (blob import) is the guaranteed baseline; visualizer is cut-line |
 | 3 | Free API quota exhaustion (Twelve Data 800/day) | Broken stock charts | KV cache + circuit breaker + stale-serve (doc 11 §5–6); Stooq EOD fallback |
-| 4 | Bundle bloat (ECharts + MapLibre) | Perf budget miss | Per-widget lazy chunks, budget CI check (doc 20 §6), Spike S4 |
-| 5 | vite-plugin-pwa ↔ adapter-cloudflare friction | Offline story broken | Spike S5; fallback = hand-rolled minimal SW |
+| 4 | Bundle bloat (ECharts + MapLibre) | Perf budget miss | S4 green: echarts 183 KB gz of 330, maplibre 264 of 300. **maplibre keeps only 12 % headroom** — treat 300 KB as fixed and expect a major bump to be what breaks it |
+| 5 | ~~vite-plugin-pwa ↔ adapter-cloudflare friction~~ **retired 2026-08-10** | Offline story broken | S5: the friction was real, the fallback was taken. A hand-rolled `src/service-worker.ts` ships (doc 17 §2) |
 
 ## Out-of-band decisions log
 

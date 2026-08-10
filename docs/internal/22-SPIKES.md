@@ -326,3 +326,82 @@ they cache on first real use.
 
 Half-day: update docs 06/09/11/17/20 with findings, adjust Week 1 backlog,
 delete spike branches (learnings live here, not in code).
+
+### Held 2026-08-10 · **the gate is open**
+
+| Spike | Verdict | Fallback triggered |
+|---|---|---|
+| S1 gridstack × Svelte 5 | **green** | no |
+| S4 bundle budgets | **green** | no |
+| S5 PWA × adapter-cloudflare | **green, via the documented fallback** | yes, by design |
+| S2 FSA + import | **green** for import; FSA end-to-end is a manual check | no |
+| S3 API quota | **amber** — pipeline verified, the measurement is outstanding | no |
+
+Four green, one amber. The amber is a measurement that needs credentials and a
+deployed Worker, not an unanswered design question, and no spike produced
+evidence for changing the plan. **Week 1 may start.**
+
+#### Docs changed by the findings
+
+- **doc 02** — five corrections and a re-verified version table (ESLint 10 not
+  9, Vitest 4 not 3, browser-mode via `@vitest/browser-playwright`,
+  `fast-xml-parser` added, three majors deliberately held).
+- **doc 03** — the dashboard route is prerendered, not `ssr = false`; route
+  groups carry the gate boundary; pre-paint work lives in `static/boot.js`.
+- **doc 04 §5** — one cache-key spelling, built by `shared-constants.ts`.
+- **doc 06 §5** — rules 7 and 8: untrack the setup effect, and never call
+  `removeAll()` inside `batchUpdate()`.
+- **doc 15 §2 / §6** — how the headers are actually delivered, the CSP hash
+  mode SvelteKit needs, and the corrected supply-chain mechanism.
+- **doc 16 §2** — the legal-gate mechanism, which was three requirements with
+  no implementation.
+- **doc 17 §2** — the hand-rolled service worker is what ships.
+- **doc 19 §1 / §3.5** — Vitest 4 tooling, the `.svelte.` test infix, and a
+  doc-drift guard that actually parses the doc.
+- **doc 20 §6** — corrected budget rows, measured numbers, and matching chunks
+  by source module rather than filename.
+- **doc 21 §1 / §2 / §4** — the `wf-*.yml` workflows do not exist, CodeQL needs
+  `packages: read`, and Cloudflare owns deploys.
+
+#### Week 1 backlog, adjusted
+
+Carried in from the spikes rather than left to be rebuilt: `TpGrid` +
+`TpWidgetHost`, the Dexie schema, `shared-constants.ts`, the legal gate, the
+security headers, the service worker, the budget gate, and CI. Week 1 keeps
+repo hygiene, tokens and fonts (done), the registry and add/remove drawer, the
+settings page, Paraglide, and layout persistence.
+
+Three items Week 1 must resolve that the spikes surfaced and did not fix —
+each is a real gap in the specification, not leftover work:
+
+1. **The settings page has no specification anywhere** (doc 23 lists it as a
+   Week 1 deliverable; doc 13 has no section for it).
+2. **Paraglide has no inlang project config or locale strategy** beyond
+   "`messages/{en,vi}.json`".
+3. **`swr()` and `scheduler.register()` have no return shapes** — doc 04 gives
+   parameters and prose, and the whole data layer sits on both.
+
+Two smaller ones: the coach overlay's "dismiss forever" flag has nowhere to
+live under the three-key localStorage rule (doc 05 §2), and `calendar` and
+`quote` declare a `midnight tick` refresh that `{ everyMs: number }` cannot
+express.
+
+#### Spike branches
+
+Kept, not deleted. Doc 22 says "learnings live here, not in code", which was
+written on the assumption that the spikes were throwaway; the bootstrap-then-
+spike decision (doc 01 log, 2026-08-10) means their output *is* the Week 1
+foundation and is merged into `main`. The branches stay as the record of how
+each measurement was reached — deleting them would cost the ability to re-run
+one in isolation, and they cost nothing.
+
+#### Outstanding before Week 5 (markets) — not gating Week 1
+
+- Run the S3 load model against the deployed Worker:
+  `S3_BASE_URL=https://tilepier.win pnpm exec playwright test s3-quota`.
+- Build `/api/stock/*` with the keys present, confirm Twelve Data consumption
+  against the doc 11 §5 model, verify `api-credits-left` parsing against real
+  responses, and capture the documented proof that Finnhub free answers 403 on
+  `/stock/candle`.
+- Walk `/spike/s2` once on real hardware to confirm FSA handle persistence
+  across a browser restart (doc 22 §S2 findings).

@@ -4,15 +4,39 @@ Solo-dev cadence; each week ends with a working deployable `main`.
 Milestone tags `v0.<week>` deployed to production domain from Week 1
 (dogfooding in prod is the QA strategy).
 
-## Week 0 (≈4.5 days) — Spikes
+## Week 0 (≈5 days) — Spikes · **COMPLETE 2026-08-10, gate open**
 S1–S5 per doc 22 + exit review. **Gate:** all spikes green-or-fallbacked.
 
+Four green, one amber (S3 — the pipeline is verified, the quota *measurement*
+needs credentials and a deployed Worker). No fallback was forced except S5's,
+which was taken deliberately. Findings and the adjusted Week 1 backlog are in
+doc 22 §Exit review.
+
+The budget was ≈4.5 days, which was arithmetic that omitted the exit review —
+S1–S5 sum to exactly 4.5 and the review is another half-day. Corrected above.
+
+Week 1 starts with more in hand than planned, because the bootstrap-then-spike
+decision (doc 01 log) meant the spikes were built in the real repo: TpGrid and
+TpWidgetHost, the Dexie schema, shared-constants, the legal gate, security
+headers, the service worker, the bundle-budget gate, and CI all landed in
+Week 0 and are merged.
+
 ## Week 1 — Shell
-Repo init (license, CI stubs doc 21, branch protection) · scaffold +
-tokens + fonts (doc 12) · TpGrid + host + layout persistence/migrations ·
-registry + add/remove drawer · settings page + store · Paraglide EN/VI ·
-legal gate + static legal pages (draft text) · error pages + ring buffer.
+~~Repo init~~ · ~~scaffold + tokens + fonts (doc 12)~~ · ~~TpGrid + host~~ +
+layout persistence/migrations · registry + add/remove drawer · settings page +
+store · Paraglide EN/VI · ~~legal gate~~ + static legal pages (real text) ·
+error pages + ring buffer · branch protection.
 **Milestone M1:** empty deck you can arrange, in both languages, deployed.
+
+Struck items landed in Week 0 — the bootstrap-then-spike decision meant the
+spikes were built in the real repo rather than thrown away.
+
+Three remaining items need a **specification decision before code**, all
+surfaced by the Week 0 review and all genuine gaps rather than deferred work:
+the **settings page** has no section in any doc; **Paraglide** has no inlang
+project config or locale strategy beyond "`messages/{en,vi}.json`"; and
+**`swr()` / `scheduler.register()`** have no return shapes, which the entire
+data layer sits on. Resolve each in the doc before writing what it governs.
 
 ## Week 2 — Tier 1, batch 1
 clock · timer (+focusSessions) · calc · notes · todo — tiles + details +
