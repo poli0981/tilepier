@@ -38,10 +38,24 @@ Key properties:
 
 ## Rendering strategy
 
-- `/` (dashboard): `ssr = false` for the grid itself. The dashboard depends
-  entirely on client storage; SSR would render an empty shell then flash.
-  The route shell (header, theme class, legal-gate check stub) is prerendered
-  so first paint is instant.
+- `/` (dashboard): prerendered shell, **not** `ssr = false`. Corrected
+  2026-08-10 — the original wording asked for both, and they are incompatible:
+  `ssr = false` disables server rendering for the layouts above the page too,
+  so the legal gate disappears from the HTML. Verified on a real build, where
+  `/` came back with no gate markup while `/legal/*` carried it — exactly
+  backwards from doc 16 §2.
+  The stated reason for `ssr = false` (SSR "would render an empty shell then
+  flash") is handled where it belongs: the deck renders nothing until it has
+  mounted and read client storage, so the server emits an empty deck area and
+  there is nothing to flash. Header, theme class, and gate still prerender.
+- Route groups carry the gate boundary: `(app)/` wraps the deck and owns the
+  gate; `/legal/*` sits outside it, because a visitor must be able to read the
+  texts the gate links to before agreeing to them.
+- Pre-paint work (gate check, theme, locale) lives in `static/boot.js`, loaded
+  synchronously from `<head>`. It cannot be an inline `<script>`: CSP is
+  `script-src 'self'` with no `'unsafe-inline'` (doc 15 §2). Reference it by
+  absolute path — `%sveltekit.assets%` emits a relative URL that breaks on
+  nested routes.
 - `/w/[id]` (detail deep link): client-rendered; opening from the grid is a
   FLIP expansion, direct navigation renders detail standalone (doc 13 §5).
 - `/legal/*`, `/about`: prerendered static pages (SEO + loads before JS).

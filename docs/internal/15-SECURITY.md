@@ -32,6 +32,35 @@ Permissions-Policy: geolocation=(self), microphone=(), camera=(), payment=()
 Cross-Origin-Opener-Policy: same-origin
 ```
 
+**How these are actually delivered (corrected 2026-08-10).** The heading above
+said "set in `hooks.server.ts` for all HTML responses". Both halves were wrong:
+
+1. **The hook never runs for most pages.** The shell and the legal pages are
+   prerendered and served straight from the ASSETS binding, so `handle` is
+   bypassed. Everything except CSP therefore lives in the root `_headers` file,
+   with `hooks.server.ts` keeping a copy for dynamically rendered responses.
+2. **`script-src 'self'` alone breaks the app.** This doc claimed "scripts stay
+   strict (no inline, no eval — Rolldown output complies)". Rolldown does
+   comply; SvelteKit does not. It emits a small inline `<script>` carrying
+   hydration data, and a bare `script-src 'self'` blocks it. The page still
+   renders perfectly — only interactivity dies, silently. Found by an e2e test
+   where clicking the gate's accept button did nothing.
+
+   The CSP is therefore emitted by SvelteKit itself, configured in
+   `svelte.config.js` under `kit.csp` with `mode: 'hash'`, so the policy
+   carries a `sha256-` hash for that script. Hash rather than nonce because a
+   nonce must be unique per response and prerendered pages cannot have one.
+   Never add a second CSP in `_headers` or the hook: browsers enforce each
+   policy independently, so a second one without the hash re-breaks hydration.
+
+   One exception is required: `frame-ancestors` is ignored in a `<meta>` CSP by
+   specification, so SvelteKit drops it from the tag. `_headers` sends a
+   header containing only `frame-ancestors 'none'`, which stacks safely.
+
+`upgrade-insecure-requests` has a local-development consequence worth knowing:
+over plain HTTP it rewrites every subresource request to HTTPS, so the e2e
+suite runs `wrangler dev --local-protocol https`.
+
 Notes: RSS item images are **not** loaded (summary text only, doc 08 §4 —
 `img` allowlisted in DOMPurify but CSP img-src blocks third-party hosts;
 therefore strip `img` in the sanitizer allowlist instead to avoid broken

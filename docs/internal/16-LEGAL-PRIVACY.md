@@ -28,6 +28,24 @@
   alone (the app store hydrates only after acceptance flag exists — the
   gate is a real gate in code, not an overlay).
 
+**Mechanism (added 2026-08-10 — this section previously stated three
+requirements without saying how they coexist).** Acceptance lives in
+localStorage, which a prerenderer cannot read, so the prerendered HTML always
+contains the gate; without more, every returning visitor would see it flash.
+`static/boot.js` runs synchronously in `<head>` before first paint, reads
+`tp.legal.v1`, and sets `data-legal="ok"` on `<html>`; CSS keys off that
+attribute to hide the gate and reveal the deck. It is a separate file rather
+than an inline script because CSP forbids inline scripts (doc 15 §2), and it
+fails closed — a corrupt value or a thrown error leaves the gate up.
+
+The gate wraps the `(app)` route group only. `/legal/*` is outside it, so the
+terms, privacy, and licenses pages the gate links to stay readable before
+acceptance.
+
+`boot.js` hardcodes `LEGAL_VERSION` because it cannot import the bundle; a test
+asserts it equals the constant in `shared-constants.ts`, so bumping the version
+to re-gate users cannot silently fail.
+
 ## 3. Privacy stance (the actual policy, summarized)
 
 1. No accounts, no analytics, no telemetry, no ads, no cookies.

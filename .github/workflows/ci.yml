@@ -1,0 +1,74 @@
+# CI — lint, dead code, tests, build, bundle budgets, secret gate.
+#
+# Authored locally rather than as a caller stub into poli0981/.github: the
+# seven wf-*.yml reusable workflows doc 21 §1 names do not exist there
+# (verified 2026-08-10 — that repo uses a reusable-*.yml convention and has
+# nothing for Cloudflare, Playwright, or release). Extract upward once stable;
+# doc 21 carries the deviation note.
+#
+# `permissions:` is declared explicitly even though nothing here escalates —
+# doc 21 §2, and the 2026-05 inheritance bug it documents.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Ordering matters: svelte-check walks the workspace directory, so build
+      # output present during lint produces hundreds of errors in generated
+      # code. Lint first, always.
+      - name: Lint (prettier + eslint + svelte-check)
+        run: pnpm lint
+
+      - name: Dead code
+        run: pnpm knip
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Bundle budgets
+        run: pnpm budgets
+
+      # doc 21 §5. Greps the built client assets for key names, common key
+      # formats, and CDN hosts (doc 15 §6). Any hit fails the build.
+      - name: Client bundle secret and CDN gate
+        run: |
+          set -euo pipefail
+          target=.svelte-kit/cloudflare
+          if grep -RInE '(FINNHUB|TWELVEDATA)_?KEY' "$target"; then
+            echo "::error::API key name found in client bundle"
+            exit 1
+          fi
+          if grep -RInE 'https://(cdn|unpkg|jsdelivr|fonts\.googleapis)' "$target"; then
+            echo "::error::CDN reference found in client bundle (doc 15 section 6)"
+            exit 1
+          fi
+          echo "secret and CDN gate clean"

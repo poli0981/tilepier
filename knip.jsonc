@@ -1,0 +1,69 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+
+	// Dead-code gate, doc 20 §4 — CI-blocking.
+	//
+	// JSONC rather than JSON so these notes can live next to the config: knip's
+	// schema rejects a "$comment" key.
+	"entry": [
+		"src/routes/**/+*.{js,ts,svelte}",
+		"src/hooks.server.ts",
+
+		// Not present yet. Kept so the gate is already correct when they land,
+		// rather than someone having to remember. knip reports these as
+		// unmatched hints, not errors.
+		"src/service-worker.ts",
+
+		// Widget manifests are entry points because registry.ts is the only
+		// thing importing them and it does so statically, while the components
+		// they name are reached solely via () => import() thunks (doc 06 §1).
+		// Without this, knip would call every widget component unused.
+		"src/lib/widgets/*/manifest.ts",
+
+		// shared-constants.ts is a declaration of doc 11 §4 and doc 20 §8, not
+		// a module that grows consumers organically. RATE_LIMIT, BREAKER,
+		// UPSTREAM and friends are consumed by /api/_lib in Week 3; deleting
+		// them now to satisfy knip and re-deriving them later is exactly the
+		// drift the single-source rule exists to prevent.
+		"src/lib/shared-constants.ts",
+
+		"scripts/*.mjs",
+		"static/boot.js"
+	],
+
+	// CSS is in `project` so knip follows `@import 'tailwindcss'` in app.css and
+	// stops reporting tailwindcss as an unused dependency.
+	"project": ["src/**/*.{js,ts,svelte,css}", "scripts/**/*.mjs"],
+
+	"ignore": ["worker-configuration.d.ts", ".svelte-kit/**"],
+
+	// Everything here is installed deliberately (doc 02 is the locked set, and
+	// Block 1 proved the whole set resolves together) but not yet imported.
+	// Each line names the week that wires it — delete the line then, do not let
+	// this list quietly become permanent.
+	"ignoreDependencies": [
+		// Copied into static/fonts by scripts/sync-fonts.mjs at setup time;
+		// never imported from source, so knip cannot see the edge.
+		"@fontsource/be-vietnam-pro",
+		"@fontsource/jetbrains-mono",
+		// Week 1: Paraglide EN/VI wiring (doc 14), gridstack grid (doc 06 §5),
+		// Dexie storage layer (doc 05 §3).
+		"@inlang/paraglide-js",
+		"gridstack",
+		"dexie",
+		// Week 2: component tests and API mocking (doc 19 §1); notes markdown
+		// (doc 07 §4) — DOMPurify is mandatory before any {@html} (doc 15 §4).
+		"msw",
+		"vitest-browser-svelte",
+		"marked",
+		"dompurify",
+		// Week 4: ECharts bridge, built with the weather detail (doc 23 Week 4).
+		"echarts",
+		// Week 6: map widget and the RSS parser in the Worker (doc 10 §6-§7).
+		"maplibre-gl",
+		"fast-xml-parser",
+		// Week 7: music library tag parsing in a Web Worker (doc 09 §2).
+		"music-metadata"
+	],
+	"ignoreBinaries": ["wrangler"]
+}

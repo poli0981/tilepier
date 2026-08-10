@@ -1,0 +1,50 @@
+# doc 18 §3. The env and logs blocks are pasted from the clipboard by the
+# in-app "Sao chép & mở GitHub" flow — URL length makes prefilling them
+# impractical, so the fields are here and the button fills the clipboard.
+name: Bug report
+description: Báo lỗi TilePier / Report a TilePier bug
+title: '[bug] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Kiểm tra nội dung trước khi gửi — TilePier không tự gửi gì cả.
+        Check the contents before submitting; TilePier never sends anything on its own.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Chuyện gì đã xảy ra? / What happened?
+      description: Bạn mong đợi gì, và thực tế xảy ra gì?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện / Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản / Version
+      description: Điền sẵn bởi nút báo lỗi trong ứng dụng.
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Môi trường / Environment
+      description: Dán khối env đã sao chép từ hộp thoại báo lỗi.
+      render: text
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Nhật ký / Console log
+      description: Dán phần log đã sao chép. Đã lọc bỏ token và query string.
+      render: text

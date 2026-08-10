@@ -10,7 +10,7 @@
 	"packageManager": "pnpm@11.15.1",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "wrangler types --check && vite build",
+		"build": "pnpm run clean && wrangler types && vite build",
 		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
 		"prepare": "svelte-kit sync || echo ''",
 		"gen": "wrangler types",
@@ -22,6 +22,8 @@
 		"test:watch": "vitest",
 		"test:e2e": "playwright install && playwright test",
 		"knip": "knip",
+		"budgets": "node scripts/check-budgets.mjs",
+		"verify": "pnpm run clean && pnpm run lint && pnpm run knip && pnpm run test && pnpm run build && pnpm run budgets",
 		"fonts:sync": "node scripts/sync-fonts.mjs"
 	},
 	"dependencies": {

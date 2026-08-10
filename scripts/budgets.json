@@ -1,0 +1,61 @@
+{
+	"$comment": [
+		"Bundle budgets, doc 20 §6. This file is the single source consumed by",
+		"scripts/check-budgets.mjs; the table in doc 20 §6 must match it.",
+		"All limits are GZIPPED bytes unless noted. Raising a number is a",
+		"conscious decision that belongs in the same PR as the doc edit."
+	],
+	"budgets": [
+		{
+			"id": "entry",
+			"label": "Entry (shell + registry + tier-1 essentials)",
+			"kind": "entry-js",
+			"maxGzipBytes": 204800
+		},
+		{
+			"id": "css",
+			"label": "CSS total",
+			"kind": "css-total",
+			"maxGzipBytes": 46080
+		},
+		{
+			"id": "fonts",
+			"label": "Fonts total (both families, subsets)",
+			"kind": "static-glob",
+			"glob": "fonts/*.woff2",
+			"maxRawBytes": 225280
+		},
+		{
+			"id": "echarts",
+			"label": "Shared echarts core chunk (lazy, counted once)",
+			"kind": "chunk-match",
+			"match": "echarts",
+			"maxGzipBytes": 337920,
+			"optional": true
+		},
+		{
+			"id": "maplibre",
+			"label": "maplibre chunk (map detail only)",
+			"kind": "chunk-match",
+			"match": "maplibre",
+			"maxGzipBytes": 307200,
+			"optional": true
+		},
+		{
+			"id": "widget-tile",
+			"label": "Each widget tile chunk",
+			"kind": "chunk-glob",
+			"match": "widget-",
+			"maxGzipBytes": 40960,
+			"optional": true
+		},
+		{
+			"id": "detail-echarts",
+			"label": "Detail chunks w/ ECharts (weather, currency, markets), excluding shared echarts",
+			"kind": "chunk-glob",
+			"match": "detail-",
+			"maxGzipBytes": 358400,
+			"optional": true
+		}
+	]
+}

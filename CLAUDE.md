@@ -17,26 +17,41 @@ Node 24 LTS · pnpm 11 · SvelteKit ≥2.69.3 (adapter-cloudflare) · Svelte 5
 `build.rolldownOptions`) · Tailwind 4.3 (CSS-first `@theme`, no config js)
 · gridstack 12.6 · ECharts 6.1 (lazy, tree-shaken imports from
 `echarts/core`) · Dexie 4 · Paraglide JS 2 · MapLibre GL 5 + OpenFreeMap ·
-music-metadata · marked + DOMPurify · Vitest 3 · Playwright · MSW 2 ·
-ESLint 9 flat · Prettier 3 · knip.
+music-metadata · marked + DOMPurify · fast-xml-parser 5 · Vitest 4
+(browser mode via @vitest/browser-playwright) · Playwright · MSW 2 ·
+ESLint 10 flat · Prettier 3 · knip.
 
 ## Commands
 
 ```
-pnpm dev            # dev server (platform-proxy provides KV locally)
-pnpm build          # production build (adapter-cloudflare)
-pnpm preview        # wrangler-based preview
-pnpm test           # vitest
+pnpm verify         # clean → lint → knip → test → build → budgets (what CI runs)
+pnpm dev            # dev server
+pnpm build          # clean + wrangler types + production build
+pnpm preview        # wrangler dev against the built worker
+pnpm gen            # regenerate worker-configuration.d.ts from wrangler.jsonc
+pnpm clean          # remove build output
+pnpm lint           # prettier --check + eslint + svelte-check
+pnpm format         # prettier --write
+pnpm test           # vitest (node + browser projects)
 pnpm test:e2e       # playwright
-pnpm lint           # eslint + prettier --check + svelte-check
 pnpm knip           # dead code (CI-blocking)
-pnpm i18n:check     # en/vi key parity (CI-blocking)
-pnpm i18n:audit     # hardcoded-string scan in .svelte markup (doc 14 §2)
-pnpm tokens:audit   # raw-hex-in-component scan (doc 20 §1)
 pnpm budgets        # bundle budget gate (after build)
-pnpm build:analyze  # rolldown stats → treemap, on demand (doc 20 §6)
-pnpm licenses:gen   # regenerate /legal/licenses register (doc 16 §5)
+pnpm fonts:sync     # re-copy font subsets from @fontsource, enforces budget
 ```
+
+Not written yet, each landing with the feature that needs it:
+`i18n:check` / `i18n:audit` (Week 1, doc 14 §2/§4) · `tokens:audit`
+(Week 2, doc 20 §1) · `licenses:gen` (Week 8, doc 16 §5) · `build:analyze`
+(on demand, doc 20 §6).
+
+Two ordering rules worth knowing before they cost you an hour:
+
+- **Run `pnpm gen` after any `wrangler.jsonc` edit**, or `wrangler types
+  --check` inside `pnpm lint` fails.
+- **Lint before build, or clean first.** `svelte-check` walks the workspace
+  directory regardless of tsconfig excludes, so leftover `.svelte-kit/cloudflare`
+  output produces hundreds of errors in generated code. `pnpm verify` does this
+  in the right order.
 
 ## Hard rules
 

@@ -1,0 +1,9 @@
+# doc 18 §3
+blank_issues_enabled: false
+contact_links:
+  - name: Thảo luận / Discussions
+    url: https://github.com/poli0981/tilepier/discussions
+    about: Câu hỏi, ý tưởng, đề xuất tính năng.
+  - name: Lỗ hổng bảo mật / Security vulnerability
+    url: https://github.com/poli0981/tilepier/security/advisories/new
+    about: Báo riêng tư qua GitHub Security Advisories, không mở issue công khai (doc 15 §8).

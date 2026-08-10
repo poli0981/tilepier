@@ -1,7 +1,12 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "tilepier",
-	"compatibility_date": "2026-08-10",
+	// Must not exceed what the installed workerd binary supports, or local dev
+	// refuses to start: "This Worker requires compatibility date 2026-08-10, but
+	// the newest date supported by this server binary is 2026-08-08". `sv create`
+	// stamps today's date, which outruns the shipped runtime. Raise this
+	// together with a wrangler bump, not on its own.
+	"compatibility_date": "2026-08-08",
 	"compatibility_flags": ["nodejs_als"],
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"assets": {
