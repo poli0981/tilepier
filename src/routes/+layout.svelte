@@ -9,8 +9,17 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import TpUpdateToast from '$lib/ui/TpUpdateToast.svelte';
+	import { settings } from '$lib/stores/settings.svelte';
 
 	let { children } = $props();
+
+	// Settings own <html> after hydration; static/boot.js owns it before first
+	// paint. This lives in the root layout rather than in (app) because theme
+	// and lang also apply on /legal/* and /about, which sit outside the gate.
+	$effect(() => {
+		settings.hydrate();
+		settings.applyToDocument();
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>

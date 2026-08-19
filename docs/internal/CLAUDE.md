@@ -49,10 +49,15 @@ Three ordering rules worth knowing before they cost you an hour:
 
 - **Run `pnpm gen` after any `wrangler.jsonc` edit**, or `wrangler types
   --check` inside `pnpm lint` fails.
-- **Lint before build, or clean first.** `svelte-check` walks the workspace
-  directory regardless of tsconfig excludes, so leftover `.svelte-kit/cloudflare`
-  output produces hundreds of errors in generated code. `pnpm verify` does this
-  in the right order.
+- **Lint before build, or clean first.** Two separate tools break on leftover
+  build output. `svelte-check` walks the workspace directory regardless of
+  tsconfig excludes, so a stale `.svelte-kit/cloudflare` produces hundreds of
+  errors in generated code. And `wrangler types` emits an extra
+  `Cloudflare.GlobalProps.mainModule` block *only when `_worker.js` exists*, so
+  `wrangler types --check` fails against the committed file whenever build
+  output is lying around — the committed file is the clean-tree form, which is
+  what `pnpm verify` and CI produce. If `--check` says the types are stale,
+  run `pnpm clean` before reaching for `pnpm gen`.
 - **Paraglide output is generated, gitignored, and needed before lint.** The
   Vite plugin emits `src/lib/paraglide/` at dev/build time, but `pnpm lint` runs
   first — so `i18n:compile` runs at the head of `lint` and `test`. Five tools

@@ -133,10 +133,17 @@
 	--color-fg-mute: #8fa0b0; /* secondary */
 	--color-fg-dim: #5c6b7a; /* tertiary, timestamps */
 
-	/* Beacon (accent) */
+	/* Beacon (accent). JS only ever sets --color-beacon (settings store); the
+	   two derived values are computed here in OKLCH so a user-chosen accent
+	   stays usable in both themes without shipping a colour module (doc 12 §2).
+	   The defaults resolve to the doc's #46D5C81F and #2AA79C. */
 	--color-beacon: #46d5c8;
-	--color-beacon-soft: #46d5c81f; /* 12% wash */
-	--color-beacon-deep: #2aa79c; /* hover/pressed */
+	--color-beacon-soft: color-mix(in oklch, var(--color-beacon) 12%, transparent);
+	/* Static default; the derived form is applied below, behind @supports.
+	   Lightning CSS emits a fallback for color-mix() on its own but cannot for
+	   relative colour syntax, and a hover state that silently vanishes on an
+	   older engine is worth four lines. */
+	--color-beacon-deep: #2aa79c;
 
 	/* Semantic — not user-overridable (doc 12 §2) */
 	--color-up: #57c785; /* gains */
@@ -177,8 +184,17 @@
 	--color-fg-mute: #4d5a67;
 	--color-fg-dim: #78858f;
 
-	--color-beacon-soft: #46d5c829;
+	/* A wash needs more of itself to read on warm paper than on deep water. */
+	--color-beacon-soft: color-mix(in oklch, var(--color-beacon) 16%, transparent);
 	--shadow-tile: 0 1px 0 #ffffff inset, 0 6px 18px #00000014;
+}
+
+/* Derives the pressed/hover accent from whatever accent the user chose
+   (doc 12 §2). Same lightness ratio as the #46D5C8 → #2AA79C default pair. */
+@supports (color: oklch(from red l c h)) {
+	:root {
+		--color-beacon-deep: oklch(from var(--color-beacon) calc(l * 0.8) c h);
+	}
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

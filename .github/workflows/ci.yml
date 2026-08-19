@@ -48,6 +48,13 @@ jobs:
       - name: Dead code
         run: pnpm knip
 
+      # The `client` Vitest project runs in real Chromium via
+      # @vitest/browser-playwright. A dev machine usually has browsers already;
+      # a fresh runner does not, and the failure is an opaque
+      # "Executable doesn't exist" from inside the test run.
+      - name: Install Chromium for browser-mode tests
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Test
         run: pnpm test
 

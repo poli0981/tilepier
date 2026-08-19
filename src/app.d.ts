@@ -20,6 +20,13 @@ declare global {
 		// interface PageData {}
 		// interface PageState {}
 	}
+
+	/**
+	 * `TP_BUILD` from doc 03 §Environment, replaced at build time by the
+	 * `define` in vite.config.ts. Declared here or svelte-check fails on every
+	 * reference; there is no runtime import to infer it from.
+	 */
+	const __TP_BUILD__: { version: string; sha: string };
 }
 
 export {};
