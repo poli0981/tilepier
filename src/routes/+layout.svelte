@@ -16,8 +16,11 @@
 	// Settings own <html> after hydration; static/boot.js owns it before first
 	// paint. This lives in the root layout rather than in (app) because theme
 	// and lang also apply on /legal/* and /about, which sit outside the gate.
+	//
+	// hydrate() is not called here — hooks.client.ts `init` does it, before
+	// hydration, so nothing can read settings before they are loaded. Reading
+	// them here is what makes this effect re-run when they change.
 	$effect(() => {
-		settings.hydrate();
 		settings.applyToDocument();
 	});
 </script>
