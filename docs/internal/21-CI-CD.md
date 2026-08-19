@@ -168,5 +168,15 @@ say whether a PR is required, so it could not be applied without guessing:
 
 A second ruleset targets `refs/tags/v*` with `deletion` + `non_fast_forward`.
 
+**Applied 2026-08-19.** Ruleset `21027640` (`main`) and `21027648`
+(`release-tags`), both `enforcement: active`. The check-run names were read off
+the repository before writing them in, not assumed — GitHub reports the job ids
+verbatim as `ci` and `e2e`. Cloudflare's own `Workers Builds: tilepier` check is
+deliberately **not** required, for the same reason as `codeql`: it runs on push
+to `main`, not on pull requests, so requiring it would block every PR on a check
+that never reports. The admin bypass was verified by pushing directly to `main`
+immediately after applying the rules, rather than trusted from the API
+response.
+
 The fork-PR secrets guard previously named here belonged to `preview.yml`, which
 §1 removed on 2026-08-10; dropped.

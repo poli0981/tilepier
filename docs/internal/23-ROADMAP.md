@@ -23,12 +23,36 @@ TpWidgetHost, the Dexie schema, shared-constants, the legal gate, security
 headers, the service worker, the bundle-budget gate, and CI all landed in
 Week 0 and are merged.
 
-## Week 1 — Shell
+## Week 1 — Shell · **COMPLETE 2026-08-19, M1 met**
 ~~Repo init~~ · ~~scaffold + tokens + fonts (doc 12)~~ · ~~TpGrid + host~~ +
 layout persistence/migrations · registry + add/remove drawer · settings page +
 store · Paraglide EN/VI · ~~legal gate~~ + static legal pages (real text) ·
 error pages + ring buffer · branch protection.
 **Milestone M1:** empty deck you can arrange, in both languages, deployed.
+
+Shipped, in eleven commits plus one correction: versioned localStorage with
+migrations and corrupt-quarantine · the settings store and `/settings` · the
+console ring buffer, client error hooks and `+error.svelte` · Paraglide EN/VI on
+a settings-backed custom strategy, with bilingual prerendering for the gate,
+`/legal/*`, `/about` and `/offline` · real bilingual legal texts and the
+attribution register · `/about` with its two documented limitations · the widget
+registry and the central scheduler with the `unregister()` doc 19 §6 needs · the
+clock tile, pulled forward from Week 2 · layout persistence and the deck store ·
+the top bar, add-widget drawer, edit-mode chrome and first-run coach · the bug
+report dialog · coverage thresholds and the branch-protection ruleset.
+
+**Deferred out of Week 1, each with a reason rather than a slip:** backup
+export/import and Playwright journey #6 move to Week 2, where notes and todos
+give them something to round-trip (doc 05 §6); `swr()` is specified in doc 04 §2
+and implemented in Week 3 with its first real consumer; the clock detail view
+and the lunar date line follow in Weeks 2 and 3; the per-tile settings control
+(⚙) waits for a widget whose settings are worth a popover; and `licenses:gen`
+remains a Week 8 script, with `/legal/licenses` shipping the curated register
+that no generator could produce.
+
+Numbers at the milestone: 271 unit and component tests, 70 e2e across six
+consecutive clean runs, 93.3 % lines and 82.6 % branches, entry chunk 2.4 KB gz
+of a 200 KB budget, zero hardcoded strings, 139 message keys with no drift.
 
 Struck items landed in Week 0 — the bootstrap-then-spike decision meant the
 spikes were built in the real repo rather than thrown away.
