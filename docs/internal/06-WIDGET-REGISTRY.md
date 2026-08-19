@@ -128,6 +128,18 @@ The single most dangerous integration point. Fixed rules:
    does nothing, silently, which is the most plausible way for a future caller
    to get this wrong. (Added 2026-08-19 when the deck store was wired: the rule
    is a consequence of rule 7 that rule 7 does not state.)
+10. **`TpGrid` must be imported dynamically from anything that renders on the
+    server.** gridstack's ESM build uses extensionless relative imports
+    (`./gridstack-engine`); bundlers resolve those, Node's ESM resolver does
+    not, so a static import fails the prerender of `/` with
+    `ERR_MODULE_NOT_FOUND`. `ssr = false` would also make the symptom go away
+    and is ruled out by doc 03 — it strips the legal gate out of the HTML,
+    which is the exact mistake that section was written to correct. Loading it
+    on the client is the right answer regardless: gridstack is a DOM library
+    with nothing to contribute to a server render, and keeping it dynamic keeps
+    it out of the entry chunk. (Added 2026-08-19, when the deck page first
+    imported it for real; `/spike/s1` never hit this because it sets
+    `ssr = false`.)
 
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:

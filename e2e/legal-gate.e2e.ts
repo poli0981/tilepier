@@ -26,7 +26,11 @@ test('gate markup is in the HTML before any JavaScript runs', async ({ request }
 
 test('accepting reveals the deck and survives a reload', async ({ page }) => {
 	await page.goto('/');
-	await page.getByRole('button', { name: 'Tôi đồng ý' }).click();
+	// Enabled only once hydration has attached the handler — see the gate's
+	// `ready` flag. Waiting on it is deterministic; a bare click races.
+	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
+	await expect(accept).toBeEnabled();
+	await accept.click();
 
 	await expect(page.getByRole('dialog')).toBeHidden();
 	await expect(page.getByRole('main')).toBeVisible();
@@ -60,6 +64,10 @@ test('the ?lang= switch works before hydration and sticks', async ({ page }) => 
 
 	// Persisted by the settings store on hydration — boot.js deliberately does
 	// not write, or it would store a partial object and quarantine the key.
+	// So the persistence has not happened yet at the assertions above: they pass
+	// off the prerendered markup alone. Wait for the button to go live before
+	// navigating, or this checks that a write which never ran did not stick.
+	await expect(page.getByRole('button', { name: 'I agree' })).toBeEnabled();
 	await page.goto('/');
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	await expect(page.getByRole('button', { name: 'I agree' })).toBeVisible();
@@ -142,7 +150,11 @@ test('no page raises a CSP violation', async ({ page }) => {
 	});
 
 	await page.goto('/');
-	await page.getByRole('button', { name: 'Tôi đồng ý' }).click();
+	// Enabled only once hydration has attached the handler — see the gate's
+	// `ready` flag. Waiting on it is deterministic; a bare click races.
+	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
+	await expect(accept).toBeEnabled();
+	await accept.click();
 	await page.goto('/legal/terms');
 
 	expect(violations).toEqual([]);

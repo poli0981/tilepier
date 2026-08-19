@@ -24,7 +24,10 @@
 	 * leak this spike measures.
 	 */
 	interface Props {
-		tiles: TpTile[];
+		/** Seed only — read once at mount. doc 06 §5 rule 9: every later change
+		 *  goes through addTile / removeTile / rebuild, never through this prop.
+		 *  readonly says so in the type rather than only in a comment. */
+		tiles: readonly TpTile[];
 		/** Registry stand-in: instanceId's widget component, by widgetId. */
 		widgets: Record<string, Component<TpWidgetProps>>;
 		editMode?: boolean;

@@ -5,6 +5,8 @@
 	"common.retry": "thử lại",
 	"common.open_detail": "mở chi tiết",
 	"common.widget_crashed": "widget gặp lỗi",
+	"common.deck.description": "Bàn làm việc widget cục bộ — không tài khoản, không theo dõi.",
+	"common.deck.empty": "Bàn trống. Nhấn e để vào chế độ chỉnh sửa và thêm widget.",
 	"common.update.available": "phiên bản mới",
 	"common.update.reload": "tải lại",
 	"common.update.offline_ready": "sẵn sàng dùng ngoại tuyến",

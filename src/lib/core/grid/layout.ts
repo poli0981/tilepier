@@ -60,3 +60,38 @@ export function serialise(nodes: GridStackWidget[], tiles: Map<string, TpTile>):
 	grid.sort((a, b) => a.y - b.y || a.x - b.x || a.instanceId.localeCompare(b.instanceId));
 	return { schemaVersion: 1, grid };
 }
+
+/**
+ * The `tp.layout.v1` spec (doc 05 §5). Lives here rather than in the deck
+ * store so the shape and the thing that validates it stay in one file.
+ *
+ * The validator is hand-written per doc 05 §6 — no runtime schema dependency —
+ * and is deliberately permissive about `widgetId`: a layout naming a widget
+ * this build does not have is *valid*, not corrupt. Dropping those tiles is
+ * the deck store's job, and quarantining the whole key over one of them would
+ * throw away a working deck.
+ */
+export const LAYOUT_VERSION = 1;
+
+function isTile(value: unknown): value is TpTile {
+	if (typeof value !== 'object' || value === null) return false;
+	const t = value as Record<string, unknown>;
+	return (
+		typeof t['instanceId'] === 'string' &&
+		typeof t['widgetId'] === 'string' &&
+		typeof t['x'] === 'number' &&
+		typeof t['y'] === 'number' &&
+		typeof t['w'] === 'number' &&
+		typeof t['h'] === 'number' &&
+		typeof t['settings'] === 'object' &&
+		t['settings'] !== null
+	);
+}
+
+export function isLayout(candidate: unknown): candidate is TpLayout {
+	if (typeof candidate !== 'object' || candidate === null) return false;
+	const l = candidate as Record<string, unknown>;
+	return (
+		l['schemaVersion'] === LAYOUT_VERSION && Array.isArray(l['grid']) && l['grid'].every(isTile)
+	);
+}

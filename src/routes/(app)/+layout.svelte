@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
 	import { acceptLegal, hasAcceptedLegal } from '$lib/core/legal';
 	import { LOCALES } from '$lib/i18n';
@@ -50,7 +51,16 @@
 					>
 					<a href={resolve('/about')}>{m['about.title'](undefined, { locale })}</a>
 				</p>
-				<button type="button" onclick={onAccept}>
+				<!--
+					The gate is in the prerendered HTML so it appears pre-JS (doc 16 §2),
+					but accepting needs a click handler. `browser` is false in the
+					prerendered markup and true in the client bundle, so the button is
+					pressable exactly when pressing it does something. Leaving it
+					enabled meant a consent button that silently ignored the first
+					click — the wrong affordance on this screen of all screens, and a
+					race every e2e run had to work around.
+				-->
+				<button type="button" onclick={onAccept} disabled={!browser} data-testid="gate-accept">
 					{m['legal.gate.accept'](undefined, { locale })}
 				</button>
 			</div>
@@ -136,8 +146,13 @@
 		min-height: 40px; /* doc 13 §8: touch targets ≥ 40 px */
 	}
 
-	.tp-gate__panel button:hover {
+	.tp-gate__panel button:hover:not(:disabled) {
 		background: var(--color-beacon-deep);
+	}
+
+	.tp-gate__panel button:disabled {
+		cursor: default;
+		opacity: 0.6;
 	}
 
 	.tp-gate__lang {

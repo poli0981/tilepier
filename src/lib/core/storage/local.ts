@@ -250,3 +250,63 @@ export function subscribeVersioned<T extends TpVersioned>(
 	window.addEventListener('storage', handle);
 	return () => window.removeEventListener('storage', handle);
 }
+
+export interface TpDebouncedWriter<T extends TpVersioned> {
+	schedule(value: T): void;
+	/** Immediate and synchronous. */
+	flush(): void;
+	dispose(): void;
+}
+
+/**
+ * doc 04 §6: layout writes are debounced 500 ms after gridstack `change`
+ * events settle.
+ *
+ * The `visibilitychange` and `pagehide` flushes are not optional extras — a
+ * debounce that only fires on its timer loses the last edit whenever the tab
+ * closes inside the window, which is exactly when someone drags a tile and
+ * immediately switches away.
+ */
+export function createDebouncedWriter<T extends TpVersioned>(
+	spec: TpVersionedSpec<T>,
+	delayMs: number
+): TpDebouncedWriter<T> {
+	let pending: T | null = null;
+	let timer: ReturnType<typeof setTimeout> | null = null;
+
+	function flush(): void {
+		if (timer !== null) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		if (pending === null) return;
+		const value = pending;
+		pending = null;
+		writeVersioned(spec, value);
+	}
+
+	function onVisibilityChange(): void {
+		if (document.visibilityState === 'hidden') flush();
+	}
+
+	const attached = typeof window !== 'undefined';
+	if (attached) {
+		document.addEventListener('visibilitychange', onVisibilityChange);
+		window.addEventListener('pagehide', flush);
+	}
+
+	return {
+		schedule(value: T) {
+			pending = value;
+			if (timer !== null) clearTimeout(timer);
+			timer = setTimeout(flush, delayMs);
+		},
+		flush,
+		dispose() {
+			flush();
+			if (!attached) return;
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+			window.removeEventListener('pagehide', flush);
+		}
+	};
+}

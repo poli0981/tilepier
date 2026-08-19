@@ -5,6 +5,8 @@
 	"common.retry": "retry",
 	"common.open_detail": "open detail",
 	"common.widget_crashed": "this widget hit an error",
+	"common.deck.description": "A local widget deck — no accounts, no tracking.",
+	"common.deck.empty": "The deck is empty. Press e to enter edit mode and add a widget.",
 	"common.update.available": "new version",
 	"common.update.reload": "reload",
 	"common.update.offline_ready": "ready to use offline",
