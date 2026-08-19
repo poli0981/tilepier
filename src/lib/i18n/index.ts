@@ -1,4 +1,10 @@
-import { defineCustomClientStrategy, getLocale, isLocale, locales } from '$lib/paraglide/runtime';
+import {
+	defineCustomClientStrategy,
+	getLocale,
+	isLocale,
+	locales,
+	setLocale
+} from '$lib/paraglide/runtime';
 import { settings } from '$lib/stores/settings.svelte';
 
 /**
@@ -42,4 +48,15 @@ export function installLocaleStrategy(): void {
 	// Resolve once here, outside any render, so `localeInitiallySet` flips in a
 	// context where a write-back would be safe rather than mid-component.
 	getLocale();
+}
+
+/**
+ * The one way to change language (doc 13 §10). `setLocale` keeps its default
+ * `reload: true`: the prerendered shell, `<html lang>` and static/boot.js all
+ * have to agree, and re-resolving in place would mean remounting the app root,
+ * which tears down and rebuilds the whole gridstack deck (doc 14 §1).
+ */
+export function switchLocale(next: TpLocale): void {
+	if (next === settings.locale) return;
+	setLocale(next);
 }

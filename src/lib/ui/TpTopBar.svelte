@@ -49,9 +49,9 @@
 			<TpIcon name="edit" size={18} />
 		</button>
 
-		<!-- The settings button lands with `/settings` itself: SvelteKit types
-		     `resolve()` against the real route table, so linking to a route that
-		     does not exist yet is a compile error rather than a live 404. -->
+		<a class="tp-bar__button" href={resolve('/settings')} aria-label={m['settings.title']()}>
+			<TpIcon name="settings" size={18} />
+		</a>
 
 		<a class="tp-bar__button" href={resolve('/about')} aria-label={m['about.title']()}>
 			<TpIcon name="quote" size={18} />

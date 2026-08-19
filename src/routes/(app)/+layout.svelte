@@ -8,6 +8,7 @@
 	import { ui } from '$lib/stores/ui.svelte';
 	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
 	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
+	import TpShortcutsSheet from '$lib/ui/TpShortcutsSheet.svelte';
 	import TpTopBar from '$lib/ui/TpTopBar.svelte';
 	import type { TpWidgetId } from '$lib/core/types';
 
@@ -16,7 +17,7 @@
 	/**
 	 * doc 13 §8's global keys live here rather than on the deck page, because
 	 * the bar and the drawer are layout-level and `/settings` is a sibling
-	 * route. `?` opens the shortcuts sheet, which lands with the settings page.
+	 * route.
 	 */
 	function onKeydown(event: KeyboardEvent): void {
 		const target = event.target;
@@ -27,6 +28,7 @@
 		if (event.metaKey || event.ctrlKey || event.altKey) return;
 
 		if (event.key === 'e') ui.toggleEdit();
+		else if (event.key === '?') ui.toggleShortcuts();
 		else if (event.key === 'Escape') ui.escape();
 	}
 
@@ -119,6 +121,7 @@
 	{@render children()}
 	<TpAddDrawer {onAdd} />
 	<TpCoachOverlay />
+	<TpShortcutsSheet />
 </div>
 
 <style>

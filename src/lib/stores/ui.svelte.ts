@@ -9,6 +9,7 @@
 class UiStore {
 	#editMode = $state(false);
 	#drawerOpen = $state(false);
+	#shortcutsOpen = $state(false);
 
 	get editMode(): boolean {
 		return this.#editMode;
@@ -16,6 +17,10 @@ class UiStore {
 
 	get drawerOpen(): boolean {
 		return this.#drawerOpen;
+	}
+
+	get shortcutsOpen(): boolean {
+		return this.#shortcutsOpen;
 	}
 
 	toggleEdit(): void {
@@ -35,12 +40,24 @@ class UiStore {
 		this.#drawerOpen = false;
 	}
 
+	toggleShortcuts(): void {
+		this.#shortcutsOpen = !this.#shortcutsOpen;
+	}
+
+	closeShortcuts(): void {
+		this.#shortcutsOpen = false;
+	}
+
 	/**
 	 * doc 13 §8: Esc closes the topmost layer — the drawer first, then edit
 	 * mode. Returns whether anything was actually closed, so a caller can let
 	 * the key fall through when there was no layer to close.
 	 */
 	escape(): boolean {
+		if (this.#shortcutsOpen) {
+			this.#shortcutsOpen = false;
+			return true;
+		}
 		if (this.#drawerOpen) {
 			this.#drawerOpen = false;
 			return true;
@@ -56,6 +73,7 @@ class UiStore {
 	reset(): void {
 		this.#editMode = false;
 		this.#drawerOpen = false;
+		this.#shortcutsOpen = false;
 	}
 }
 
