@@ -26,6 +26,7 @@ Rule: pin minors in `package.json` (`^` within major), let Renovate raise PRs.
 | echarts | **6.1.x** | Apache-2.0. Design-token themes + dynamic theme switching (no dispose on dark/light toggle). Always lazy-imported per detail view; tree-shaken imports only (`echarts/core` + used charts/components). |
 | dexie | **4.x** | IndexedDB wrapper: notes, todos, events, playlists, blobs, handles (doc 05). |
 | @inlang/paraglide-js | **2.x** | Compile-time i18n, EN/VI (doc 14). |
+| @inlang/plugin-message-format + @inlang/plugin-m-function-matcher | latest | inlang project plugins, devDeps. Referenced from `project.inlang/settings.json` by `node_modules` path rather than the usual jsdelivr URL, so the build never fetches at compile time — added 2026-08-19, see doc 14 §1. |
 | maplibre-gl | **5.x** | BSD-3. Map widget only; lazy chunk. Tiles: OpenFreeMap (doc 10 §6). |
 | music-metadata | latest | Browser build; ID3/FLAC/Vorbis tags + cover art for the music widget. |
 | marked + dompurify | latest | Notes markdown preview. DOMPurify mandatory before any `{@html}`. |

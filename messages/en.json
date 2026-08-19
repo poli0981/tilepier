@@ -1,0 +1,20 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+
+	"common.dismiss": "dismiss",
+	"common.back_to_deck": "◂ back to the deck",
+
+	"common.update.available": "new version",
+	"common.update.reload": "reload",
+	"common.update.offline_ready": "ready to use offline",
+
+	"common.offline.page_title": "Offline — TilePier",
+	"common.offline.title": "offline",
+	"common.offline.body": "No connection. Your deck and everything saved stay on your device.",
+
+	"legal.gate.summary": "A local dashboard. No accounts, no tracking, no cookies. Your data stays on your device.",
+	"legal.gate.accept": "I agree",
+	"legal.terms.title": "Terms",
+	"legal.privacy.title": "Privacy",
+	"legal.licenses.title": "Licences"
+}

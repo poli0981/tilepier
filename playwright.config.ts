@@ -11,6 +11,12 @@ export default defineConfig({
 	expect: { timeout: 5_000 },
 	use: {
 		baseURL: BASE_URL,
+		// Pinned so the prerendered bilingual surfaces (doc 14 §6) resolve
+		// deterministically: static/boot.js derives <html lang> from
+		// navigator.language, and the runner's default would otherwise decide
+		// which half of the gate is visible. Tests that care about `en` open
+		// their own context or use the ?lang= switch.
+		locale: 'vi-VN',
 		// wrangler's local https cert is self-signed.
 		ignoreHTTPSErrors: true,
 		launchOptions: {

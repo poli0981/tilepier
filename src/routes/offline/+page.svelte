@@ -5,14 +5,21 @@
 	 * the one page that has to work when nothing else does.
 	 */
 	import { resolve } from '$app/paths';
+	import { LOCALES } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 </script>
 
-<svelte:head><title>Ngoại tuyến — TilePier</title></svelte:head>
+<svelte:head><title>{m['common.offline.page_title']()}</title></svelte:head>
 
+<!-- Prerendered prose, so both locales ship and CSS picks (doc 14 §6). -->
 <main>
-	<h1>ngoại tuyến</h1>
-	<p>Không có kết nối. Bàn làm việc và dữ liệu đã lưu vẫn ở nguyên trên máy bạn.</p>
-	<p><a href={resolve('/')}>◂ về bàn</a></p>
+	{#each LOCALES as locale (locale)}
+		<div data-locale={locale}>
+			<h1>{m['common.offline.title'](undefined, { locale })}</h1>
+			<p>{m['common.offline.body'](undefined, { locale })}</p>
+			<p><a href={resolve('/')}>{m['common.back_to_deck'](undefined, { locale })}</a></p>
+		</div>
+	{/each}
 </main>
 
 <style>

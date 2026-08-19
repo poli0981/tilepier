@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
@@ -46,7 +47,24 @@ function buildInfo(): { version: string; sha: string } {
 }
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [
+		// Before sveltekit(): the compiled output has to exist when SvelteKit
+		// resolves $lib/paraglide imports.
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			// doc 14 §1. `url` is ruled out by that section; the built-in
+			// `localStorage` strategy would create a fourth localStorage key, which
+			// doc 05 §2 forbids — hence the custom one backed by the settings store.
+			strategy: ['custom-tpsettings', 'preferredLanguage', 'baseLocale'],
+			// Lets svelte-check read declarations instead of type-checking generated
+			// JS under checkJs — which is what keeps `pnpm lint` clean given that the
+			// output is gitignored and only exists after a compile.
+			emitTsDeclarations: true
+		}),
+		tailwindcss(),
+		sveltekit()
+	],
 	define: {
 		__TP_BUILD__: JSON.stringify(buildInfo())
 	},

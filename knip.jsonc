@@ -55,8 +55,12 @@
 		// never imported from source, so knip cannot see the edge.
 		"@fontsource/be-vietnam-pro",
 		"@fontsource/jetbrains-mono",
-		// Week 1: Paraglide EN/VI wiring (doc 14).
-		"@inlang/paraglide-js",
+		// Referenced by path from project.inlang/settings.json, not imported —
+		// deliberately, so the build resolves inlang plugins from node_modules
+		// instead of fetching them from a CDN (doc 14 §1). Same blind spot as
+		// the fonts above: the edge is real, it just is not an import.
+		"@inlang/plugin-message-format",
+		"@inlang/plugin-m-function-matcher",
 		// Week 2: component tests and API mocking (doc 19 §1); notes markdown
 		// (doc 07 §4) — DOMPurify is mandatory before any {@html} (doc 15 §4).
 		"msw",

@@ -63,7 +63,24 @@
 		}
 		root.setAttribute('data-theme', theme);
 
-		var locale = settings.locale;
+		// The gate's language switch is a ?lang= link pair rather than a button,
+		// so it works before hydration — doc 16 §2 puts a language toggle on the
+		// one screen whose whole purpose is informed consent, and a visitor who
+		// cannot read the page cannot consent to it (doc 14 §6).
+		//
+		// This only *applies* the choice for the current paint. Persisting it is
+		// the settings store's job: writing from here would mean writing a
+		// partial object, which fails the store's validator on the next read and
+		// gets the whole settings key quarantined — losing the very choice the
+		// user just made.
+		var requested = null;
+		try {
+			requested = new URLSearchParams(location.search).get('lang');
+		} catch {
+			/* no URLSearchParams, or an unparseable query: fall through */
+		}
+
+		var locale = requested === 'vi' || requested === 'en' ? requested : settings.locale;
 		if (locale !== 'vi' && locale !== 'en') {
 			// doc 14 §1: default from navigator.language, vi* → vi, else en.
 			var nav = (navigator.language || 'en').toLowerCase();

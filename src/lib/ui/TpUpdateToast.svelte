@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { pwa } from '$lib/core/pwa.svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	/**
 	 * Bottom-centre, max one visible, only for global events (doc 13 §7).
@@ -14,14 +15,14 @@
 
 {#if pwa.updateReady}
 	<div class="tp-toast" role="status" data-testid="update-toast">
-		<span>phiên bản mới</span>
+		<span>{m['common.update.available']()}</span>
 		<button type="button" data-testid="update-reload" onclick={() => pwa.applyUpdate()}>
-			tải lại
+			{m['common.update.reload']()}
 		</button>
 		<button
 			type="button"
 			class="tp-toast__dismiss"
-			aria-label="bỏ qua"
+			aria-label={m['common.dismiss']()}
 			onclick={() => pwa.dismiss()}
 		>
 			×
@@ -29,11 +30,11 @@
 	</div>
 {:else if pwa.offlineReady}
 	<div class="tp-toast" role="status" data-testid="offline-ready">
-		<span>sẵn sàng dùng ngoại tuyến</span>
+		<span>{m['common.update.offline_ready']()}</span>
 		<button
 			type="button"
 			class="tp-toast__dismiss"
-			aria-label="bỏ qua"
+			aria-label={m['common.dismiss']()}
 			onclick={() => pwa.dismiss()}
 		>
 			×

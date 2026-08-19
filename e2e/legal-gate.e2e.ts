@@ -37,6 +37,34 @@ test('accepting reveals the deck and survives a reload', async ({ page }) => {
 	await expect(page.getByRole('main')).toBeVisible();
 });
 
+test('the gate ships both locales and shows one', async ({ page }) => {
+	await page.goto('/');
+
+	// doc 14 §6: both halves are in the prerendered markup; CSS on <html lang>
+	// picks. display:none also drops the hidden half out of the accessibility
+	// tree, which is why the role queries above resolve to exactly one node.
+	await expect(page.locator('.tp-gate [data-locale]')).toHaveCount(2);
+	await expect(page.locator(".tp-gate [data-locale='vi']")).toBeVisible();
+	await expect(page.locator(".tp-gate [data-locale='en']")).toBeHidden();
+	await expect(page.getByRole('button', { name: 'Tôi đồng ý' })).toHaveCount(1);
+});
+
+test('the ?lang= switch works before hydration and sticks', async ({ page }) => {
+	// The switch is a link pair, not a button, precisely so a visitor who cannot
+	// read the page can still change it without waiting for JavaScript.
+	await page.goto('/?lang=en');
+
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await expect(page.getByRole('button', { name: 'I agree' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Tôi đồng ý' })).toHaveCount(0);
+
+	// Persisted by the settings store on hydration — boot.js deliberately does
+	// not write, or it would store a partial object and quarantine the key.
+	await page.goto('/');
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await expect(page.getByRole('button', { name: 'I agree' })).toBeVisible();
+});
+
 test('deleting the gate node does not reveal the deck', async ({ page }) => {
 	await page.goto('/');
 	await page.evaluate(() => document.querySelector('.tp-gate')?.remove());

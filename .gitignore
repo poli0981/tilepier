@@ -3,6 +3,7 @@ node_modules/
 .pnpm-store/
 
 # build output
+src/lib/paraglide/
 .svelte-kit/
 build/
 dist/

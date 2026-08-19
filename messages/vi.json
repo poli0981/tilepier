@@ -1,0 +1,20 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+
+	"common.dismiss": "bỏ qua",
+	"common.back_to_deck": "◂ về bàn",
+
+	"common.update.available": "phiên bản mới",
+	"common.update.reload": "tải lại",
+	"common.update.offline_ready": "sẵn sàng dùng ngoại tuyến",
+
+	"common.offline.page_title": "Ngoại tuyến — TilePier",
+	"common.offline.title": "ngoại tuyến",
+	"common.offline.body": "Không có kết nối. Bàn làm việc và dữ liệu đã lưu vẫn ở nguyên trên máy bạn.",
+
+	"legal.gate.summary": "Bảng điều khiển cục bộ. Không tài khoản, không theo dõi, không cookie. Dữ liệu của bạn ở lại trên máy bạn.",
+	"legal.gate.accept": "Tôi đồng ý",
+	"legal.terms.title": "Điều khoản",
+	"legal.privacy.title": "Riêng tư",
+	"legal.licenses.title": "Giấy phép"
+}

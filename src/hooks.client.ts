@@ -1,5 +1,6 @@
 import type { ClientInit, HandleClientError } from '@sveltejs/kit';
 import { installLogBuffer, logEntry } from '$lib/core/log-buffer';
+import { installLocaleStrategy } from '$lib/i18n';
 import { settings } from '$lib/stores/settings.svelte';
 
 /**
@@ -19,7 +20,10 @@ function uaBrand(): string {
 }
 
 export const init: ClientInit = () => {
+	// Order is load-bearing: the locale strategy reads the settings store, and
+	// the boot line reports the resolved locale.
 	settings.hydrate();
+	installLocaleStrategy();
 	installLogBuffer({
 		version: __TP_BUILD__.version,
 		sha: __TP_BUILD__.sha,

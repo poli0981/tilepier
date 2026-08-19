@@ -222,6 +222,16 @@ body {
 	min-height: 100dvh;
 }
 
+/* Bilingual prerendering (doc 14 §6). Prerendered prose ships in both locales,
+   because one HTML file cannot carry a locale that lives in localStorage;
+   static/boot.js sets <html lang> before first paint and this picks. Using
+   display:none also drops the hidden copy out of the accessibility tree, so
+   screen readers — and Playwright's role queries — see exactly one. */
+html[lang='vi'] [data-locale]:not([data-locale='vi']),
+html[lang='en'] [data-locale]:not([data-locale='en']) {
+	display: none;
+}
+
 /* Rule: if it's a number the user watches change, it's mono + tnum.
    No exceptions (doc 12 §3). */
 .tp-num {

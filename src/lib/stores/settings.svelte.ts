@@ -163,6 +163,16 @@ class SettingsStore {
 
 		if (typeof window === 'undefined') return;
 
+		// The gate's pre-hydration language links (doc 14 §6). static/boot.js
+		// applies `?lang=` to <html lang> for the first paint but deliberately
+		// does not persist it — a partial write there would fail validation on
+		// the next read and quarantine the whole key. Persisting goes through
+		// patch(), which spreads over a complete object.
+		const requested = new URLSearchParams(location.search).get('lang');
+		if ((requested === 'vi' || requested === 'en') && requested !== this.#value.locale) {
+			this.patch({ locale: requested });
+		}
+
 		this.#watch('(prefers-color-scheme: dark)', (m) => (this.#systemDark = m));
 		this.#watch('(prefers-reduced-motion: reduce)', (m) => (this.#systemReducedMotion = m));
 
