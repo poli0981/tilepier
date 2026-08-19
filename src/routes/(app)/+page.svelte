@@ -25,11 +25,6 @@
 	let components = $state<Record<string, Component<TpWidgetProps>> | null>(null);
 
 	$effect(() => {
-		// Synchronises the store with localStorage once, on mount.
-		deck.hydrate();
-	});
-
-	$effect(() => {
 		// Loads the grid and exactly the widget chunks this deck needs, before
 		// either is rendered. This is the lazy-loading boundary: the entry chunk
 		// carries manifests, components arrive per widget (doc 06 §1).

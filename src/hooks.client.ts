@@ -1,6 +1,7 @@
 import type { ClientInit, HandleClientError } from '@sveltejs/kit';
 import { installLogBuffer, logEntry } from '$lib/core/log-buffer';
 import { installLocaleStrategy } from '$lib/i18n';
+import { deck } from '$lib/stores/deck.svelte';
 import { settings } from '$lib/stores/settings.svelte';
 
 /**
@@ -23,6 +24,11 @@ export const init: ClientInit = () => {
 	// Order is load-bearing: the locale strategy reads the settings store, and
 	// the boot line reports the resolved locale.
 	settings.hydrate();
+	// The deck is hydrated here rather than on the deck page, because it is not
+	// only the deck page that needs it — a bug report filed from /settings has
+	// to know which widgets are on the deck (doc 18 §2), and it reported "none"
+	// until this moved.
+	deck.hydrate();
 	installLocaleStrategy();
 	installLogBuffer({
 		version: __TP_BUILD__.version,

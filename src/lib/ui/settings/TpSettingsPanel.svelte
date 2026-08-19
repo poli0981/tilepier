@@ -9,6 +9,7 @@
 	import { LOCAL_KEYS } from '$lib/shared-constants';
 	import { deck } from '$lib/stores/deck.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
+	import TpBugDialog from '$lib/ui/TpBugDialog.svelte';
 
 	/**
 	 * doc 13 §10. A route rather than a modal, and no save button — every
@@ -18,8 +19,9 @@
 	 * The panel lives here rather than in `+page.svelte` so it can be rendered
 	 * in a component test without stubbing `$app/*` routing.
 	 *
-	 * Sections 5 (backup) and 7 (bug report) are absent rather than disabled:
-	 * an empty heading is noise, and a control that has never worked is worse.
+	 * Section 5 (backup) is absent rather than disabled: an empty heading is
+	 * noise, and a control that has never worked is worse. It lands in Week 2,
+	 * when there is data worth round-tripping.
 	 */
 
 	/** doc 12 §2: the accent is user-overridable, semantic colours are not. */
@@ -30,6 +32,7 @@
 
 	let estimate = $state<{ usage: number; quota: number } | null>(null);
 	let eraseArmed = $state(false);
+	let bugOpen = $state(false);
 
 	// doc 18 §5: the panel ships in production but stays behind the flag.
 	// Read from `location`, not `page.url`: this route is prerendered, and
@@ -274,6 +277,19 @@
 				.join('\n')}</pre>
 	</section>
 {/if}
+
+<section aria-labelledby="s-report">
+	<h2 id="s-report">{m['settings.report.title']()}</h2>
+	<div class="tp-row">
+		<span>{m['settings.report.label']()}</span>
+		<button type="button" class="tp-action" data-testid="open-bug" onclick={() => (bugOpen = true)}>
+			{m['settings.report.open']()}
+		</button>
+	</div>
+	<p class="tp-note">{m['settings.report.note']()}</p>
+</section>
+
+<TpBugDialog open={bugOpen} onClose={() => (bugOpen = false)} />
 
 <section aria-labelledby="s-about">
 	<h2 id="s-about">{m['settings.about.title']()}</h2>

@@ -126,5 +126,17 @@
 	"common.shortcuts.title": "Keyboard shortcuts",
 	"common.shortcuts.edit": "toggle edit mode",
 	"common.shortcuts.escape": "close the topmost layer",
-	"common.shortcuts.help": "open this sheet"
+	"common.shortcuts.help": "open this sheet",
+	"settings.report.title": "Report a bug",
+	"settings.report.label": "Send a report",
+	"settings.report.open": "Report a bug",
+	"settings.report.note": "Nothing is sent automatically. You review the contents and send it yourself.",
+	"settings.report.privacy_note": "Check this before sending — you can edit or delete any line.",
+	"settings.report.copy_open": "Copy & open GitHub",
+	"settings.report.copied": "Copied",
+	"settings.report.download": "Download log (.txt)",
+	"error.not_found.title": "this page never docked",
+	"error.not_found.body": "The address you opened is not here. It may have moved, or never existed.",
+	"error.crashed.title": "something broke",
+	"error.crashed.body": "An unexpected error. Your data is still on your device; nothing was lost."
 }

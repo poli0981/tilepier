@@ -126,5 +126,17 @@
 	"common.shortcuts.title": "Phím tắt",
 	"common.shortcuts.edit": "bật/tắt chế độ chỉnh sửa",
 	"common.shortcuts.escape": "đóng lớp trên cùng",
-	"common.shortcuts.help": "mở bảng này"
+	"common.shortcuts.help": "mở bảng này",
+	"settings.report.title": "Báo lỗi",
+	"settings.report.label": "Gửi một báo cáo",
+	"settings.report.open": "Báo lỗi",
+	"settings.report.note": "Không có gì được gửi tự động. Bạn xem lại nội dung rồi tự gửi.",
+	"settings.report.privacy_note": "Kiểm tra trước khi gửi — bạn có thể sửa hoặc xoá bất kỳ dòng nào.",
+	"settings.report.copy_open": "Sao chép & mở GitHub",
+	"settings.report.copied": "Đã sao chép",
+	"settings.report.download": "Tải log (.txt)",
+	"error.not_found.title": "trang này chưa cập bến",
+	"error.not_found.body": "Địa chỉ bạn mở không có ở đây. Có thể nó đã đổi, hoặc chưa từng tồn tại.",
+	"error.crashed.title": "có gì đó hỏng",
+	"error.crashed.body": "Một lỗi ngoài dự kiến. Dữ liệu của bạn vẫn nằm trên máy bạn, không mất gì cả."
 }
