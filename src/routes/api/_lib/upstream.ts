@@ -12,7 +12,7 @@ import { UPSTREAM } from '$lib/shared-constants';
 export class UpstreamError extends Error {
 	constructor(
 		message: string,
-		readonly kind: 'timeout' | 'status' | 'too-large' | 'network',
+		readonly kind: 'timeout' | 'status' | 'too-large' | 'network' | 'malformed',
 		readonly status?: number,
 		readonly headers?: Headers
 	) {
@@ -37,7 +37,12 @@ export async function fetchUpstream<T>(
 			signal: AbortSignal.timeout(UPSTREAM.timeoutMs)
 		});
 	} catch (error) {
-		const timedOut = error instanceof Error && error.name === 'TimeoutError';
+		// AbortSignal.timeout() rejects with TimeoutError per spec, but an
+		// aborted request surfaces as AbortError on some runtimes. They mean the
+		// same thing here and the breaker counts them differently from a network
+		// failure, so both map to 'timeout'.
+		const name = error instanceof Error ? error.name : '';
+		const timedOut = name === 'TimeoutError' || name === 'AbortError';
 		throw new UpstreamError(
 			timedOut ? `timeout after ${UPSTREAM.timeoutMs}ms` : String(error),
 			timedOut ? 'timeout' : 'network'
@@ -64,8 +69,24 @@ export async function fetchUpstream<T>(
 	}
 
 	const text = await readCapped(response);
-	const data = (options.parse === 'text' ? text : JSON.parse(text)) as T;
-	return { data, headers: response.headers };
+	if (options.parse === 'text') return { data: text as T, headers: response.headers };
+
+	try {
+		return { data: JSON.parse(text) as T, headers: response.headers };
+	} catch {
+		// doc 17 §4: malformed JSON is treated as the upstream being down, and
+		// logged with a body snippet. A raw SyntaxError was already caught by the
+		// endpoint's outer handler, so this is not a crash being fixed — what it
+		// buys is the snippet, which is the only thing that says *which* upstream
+		// returned an HTML error page, and a `kind` a caller can branch on
+		// instead of string-matching an exception message.
+		throw new UpstreamError(
+			`malformed JSON: ${text.slice(0, 1024)}`,
+			'malformed',
+			response.status,
+			response.headers
+		);
+	}
 }
 
 /** Reads the body, aborting past the cap rather than buffering it all first. */

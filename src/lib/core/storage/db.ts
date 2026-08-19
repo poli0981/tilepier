@@ -146,24 +146,27 @@ export const db = createDb();
  * Startup prune (doc 05 §3): drop cache entries older than 7 days, then cap at
  * 500 rows. Cheap enough to run on every load, and it keeps a long-lived
  * profile from accumulating payloads for widgets the user removed months ago.
+ *
+ * `target` defaults to the singleton; it is a parameter so the behaviour can be
+ * checked against a throwaway database rather than the user's own.
  */
-export async function pruneApiCache(now = Date.now()): Promise<number> {
+export async function pruneApiCache(now = Date.now(), target: TpDb = db): Promise<number> {
 	const WEEK = 7 * 24 * 60 * 60 * 1000;
 	const MAX_ROWS = 500;
 
-	const expired = await db.apiCache
+	const expired = await target.apiCache
 		.where('cachedAt')
 		.below(now - WEEK)
 		.primaryKeys();
-	if (expired.length) await db.apiCache.bulkDelete(expired);
+	if (expired.length) await target.apiCache.bulkDelete(expired);
 
-	const total = await db.apiCache.count();
+	const total = await target.apiCache.count();
 	if (total > MAX_ROWS) {
-		const oldest = await db.apiCache
+		const oldest = await target.apiCache
 			.orderBy('cachedAt')
 			.limit(total - MAX_ROWS)
 			.primaryKeys();
-		await db.apiCache.bulkDelete(oldest);
+		await target.apiCache.bulkDelete(oldest);
 		return expired.length + oldest.length;
 	}
 

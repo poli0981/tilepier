@@ -156,9 +156,16 @@ describe('lookup', () => {
 		for (const group of groups) expect(group.items.length).toBeGreaterThan(0);
 	});
 
-	it('reports a single-instance widget already on deck', () => {
-		// clock is multiInstance, so it never reports as taken.
-		expect(isOnDeck('clock', ['clock'])).toBe(false);
-		expect(isOnDeck('calc', ['calc'])).toBe(false); // not registered yet
+	it('never reports a multiInstance widget as taken', () => {
+		// clock is multiInstance: a second one is the point, so a disabled Add
+		// button would be wrong (doc 06 §4).
+		expect(isOnDeck('clock', [])).toBe(false);
+		expect(isOnDeck('clock', ['clock', 'clock'])).toBe(false);
+	});
+
+	it('reports nothing for a widget this build does not have', () => {
+		// The drawer only lists registered manifests, but a caller reading ids
+		// out of a stored layout can ask about anything.
+		expect(isOnDeck('calc', ['calc'])).toBe(false);
 	});
 });

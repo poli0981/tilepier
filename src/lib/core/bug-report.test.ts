@@ -54,6 +54,32 @@ describe('collectEnv', () => {
 		expect(collectEnv({ ...BASE, widgetIds: [] }).widgets).toBe('none');
 	});
 
+	it('says "none" when no layout has been stored yet', () => {
+		vi.stubGlobal('localStorage', { getItem: () => null });
+
+		expect(collectEnv({ ...BASE }).layoutHash).toBe('none');
+	});
+
+	it('reports the service worker state, or its absence', () => {
+		expect(collectEnv({ ...BASE }).swState).toBe('none');
+
+		vi.stubGlobal('navigator', {
+			userAgent: 'TestAgent/1.0',
+			serviceWorker: { controller: { state: 'activated' } }
+		});
+		expect(collectEnv({ ...BASE }).swState).toBe('activated');
+	});
+
+	it('notes a missing IndexedDB rather than assuming it is there', () => {
+		vi.stubGlobal('indexedDB', undefined);
+
+		expect(collectEnv({ ...BASE }).storage).toBe('idb missing');
+	});
+
+	it('reports offline as plainly as online', () => {
+		expect(collectEnv({ ...BASE, online: false }).online).toBe('no');
+	});
+
 	it('carries a layout hash, never the layout', () => {
 		const env = collectEnv({ ...BASE });
 

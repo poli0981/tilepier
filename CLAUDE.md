@@ -24,7 +24,7 @@ ESLint 10 flat · Prettier 3 · knip.
 ## Commands
 
 ```
-pnpm verify         # clean → lint → knip → test → build → budgets (what CI runs)
+pnpm verify         # clean → lint → knip → i18n:check → test:cov → build → budgets
 pnpm dev            # dev server
 pnpm build          # clean + wrangler types + production build
 pnpm preview        # build, then wrangler dev against the built worker
@@ -35,6 +35,7 @@ pnpm clean          # remove build output
 pnpm lint           # prettier --check + eslint + svelte-check
 pnpm format         # prettier --write
 pnpm test           # vitest (node + browser projects)
+pnpm test:cov       # the same, with doc 19 §2 coverage thresholds (what CI runs)
 pnpm test:e2e       # playwright
 pnpm knip           # dead code (CI-blocking)
 pnpm budgets        # bundle budget gate (after build)

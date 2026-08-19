@@ -56,7 +56,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Test
-        run: pnpm test
+        run: pnpm test:cov
 
       - name: Build
         run: pnpm build
