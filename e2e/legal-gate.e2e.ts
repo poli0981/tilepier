@@ -73,11 +73,31 @@ test('deleting the gate node does not reveal the deck', async ({ page }) => {
 	await expect(page.getByRole('main')).toBeHidden();
 });
 
-test('legal pages are readable without accepting', async ({ page }) => {
-	for (const path of ['/legal/terms', '/legal/privacy', '/legal/licenses']) {
+test('prose pages are readable without accepting', async ({ page }) => {
+	// /about is on this list because doc 13 §11 makes it part of deciding
+	// whether to accept, not an afterthought reachable only from inside.
+	for (const path of ['/legal/terms', '/legal/privacy', '/legal/licenses', '/about']) {
 		await page.goto(path);
 		await expect(page.getByRole('dialog')).toHaveCount(0);
 		await expect(page.getByRole('heading').first()).toBeVisible();
+	}
+});
+
+test('prose pages ship both locales and show one', async ({ page }) => {
+	for (const path of ['/legal/terms', '/legal/privacy', '/legal/licenses', '/about']) {
+		await page.goto(path);
+		// Page content plus the shared back link in TpProse.
+		await expect(page.locator("[data-locale='vi']")).toHaveCount(2);
+		await expect(page.locator("[data-locale='en']").first()).toBeHidden();
+	}
+});
+
+test('the gate links to every prose page', async ({ page }) => {
+	await page.goto('/');
+	const gate = page.locator(".tp-gate [data-locale='vi']");
+
+	for (const path of ['/legal/terms', '/legal/privacy', '/legal/licenses', '/about']) {
+		await expect(gate.locator(`a[href$="${path}"]`)).toHaveCount(1);
 	}
 });
 

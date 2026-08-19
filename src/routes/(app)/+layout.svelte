@@ -48,6 +48,7 @@
 					<a href={resolve('/legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
 					<a href={resolve('/legal/licenses')}>{m['legal.licenses.title'](undefined, { locale })}</a
 					>
+					<a href={resolve('/about')}>{m['about.title'](undefined, { locale })}</a>
 				</p>
 				<button type="button" onclick={onAccept}>
 					{m['legal.gate.accept'](undefined, { locale })}

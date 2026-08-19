@@ -15,7 +15,7 @@ const BASE_LOCALE = 'vi';
 const LOCALES = ['vi', 'en'];
 
 /** doc 14 §2: shared strings under `common.*`, a widget owns `widget.<id>.*`. */
-const NAMESPACES = ['common', 'widget', 'settings', 'legal', 'error'];
+const NAMESPACES = ['common', 'widget', 'settings', 'legal', 'about', 'error'];
 
 const findings = [];
 

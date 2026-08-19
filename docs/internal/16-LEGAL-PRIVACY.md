@@ -19,8 +19,11 @@
 
 - First visit: blocking full-screen gate before the dashboard renders
   (SSR-rendered so it appears pre-JS). Content: one-paragraph summary +
-  links to `/legal/terms`, `/legal/privacy`, `/legal/licenses` + language
-  toggle + single "Tôi đồng ý / I agree" button.
+  links to `/legal/terms`, `/legal/privacy`, `/legal/licenses`, `/about` +
+  language toggle + single "Tôi đồng ý / I agree" button.
+  `/about` added 2026-08-19: doc 13 §11 says the gate should reach it so a
+  first-time visitor can find out what they are agreeing to *before* agreeing,
+  and this list was the only thing stopping that.
 - Acceptance stored in `tp.legal.v1` (doc 05 §2) with `LEGAL_VERSION`
   constant. Bumping the constant (material changes only) re-gates with a
   "what changed" line.
