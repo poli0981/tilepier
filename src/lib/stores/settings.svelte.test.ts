@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LOCAL_KEYS } from '$lib/shared-constants';
 import { defaultSettings, settings, type TpSettings } from './settings.svelte';
 
@@ -144,6 +144,20 @@ describe('patch and reset', () => {
 
 		expect(settings.accent).toBe('#ff8800');
 		expect(stored().accent).toBe('#ff8800');
+	});
+
+	it('does not write when the patch changes nothing', () => {
+		seed({ locale: 'vi' });
+		settings.hydrate();
+		const setItem = vi.spyOn(Storage.prototype, 'setItem');
+
+		settings.patch({ locale: 'vi' });
+
+		// Not a micro-optimisation. Paraglide's getLocale() writes the resolved
+		// locale back through every strategy the first time a message renders,
+		// and that call lands inside a component — a rune mutation there is
+		// state_unsafe_mutation, which took the whole deck down once.
+		expect(setItem).not.toHaveBeenCalled();
 	});
 
 	it('restores defaults', () => {

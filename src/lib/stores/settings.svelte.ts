@@ -199,6 +199,15 @@ class SettingsStore {
 	}
 
 	patch(partial: Partial<Omit<TpSettings, 'schemaVersion'>>): void {
+		// A patch that changes nothing must not touch state: it would write
+		// localStorage for no reason, wake every other tab with a `storage`
+		// event, and — the reason this guard exists — count as a rune mutation
+		// if a caller reached patch() from inside a render.
+		const changed = Object.entries(partial).some(
+			([key, value]) => this.#value[key as keyof TpSettings] !== value
+		);
+		if (!changed) return;
+
 		this.#value = { ...this.#value, ...partial };
 		writeVersioned(SETTINGS_SPEC, this.#value);
 	}

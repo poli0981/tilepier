@@ -1,23 +1,21 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-
 	"common.dismiss": "bỏ qua",
 	"common.back_to_deck": "◂ về bàn",
-
+	"common.retry": "thử lại",
+	"common.open_detail": "mở chi tiết",
+	"common.widget_crashed": "widget gặp lỗi",
 	"common.update.available": "phiên bản mới",
 	"common.update.reload": "tải lại",
 	"common.update.offline_ready": "sẵn sàng dùng ngoại tuyến",
-
 	"common.offline.page_title": "Ngoại tuyến — TilePier",
 	"common.offline.title": "ngoại tuyến",
 	"common.offline.body": "Không có kết nối. Bàn làm việc và dữ liệu đã lưu vẫn ở nguyên trên máy bạn.",
-
 	"legal.gate.summary": "Bảng điều khiển cục bộ. Không tài khoản, không theo dõi, không cookie. Dữ liệu của bạn ở lại trên máy bạn.",
 	"legal.gate.accept": "Tôi đồng ý",
 	"legal.terms.title": "Điều khoản",
 	"legal.privacy.title": "Riêng tư",
 	"legal.licenses.title": "Giấy phép",
-
 	"legal.terms.page_title": "Điều khoản — TilePier",
 	"legal.terms.intro": "TilePier là phần mềm tự do, chạy trên máy bạn. Bốn điều dưới đây là toàn bộ những gì cần nói rõ trước.",
 	"legal.terms.no_warranty.head": "Không bảo hành",
@@ -29,7 +27,6 @@
 	"legal.terms.discontinue.head": "Có thể ngừng",
 	"legal.terms.discontinue.body": "Bản hosted có thể thay đổi hoặc ngừng bất cứ lúc nào. Dữ liệu của bạn nằm trên máy bạn nên việc đó không lấy đi thứ gì; dù vậy, hãy xuất một bản sao nếu bạn muốn chắc chắn.",
 	"legal.terms.licence_note": "Mã nguồn phát hành theo GPL-3.0-only.",
-
 	"legal.privacy.page_title": "Riêng tư — TilePier",
 	"legal.privacy.intro": "TilePier không thu thập gì về bạn. Đây là toàn bộ những gì đáng nói.",
 	"legal.privacy.no_tracking": "Không tài khoản, không phân tích, không telemetry, không quảng cáo, không cookie.",
@@ -38,7 +35,6 @@
 	"legal.privacy.coordinates": "Toạ độ được làm tròn khoảng 1 km trước khi rời khỏi máy bạn. Các tìm kiếm — địa danh, mã chứng khoán, địa chỉ RSS — buộc phải đi qua proxy mới trả lời được, và được cache ẩn danh.",
 	"legal.privacy.bug_reports": "Báo lỗi do bạn chủ động gửi và tự xem lại nội dung trước khi gửi. Không có gì được gửi đi tự động.",
 	"legal.privacy.deletion": "Xoá dữ liệu là xoá bộ nhớ trình duyệt, hoặc bấm \"xoá toàn bộ dữ liệu\" trong phần cài đặt.",
-
 	"legal.licenses.page_title": "Giấy phép — TilePier",
 	"legal.licenses.intro": "TilePier phát hành theo GPL-3.0-only. Trang này ghi nhận các nguồn dữ liệu và thư viện mà nó dựa vào.",
 	"legal.licenses.col_item": "Thành phần",
@@ -55,7 +51,6 @@
 	"legal.licenses.ob_fonts": "Văn bản OFL đi kèm tệp phông; phông không được bán riêng.",
 	"legal.licenses.ob_lunar": "Ghi công tại đây và trong mã nguồn của module âm lịch.",
 	"legal.licenses.deps_pending": "Danh sách giấy phép của từng thư viện phụ thuộc được sinh tự động và bổ sung ở bản 1.0.",
-
 	"about.page_title": "Giới thiệu — TilePier",
 	"about.title": "Giới thiệu",
 	"about.what_is": "TilePier là một bàn làm việc gồm các ô widget, chạy hoàn toàn trong trình duyệt trên máy bạn. Không tài khoản, không đồng bộ, không máy chủ nào giữ dữ liệu của bạn. Bạn sắp xếp bàn theo ý mình và nó ở nguyên đó.",
@@ -65,5 +60,7 @@
 	"about.limitations.layout": "Bố cục được lưu một bản duy nhất chứ không lưu riêng theo từng bề ngang màn hình. Sắp xếp lại trên màn hình hẹp sẽ ghi đè bản đang có.",
 	"about.limitations.tabs": "Mở TilePier ở hai thẻ cùng lúc là hợp lệ, nhưng thẻ ghi sau thắng. Bố cục và cài đặt đồng bộ giữa các thẻ; dữ liệu trong cơ sở dữ liệu thì chỉ cập nhật khi tải lại.",
 	"about.links.repo": "Mã nguồn",
-	"about.links.licence": "Giấy phép"
+	"about.links.licence": "Giấy phép",
+	"widget.clock.title": "Đồng hồ",
+	"widget.clock.blurb": "Giờ địa phương, ngày, và các múi giờ bạn theo dõi."
 }

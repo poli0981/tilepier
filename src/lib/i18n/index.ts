@@ -1,4 +1,4 @@
-import { defineCustomClientStrategy, isLocale, locales } from '$lib/paraglide/runtime';
+import { defineCustomClientStrategy, getLocale, isLocale, locales } from '$lib/paraglide/runtime';
 import { settings } from '$lib/stores/settings.svelte';
 
 /**
@@ -26,7 +26,20 @@ export function installLocaleStrategy(): void {
 	defineCustomClientStrategy(TP_STRATEGY, {
 		getLocale: () => settings.locale,
 		setLocale: (locale) => {
-			if (isLocale(locale)) settings.patch({ locale });
+			if (!isLocale(locale)) return;
+			if (locale === settings.locale) return;
+			// Deferred, because Paraglide calls this from inside getLocale() the
+			// first time a message resolves (runtime.js: `setLocale(resolved,
+			// { reload: false })` once `localeInitiallySet` flips). That first
+			// call almost always happens inside a component render, and a rune
+			// mutation there is `state_unsafe_mutation`. The equality guard above
+			// makes the write-back a no-op in practice; this covers the case
+			// where a later strategy genuinely resolved something else.
+			queueMicrotask(() => settings.patch({ locale }));
 		}
 	});
+
+	// Resolve once here, outside any render, so `localeInitiallySet` flips in a
+	// context where a write-back would be safe rather than mid-component.
+	getLocale();
 }

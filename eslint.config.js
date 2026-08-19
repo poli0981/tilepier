@@ -37,8 +37,14 @@ export default defineConfig(
 		}
 	},
 	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			// Positional snippet and callback parameters cannot be skipped, so a
+			// leading underscore is how an unused one is declared deliberately —
+			// `{#snippet failed(_error, reset)}` needs the first slot filled.
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+			]
+		}
 	}
 );

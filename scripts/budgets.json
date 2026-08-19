@@ -52,7 +52,7 @@
 			"kind": "module-each",
 			"module": "^src/lib/widgets/[^/]+/Tp[A-Za-z]+Widget\\.svelte$",
 			"maxGzipBytes": 40960,
-			"optional": true
+			"note": "Enforced from Week 1: clock exists, so a misnamed file must fail rather than silently stop being measured (doc 20 §6)."
 		},
 		{
 			"id": "detail",

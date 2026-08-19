@@ -2,6 +2,7 @@
 	import { GridStack, type GridStackNode, type GridItemHTMLElement } from 'gridstack';
 	import 'gridstack/dist/gridstack.css';
 	import { mount, unmount, untrack, type Component } from 'svelte';
+	import type { TpWidgetProps } from '$lib/core/types';
 	import TpWidgetHost from './TpWidgetHost.svelte';
 	import { serialise, toGridStackWidget, type TpLayout, type TpTile } from './layout';
 
@@ -25,7 +26,7 @@
 	interface Props {
 		tiles: TpTile[];
 		/** Registry stand-in: instanceId's widget component, by widgetId. */
-		widgets: Record<string, Component<{ instanceId: string; settings: Record<string, unknown> }>>;
+		widgets: Record<string, Component<TpWidgetProps>>;
 		editMode?: boolean;
 		onLayoutChange?: (layout: TpLayout) => void;
 		onOpenDetail?: (instanceId: string) => void;

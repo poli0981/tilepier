@@ -1,23 +1,21 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-
 	"common.dismiss": "dismiss",
 	"common.back_to_deck": "◂ back to the deck",
-
+	"common.retry": "retry",
+	"common.open_detail": "open detail",
+	"common.widget_crashed": "this widget hit an error",
 	"common.update.available": "new version",
 	"common.update.reload": "reload",
 	"common.update.offline_ready": "ready to use offline",
-
 	"common.offline.page_title": "Offline — TilePier",
 	"common.offline.title": "offline",
 	"common.offline.body": "No connection. Your deck and everything saved stay on your device.",
-
 	"legal.gate.summary": "A local dashboard. No accounts, no tracking, no cookies. Your data stays on your device.",
 	"legal.gate.accept": "I agree",
 	"legal.terms.title": "Terms",
 	"legal.privacy.title": "Privacy",
 	"legal.licenses.title": "Licences",
-
 	"legal.terms.page_title": "Terms — TilePier",
 	"legal.terms.intro": "TilePier is free software that runs on your own device. These four points are everything worth saying up front.",
 	"legal.terms.no_warranty.head": "No warranty",
@@ -29,7 +27,6 @@
 	"legal.terms.discontinue.head": "It can stop",
 	"legal.terms.discontinue.body": "The hosted instance may change or shut down at any time. Your data lives on your device, so that takes nothing away; even so, export a copy if you want to be sure.",
 	"legal.terms.licence_note": "The source is released under GPL-3.0-only.",
-
 	"legal.privacy.page_title": "Privacy — TilePier",
 	"legal.privacy.intro": "TilePier collects nothing about you. This is all there is to say.",
 	"legal.privacy.no_tracking": "No accounts, no analytics, no telemetry, no ads, no cookies.",
@@ -38,7 +35,6 @@
 	"legal.privacy.coordinates": "Coordinates are rounded to roughly 1 km before they leave your device. Searches — place names, ticker symbols, RSS addresses — necessarily pass through the proxy to be answered, and are cached anonymously.",
 	"legal.privacy.bug_reports": "Bug reports are sent by you, and you review the contents before sending. Nothing is sent automatically.",
 	"legal.privacy.deletion": "Deleting your data means clearing browser storage, or pressing \"erase all data\" in settings.",
-
 	"legal.licenses.page_title": "Licences — TilePier",
 	"legal.licenses.intro": "TilePier is released under GPL-3.0-only. This page credits the data sources and libraries it stands on.",
 	"legal.licenses.col_item": "Component",
@@ -55,7 +51,6 @@
 	"legal.licenses.ob_fonts": "OFL text ships with the font files; the fonts are not sold separately.",
 	"legal.licenses.ob_lunar": "Credit here and in the lunar module's source.",
 	"legal.licenses.deps_pending": "The per-dependency licence list is generated and added in the 1.0 release.",
-
 	"about.page_title": "About — TilePier",
 	"about.title": "About",
 	"about.what_is": "TilePier is a deck of widget tiles that runs entirely in the browser on your own device. No accounts, no sync, no server holding your data. You arrange the deck how you like and it stays that way.",
@@ -65,5 +60,7 @@
 	"about.limitations.layout": "The layout is stored once, not separately per screen width. Rearranging on a narrow screen overwrites the arrangement you had.",
 	"about.limitations.tabs": "Two TilePier tabs at once is fine, but the last write wins. Layout and settings sync between tabs; database contents only refresh on reload.",
 	"about.links.repo": "Source",
-	"about.links.licence": "Licence"
+	"about.links.licence": "Licence",
+	"widget.clock.title": "Clock",
+	"widget.clock.blurb": "Local time, the date, and the zones you follow."
 }
