@@ -1,34 +1,28 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
+	import { untrack, type Component } from 'svelte';
 	import type TpGridType from '$lib/core/grid/TpGrid.svelte';
 	import type { TpLayout } from '$lib/core/grid/layout';
 	import { getManifest } from '$lib/core/registry';
 	import type { TpWidgetProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
+	import { ui } from '$lib/stores/ui.svelte';
 
 	/**
 	 * The deck (doc 03 §Rendering). The page is prerendered, but nothing renders
 	 * here until the layout has been read from client storage — the server emits
 	 * an empty deck area on purpose, so there is nothing to flash.
 	 *
-	 * **TpGrid is imported dynamically, and has to be.** It pulls in gridstack,
-	 * whose ESM build uses extensionless relative imports; bundlers accept those
-	 * and Node's ESM resolver does not, so a static import fails the prerender
-	 * of `/` with ERR_MODULE_NOT_FOUND. `ssr = false` would also "fix" it and is
-	 * ruled out by doc 03 — it strips the legal gate out of the HTML. Loading it
-	 * on the client is the honest answer anyway: gridstack is a DOM library with
-	 * nothing to contribute to a server render, and this keeps it out of the
-	 * entry chunk.
-	 *
-	 * The top bar, the add-widget drawer and the edit-mode chrome arrive with
-	 * doc 13 §1–§4. What exists now is the keyboard half of doc 13 §8, which is
-	 * enough to arrange a deck and prove it persists.
+	 * **TpGrid is imported dynamically, and has to be** (doc 06 §5 rule 10).
+	 * gridstack's ESM build uses extensionless relative imports; bundlers
+	 * resolve those and Node's ESM resolver does not, so a static import fails
+	 * the prerender of `/`. Loading it on the client is right anyway — a DOM
+	 * library has nothing to contribute to a server render, and this keeps it
+	 * out of the entry chunk.
 	 */
 	let TpGrid = $state<typeof TpGridType | null>(null);
 	let gridRef = $state<ReturnType<typeof TpGridType> | null>(null);
 	let components = $state<Record<string, Component<TpWidgetProps>> | null>(null);
-	let editMode = $state(false);
 
 	$effect(() => {
 		// Synchronises the store with localStorage once, on mount.
@@ -64,23 +58,54 @@
 		};
 	});
 
+	/**
+	 * Reconciles the grid against the store.
+	 *
+	 * doc 06 §5 rule 9: `tiles` is a seed the grid reads once, so a tile the
+	 * drawer adds never arrives through the prop. Something has to carry it,
+	 * and a diff here beats an event channel from the layout — this is also the
+	 * one place that has to stay right when import or reset replaces the whole
+	 * deck at once.
+	 *
+	 * `synced` is a plain binding, not state: writing it must not re-trigger.
+	 */
+	let synced: Set<string> | null = null;
+
+	$effect(() => {
+		const grid = gridRef;
+		const tiles = deck.tiles;
+		if (grid === null) return;
+
+		untrack(() => {
+			if (synced === null) {
+				// TpGrid mounted the seed itself from the prop; adopt it.
+				synced = new Set(tiles.map((tile) => tile.instanceId));
+				return;
+			}
+
+			const next = new Set(tiles.map((tile) => tile.instanceId));
+			for (const tile of tiles) {
+				if (!synced.has(tile.instanceId)) grid.addTile(tile);
+			}
+			for (const id of synced) {
+				if (!next.has(id)) grid.removeTile(id);
+			}
+			synced = next;
+		});
+	});
+
 	function onLayoutChange(layout: TpLayout): void {
 		deck.applyLayout(layout);
 	}
 
-	// doc 13 §8: `e` toggles edit, Esc closes the topmost layer. The visible
-	// affordances for both land with the top bar.
-	function onKeydown(event: KeyboardEvent): void {
-		const target = event.target;
-		// Never steal a keystroke from something the user is typing into.
-		if (target instanceof HTMLElement && target.isContentEditable) return;
-		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+	function onRemove(instanceId: string): void {
+		// doc 06 §4: removing a tile never deletes the underlying data, so there
+		// is nothing to confirm. The reconcile effect takes it off the grid.
+		deck.remove(instanceId);
+	}
 
-		if (event.key === 'e' && !event.metaKey && !event.ctrlKey && !event.altKey) {
-			editMode = !editMode;
-		} else if (event.key === 'Escape') {
-			editMode = false;
-		}
+	function onUpdateSettings(instanceId: string, partial: Record<string, unknown>): void {
+		deck.updateSettings(instanceId, partial);
 	}
 </script>
 
@@ -89,9 +114,7 @@
 	<meta name="description" content={m['common.deck.description']()} />
 </svelte:head>
 
-<svelte:window onkeydown={onKeydown} />
-
-<main data-edit={editMode ? 'on' : 'off'}>
+<main data-edit={ui.editMode ? 'on' : 'off'}>
 	{#if deck.loaded && deck.tiles.length === 0}
 		<p class="tp-deck__empty">{m['common.deck.empty']()}</p>
 	{:else if TpGrid !== null && components !== null}
@@ -99,8 +122,10 @@
 			bind:this={gridRef}
 			tiles={deck.tiles}
 			widgets={components}
-			{editMode}
+			editMode={ui.editMode}
 			{onLayoutChange}
+			{onRemove}
+			{onUpdateSettings}
 		/>
 	{/if}
 </main>
@@ -110,7 +135,7 @@
 		max-width: 1680px;
 		margin: 0 auto;
 		padding: var(--tp-page-pad, 16px);
-		min-height: 100dvh;
+		min-height: calc(100dvh - var(--tp-bar-h, 48px));
 	}
 
 	@media (min-width: 768px) {

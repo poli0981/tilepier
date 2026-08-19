@@ -26,10 +26,11 @@
 		// exactOptionalPropertyTypes, so an optional prop cannot be handed an
 		// explicit undefined unless the type says so.
 		onOpenDetail?: ((instanceId: string) => void) | undefined;
+		onRemove?: ((instanceId: string) => void) | undefined;
 		onUpdateSettings?: ((instanceId: string, partial: Record<string, unknown>) => void) | undefined;
 	}
 
-	let { tile, widget: Widget, onOpenDetail, onUpdateSettings }: Props = $props();
+	let { tile, widget: Widget, onOpenDetail, onRemove, onUpdateSettings }: Props = $props();
 
 	const manifest = $derived(getManifest(tile.widgetId));
 	const labels = $derived(manifest === undefined ? undefined : widgetLabels(manifest.id));
@@ -96,6 +97,22 @@
 			onclick={() => onOpenDetail?.(tile.instanceId)}
 		>
 			<TpIcon name="expand" size={14} />
+		</button>
+		<!--
+			doc 13 §2: the remove control belongs to edit mode. It is always in the
+			markup and revealed by the grid's `.tp-edit` class, because hosts are
+			mounted imperatively and cannot take a reactive prop. `display: none`
+			also keeps it out of the accessibility tree while hidden.
+			No confirm: doc 06 §4 — removing a tile never deletes data.
+		-->
+		<button
+			type="button"
+			class="tp-host__remove"
+			aria-label={m['common.remove_tile']()}
+			data-testid="remove-{tile.instanceId}"
+			onclick={() => onRemove?.(tile.instanceId)}
+		>
+			<TpIcon name="close" size={14} />
 		</button>
 	</header>
 	<div class="tp-host__body">
@@ -179,6 +196,24 @@
 
 	.tp-host__open:hover {
 		color: var(--color-beacon);
+	}
+
+	.tp-host__remove {
+		display: none;
+		border: 0;
+		background: none;
+		color: var(--color-fg-dim);
+		cursor: pointer;
+		line-height: 1;
+		padding: 0.25rem;
+	}
+
+	:global(.tp-edit) .tp-host__remove {
+		display: flex;
+	}
+
+	.tp-host__remove:hover {
+		color: var(--color-danger);
 	}
 
 	.tp-host__body {

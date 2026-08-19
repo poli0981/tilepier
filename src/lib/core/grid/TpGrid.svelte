@@ -33,6 +33,8 @@
 		editMode?: boolean;
 		onLayoutChange?: (layout: TpLayout) => void;
 		onOpenDetail?: (instanceId: string) => void;
+		onRemove?: (instanceId: string) => void;
+		onUpdateSettings?: (instanceId: string, partial: Record<string, unknown>) => void;
 		/** Fires whenever a host is mounted or unmounted — see the note on `hosts`. */
 		onHostsChange?: (count: number) => void;
 	}
@@ -43,6 +45,8 @@
 		editMode = false,
 		onLayoutChange,
 		onOpenDetail,
+		onRemove,
+		onUpdateSettings,
 		onHostsChange
 	}: Props = $props();
 
@@ -89,7 +93,13 @@
 		// here that shows up as simply not mounting anything.
 		hosts.set(
 			tile.instanceId,
-			mount(TpWidgetHost, { target, props: { tile, widget, onOpenDetail } })
+			// Static props: hosts are mounted imperatively, so anything that
+			// changes after mount — edit mode, notably — reaches them through the
+			// `.tp-edit` class on this container rather than through here.
+			mount(TpWidgetHost, {
+				target,
+				props: { tile, widget, onOpenDetail, onRemove, onUpdateSettings }
+			})
 		);
 		onHostsChange?.(hosts.size);
 	}

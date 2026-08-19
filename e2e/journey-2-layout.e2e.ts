@@ -3,10 +3,9 @@ import { expect, test, type Page } from '@playwright/test';
 /**
  * doc 19 §4 journey #2 — layout persistence.
  *
- * The "add widget" step needs the drawer (doc 13 §4), which lands with the top
- * bar; this covers everything that exists: the seeded deck renders, edit mode
- * is reachable, a drag survives a reload, and a layout naming a widget this
- * build does not have degrades instead of breaking.
+ * The full loop: the seeded deck renders, the drawer adds a tile, edit mode is
+ * reachable, a drag survives a reload, a tile can be removed, and a layout
+ * naming a widget this build does not have degrades instead of breaking.
  */
 
 const LAYOUT_KEY = 'tp.layout.v1';
@@ -154,4 +153,64 @@ test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) =
 	const layout = await storedLayout(page);
 	expect(layout?.grid).toHaveLength(1);
 	expect(layout?.grid[0]?.widgetId).toBe('clock');
+});
+
+test('the drawer adds a widget, and it survives a reload', async ({ page }) => {
+	await acceptGate(page);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+
+	// doc 13 §4: the drawer is an edit-mode surface, so opening it enters.
+	await page.getByTestId('open-drawer').click();
+	await expect(page.getByTestId('add-drawer')).toBeVisible();
+	await expect(page.getByRole('main')).toHaveAttribute('data-edit', 'on');
+
+	await page.getByTestId('add-clock').click();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+
+	await page.reload();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+});
+
+test('a tile can be removed, and the removal sticks', async ({ page }) => {
+	await acceptGate(page);
+	await page.getByTestId('open-drawer').click();
+	await page.getByTestId('add-clock').click();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await page.getByTestId('drawer-scrim').click();
+
+	// doc 06 §4: no confirm — removing a tile never deletes underlying data.
+	await page.locator('[data-testid^="remove-"]').first().click();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+
+	await page.reload();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+});
+
+test('the coach shows once and stays dismissed', async ({ page }) => {
+	await acceptGate(page);
+
+	// doc 13 §9. "Forever" is tp.settings.v1.coachDismissed — there is no
+	// fourth localStorage key for it.
+	await expect(page.getByTestId('coach')).toBeVisible();
+	await page.getByTestId('coach-dismiss').click();
+	await expect(page.getByTestId('coach')).toBeHidden();
+
+	await page.reload();
+	await expect(page.getByTestId('coach')).toBeHidden();
+});
+
+test('Escape unwinds the drawer first, then edit mode', async ({ page }) => {
+	await acceptGate(page);
+	const main = page.getByRole('main');
+
+	await page.getByTestId('open-drawer').click();
+	await expect(page.getByTestId('add-drawer')).toBeVisible();
+
+	// doc 13 §8: Esc closes the topmost layer, one at a time.
+	await page.keyboard.press('Escape');
+	await expect(page.getByTestId('add-drawer')).toBeHidden();
+	await expect(main).toHaveAttribute('data-edit', 'on');
+
+	await page.keyboard.press('Escape');
+	await expect(main).toHaveAttribute('data-edit', 'off');
 });

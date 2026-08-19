@@ -4,8 +4,41 @@
 	import { acceptLegal, hasAcceptedLegal } from '$lib/core/legal';
 	import { LOCALES } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
+	import { deck } from '$lib/stores/deck.svelte';
+	import { ui } from '$lib/stores/ui.svelte';
+	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
+	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
+	import TpTopBar from '$lib/ui/TpTopBar.svelte';
+	import type { TpWidgetId } from '$lib/core/types';
 
 	let { children } = $props();
+
+	/**
+	 * doc 13 §8's global keys live here rather than on the deck page, because
+	 * the bar and the drawer are layout-level and `/settings` is a sibling
+	 * route. `?` opens the shortcuts sheet, which lands with the settings page.
+	 */
+	function onKeydown(event: KeyboardEvent): void {
+		const target = event.target;
+		// Never take a keystroke from something the user is typing into — the
+		// drawer's search field is one keypress away from this handler.
+		if (target instanceof HTMLElement && target.isContentEditable) return;
+		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+		if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+		if (event.key === 'e') ui.toggleEdit();
+		else if (event.key === 'Escape') ui.escape();
+	}
+
+	/**
+	 * The drawer only ever touches the store. The deck page reconciles the grid
+	 * against it — doc 06 §5 rule 9 says the `tiles` prop will not carry a
+	 * change across, so something has to, and a diff in one place beats an
+	 * event channel between a layout and its child.
+	 */
+	function onAdd(widgetId: TpWidgetId): void {
+		deck.add(widgetId);
+	}
 
 	// Defence in depth for the gate. boot.js normally sets data-legal before
 	// first paint, but it is a separate request that an extension, a proxy, or a
@@ -79,8 +112,13 @@
 	</div>
 </div>
 
+<svelte:window onkeydown={onKeydown} />
+
 <div class="tp-app">
+	<TpTopBar />
 	{@render children()}
+	<TpAddDrawer {onAdd} />
+	<TpCoachOverlay />
 </div>
 
 <style>
