@@ -58,5 +58,13 @@ export function installLocaleStrategy(): void {
  */
 export function switchLocale(next: TpLocale): void {
 	if (next === settings.locale) return;
+
+	// Written synchronously, *before* setLocale, because setLocale reloads the
+	// page. The custom strategy defers its own write to a microtask to survive
+	// Paraglide's render-time write-back, and that deferral races the reload:
+	// under load the navigation wins and the new page reads the old locale.
+	// This path is a click handler, not a render, so writing here is safe — and
+	// it makes the strategy's setLocale a no-op via its equality guard.
+	settings.patch({ locale: next });
 	setLocale(next);
 }

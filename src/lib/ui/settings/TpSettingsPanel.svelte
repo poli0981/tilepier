@@ -75,236 +75,254 @@
 	}
 </script>
 
-<h1>{m['settings.title']()}</h1>
+<!--
+	`data-ready` marks hydration. Every control here is an onclick, which does
+	nothing until the bundle attaches — true of any hydrated page, and not worth
+	disabling a dozen controls over the way the consent gate was. What it is
+	worth is a deterministic signal, so a test waits for the page to be live
+	instead of racing it and a future keyboard-driven surface can do the same.
+-->
+<div class="tp-settings" data-ready={browser}>
+	<h1>{m['settings.title']()}</h1>
 
-<section aria-labelledby="s-language">
-	<h2 id="s-language">{m['settings.language.title']()}</h2>
-	<div class="tp-row">
-		<span>{m['settings.language.label']()}</span>
-		<div class="tp-segmented" role="group" aria-labelledby="s-language">
-			{#each LOCALES as locale (locale)}
-				<button
-					type="button"
-					aria-pressed={settings.locale === locale}
-					data-testid="locale-{locale}"
-					onclick={() => switchLocale(locale as TpLocale)}
-				>
-					{locale === 'vi' ? 'Tiếng Việt' : 'English'}
-				</button>
-			{/each}
+	<section aria-labelledby="s-language">
+		<h2 id="s-language">{m['settings.language.title']()}</h2>
+		<div class="tp-row">
+			<span>{m['settings.language.label']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-language">
+				{#each LOCALES as locale (locale)}
+					<button
+						type="button"
+						aria-pressed={settings.locale === locale}
+						data-testid="locale-{locale}"
+						onclick={() => switchLocale(locale as TpLocale)}
+					>
+						{locale === 'vi' ? 'Tiếng Việt' : 'English'}
+					</button>
+				{/each}
+			</div>
 		</div>
-	</div>
-	<p class="tp-note">{m['settings.language.reload_note']()}</p>
-</section>
+		<p class="tp-note">{m['settings.language.reload_note']()}</p>
+	</section>
 
-<section aria-labelledby="s-appearance">
-	<h2 id="s-appearance">{m['settings.appearance.title']()}</h2>
+	<section aria-labelledby="s-appearance">
+		<h2 id="s-appearance">{m['settings.appearance.title']()}</h2>
 
-	<div class="tp-row">
-		<span>{m['settings.appearance.theme']()}</span>
-		<div class="tp-segmented" role="group" aria-labelledby="s-appearance">
-			{#each THEMES as theme (theme)}
-				<button
-					type="button"
-					aria-pressed={settings.theme === theme}
-					data-testid="theme-{theme}"
-					onclick={() => settings.patch({ theme })}
-				>
-					{m[`settings.appearance.theme_${theme}`]()}
-				</button>
-			{/each}
+		<div class="tp-row">
+			<span>{m['settings.appearance.theme']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-appearance">
+				{#each THEMES as theme (theme)}
+					<button
+						type="button"
+						aria-pressed={settings.theme === theme}
+						data-testid="theme-{theme}"
+						onclick={() => settings.patch({ theme })}
+					>
+						{m[`settings.appearance.theme_${theme}`]()}
+					</button>
+				{/each}
+			</div>
 		</div>
-	</div>
 
-	<div class="tp-row">
-		<span>{m['settings.appearance.accent']()}</span>
-		<div class="tp-swatches">
-			{#each ACCENTS as accent (accent)}
-				<button
-					type="button"
-					class="tp-swatch"
-					class:selected={settings.accent === accent}
-					style="--swatch: {accent}"
-					aria-label={accent}
-					aria-pressed={settings.accent === accent}
-					data-testid="accent-{accent.slice(1)}"
-					onclick={() => settings.patch({ accent })}
-				></button>
-			{/each}
+		<div class="tp-row">
+			<span>{m['settings.appearance.accent']()}</span>
+			<div class="tp-swatches">
+				{#each ACCENTS as accent (accent)}
+					<button
+						type="button"
+						class="tp-swatch"
+						class:selected={settings.accent === accent}
+						style="--swatch: {accent}"
+						aria-label={accent}
+						aria-pressed={settings.accent === accent}
+						data-testid="accent-{accent.slice(1)}"
+						onclick={() => settings.patch({ accent })}
+					></button>
+				{/each}
+				<input
+					type="color"
+					value={settings.accent}
+					aria-label={m['settings.appearance.accent_custom']()}
+					oninput={(event) => settings.patch({ accent: event.currentTarget.value })}
+				/>
+			</div>
+		</div>
+
+		<div class="tp-row">
+			<span>{m['settings.appearance.motion']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-appearance">
+				{#each MOTION as value (value)}
+					<button
+						type="button"
+						aria-pressed={settings.reducedMotion === value}
+						data-testid="motion-{value}"
+						onclick={() => settings.patch({ reducedMotion: value })}
+					>
+						{m[`settings.appearance.motion_${value}`]()}
+					</button>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<section aria-labelledby="s-display">
+		<h2 id="s-display">{m['settings.display.title']()}</h2>
+
+		<div class="tp-row">
+			<label for="clock24h">{m['settings.display.clock24h']()}</label>
 			<input
-				type="color"
-				value={settings.accent}
-				aria-label={m['settings.appearance.accent_custom']()}
-				oninput={(event) => settings.patch({ accent: event.currentTarget.value })}
+				id="clock24h"
+				type="checkbox"
+				checked={settings.clock24h}
+				data-testid="clock24h"
+				onchange={(event) => settings.patch({ clock24h: event.currentTarget.checked })}
 			/>
 		</div>
-	</div>
 
-	<div class="tp-row">
-		<span>{m['settings.appearance.motion']()}</span>
-		<div class="tp-segmented" role="group" aria-labelledby="s-appearance">
-			{#each MOTION as value (value)}
-				<button
-					type="button"
-					aria-pressed={settings.reducedMotion === value}
-					data-testid="motion-{value}"
-					onclick={() => settings.patch({ reducedMotion: value })}
-				>
-					{m[`settings.appearance.motion_${value}`]()}
-				</button>
-			{/each}
+		<div class="tp-row">
+			<label for="week-start">{m['settings.display.week_start']()}</label>
+			<select
+				id="week-start"
+				value={String(settings.weekStartsOn)}
+				data-testid="week-start"
+				onchange={(event) =>
+					settings.patch({ weekStartsOn: event.currentTarget.value === '1' ? 1 : 0 })}
+			>
+				<option value="1">{m['settings.display.week_monday']()}</option>
+				<option value="0">{m['settings.display.week_sunday']()}</option>
+			</select>
 		</div>
-	</div>
-</section>
+	</section>
 
-<section aria-labelledby="s-display">
-	<h2 id="s-display">{m['settings.display.title']()}</h2>
+	<section aria-labelledby="s-deck">
+		<h2 id="s-deck">{m['settings.deck.title']()}</h2>
+		<div class="tp-row">
+			<span>{m['settings.deck.reset']()}</span>
+			<button type="button" class="tp-action" data-testid="reset-deck" onclick={resetDeck}>
+				{m['settings.deck.reset_action']()}
+			</button>
+		</div>
+		<p class="tp-note">{m['settings.deck.reset_note']()}</p>
+	</section>
 
-	<div class="tp-row">
-		<label for="clock24h">{m['settings.display.clock24h']()}</label>
-		<input
-			id="clock24h"
-			type="checkbox"
-			checked={settings.clock24h}
-			data-testid="clock24h"
-			onchange={(event) => settings.patch({ clock24h: event.currentTarget.checked })}
-		/>
-	</div>
+	<section aria-labelledby="s-storage">
+		<h2 id="s-storage">{m['settings.storage.title']()}</h2>
 
-	<div class="tp-row">
-		<label for="week-start">{m['settings.display.week_start']()}</label>
-		<select
-			id="week-start"
-			value={String(settings.weekStartsOn)}
-			data-testid="week-start"
-			onchange={(event) =>
-				settings.patch({ weekStartsOn: event.currentTarget.value === '1' ? 1 : 0 })}
-		>
-			<option value="1">{m['settings.display.week_monday']()}</option>
-			<option value="0">{m['settings.display.week_sunday']()}</option>
-		</select>
-	</div>
-</section>
+		<div class="tp-row">
+			<span>{m['settings.storage.used']()}</span>
+			<span class="tp-num" data-testid="storage-estimate">
+				{#if estimate === null}
+					—
+				{:else}
+					{mb(estimate.usage)} / {mb(estimate.quota)}
+				{/if}
+			</span>
+		</div>
 
-<section aria-labelledby="s-deck">
-	<h2 id="s-deck">{m['settings.deck.title']()}</h2>
-	<div class="tp-row">
-		<span>{m['settings.deck.reset']()}</span>
-		<button type="button" class="tp-action" data-testid="reset-deck" onclick={resetDeck}>
-			{m['settings.deck.reset_action']()}
-		</button>
-	</div>
-	<p class="tp-note">{m['settings.deck.reset_note']()}</p>
-</section>
+		{#if usedPercent !== null && usedPercent > 80}
+			<!-- doc 05 §7: warn past 80 %, before an import is the thing that fails. -->
+			<p class="tp-warn" role="status">
+				{m['settings.storage.nearly_full']({ percent: usedPercent })}
+			</p>
+		{/if}
 
-<section aria-labelledby="s-storage">
-	<h2 id="s-storage">{m['settings.storage.title']()}</h2>
-
-	<div class="tp-row">
-		<span>{m['settings.storage.used']()}</span>
-		<span class="tp-num" data-testid="storage-estimate">
-			{#if estimate === null}
-				—
+		<div class="tp-row">
+			<span>{m['settings.storage.erase']()}</span>
+			{#if eraseArmed}
+				<span class="tp-confirm">
+					<button
+						type="button"
+						class="tp-action tp-action--danger"
+						data-testid="erase-confirm"
+						onclick={eraseEverything}
+					>
+						{m['settings.storage.erase_confirm']()}
+					</button>
+					<button type="button" class="tp-action" onclick={() => (eraseArmed = false)}>
+						{m['settings.storage.erase_cancel']()}
+					</button>
+				</span>
 			{:else}
-				{mb(estimate.usage)} / {mb(estimate.quota)}
-			{/if}
-		</span>
-	</div>
-
-	{#if usedPercent !== null && usedPercent > 80}
-		<!-- doc 05 §7: warn past 80 %, before an import is the thing that fails. -->
-		<p class="tp-warn" role="status">
-			{m['settings.storage.nearly_full']({ percent: usedPercent })}
-		</p>
-	{/if}
-
-	<div class="tp-row">
-		<span>{m['settings.storage.erase']()}</span>
-		{#if eraseArmed}
-			<span class="tp-confirm">
 				<button
 					type="button"
 					class="tp-action tp-action--danger"
-					data-testid="erase-confirm"
-					onclick={eraseEverything}
+					data-testid="erase-data"
+					onclick={() => (eraseArmed = true)}
 				>
-					{m['settings.storage.erase_confirm']()}
+					{m['settings.storage.erase_action']()}
 				</button>
-				<button type="button" class="tp-action" onclick={() => (eraseArmed = false)}>
-					{m['settings.storage.erase_cancel']()}
-				</button>
-			</span>
-		{:else}
+			{/if}
+		</div>
+		<p class="tp-note">{m['settings.storage.erase_note']()}</p>
+	</section>
+
+	{#if debugOn}
+		<section aria-labelledby="s-diagnostics" data-testid="diagnostics">
+			<h2 id="s-diagnostics">{m['settings.diagnostics.title']()}</h2>
+
+			<h3>{m['settings.diagnostics.scheduler']()}</h3>
+			{#if scheduler.inspect().length === 0}
+				<p class="tp-note">{m['settings.diagnostics.no_tasks']()}</p>
+			{:else}
+				<div class="tp-scroll">
+					<table>
+						<tbody>
+							{#each scheduler.inspect() as task (task.id)}
+								<tr>
+									<td>{task.label}</td>
+									<td>{task.state}</td>
+									<td class="tp-num">{task.consecutiveFailures}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+
+			<h3>{m['settings.diagnostics.log']()}</h3>
+			<pre data-testid="diagnostics-log">{readLog()
+					.map((entry) => `${entry.level} [${entry.src}] ${entry.msg}`)
+					.join('\n')}</pre>
+		</section>
+	{/if}
+
+	<section aria-labelledby="s-report">
+		<h2 id="s-report">{m['settings.report.title']()}</h2>
+		<div class="tp-row">
+			<span>{m['settings.report.label']()}</span>
 			<button
 				type="button"
-				class="tp-action tp-action--danger"
-				data-testid="erase-data"
-				onclick={() => (eraseArmed = true)}
+				class="tp-action"
+				data-testid="open-bug"
+				onclick={() => (bugOpen = true)}
 			>
-				{m['settings.storage.erase_action']()}
+				{m['settings.report.open']()}
 			</button>
-		{/if}
-	</div>
-	<p class="tp-note">{m['settings.storage.erase_note']()}</p>
-</section>
-
-{#if debugOn}
-	<section aria-labelledby="s-diagnostics" data-testid="diagnostics">
-		<h2 id="s-diagnostics">{m['settings.diagnostics.title']()}</h2>
-
-		<h3>{m['settings.diagnostics.scheduler']()}</h3>
-		{#if scheduler.inspect().length === 0}
-			<p class="tp-note">{m['settings.diagnostics.no_tasks']()}</p>
-		{:else}
-			<div class="tp-scroll">
-				<table>
-					<tbody>
-						{#each scheduler.inspect() as task (task.id)}
-							<tr>
-								<td>{task.label}</td>
-								<td>{task.state}</td>
-								<td class="tp-num">{task.consecutiveFailures}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		{/if}
-
-		<h3>{m['settings.diagnostics.log']()}</h3>
-		<pre data-testid="diagnostics-log">{readLog()
-				.map((entry) => `${entry.level} [${entry.src}] ${entry.msg}`)
-				.join('\n')}</pre>
+		</div>
+		<p class="tp-note">{m['settings.report.note']()}</p>
 	</section>
-{/if}
 
-<section aria-labelledby="s-report">
-	<h2 id="s-report">{m['settings.report.title']()}</h2>
-	<div class="tp-row">
-		<span>{m['settings.report.label']()}</span>
-		<button type="button" class="tp-action" data-testid="open-bug" onclick={() => (bugOpen = true)}>
-			{m['settings.report.open']()}
-		</button>
-	</div>
-	<p class="tp-note">{m['settings.report.note']()}</p>
-</section>
+	<TpBugDialog open={bugOpen} onClose={() => (bugOpen = false)} />
 
-<TpBugDialog open={bugOpen} onClose={() => (bugOpen = false)} />
-
-<section aria-labelledby="s-about">
-	<h2 id="s-about">{m['settings.about.title']()}</h2>
-	<p class="tp-num tp-build" data-testid="build-info">
-		{m['about.build']({ version: __TP_BUILD__.version, sha: __TP_BUILD__.sha })}
-	</p>
-	<p class="tp-links">
-		<a href={resolve('/about')}>{m['about.title']()}</a>
-		<a href={resolve('/legal/terms')}>{m['legal.terms.title']()}</a>
-		<a href={resolve('/legal/privacy')}>{m['legal.privacy.title']()}</a>
-		<a href={resolve('/legal/licenses')}>{m['legal.licenses.title']()}</a>
-	</p>
-</section>
+	<section aria-labelledby="s-about">
+		<h2 id="s-about">{m['settings.about.title']()}</h2>
+		<p class="tp-num tp-build" data-testid="build-info">
+			{m['about.build']({ version: __TP_BUILD__.version, sha: __TP_BUILD__.sha })}
+		</p>
+		<p class="tp-links">
+			<a href={resolve('/about')}>{m['about.title']()}</a>
+			<a href={resolve('/legal/terms')}>{m['legal.terms.title']()}</a>
+			<a href={resolve('/legal/privacy')}>{m['legal.privacy.title']()}</a>
+			<a href={resolve('/legal/licenses')}>{m['legal.licenses.title']()}</a>
+		</p>
+	</section>
+</div>
 
 <style>
+	.tp-settings {
+		display: contents;
+	}
+
 	h1 {
 		margin: 0 0 1.5rem;
 		font-size: var(--text-lg);

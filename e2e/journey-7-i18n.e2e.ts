@@ -29,12 +29,17 @@ test('settings is reachable from the top bar', async ({ page }) => {
 test('switching to English reloads and sticks', async ({ page }) => {
 	await acceptGate(page);
 	await page.goto('/settings');
+	// The controls are onclick handlers; clicking before hydration attaches them
+	// is a click into nothing. `data-ready` flips with `browser`.
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 
 	await page.getByTestId('locale-en').click();
 
-	// doc 14 §1: the switch reloads, so boot.js and <html lang> cannot disagree.
-	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	// doc 14 §1: the switch reloads. Assert on something that only exists after
+	// that reload *first* — checking <html lang> straight away races the
+	// navigation and reads the outgoing document.
 	await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
 	await page.goto('/');
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -43,7 +48,10 @@ test('switching to English reloads and sticks', async ({ page }) => {
 test('the language change reaches the gate, which is prerendered', async ({ page }) => {
 	await acceptGate(page);
 	await page.goto('/settings');
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 	await page.getByTestId('locale-en').click();
+	// Same reason as above: wait for the reloaded document before reading it.
+	await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible();
 	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
 	// Clear acceptance so the gate comes back, and check the half CSS reveals.
@@ -57,9 +65,11 @@ test('the language change reaches the gate, which is prerendered', async ({ page
 test('the theme choice applies without a reload', async ({ page }) => {
 	await acceptGate(page);
 	await page.goto('/settings');
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 
 	await page.getByTestId('theme-light').click();
 
+	// Theme does not reload — that is the point of the assertion.
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 	await page.reload();
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
@@ -68,6 +78,7 @@ test('the theme choice applies without a reload', async ({ page }) => {
 test('a custom accent reaches the derived tokens, not just the base', async ({ page }) => {
 	await acceptGate(page);
 	await page.goto('/settings');
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 
 	await page.getByTestId('accent-e8b750').click();
 

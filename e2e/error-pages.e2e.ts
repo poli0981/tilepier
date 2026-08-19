@@ -30,6 +30,9 @@ test('the bug dialog assembles a report the user can read and edit', async ({ pa
 	await expect(accept).toBeEnabled();
 	await accept.click();
 	await page.goto('/settings');
+	// The dialog opens from an onclick; before hydration attaches it the click
+	// lands on nothing. `data-ready` flips with `browser`.
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 
 	await page.getByTestId('open-bug').click();
 	await expect(page.getByTestId('bug-dialog')).toBeVisible();
@@ -55,6 +58,7 @@ test('the report carries the boot line, so a build can be identified', async ({ 
 	await expect(accept).toBeEnabled();
 	await accept.click();
 	await page.goto('/settings');
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 	await page.getByTestId('open-bug').click();
 
 	const text = await page.getByTestId('bug-body').inputValue();
