@@ -54,8 +54,31 @@ ink text `#1A222B`, same beacon). Theme switch = `data-theme` attribute on
 bridge in `lib/charts` — one source of truth, charts never hardcode hex.
 
 Accent is user-overridable in Settings (stored `tp.settings.accent`);
-derived soft/deep values computed in OKLCH at runtime so any accent stays
-usable. Semantic colors are **not** overridable.
+derived soft/deep values computed in OKLCH so any accent stays usable.
+Semantic colors are **not** overridable.
+
+Mechanically: JavaScript sets **only** `--color-beacon` on `<html>`.
+`--color-beacon-soft` and `--color-beacon-deep` are derived in `app.css` with
+`color-mix(in oklch, …)`, so there is no runtime colour module to ship, and a
+custom accent stays correct in both themes. (Clarified 2026-08-19 — "computed
+in OKLCH at runtime" was read as needing a JS colour library.)
+
+## 2a. Spacing
+
+Added 2026-08-19: this doc defined no spacing scale at all, and doc 13 carried
+only per-component pixel values, so "design tokens only" (doc 20 §1) had nothing
+to point at for layout.
+
+Tailwind 4's `--spacing` (0.25 rem) is declared explicitly in `@theme` and is
+the only scale. Permitted steps: **1 · 2 · 3 · 4 · 6 · 8 · 12 · 16** →
+4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 px. Doc 13's per-component values map onto
+these.
+
+Two grid constants cannot map, because they are gridstack's own geometry
+(doc 06 §5.4): `cellHeight: 72` and `margin: 12`. They are declared once in
+`TpGrid.svelte` and nowhere else. Two chrome constants that doc 13 §1 fixes get
+tokens rather than repetition: `--tp-bar-h: 48px` and `--tp-page-pad: 16px`
+(24 px at ≥ 768 px).
 
 ## 3. Typography
 

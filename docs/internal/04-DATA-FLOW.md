@@ -19,15 +19,39 @@ Rule of thumb: the **browser never talks to an external API directly**
 (exception: OpenFreeMap tiles, doc 10 §6). The Worker never stores anything
 user-identifying (doc 16 §3).
 
-## 2. SWR helper (`core/swr.ts`)
+## 2. SWR helper (`core/swr.svelte.ts`)
 
-Single primitive used by every networked widget:
+Single primitive used by every networked widget. It is a `.svelte.ts` module
+because what it returns is rune-backed state — "emit", below, means exactly
+that, and Svelte 5 requires the infix outside components.
 
 ```ts
-swr<T>(key: string, fetcher: () => Promise<T>, opts: {
-  ttlMs: number;          // client freshness window
-  hardMaxAgeMs?: number;  // beyond this, don't render cached at all (default: 7d)
-})
+swr<T>(
+  key: string,
+  fetcher: (signal: AbortSignal) => Promise<T>,
+  opts: {
+    ttlMs: number;          // client freshness window
+    hardMaxAgeMs?: number;  // beyond this, don't render cached at all (default: 7d)
+  }
+): TpSwrHandle<T>
+
+interface TpSwrHandle<T> {
+  readonly data: T | undefined;
+  readonly status: TpSwrStatus;
+  readonly error: TpSwrErrorCode | undefined;
+  readonly cachedAt: number | undefined;
+  readonly ageMs: number | undefined;
+  revalidate(reason?: string): Promise<void>;  // rejects on failure — see below
+  release(): void;                             // drop this caller's subscription
+}
+
+type TpSwrStatus =
+  | 'idle' | 'loading' | 'fresh' | 'stale'
+  | 'stale-error' | 'offline' | 'error' | 'rate-limited';
+
+type TpSwrErrorCode =
+  | 'NETWORK' | 'RATE_LIMITED' | 'QUOTA_EXHAUSTED'
+  | 'UPSTREAM_DOWN' | 'BAD_REQUEST' | 'MALFORMED';
 ```
 
 Behavior:
@@ -41,31 +65,133 @@ Behavior:
 4. Offline (`navigator.onLine === false` or fetch TypeError) → status
    `'offline'`; scheduler pauses this key until `online` event.
 5. De-dupe: concurrent `swr()` calls with the same key share one in-flight
-   promise (module-level map).
+   promise (module-level map). `release()` drops one subscription; when the
+   last subscriber releases, the map entry goes too, so the dedupe map does not
+   grow with the deck.
+
+### Status → widget state
+
+Doc 06 §3 requires eight tile states; this section names eight statuses; doc 17
+§4 names four envelope codes. Nothing connected them before, so:
+
+| swr `status` | tile state (doc 06 §3) |
+|---|---|
+| `idle`, `loading` | `loading` (skeleton) |
+| `fresh` | `ready` |
+| `stale` | `stale` (amber dot + age) |
+| `stale-error`, `rate-limited` | `stale-error` (adds retry) |
+| `offline` | `offline` |
+| `error` | `error` (inline, never blank) |
+
+The remaining two tile states are the widget's own business and swr never
+produces them: `empty` is a judgment about the *contents* of `data`, and
+`permission-needed` is a browser-permission state swr cannot see.
+
+Error codes map per doc 17 §4: `NETWORK` → `offline`; `RATE_LIMITED` →
+`rate-limited`; `QUOTA_EXHAUSTED` and `UPSTREAM_DOWN` → `stale-error` when a
+cached payload exists, `error` when none does; `BAD_REQUEST` and `MALFORMED` →
+`error`, logged loudly, never retried.
+
+`revalidate()` **rejects** on failure rather than swallowing, because backoff
+belongs to the scheduler (§3). swr overrides the default curve only when the
+server named a delay, by calling `handle.backoff(...)` on the scheduler handle
+the widget already holds.
 
 Client TTLs are deliberately ≥ the Worker KV TTLs (doc 11 §4) so the client
 never polls faster than the edge refreshes — extra polls would only get
 cache hits anyway.
 
+> Return shape added 2026-08-19. This section previously said "emit" four times
+> without saying emit *through what*, which left the entire data layer resting
+> on an unspecified signature (doc 22 §Exit review, item 3). **Specified Week 1,
+> implemented Week 3** with `/api/weather`'s first consumer — it cannot be
+> tested honestly before there is a fetcher and MSW fixtures.
+
 ## 3. Central scheduler (`core/scheduler.ts`)
 
-Exactly **one** `setInterval` in the whole app (tick = 5 s). Widgets register:
+Exactly **one** `setInterval` in the whole app (tick = `SCHEDULER_TICK_MS`, 5 s).
+Widgets register and receive a handle:
 
 ```ts
-scheduler.register(instanceId, { everyMs, run, runOnFocus = true })
+scheduler.register(id: string, opts: TpTaskOptions): TpTaskHandle
+
+interface TpTaskOptions {
+  cadence: TpRefresh;        // the doc 06 §1 union
+  run: (ctx: { reason: TpRunReason; signal: AbortSignal }) => Promise<void> | void;
+  runOnFocus?: boolean;      // default true
+  runOnRegister?: boolean;   // default true
+  label?: string;            // diagnostics table (doc 18 §5)
+}
+
+interface TpTaskHandle {
+  readonly id: string;
+  unregister(): void;                        // idempotent — the $effect teardown value
+  runNow(reason?: TpRunReason): Promise<void>;
+  backoff(untilMs: number): void;            // doc 17 §5
+  clearBackoff(): void;
+}
+
+type TpRunReason = 'register' | 'tick' | 'visible' | 'online' | 'manual';
 ```
 
-- Each tick, the scheduler runs entries whose `lastRun + everyMs <= now`.
+- Each tick, the scheduler runs entries whose `nextDueAt <= now`.
   Drift-free: schedule from timestamps, not from interval counts.
 - `document.visibilitychange` → hidden: ticker stops entirely (battery).
-  → visible: immediately run every entry whose data went stale while hidden,
-  then resume ticking.
-- `online` event → run all entries currently in `'offline'`/`'stale-error'`.
+  → visible: immediately run every entry that came due while hidden, unless it
+  set `runOnFocus: false`, then resume ticking.
+- `online` event → run all entries currently `paused`/`offline`/in backoff.
+  This subscribes to `stores/online.svelte.ts`, not to the raw `online` event,
+  so exactly one module decides what "online" means (doc 17 §3).
 - Timers-in-widgets exception: countdown/pomodoro/clock render from
   `requestAnimationFrame`-driven or 1 s local intervals *inside* the widget,
   because sub-second display accuracy is their job. They still compute from
   wall-clock timestamps so a throttled background tab shows the correct time
   on return (doc 07 §1–2).
+
+### The three rules this section used to leave open
+
+**`id` is the caller's choice, not `instanceId`.** Two weather tiles pinned to
+the same place share one data key but have different instance ids; registering
+per instance would fetch twice for one payload. Local-only widgets pass their
+`instanceId`; networked widgets pass the doc 04 §5 data key. Registrations
+sharing an id are refcounted — one entry, and `unregister()` decrements.
+
+**Overlap:** an entry already `running` is skipped on tick, never queued.
+`runNow()` while running aborts the in-flight `signal` and starts fresh.
+
+**Backoff lives here, not in swr.** A rejected `run` increments
+`consecutiveFailures` and sets `nextDueAt` from the `BACKOFF` constants
+(doc 17 §5); a successful run resets both. Entries in backoff are skipped, not
+removed. swr only overrides the delay when the server named one.
+
+Cadence kinds come from `TpRefresh` (doc 06 §1): `interval` schedules from
+`lastRunAt + everyMs`; `visibleOnly: true` suppresses running while
+`document.hidden` even when due (markets); `midnight` recomputes `nextDueAt` as
+the start of the next *local* day after every run, so DST shifts absorb
+themselves (calendar, quote); `manual` never self-schedules.
+
+### Introspection
+
+```ts
+scheduler.inspect(): readonly {
+  id; label; cadence;
+  state: 'idle' | 'running' | 'backoff' | 'paused' | 'offline';
+  lastRunAt; lastOkAt; nextDueAt; consecutiveFailures; lastError?;
+}[]
+
+scheduler.tick(now?: number): void   // test seam
+```
+
+`inspect()` is what doc 18 §5's diagnostics table renders. `tick(now)` is the
+seam the fake-timer suites drive directly instead of stubbing `setInterval`.
+
+> Handle and introspection added 2026-08-19. `register()` previously returned
+> nothing and there was **no deregistration API anywhere in the suite**, while
+> doc 19 §6's DoD requires "no scheduler leaks on remove" — the two could not
+> both be satisfied (doc 22 §Exit review, item 3). The host now registers inside
+> an `$effect` and returns `unregister` as the teardown, so removing a tile
+> cannot leave a live entry behind. **Specified and implemented in Week 1**,
+> because that teardown path is what the DoD rests on.
 
 ## 4. Request lifecycle example — weather tile
 

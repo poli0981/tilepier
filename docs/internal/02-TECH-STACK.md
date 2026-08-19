@@ -47,6 +47,7 @@ scripts of any kind (doc 15 §2).
 | knip | latest | Dead code / unused deps / unused exports — CI-blocking (doc 20 §4) |
 | Vitest | **4.x** | Unit + component (browser mode). Corrected from 3.x on 2026-08-10. |
 | @vitest/browser-playwright + vitest-browser-svelte | latest | Component tests in browser mode. Replaces `@testing-library/svelte`, which is not the Vitest 4 idiom — corrected 2026-08-10 (doc 19 §1 follows). |
+| @vitest/coverage-v8 | latest | Coverage provider for the doc 19 §2 thresholds. Added 2026-08-19 — the thresholds were specified from the start but unenforceable without it. |
 | Playwright | latest | E2E smoke suite (doc 19 §4) |
 | msw | 2.x | API mocking in unit/component tests |
 

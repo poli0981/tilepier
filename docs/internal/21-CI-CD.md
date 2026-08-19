@@ -140,5 +140,33 @@ majors individual with `stabilityDays: 3`; lockfile maintenance monthly;
 
 main: require CI green, require linear history, no force push. Tags
 protected `v*`. Actions: default `GITHUB_TOKEN` read-only at repo level
-(stubs escalate per §2), fork PRs get no secrets (preview deploy skips on
-forks via `if: github.event.pull_request.head.repo.full_name == github.repository`).
+(stubs escalate per §2).
+
+Implemented as a repository **ruleset** (`gh api -X POST repos/<owner>/<repo>/rulesets`),
+specified 2026-08-19 — the checklist above named no status checks and did not
+say whether a PR is required, so it could not be applied without guessing:
+
+- **Required status check contexts: `ci` and `e2e`.** Those are the job ids in
+  `ci.yml` and `e2e.yml`; neither job declares a `name:`, so GitHub reports the
+  check run under the job id.
+- **`codeql` is deliberately not required.** It triggers on `push: [main]` and
+  `schedule` only, never on `pull_request`, so requiring it would leave every PR
+  waiting forever on a check that cannot report.
+- Rules: `deletion`, `non_fast_forward`, `required_linear_history`,
+  `required_status_checks`, `pull_request` with
+  `required_approving_review_count: 0` and `allowed_merge_methods: ["squash"]`.
+  Zero approvals with the PR rule still on is what makes doc 20 §5's
+  "PRs for `core/` and `routes/api/`" real while still letting one person merge
+  their own work.
+- `strict_required_status_checks_policy: false` — requiring branches to be up to
+  date forces a rebase after every merge, which for a solo dev already under a
+  linear-history rule is friction with no safety attached.
+- `bypass_actors` contains the repository-admin role, which is how doc 20 §5's
+  "direct pushes acceptable for docs" and this section's "require CI green"
+  coexist. Better than `enforcement: "evaluate"`, which gates nothing while
+  looking like it does.
+
+A second ruleset targets `refs/tags/v*` with `deletion` + `non_fast_forward`.
+
+The fork-PR secrets guard previously named here belonged to `preview.yml`, which
+§1 removed on 2026-08-10; dropped.

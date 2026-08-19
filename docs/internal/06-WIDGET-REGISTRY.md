@@ -3,10 +3,15 @@
 ## 1. Manifest spec (`widgets/<id>/manifest.ts`)
 
 ```ts
+export type TpRefresh =
+  | { kind: 'interval'; everyMs: number; visibleOnly?: boolean }
+  | { kind: 'midnight' }
+  | { kind: 'manual' };
+
 export interface TpWidgetManifest {
   id: TpWidgetId;                       // 'clock' | 'weather' | ... (union in core/types)
-  i18nKey: string;                      // e.g. 'widget.weather'
-  category: 'time' | 'productivity' | 'finance' | 'info' | 'media' | 'tools';
+  i18nKey: `widget.${TpWidgetId}`;      // namespace root, not a single message
+  category: TpWidgetCategory;           // 'time'|'productivity'|'finance'|'info'|'media'|'tools'
   icon: TpIconName;                     // from the internal icon set (doc 12 §6)
   sizes: {
     min: { w: number; h: number };
@@ -14,8 +19,8 @@ export interface TpWidgetManifest {
     default: { w: number; h: number };
   };
   multiInstance: boolean;               // clock: true, music: false
-  refresh?: { everyMs: number };        // registered with the scheduler
-  permissions?: ('geolocation' | 'notifications' | 'fsa')[];
+  refresh?: TpRefresh;                  // registered with the scheduler (doc 04 §3)
+  permissions?: readonly ('geolocation' | 'notifications' | 'fsa')[];
   loadWidget: () => Promise<{ default: Component }>;
   loadDetail?: () => Promise<{ default: Component }>;
 }
@@ -28,6 +33,25 @@ Rules:
   few KB and ships in the entry chunk; components ship as per-widget chunks.
 - `id` doubles as the chunk name (`/* @vite-chunk */` naming via
   `rolldownOptions.output.chunkFileNames` pattern) and the detail route param.
+- **The drawer's one-line description (doc 13 §4) is not a manifest field.**
+  `i18nKey` is the namespace root, and every manifest must have two messages
+  under it — `<i18nKey>.title` and `<i18nKey>.blurb` — resolved through
+  `src/lib/i18n/widget-labels.ts`, a static
+  `Record<TpWidgetId, { title: () => string; blurb: () => string }>` of message
+  references. This keeps manifests pure data, importable by tests and scripts
+  without pulling in the Paraglide graph, and gives the drawer and the tile
+  header one place to read from. `pnpm i18n:check` asserts both keys exist in
+  both locales for every registered manifest.
+- `TpWidgetId` and `TpWidgetCategory` are enumerated in `src/lib/core/types.ts`;
+  `TpIconName` in `src/lib/ui/icons/names.ts`. A test parses the §7 table out of
+  this file and asserts every manifest's `sizes` and `refresh` match it — the
+  same doc-drift guard `shared-constants.test.ts` uses for doc 11 §4.
+
+> `refresh` became a union on 2026-08-19. It was `{ everyMs: number }`, which
+> could not express two rows of §7 below — `midnight tick` (calendar, quote) and
+> `60 s (visible only)` (markets) — so the table and the type contradicted each
+> other from the day both were written (doc 22 §Exit review). `manual` covers
+> the `—` rows explicitly rather than by omission.
 
 ## 2. Widget component contract
 
@@ -97,6 +121,13 @@ The single most dangerous integration point. Fixed rules:
    `.grid-stack-item` in the document while removing it from the grid model —
    measured growth 7 → 15 → 25 → 37 wrappers across three rebuilds, silently.
    Unmount hosts and `removeAll()` first, then batch only the additions.
+9. **`TpGrid`'s `tiles` prop is a seed, not a reactive source.** The setup
+   effect is `untrack()`ed by rule 7, so it reads `tiles` exactly once at mount.
+   Every subsequent change goes through the imperative surface — `addTile`,
+   `removeTile`, `rebuild`. Mutating the prop and expecting the grid to follow
+   does nothing, silently, which is the most plausible way for a future caller
+   to get this wrong. (Added 2026-08-19 when the deck store was wired: the rule
+   is a consequence of rule 7 that rule 7 does not state.)
 
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
@@ -114,6 +145,11 @@ instance exists.
 
 ## 7. v1 registry (15 widgets)
 
+`multi` is the `multiInstance` boolean; the parenthetical says what a second
+instance is *for*, and is not part of the type. `refresh` values below are
+written in the shape a test can parse against `TpRefresh`: `—` means the field
+is omitted (no scheduler entry at all).
+
 | id | category | min | default | max | multi | refresh |
 |----|----------|-----|---------|-----|-------|---------|
 | clock | time | 2×1 | 3×2 | 6×3 | yes | — (local 1 s) |
@@ -121,13 +157,18 @@ instance exists.
 | calc | tools | 2×2 | 3×3 | 4×4 | no | — |
 | notes | productivity | 2×2 | 3×3 | 6×6 | yes (per-note pin) | — |
 | todo | productivity | 2×2 | 3×3 | 4×6 | yes (per-list) | — |
-| calendar | time | 2×2 | 3×3 | 6×5 | no | midnight tick |
+| calendar | time | 2×2 | 3×3 | 6×5 | no | midnight |
 | toolbox | tools | 2×2 | 3×2 | 4×4 | no | — |
-| weather | info | 2×2 | 3×2 | 6×4 | yes (per-place) | 600 s |
-| currency | finance | 2×1 | 3×2 | 4×4 | no | 12 h |
-| quote | info | 2×1 | 4×2 | 6×3 | no | midnight tick |
-| rss | info | 2×2 | 3×4 | 6×6 | yes (per-feed-set) | 1200 s |
+| weather | info | 2×2 | 3×2 | 6×4 | yes (per-place) | interval 600 s |
+| currency | finance | 2×1 | 3×2 | 4×4 | no | interval 12 h |
+| quote | info | 2×1 | 4×2 | 6×3 | no | midnight |
+| rss | info | 2×2 | 3×4 | 6×6 | yes (per-feed-set) | interval 1200 s |
 | map | info | 2×2 | 4×3 | 8×6 | no | — |
-| markets | finance | 2×2 | 3×3 | 6×6 | no | 60 s (visible only) |
+| markets | finance | 2×2 | 3×3 | 6×6 | no | interval 60 s, visibleOnly |
 | music | media | 2×1 | 4×2 | 6×3 | no | — |
 | media | media | 2×2 | 4×3 | 8×5 | no | — |
+
+Week 1 registers `clock` only; the array grows a row per widget as each lands
+(doc 23). `core/registry.test.ts` asserts every *registered* manifest matches
+its row here, so the table stays authoritative without failing on rows whose
+widget has not been built yet.

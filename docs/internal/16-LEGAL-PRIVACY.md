@@ -76,8 +76,19 @@ to re-gate users cannot silently fail.
 
 ## 5. Third-party attribution register
 
-Rendered at `/legal/licenses` (generated: `pnpm licenses:gen` script reads
-package.json + this curated list):
+Rendered at `/legal/licenses`, in **two parts** (split 2026-08-19, because doc
+23 makes the real licences text a Week 1 deliverable while `licenses:gen` is a
+Week 8 script — the page had no defined interim content):
+
+1. The **curated obligation register**, the table below. Hand-authored bilingual
+   prose, shipped Week 1. It is the legally load-bearing half and no script can
+   produce it.
+2. The **dependency licence appendix**, generated in Week 8 by
+   `pnpm licenses:gen` (reads `package.json` + this list) into
+   `src/lib/legal/licenses.generated.json` and rendered below the register.
+
+The page marks the boundary with an HTML comment so the Week 8 generator has an
+unambiguous insertion point.
 
 | Item | License | Obligation |
 |------|---------|-----------|

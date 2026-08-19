@@ -12,9 +12,15 @@
 | No internet | Service worker | `/offline` fallback for navigations; widgets degrade in place (§3) |
 
 `handleError` (server + client hooks): normalize to
-`{ id: nanoid(), message: generic }`, log full detail to console (→ ring
-buffer client-side), show the id on the 500 page so a bug report can
-correlate.
+`{ id: crypto.randomUUID(), message: generic }`, log full detail to console
+(→ ring buffer client-side), show the id on the 500 page so a bug report can
+correlate. (Was `nanoid()`; nanoid is not a dependency and is not in doc 02's
+locked stack — see doc 05 §2. `src/hooks.server.ts` already shipped the
+`randomUUID` form.)
+
+`+error.svelte` is a single file at the route root, outside the `(app)` group,
+branching on `page.status` — an error page has to render even when the legal
+gate has not been accepted.
 
 ## 2. PWA / Service worker (Spike S5 governs mechanism)
 
@@ -52,9 +58,13 @@ correlate.
 | Map tiles | Browser-cached tiles render; new tiles gray grid + offline chip |
 | Music/media (FSA/blob) | Fully functional (files are local) |
 
-`stores/online.ts`: `navigator.onLine` + `online/offline` events +
+`stores/online.svelte.ts`: `navigator.onLine` + `online/offline` events +
 a fetch-failure heuristic (2 consecutive TypeErrors → treat offline even
-if onLine lies) feeding the top-bar chip (doc 13 §7).
+if onLine lies) feeding the top-bar chip (doc 13 §7). The `.svelte.ts` infix is
+required — it holds `$state`, and Svelte 5 needs the infix outside components.
+`swr()` reports every fetch outcome into it, and the scheduler subscribes to it
+rather than to the raw `online` event, so one module owns the definition
+(doc 04 §3).
 
 ## 4. Client fetch-error taxonomy (in `swr.ts`)
 

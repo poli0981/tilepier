@@ -23,6 +23,16 @@ runs in node and fails on DOM access.
 - Overall: **75 %**. Widgets' Svelte files are covered by component tests
   but exempted from line thresholds (UI churn); their `service.ts` files
   are not exempt.
+- **`lib/core/grid/**/*.svelte` is exempt from the 90 % bucket** (carve-out
+  added 2026-08-19, when the thresholds were first actually configured). Its
+  contract is an invariant across fifty add/remove cycles — wrapper count,
+  mounted host count and serialised tile count all agreeing — which only
+  `e2e/s1-grid.e2e.ts` can express and which line coverage cannot see. That spec
+  is the compensating control and is a required status check. No other file
+  under `lib/core` is exempt.
+
+Coverage runs via `pnpm test:cov` (`@vitest/coverage-v8`); plain `pnpm test`
+stays fast and uncovered for the inner loop. CI runs the covered form.
 
 ## 3. Non-negotiable unit suites
 

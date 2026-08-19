@@ -40,9 +40,30 @@ project config or locale strategy beyond "`messages/{en,vi}.json`"; and
 **`swr()` / `scheduler.register()`** have no return shapes, which the entire
 data layer sits on. Resolve each in the doc before writing what it governs.
 
+**Resolved 2026-08-19**, all three, plus the smaller gaps the review listed —
+settings is doc 13 §10, Paraglide's config and strategy are doc 14 §1, and the
+two data-layer contracts are doc 04 §2–3. Also amended: doc 05 §2/§5, doc 06
+§1/§5/§7, doc 12 §2/§2a, doc 13 §9/§11, doc 14 §4/§6, doc 16 §5, doc 17 §1/§3,
+doc 18 §1/§5, doc 19 §2, doc 20 §5, doc 21 §7, doc 03.
+
+Week 1 additionally pulls **`clock` (tile only)** forward from Week 2: the
+registry, the add/remove drawer, layout persistence and Playwright journey #2
+all need at least one addable widget to be testable at all. Week 2 deepens it
+(detail view, density tiers, all doc 06 §3 states) and is four widgets instead
+of five.
+
+`swr()` is **specified** in Week 1 and implemented in Week 3, when `/api/weather`
+gives it a real consumer. `scheduler()` is specified **and implemented** in
+Week 1, because its `unregister()` path is what doc 19 §6's "no scheduler leaks
+on remove" rests on, and `TpWidgetHost` wires that teardown from the start.
+Backup export/import (doc 05 §6) moves to Week 2, when notes and todos give it
+something to round-trip.
+
 ## Week 2 — Tier 1, batch 1
-clock · timer (+focusSessions) · calc · notes · todo — tiles + details +
-states + tests per DoD. **M2:** the deck is already a usable daily tool.
+clock detail (world clock; the tile shipped in Week 1) · timer
+(+focusSessions) · calc · notes · todo — tiles + details + states + tests per
+DoD · backup export/import (doc 05 §6) + e2e journey #6, now that there is data
+to round-trip. **M2:** the deck is already a usable daily tool.
 
 ## Week 3 — Tier 1, batch 2 + proxy skeleton
 calendar + lunar module port w/ test vectors · toolbox · quote ·

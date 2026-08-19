@@ -7,14 +7,31 @@ phoning home on its own.
 ## 1. Console ring buffer (`core/log-buffer.ts`)
 
 - Wraps `console.error` and `console.warn` (call-through preserved),
-  plus `window.onerror` and `unhandledrejection`.
+  plus `window.onerror` and `unhandledrejection`. Registration uses
+  `addEventListener('error', …)` rather than assigning `window.onerror`, so it
+  does not clobber another handler; resource-load errors are filtered out.
 - Entry: `{ ts, level, msg ≤ 500 chars, stackTop ≤ 3 frames, src? }`.
   Objects serialized shallowly with cycle guard; DOM nodes → tag string.
+  `level` is `'info' | 'warn' | 'error'`; `'info'` is reserved for the boot line
+  and is never produced by console wrapping, since `console.log` is lint-banned
+  (doc 20 §4) and the boot line should not masquerade as a warning.
 - Capacity 50, FIFO. Mirrored (throttled 2 s) to
-  `sessionStorage['tp.logs']` so a crash-reload still has the tail.
-- Scrub pass before export: strip anything matching
-  `token|key|secret|authorization` patterns and full URLs' query strings.
+  `sessionStorage['tp.logs']` so a crash-reload still has the tail; the tail is
+  restored on install. sessionStorage is explicitly permitted by doc 05 §1 — the
+  three-key rule is about localStorage only.
+- Scrub pass: strip anything matching `token|key|secret|authorization|password`
+  patterns and full URLs' query strings. Runs **at write time** as well as again
+  over the whole block at export, because the buffer is also visible live in the
+  diagnostics panel (§5).
 - Boot line always logged: `TilePier <version> <sha> <ua-brand> <locale>`.
+- **Read API** (added 2026-08-19 — the bug dialog and the diagnostics panel both
+  needed one and neither had it): `readLog()` returns a newest-last copy, never
+  the live array; `formatLog(entries?)` renders the re-scrubbed block for the
+  dialog and the `.txt` download; `subscribeLog(fn)` gives the panel live
+  updates, coalesced at 250 ms; `logEntry(level, msg, opts)` is the structured
+  push for code that already knows what it is saying — the doc 05 §5 "unknown
+  widgetId dropped" warning comes through it. The module holds no runes, so it
+  is importable from `hooks.client.ts` and from node tests.
 
 ## 2. Environment block (assembled at report time)
 
@@ -54,11 +71,22 @@ Fields: `what-happened` (textarea, required) · `steps` (textarea) ·
 
 ## 5. Dev diagnostics
 
-`?debug=1` (or `localStorage tp.debug`) unlocks a diagnostics panel in
-Settings: live ring buffer view, scheduler table (keys, cadence, last run,
-state), swr cache ages, breaker states from `/api/_health` (token-gated,
-doc 11 §9). Ships in prod (it's harmless + invaluable for remote users'
-screenshots) but hidden behind the flag.
+`?debug=1` (or `tp.settings.v1.debug`) unlocks a diagnostics panel in
+Settings (doc 13 §10, section 8): live ring buffer view, scheduler table from
+`scheduler.inspect()` (doc 04 §3 — id, label, cadence, last run, next due,
+state, failures), swr cache ages, breaker states from `/api/_health`
+(token-gated, doc 11 §9). Ships in prod (it's harmless + invaluable for remote
+users' screenshots) but hidden behind the flag.
+
+> Corrected 2026-08-19: this previously said `localStorage tp.debug`, which
+> would be a fourth localStorage key — forbidden by doc 05 §2 and CLAUDE.md
+> rule 10, and unreconciled anywhere in the suite. The flag now lives inside
+> `tp.settings.v1`. The scheduler introspection this panel renders also did not
+> exist as an API until doc 04 §3 grew `inspect()`.
+>
+> The panel ships in Week 1 with the two sources that exist by then — the ring
+> buffer and the scheduler table. The swr and breaker rows arrive with their own
+> modules in Week 3.
 
 ## 6. Explicit non-goals
 

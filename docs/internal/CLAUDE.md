@@ -42,11 +42,10 @@ pnpm fonts:sync     # re-copy font subsets from @fontsource, enforces budget
 ```
 
 Not written yet, each landing with the feature that needs it:
-`i18n:check` / `i18n:audit` (Week 1, doc 14 §2/§4) · `tokens:audit`
-(Week 2, doc 20 §1) · `licenses:gen` (Week 8, doc 16 §5) · `build:analyze`
-(on demand, doc 20 §6).
+`tokens:audit` (Week 2, doc 20 §1) · `licenses:gen` (Week 8, doc 16 §5) ·
+`build:analyze` (on demand, doc 20 §6).
 
-Two ordering rules worth knowing before they cost you an hour:
+Three ordering rules worth knowing before they cost you an hour:
 
 - **Run `pnpm gen` after any `wrangler.jsonc` edit**, or `wrangler types
   --check` inside `pnpm lint` fails.
@@ -54,6 +53,16 @@ Two ordering rules worth knowing before they cost you an hour:
   directory regardless of tsconfig excludes, so leftover `.svelte-kit/cloudflare`
   output produces hundreds of errors in generated code. `pnpm verify` does this
   in the right order.
+- **Paraglide output is generated, gitignored, and needed before lint.** The
+  Vite plugin emits `src/lib/paraglide/` at dev/build time, but `pnpm lint` runs
+  first — so `i18n:compile` runs at the head of `lint` and `test`. Five tools
+  need telling about that directory (git, prettier, eslint, knip, and
+  `emitTsDeclarations` for svelte-check); change them together or CI goes red
+  once per tool.
+
+**knip is CI-blocking on every commit**, so a module that lands with no importer
+fails the build. Slice commits vertically — a primitive plus its first consumer
+— never layer by layer (doc 20 §5).
 
 ## Hard rules
 
@@ -84,9 +93,12 @@ Two ordering rules worth knowing before they cost you an hour:
 9. **Numbers the user watches are JetBrains Mono + `tnum`.** Colors come
    from `@theme` tokens — no raw hex in components.
 10. **Storage:** localStorage only for `tp.layout.v1` / `tp.settings.v1` /
-    `tp.legal.v1` (versioned, migrated); everything else Dexie
+    `tp.legal.v1` (versioned, migrated) — `core/storage/local.ts` types the key
+    off `LOCAL_KEYS` so a fourth one will not compile. Everything else Dexie
     (`src/lib/core/storage/db.ts`). Schema changes = append a new
     `db.version(n)`, never edit shipped versions. Add a migration test.
+    Preferences that want their own key (debug flag, coach dismissal) go inside
+    `tp.settings.v1` instead.
 11. **Cache TTLs and quota tiers** are constants in
     `src/lib/shared-constants.ts` and must match doc 11 §4 (a test asserts
     this). Change both together.

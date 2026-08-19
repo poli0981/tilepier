@@ -52,6 +52,17 @@ PR title becomes the commit. Solo-dev discipline: PRs still used for
 anything touching `core/` or `routes/api/` (CI gates run there); direct
 pushes acceptable for docs. Release tags `v1.0.0` semver.
 
+This is enforced, not merely stated, by the `main` ruleset in doc 21 §7: PRs
+and green checks are required for everyone, and the repository-admin role sits
+in the ruleset's bypass list so prose pushes stay direct. The two sentences only
+contradict each other if enforcement has to be uniform.
+
+**knip is CI-blocking on every commit**, which shapes how work is sliced: a
+module that lands without an importer fails the build. Commits are therefore
+vertical slices — a primitive and its first consumer together — not layers.
+"Add the storage helper" is not a commit on its own. (Recorded 2026-08-19,
+after it reshaped the entire Week 1 commit plan.)
+
 ## 6. Bundle budgets (CI gate)
 
 | Chunk | Budget (gzip) |

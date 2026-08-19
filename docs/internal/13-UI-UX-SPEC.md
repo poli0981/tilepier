@@ -105,3 +105,74 @@ weather empty-state 3×2, calendar 3×3, notes 3×3, quote 4×2) → one-time
 coach overlay (three callouts: add widgets, edit mode, open detail —
 dismiss forever). No account prompts, no tour videos, ≤ 30 s to a useful
 deck.
+
+The seed is **filtered through the registry**, so it only ever contains widgets
+that exist in the current build. That makes the five-tile deck above the Week 3
+state, when calendar and quote land; the Week 1 seed is `clock` alone. M1
+delivers a deck you can arrange, and a deck seeded with widgets that do not
+exist is not one. (Corrected 2026-08-19.)
+
+"Dismiss forever" is `tp.settings.v1.coachDismissed` (doc 05 §2). It had nowhere
+to live under the three-key rule until that field was added.
+
+## 10. Settings (`/settings`)
+
+Added 2026-08-19. Doc 23 listed "settings page + store" as a Week 1 deliverable
+and no doc in the suite had a section for it (doc 22 §Exit review, item 1); the
+requirements existed only as a dozen scattered references across docs 05, 12,
+14, 16, 18 and 19. This section collects them.
+
+**A route, not a modal**, inside the `(app)` route group. Four reasons, in
+order: it is behind the legal gate because it exposes data wipe and
+diagnostics; it has nine sections, past the point a sheet stays honest;
+`#report` is a deep-link target from the 500 page (doc 17 §1); and a top-bar
+`<a href>` works before hydration where an `onclick` would not.
+
+Single column, `max-width: 42rem`, matching `/legal`'s prose measure. Sections
+are `<section>` with an `<h2>`; rows are label-left / control-right at ≥ 640 px
+and stacked below. **No save button** — every control writes through
+`stores/settings.svelte.ts` immediately. Local-first means there is nothing to
+submit.
+
+| # | Section | Contents | Lands |
+|---|---------|----------|-------|
+| 1 | Ngôn ngữ / Language | vi \| en segmented control; changing it reloads (doc 14 §1) | Week 1 |
+| 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off) | Week 1 |
+| 3 | Hiển thị / Display | 24-hour clock, week starts on | Week 1 |
+| 4 | Bàn làm việc / Deck | reset layout to the seeded default (confirm) | Week 1 |
+| 5 | Sao lưu / Backup | export JSON, import with dry-run diff (doc 05 §6) | Week 2 |
+| 6 | Bộ nhớ / Storage | `navigator.storage.estimate()`, warn > 80 %, "Xóa toàn bộ dữ liệu" (doc 16 §3.6) | Week 1 |
+| 7 | Báo lỗi / Report a bug | the doc 18 §4 dialog | Week 1 |
+| 8 | Chẩn đoán / Diagnostics | ring buffer, scheduler table, swr cache ages, breaker states — hidden unless `?debug=1` or `tp.settings.v1.debug` | Week 1, partial |
+| 9 | Giới thiệu / About | version + short SHA, links to `/about`, `/legal/*`, repository, licence | Week 1 |
+
+Section 5 is **omitted entirely** until it lands — an empty section header is
+noise, and a disabled control that has never worked is worse. Section 6 ships
+without the "offer an export first" step until section 5 exists; the confirm
+copy says so rather than implying a backup was taken.
+
+Section 8 ships in Week 1 with the two data sources that exist by then, the log
+ring buffer and `scheduler.inspect()` (doc 04 §3); the swr and breaker rows
+arrive with their own modules in Week 3.
+
+Section 7 ships in Week 1 deliberately, out of order of apparent usefulness: it
+is what makes the ring buffer worth having, and M1's stated QA strategy is
+dogfooding in production.
+
+The page body lives in `src/lib/ui/settings/TpSettingsPanel.svelte`; the route
+is a thin wrapper. That keeps the panel testable in the browser project without
+stubbing `$app/*`.
+
+## 11. About (`/about`)
+
+Prerendered and **outside** the `(app)` group, next to `/legal/*` and sharing
+their prose layout, so the gate can link to it and a first-time visitor can find
+out what they are agreeing to before agreeing. Bilingual via the doc 14 §6
+dual-render mechanism.
+
+Contents: what TilePier is (three sentences); the privacy one-liner with a link
+to `/legal/privacy`; version and short SHA; licence and repository links; and —
+the reason this page has to exist at all — **the two documented limitations**:
+layout is stored once rather than per breakpoint (§6 above), and two open tabs
+are last-writer-wins (doc 04 §7). Both docs already point here; the page did
+not exist.

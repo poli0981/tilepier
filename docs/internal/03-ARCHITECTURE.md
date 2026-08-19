@@ -69,8 +69,10 @@ tilepier/
 │  ├─ lib/
 │  │  ├─ core/
 │  │  │  ├─ registry.ts          # widget manifests index (doc 06)
+│  │  │  ├─ types.ts             # TpWidgetId / TpWidgetCategory unions
+│  │  │  ├─ ids.ts               # instanceId + short hash (doc 05 §2)
 │  │  │  ├─ scheduler.ts         # central ticker (doc 04 §3)
-│  │  │  ├─ swr.ts               # stale-while-revalidate helper (doc 04 §2)
+│  │  │  ├─ swr.svelte.ts        # stale-while-revalidate helper (doc 04 §2)
 │  │  │  ├─ storage/
 │  │  │  │  ├─ local.ts          # typed localStorage access + migrations
 │  │  │  │  ├─ db.ts             # Dexie schema (doc 05)
@@ -93,11 +95,14 @@ tilepier/
 │  │  └─ stores/                 # app-level runes stores (settings, theme, online)
 │  ├─ routes/
 │  │  ├─ +layout.svelte / +layout.ts
-│  │  ├─ +page.svelte            # dashboard
-│  │  ├─ +error.svelte           # 404/500 (doc 17)
+│  │  ├─ +error.svelte           # 404/500 (doc 17) — outside (app), renders pre-gate
+│  │  ├─ (app)/                  # gate boundary: deck + settings
+│  │  │  ├─ +layout.svelte       # legal gate (doc 16 §2)
+│  │  │  ├─ +page.svelte         # dashboard
+│  │  │  └─ settings/+page.svelte # doc 13 §10
 │  │  ├─ w/[id]/+page.svelte     # detail deep link
 │  │  ├─ legal/{terms,privacy,licenses}/+page.svelte
-│  │  ├─ about/+page.svelte
+│  │  ├─ about/+page.svelte      # doc 13 §11
 │  │  ├─ offline/+page.svelte    # SW fallback target
 │  │  └─ api/                    # server endpoints (doc 11)
 │  │     ├─ weather/+server.ts
