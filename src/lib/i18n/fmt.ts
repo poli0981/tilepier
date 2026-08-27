@@ -8,9 +8,9 @@
  * *different* locale from the app's (nothing yet; the bilingual prerender of
  * doc 14 §6 is the shape that will) ask for one.
  *
- * `fmtRelative` (doc 14 §3) is deliberately absent until Week 2's notes commit
- * gives it a caller. knip is CI-blocking on unused exports, so an export lands
- * with its first consumer and not before (doc 20 §5).
+ * Each export landed with its first consumer, not before — knip is CI-blocking
+ * on an unused one (doc 20 §5). `fmtTime`/`fmtDate` arrived with the world
+ * clock, `fmtRelative` with the notes tile's updated-ago line.
  */
 
 /**
@@ -116,4 +116,54 @@ export function isValidZone(timeZone: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+/**
+ * Relative time, through `Intl.RelativeTimeFormat` (doc 14 §3: never
+ * hand-roll). "3 minutes ago", "in 2 days" — and, crucially, whatever those
+ * are in Vietnamese, which is not the English sentence with the words swapped.
+ *
+ * The unit is chosen by magnitude rather than by a table of thresholds, and
+ * the boundary doc 14 §6 calls out is the reason `Math.round` is not used for
+ * the seconds case: 59 seconds must read as under a minute, not as "1 minute
+ * ago" — a note saved this second should not claim to be a minute old.
+ */
+const RELATIVE_UNITS: readonly {
+	limitMs: number;
+	perMs: number;
+	unit: Intl.RelativeTimeFormatUnit;
+}[] = [
+	{ limitMs: 60_000, perMs: 1000, unit: 'second' },
+	{ limitMs: 3_600_000, perMs: 60_000, unit: 'minute' },
+	{ limitMs: 86_400_000, perMs: 3_600_000, unit: 'hour' },
+	{ limitMs: 7 * 86_400_000, perMs: 86_400_000, unit: 'day' },
+	{ limitMs: 30 * 86_400_000, perMs: 7 * 86_400_000, unit: 'week' },
+	{ limitMs: 365 * 86_400_000, perMs: 30 * 86_400_000, unit: 'month' },
+	{ limitMs: Infinity, perMs: 365 * 86_400_000, unit: 'year' }
+];
+
+const relativeFormatters = new Map<string, Intl.RelativeTimeFormat>();
+
+export function fmtRelative(at: number | Date, locale: string, now: number = Date.now()): string {
+	const target = at instanceof Date ? at.getTime() : at;
+	const deltaMs = target - now;
+	const magnitude = Math.abs(deltaMs);
+
+	const step =
+		RELATIVE_UNITS.find((candidate) => magnitude < candidate.limitMs) ??
+		RELATIVE_UNITS[RELATIVE_UNITS.length - 1];
+	// The fallback is unreachable — the last row's limit is Infinity — but
+	// noUncheckedIndexedAccess is right to insist, and a `!` here would be the
+	// one place in this file that asserts rather than proves.
+	if (step === undefined) return '';
+
+	let formatter = relativeFormatters.get(locale);
+	if (formatter === undefined) {
+		formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+		relativeFormatters.set(locale, formatter);
+	}
+
+	// Truncated toward zero, so 59 s is "0 seconds"/"now" rather than a minute,
+	// and 90 minutes is "1 hour" rather than two.
+	return formatter.format(Math.trunc(deltaMs / step.perMs), step.unit);
 }

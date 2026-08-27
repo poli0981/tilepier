@@ -32,10 +32,11 @@ async function storedLayout(
 test('the seeded deck renders on first run', async ({ page }) => {
 	await acceptGate(page);
 
-	// doc 13 §9, registry-filtered: clock alone until Week 3.
-	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	// doc 13 §9, registry-filtered: clock and notes as of Week 2, the full five
+	// once calendar and quote land in Week 3.
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
 	await expect(page.getByRole('heading', { name: 'TilePier' })).toHaveCount(0);
-	await expect(page.locator('.tp-host__title')).toHaveText('Đồng hồ');
+	await expect(page.locator('.tp-host__title').first()).toHaveText('Đồng hồ');
 });
 
 test('the clock ticks, and reads its per-instance settings', async ({ page }) => {
@@ -97,19 +98,22 @@ test('a drag survives a reload', async ({ page }) => {
 	const box = await handle.boundingBox();
 	expect(box).not.toBeNull();
 
-	// Drag right and down by roughly two columns and one row.
+	// Right by roughly two columns, and deliberately **not** downward. The seed
+	// puts notes directly below the clock (doc 13 §9), and with `float: false`
+	// (doc 06 §5.4) a drag into an occupied row is compacted straight back to
+	// where it started — which looks exactly like a drag that never worked.
+	// Sideways there is nothing to collide with, and the assertion still says
+	// what it means to say.
 	await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
 	await page.mouse.down();
-	await page.mouse.move(box!.x + box!.width / 2 + 260, box!.y + box!.height / 2 + 90, {
-		steps: 12
-	});
+	await page.mouse.move(box!.x + box!.width / 2 + 260, box!.y + box!.height / 2, { steps: 12 });
 	await page.mouse.up();
 
 	const moved = await page
 		.locator('.grid-stack-item')
 		.first()
 		.evaluate((el) => ({ x: el.getAttribute('gs-x'), y: el.getAttribute('gs-y') }));
-	expect(moved.x === '0' && moved.y === '0').toBe(false);
+	expect(moved.x).not.toBe('0');
 
 	// doc 04 §6: the write is debounced 500 ms after the change settles.
 	await expect(async () => {
@@ -157,7 +161,7 @@ test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) =
 
 test('the drawer adds a widget, and it survives a reload', async ({ page }) => {
 	await acceptGate(page);
-	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
 
 	// doc 13 §4: the drawer is an edit-mode surface, so opening it enters.
 	await page.getByTestId('open-drawer').click();
@@ -165,25 +169,25 @@ test('the drawer adds a widget, and it survives a reload', async ({ page }) => {
 	await expect(page.getByRole('main')).toHaveAttribute('data-edit', 'on');
 
 	await page.getByTestId('add-clock').click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
 
 	await page.reload();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
 });
 
 test('a tile can be removed, and the removal sticks', async ({ page }) => {
 	await acceptGate(page);
 	await page.getByTestId('open-drawer').click();
 	await page.getByTestId('add-clock').click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
 	await page.getByTestId('drawer-scrim').click();
 
 	// doc 06 §4: no confirm — removing a tile never deletes underlying data.
 	await page.locator('[data-testid^="remove-"]').first().click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
 
 	await page.reload();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
 });
 
 test('the coach shows once and stays dismissed', async ({ page }) => {

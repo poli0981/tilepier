@@ -50,7 +50,12 @@ describe('visibility', () => {
 		const screen = render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
-		await screen.getByTestId('drawer-scrim').click();
+		// Clicked near a corner, not at the centre. The scrim covers the viewport
+		// and the panel sits on top of it; at this runner's width the drawer is a
+		// bottom sheet (doc 13 §4), and once the registry held four widgets the
+		// sheet grew tall enough to sit under the scrim's midpoint — which is
+		// where a bare `.click()` aims. The corner is scrim in every layout.
+		await screen.getByTestId('drawer-scrim').click({ position: { x: 4, y: 4 } });
 
 		expect(ui.drawerOpen).toBe(false);
 	});

@@ -61,10 +61,6 @@
 		// the fonts above: the edge is real, it just is not an import.
 		"@inlang/plugin-message-format",
 		"@inlang/plugin-m-function-matcher",
-		// Week 2: notes markdown (doc 07 §4) — DOMPurify is mandatory before any
-		// {@html} (doc 15 §4). Both come off this list in the notes commit.
-		"marked",
-		"dompurify",
 		// Week 3: MSW fixtures for the first networked widget (doc 19 §1).
 		"msw",
 		// Week 6: the RSS parser in the Worker (doc 10 §7).

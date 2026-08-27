@@ -182,6 +182,56 @@ widget so far where that state means something.
   recent; very large note (>100 KB) → preview virtualization not needed v1,
   but debounce preview render to 500 ms above 20 KB.
 
+### Built 2026-08-27 — and two sanitiser findings worth the space
+
+**`marked` has no `html: false`.** This section says "no raw HTML (marked
+option `html: false` semantics via sanitizer allowlist)", and the parenthetical
+is the operative half: no such option exists in marked 18. Raw HTML in a note's
+source reaches the output intact, and the allowlist is the only thing standing
+between it and the page. Which is what this section already said — but it is
+worth stating without the hedge, because a reader could take the option name
+for a belt to the allowlist's braces.
+
+**Two ways the DOMPurify config was quietly wrong**, both caught by the doc 19
+§3.6 corpus rather than by review:
+
+1. `USE_PROFILES: { html: true }` alongside `ALLOWED_TAGS` does not narrow the
+   allowlist to the intersection, as its name suggests — it *widens* it to the
+   whole HTML profile. With it, `<form>` came through intact. It had been added
+   as belt-and-braces and was doing the opposite, which is the most dangerous
+   shape a sanitiser bug takes.
+2. `ALLOWED_URI_REGEXP` is applied to **every** attribute value, not only to
+   the ones carrying URLs. Tightening it therefore silently dropped
+   `type="checkbox"` as an unsafe URI, and GFM task lists lost their boxes.
+   `ADD_URI_SAFE_ATTR` exempts the four attributes here that hold no URL.
+
+**One `{@html}` in the whole application**, in `lib/ui/TpMarkdown.svelte`, and
+it takes markdown *source* rather than HTML. A component that accepted HTML
+would be one careless call site away from rendering something unsanitised, and
+the `// SAFETY:` comment CLAUDE.md rule 7 asks for would be attached to the
+render rather than to the decision. `marked` and `dompurify` are loaded from
+inside it on demand, so they form one lazy chunk shared by every consumer
+instead of most of a tile's 40 KB budget (doc 20 §6) — measured: the notes tile
+chunk is under 2 KB gz.
+
+**The note title is derived from the body and stored.** A markdown note's first
+line already is its title, and asking for it twice asks the user to keep two
+things in sync; storing it is what lets the sidebar render a list without
+loading every body, since doc 05 §3 indexes `notes` on `updatedAt` alone.
+
+**Reloading the list and choosing what to edit are separate operations**, and
+that separation was learned the hard way. A single `refresh()` that did both
+overwrote the in-progress draft whenever it was still in flight: clicking "new
+note" and typing immediately produced an empty textarea and an untitled row,
+because the reload from the click landed after the first keystrokes. The list
+is also updated optimistically as you type, since its rows show derived titles
+and its search reads bodies — a list that only caught up after the 300 ms
+debounce would fail to find a note you had just written the words into.
+
+**The tile's fallback does not re-pin.** When the pinned note is gone the tile
+shows the most recent one and says so, rather than silently rewriting its own
+`settings` to point at a note the user never chose.
+
 ## 5. `todo` — Todo Lists
 
 - **Tile:** one list (per-instance setting), add-input on top, unchecked

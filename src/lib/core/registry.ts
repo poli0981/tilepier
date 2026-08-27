@@ -1,6 +1,7 @@
 import type { Component } from 'svelte';
 import type { TpIconName } from '$lib/ui/icons/names';
 import clock from '$lib/widgets/clock/manifest';
+import notes from '$lib/widgets/notes/manifest';
 import calc from '$lib/widgets/calc/manifest';
 import timer from '$lib/widgets/timer/manifest';
 import {
@@ -52,7 +53,7 @@ export interface TpWidgetManifest {
  * against its row in doc 06 §7, so the table stays authoritative without
  * failing on widgets that do not exist yet.
  */
-export const MANIFESTS: readonly TpWidgetManifest[] = [clock, timer, calc];
+export const MANIFESTS: readonly TpWidgetManifest[] = [clock, timer, calc, notes];
 
 const BY_ID = new Map<string, TpWidgetManifest>(MANIFESTS.map((m) => [m.id, m]));
 

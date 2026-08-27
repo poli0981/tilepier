@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readLog } from '$lib/core/log-buffer';
+import { getManifest } from '$lib/core/registry';
 import { LOCAL_KEYS } from '$lib/shared-constants';
 import { LAYOUT_DEBOUNCE_MS, deck, seedDeck } from './deck.svelte';
 import type { TpTile } from '$lib/core/grid/layout';
@@ -45,12 +46,22 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
+/** The seeded deck grows as widgets land (doc 13 §9). Deriving the size keeps
+ *  every count below true a week from now. */
+const SEED_SIZE = seedDeck().length;
+
 describe('hydrate', () => {
 	it('seeds a first-run deck from the registry', () => {
 		deck.hydrate();
 
-		// doc 13 §9's five-tile deck, filtered to what this build has.
-		expect(deck.tiles.map((t) => t.widgetId)).toEqual(['clock']);
+		// doc 13 §9's five-tile deck, **filtered to what this build has** — which
+		// is the property worth asserting, and the one that stays true as widgets
+		// land week by week. Pinning the literal list meant re-editing this test
+		// on every widget commit, which is how a test stops being read.
+		expect(deck.tiles.map((tile) => tile.widgetId)).toEqual(
+			seedDeck().map((tile) => tile.widgetId)
+		);
+		expect(deck.tiles.every((tile) => getManifest(tile.widgetId) !== undefined)).toBe(true);
 		expect(deck.loaded).toBe(true);
 	});
 
@@ -75,7 +86,7 @@ describe('hydrate', () => {
 		deck.add('clock');
 		deck.hydrate();
 
-		expect(deck.tiles).toHaveLength(2);
+		expect(deck.tiles).toHaveLength(SEED_SIZE + 1);
 	});
 
 	it('drops a tile whose widget this build does not have, warning once', () => {
@@ -134,14 +145,14 @@ describe('add', () => {
 		deck.hydrate();
 
 		expect(deck.add('markets')).toBeNull();
-		expect(deck.tiles).toHaveLength(1);
+		expect(deck.tiles).toHaveLength(SEED_SIZE);
 	});
 
 	it('allows a second clock, because the manifest is multiInstance', () => {
 		deck.hydrate();
 
 		expect(deck.add('clock')).not.toBeNull();
-		expect(deck.tiles).toHaveLength(2);
+		expect(deck.tiles).toHaveLength(SEED_SIZE + 1);
 	});
 });
 
@@ -192,7 +203,7 @@ describe('the write debounce', () => {
 		document.dispatchEvent(new Event('visibilitychange'));
 
 		expect(setItem).toHaveBeenCalledTimes(1);
-		expect(stored()?.grid).toHaveLength(2);
+		expect(stored()?.grid).toHaveLength(SEED_SIZE + 1);
 	});
 });
 
