@@ -101,7 +101,13 @@ describe('closing', () => {
 		const onClose = vi.fn();
 		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
 
-		await screen.getByTestId('detail-scrim').click();
+		// A corner, not the centre. The scrim covers the viewport and the panel
+		// is centred on top of it, so the midpoint a bare `.click()` aims for is
+		// panel, not scrim — and whether the click lands depends on how far
+		// through the opening FLIP the panel happens to be, which is a race this
+		// passed locally and lost on CI. The corner is scrim in every frame of
+		// that animation and at every viewport size.
+		await screen.getByTestId('detail-scrim').click({ position: { x: 4, y: 4 } });
 
 		await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
 	});

@@ -180,7 +180,10 @@ test('a tile can be removed, and the removal sticks', async ({ page }) => {
 	await page.getByTestId('open-drawer').click();
 	await page.getByTestId('add-clock').click();
 	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
-	await page.getByTestId('drawer-scrim').click();
+	// A corner rather than the midpoint: the drawer is a sheet on top of a
+	// full-viewport scrim, and it grows with the registry. This passes today and
+	// would start failing the week a widget pushes the sheet over the centre.
+	await page.getByTestId('drawer-scrim').click({ position: { x: 4, y: 4 } });
 
 	// doc 06 §4: no confirm — removing a tile never deletes underlying data.
 	await page.locator('[data-testid^="remove-"]').first().click();
