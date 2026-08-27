@@ -72,8 +72,32 @@ let { instanceId, settings, size, onOpenDetail, onUpdateSettings } = $props();
 
 `loading` (skeleton, doc 12 §7), `ready`, `empty` (first-run guidance with one
 action), `stale`/`stale-error` (badge), `offline`, `error` (inline, never a
-blank tile), `permission-needed` (geolocation/FSA prompt card). The DoD
-checklist (doc 19 §6) audits all of these per widget.
+blank tile), `permission-needed` (geolocation/notifications/FSA prompt card).
+The DoD checklist (doc 19 §6) audits these per widget.
+
+**Which of them apply is decided by the widget's doc 17 §3 offline class.**
+Amended 2026-08-27, when the four tier-1 widgets of Week 2 were about to be
+built against a list they cannot satisfy. A pure-client widget has no network,
+so `stale`, `stale-error` and `offline` are not states it can reach — doc 17 §3
+already says as much from the other side by classing it "fully functional"
+offline. The two sections contradicted each other from the day both were
+written. Requiring the states anyway buys branches that are unreachable in
+production and that assert nothing when a test forces them, which is worse than
+not having them: it reads as coverage.
+
+| doc 17 §3 class | Required | N/A by class |
+|---|---|---|
+| Pure-client (tier 1) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
+| Cached-data (weather, currency, markets, rss, quote) | all seven | — |
+| Search-dependent empty state (map, geocode, symbol add) | all seven | — |
+| Music / media (FSA/blob, files are local) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
+
+`permission-needed` is orthogonal to the class and is not counted in either
+column: it is required exactly when the manifest declares a `permissions`
+entry, and forbidden otherwise. That is what makes `permissions` a manifest
+field rather than a convention — `timer` declares `notifications`, `map`
+declares `geolocation`, `music` declares `fsa`, and nothing else declares
+anything.
 
 ## 4. Add/remove flow
 

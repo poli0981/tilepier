@@ -3,9 +3,14 @@
  * `pnpm i18n:audit` — doc 14 §2's hardcoded-string ban.
  *
  * Flags visible text in `.svelte` markup that is not the result of an `m.*()`
- * call. **Report-only in Week 1, CI-blocking from Week 2** (doc 14 §4), so the
- * backlog stays visible and shrinking instead of arriving in one lump. Pass
- * `--strict` to exit non-zero; that is what ci.yml will add in Week 2.
+ * call. Report-only through Week 1 so the backlog stayed visible and shrinking
+ * rather than arriving in one lump; **CI-blocking from Week 2** (doc 14 §4),
+ * which is what the flipped default below now means. `--report-only` restores
+ * the Week 1 behaviour for a local sweep. The flag is spelled that way round,
+ * rather than the `--strict` doc 14 §2 first proposed, so this gate and
+ * `tokens-audit.mjs` share one convention instead of being each other's
+ * opposite — a gate you have to remember the polarity of is a gate that gets
+ * invoked wrong.
  *
  * It walks the template AST via `svelte/compiler` rather than grepping. svelte
  * is already a dependency, and the false-positive rate of a regex over Svelte
@@ -15,7 +20,7 @@
 import { globSync, readFileSync } from 'node:fs';
 import { parse } from 'svelte/compiler';
 
-const STRICT = process.argv.includes('--strict');
+const STRICT = !process.argv.includes('--report-only');
 
 const INCLUDE = 'src/**/*.svelte';
 const EXCLUDE = [/^src[\\/]routes[\\/]spike[\\/]/, /^src[\\/]lib[\\/]paraglide[\\/]/];
@@ -110,4 +115,3 @@ for (const { file, line, text } of findings) {
 console.log(`\ni18n:audit found ${findings.length} hardcoded string(s) in ${files.length} files.`);
 
 if (STRICT) process.exit(1);
-console.log('Report-only until Week 2 (doc 14 §2).');

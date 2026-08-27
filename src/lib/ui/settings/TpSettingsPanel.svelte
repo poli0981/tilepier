@@ -24,7 +24,9 @@
 	 * when there is data worth round-tripping.
 	 */
 
-	/** doc 12 §2: the accent is user-overridable, semantic colours are not. */
+	/** doc 12 §2: the accent is user-overridable, semantic colours are not. These
+	 *  six are the offered swatches — data the user picks from, not styling, so
+	 *  they are the one place a literal colour is right. tokens-audit-ignore */
 	const ACCENTS = ['#46d5c8', '#7b8ff2', '#e8b750', '#57c785', '#e8705f', '#b48ce8'] as const;
 
 	const THEMES = ['dark', 'light', 'system'] as const;

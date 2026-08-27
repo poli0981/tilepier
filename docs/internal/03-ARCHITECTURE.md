@@ -57,7 +57,12 @@ Key properties:
   absolute path — `%sveltekit.assets%` emits a relative URL that breaks on
   nested routes.
 - `/w/[id]` (detail deep link): client-rendered; opening from the grid is a
-  FLIP expansion, direct navigation renders detail standalone (doc 13 §5).
+  FLIP expansion, direct navigation renders detail standalone (doc 13 §5). It
+  lives **inside** the `(app)` group. Corrected 2026-08-27: the tree below drew
+  it as a sibling, which would have served notes and todo content full-screen
+  on a cold deep link before the gate had been accepted. Route groups do not
+  appear in the URL, so `(app)/w/[id]/` still resolves to `/w/[id]` — the fix
+  costs nothing and the alternative contradicts doc 16 §2's intent.
 - `/legal/*`, `/about`: prerendered static pages (SEO + loads before JS).
 - `/api/*`: server endpoints only, `export const prerender = false`.
 
@@ -96,11 +101,11 @@ tilepier/
 │  ├─ routes/
 │  │  ├─ +layout.svelte / +layout.ts
 │  │  ├─ +error.svelte           # 404/500 (doc 17) — outside (app), renders pre-gate
-│  │  ├─ (app)/                  # gate boundary: deck + settings
+│  │  ├─ (app)/                  # gate boundary: deck + detail + settings
 │  │  │  ├─ +layout.svelte       # legal gate (doc 16 §2)
 │  │  │  ├─ +page.svelte         # dashboard
+│  │  │  ├─ w/[id]/+page.svelte  # detail deep link (doc 06 §6) → /w/[id]
 │  │  │  └─ settings/+page.svelte # doc 13 §10
-│  │  ├─ w/[id]/+page.svelte     # detail deep link
 │  │  ├─ legal/{terms,privacy,licenses}/+page.svelte
 │  │  ├─ about/+page.svelte      # doc 13 §11
 │  │  ├─ offline/+page.svelte    # SW fallback target

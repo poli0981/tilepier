@@ -99,7 +99,11 @@ Reduced-motion, 200 % zoom, keyboard-only pass, screen-reader spot check
 
 - [ ] Tile view at every allowed density tier (S/M/L as applicable)
 - [ ] Detail view (if manifest declares one) incl. deep-link render
-- [ ] All doc 06 §3 states implemented and component-tested
+- [ ] Every doc 06 §3 state **required for this widget's doc 17 §3 class**
+      implemented and component-tested; the states that class marks N/A are
+      named in the PR rather than quietly skipped (doc 06 §3 table, added
+      2026-08-27 — this line previously read "all states", which no tier-1
+      widget can honour)
 - [ ] i18n: zero hardcoded strings; en+vi keys complete (`i18n:check`)
 - [ ] Offline behavior per doc 17 §3 class
 - [ ] A11y: labels, focus order, contrast, chart summary line

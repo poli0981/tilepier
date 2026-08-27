@@ -48,6 +48,21 @@ jobs:
       - name: Dead code
         run: pnpm knip
 
+      # doc 14 §4 has said "CI-blocking from Week 1" since it was written, and
+      # this workflow never ran it — `pnpm verify` did, locally, which is not
+      # the same gate at all: a red local run is a decision, a red CI run is a
+      # closed door. Corrected 2026-08-27 alongside the two audits Week 2 turns
+      # on (doc 14 §2, doc 20 §1), both of which had a zero backlog on the day,
+      # so nothing had to be phased in.
+      - name: i18n catalogue drift
+        run: pnpm i18n:check
+
+      - name: i18n hardcoded strings
+        run: pnpm i18n:audit
+
+      - name: Design tokens
+        run: pnpm tokens:audit
+
       # The `client` Vitest project runs in real Chromium via
       # @vitest/browser-playwright. A dev machine usually has browsers already;
       # a fresh runner does not, and the failure is an opaque
