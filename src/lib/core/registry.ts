@@ -1,6 +1,7 @@
 import type { Component } from 'svelte';
 import type { TpIconName } from '$lib/ui/icons/names';
 import clock from '$lib/widgets/clock/manifest';
+import timer from '$lib/widgets/timer/manifest';
 import {
 	CATEGORY_ORDER,
 	type TpDetailProps,
@@ -45,12 +46,12 @@ export interface TpWidgetManifest {
 }
 
 /**
- * Week 1 registers `clock` alone; the array grows a row per widget as each
- * lands (doc 23). `core/registry.test.ts` checks each *registered* manifest
+ * Grows a row per widget as each lands (doc 23) — `clock` in Week 1, the four
+ * tier-1 widgets through Week 2. `core/registry.test.ts` checks each *registered* manifest
  * against its row in doc 06 §7, so the table stays authoritative without
  * failing on widgets that do not exist yet.
  */
-export const MANIFESTS: readonly TpWidgetManifest[] = [clock];
+export const MANIFESTS: readonly TpWidgetManifest[] = [clock, timer];
 
 const BY_ID = new Map<string, TpWidgetManifest>(MANIFESTS.map((m) => [m.id, m]));
 

@@ -76,6 +76,45 @@ statement about this widget rather than about its doc 17 §3 class, and doc 06
 - **Edge cases:** system sleep past `endsAt` → on wake show "finished while
   away" state, don't auto-start the next pomodoro.
 
+### Built 2026-08-27 — five decisions, noted back per doc 19 §6
+
+1. **The cue is synthesised, not a file.** This section says "audio cue
+   (self-hosted, respects a mute setting)". A bundled sample means an asset to
+   licence, a row in the doc 16 §5 register, and bytes in a budget — for two
+   notes. `alert.ts` plays a perfect fifth on two `OscillatorNode`s: ships
+   nothing, needs no attribution, and is self-hosted in the sense doc 15 §2
+   cares about, in that no request leaves the page. It closes its
+   `AudioContext` after the tail, because contexts are a few dozen per page and
+   a pomodoro firing four times an hour would exhaust them over a working day.
+
+2. **Running state lives in the tile's `settings`** (doc 05 §2), not in
+   component state: `endsAt`, `pausedMs`, `phase`, `completed`. That is what
+   makes the "finished while away" case above *possible* — a timer kept in
+   memory has nothing to compare against when the machine wakes, because it did
+   not survive to ask. It also rides along in the backup export at no cost.
+
+3. **A late completion is silent.** The chime and the Notification fire only
+   when the deadline is noticed within a minute of passing. Background tabs
+   throttle timers to roughly one tick a minute, so a live-but-hidden tab is
+   inside that window and a shut laptop is not. A chime ten minutes after the
+   fact is noise; the tile shows "finished while away" instead.
+
+4. **A session is credited to `endsAt`, not to when a tab noticed.** They are
+   the same instant while the page is awake and very different when it is not.
+   A focus block that ended at 23:50 and is seen at 08:00 belongs to the day it
+   ended, or closing a laptop would quietly move yesterday's focus onto today's
+   bar.
+
+5. **The tile owns completion; the detail does not.** Both render from the same
+   settings and show the same states, but if both advanced the phase the
+   session would be logged twice. The tile is the component mounted whenever
+   the deck is, including underneath an open detail overlay.
+
+`loading` and `empty` are unreachable for this widget and are not implemented:
+there is no fetch, and a timer always has a duration. `permission-needed` *is*
+implemented, and is required, because the manifest declares
+`permissions: ['notifications']` (doc 06 §3).
+
 ## 3. `calc` — Calculator & Unit Converter
 
 - **Tile:** 4-op calculator with keyboard input when focused; result line

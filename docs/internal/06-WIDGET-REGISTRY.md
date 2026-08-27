@@ -173,6 +173,26 @@ The single most dangerous integration point. Fixed rules:
     imported it for real; `/spike/s1` never hit this because it sets
     `ssr = false`.)
 
+11. **A mounted host's `tile` prop must be reactive; everything else must not
+    be.** `mount()` reads its `props` object once, so a tile passed as a plain
+    value is frozen at mount time. That is invisible until a tile's `settings`
+    change after mount — and then doc 06 §2's `onUpdateSettings` contract is a
+    write to storage the widget itself never sees: a detail panel sets a
+    preference, `tp.layout.v1` records it, the tile behind the panel goes on
+    rendering the old value, and only a reload reconciles them. `TpGrid` hands
+    the tile over through a getter backed by `$state.raw` and exposes
+    `updateTile(tile)`; the deck page's reconcile calls it for any tile whose
+    record identity changed while its id did not. `$state.raw` and not `$state`
+    because the store replaces a tile wholesale rather than mutating it, so a
+    deep proxy would cost a hop on every settings read and buy nothing. The
+    callbacks and the widget component stay plain values, and edit mode still
+    travels by the `.tp-edit` class rather than through props, because it is a
+    whole-grid concern. (Added 2026-08-27, found by an e2e test that switched
+    the timer to pomodoro from its detail and watched the tile keep saying
+    "countdown". Rule 9 says the `tiles` prop is a seed and every later change
+    goes through the imperative surface — this is the change rule 9 did not
+    have a method for.)
+
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
 wrapper count, mounted host count, and serialised tile count must agree after

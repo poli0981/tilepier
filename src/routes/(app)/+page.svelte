@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { isDetailState, type TpDetailState } from '$lib/core/detail';
 	import type TpGridType from '$lib/core/grid/TpGrid.svelte';
-	import type { TpLayout } from '$lib/core/grid/layout';
+	import type { TpLayout, TpTile } from '$lib/core/grid/layout';
 	import { getManifest } from '$lib/core/registry';
 	import { isWidgetId, type TpWidgetProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
@@ -67,9 +67,16 @@
 	 * one place that has to stay right when import or reset replaces the whole
 	 * deck at once.
 	 *
+	 * It reconciles three things, not two. Adds and removes are the obvious
+	 * pair; the third is a tile whose *record* changed while its id did not,
+	 * which is what a settings write from a detail panel looks like. The store
+	 * replaces that tile's object and leaves its neighbours alone, so identity
+	 * is exactly the right test — and without pushing the new record through,
+	 * `onUpdateSettings` would reach storage and never reach the widget.
+	 *
 	 * `synced` is a plain binding, not state: writing it must not re-trigger.
 	 */
-	let synced: Set<string> | null = null;
+	let synced: Map<string, TpTile> | null = null;
 
 	$effect(() => {
 		const grid = gridRef;
@@ -79,15 +86,17 @@
 		untrack(() => {
 			if (synced === null) {
 				// TpGrid mounted the seed itself from the prop; adopt it.
-				synced = new Set(tiles.map((tile) => tile.instanceId));
+				synced = new Map(tiles.map((tile) => [tile.instanceId, tile]));
 				return;
 			}
 
-			const next = new Set(tiles.map((tile) => tile.instanceId));
+			const next = new Map(tiles.map((tile) => [tile.instanceId, tile]));
 			for (const tile of tiles) {
-				if (!synced.has(tile.instanceId)) grid.addTile(tile);
+				const before = synced.get(tile.instanceId);
+				if (before === undefined) grid.addTile(tile);
+				else if (before !== tile) grid.updateTile(tile);
 			}
-			for (const id of synced) {
+			for (const id of synced.keys()) {
 				if (!next.has(id)) grid.removeTile(id);
 			}
 			synced = next;
