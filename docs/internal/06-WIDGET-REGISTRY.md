@@ -92,6 +92,14 @@ not having them: it reads as coverage.
 | Search-dependent empty state (map, geocode, symbol add) | all seven | — |
 | Music / media (FSA/blob, files are local) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
 
+A state can also be unreachable for a **single widget** rather than for its
+whole class — the clock has no `loading`, because the time needs no fetch, and
+no `empty`, because it always has something to say. Those are as legitimate as
+the class exclusions and are recorded the same way: named in the widget's own
+spec section (docs 07–09) and in its PR, never left as an unexplained gap.
+"Implemented every state that can happen" and "implemented four of eight" look
+identical in a diff; only the note tells them apart.
+
 `permission-needed` is orthogonal to the class and is not counted in either
 column: it is required exactly when the manifest declares a `permissions`
 entry, and forbidden otherwise. That is what makes `permissions` a manifest

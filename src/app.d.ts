@@ -16,9 +16,19 @@ declare global {
 			message: string;
 		}
 
+		/**
+		 * Shallow-routing state for the detail overlay (doc 06 §6). Written by
+		 * the deck page's `pushState`, read back through `$app/state`, and — the
+		 * reason it is typed here rather than inferred — restored verbatim from a
+		 * history entry a *previous build* may have written. `isDetailState` in
+		 * `core/detail.ts` narrows it before anything trusts it.
+		 */
+		interface PageState {
+			detail?: import('$lib/core/detail').TpDetailState;
+		}
+
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
 	}
 
 	/**

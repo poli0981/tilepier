@@ -3,6 +3,7 @@ import type { TpIconName } from '$lib/ui/icons/names';
 import clock from '$lib/widgets/clock/manifest';
 import {
 	CATEGORY_ORDER,
+	type TpDetailProps,
 	type TpWidgetCategory,
 	type TpWidgetId,
 	type TpWidgetProps,
@@ -40,7 +41,7 @@ export interface TpWidgetManifest {
 	refresh?: TpRefresh;
 	permissions?: readonly ('geolocation' | 'notifications' | 'fsa')[];
 	loadWidget: () => Promise<{ default: Component<TpWidgetProps> }>;
-	loadDetail?: () => Promise<{ default: Component<Record<string, unknown>> }>;
+	loadDetail?: () => Promise<{ default: Component<TpDetailProps> }>;
 }
 
 /**

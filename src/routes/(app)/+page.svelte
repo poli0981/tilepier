@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { untrack, type Component } from 'svelte';
+	import { pushState } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import { isDetailState, type TpDetailState } from '$lib/core/detail';
 	import type TpGridType from '$lib/core/grid/TpGrid.svelte';
 	import type { TpLayout } from '$lib/core/grid/layout';
 	import { getManifest } from '$lib/core/registry';
-	import type { TpWidgetProps } from '$lib/core/types';
+	import { isWidgetId, type TpWidgetProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
+	import TpDetailOverlay from '$lib/ui/TpDetailOverlay.svelte';
 
 	/**
 	 * The deck (doc 03 §Rendering). The page is prerendered, but nothing renders
@@ -102,6 +107,53 @@
 	function onUpdateSettings(instanceId: string, partial: Record<string, unknown>): void {
 		deck.updateSettings(instanceId, partial);
 	}
+
+	/**
+	 * Opening a detail is a history push, not a local flag (doc 06 §6). The
+	 * overlay below renders off `page.state`, so the browser's Back button
+	 * closes it without a popstate handler of ours racing SvelteKit's.
+	 *
+	 * The tile rect is measured *before* the push, because the panel that will
+	 * fly out of it has to know where it started (doc 13 §5.1).
+	 */
+	function onOpenDetail(instanceId: string): void {
+		const tile = deck.tiles.find((entry) => entry.instanceId === instanceId);
+		if (tile === undefined || !isWidgetId(tile.widgetId)) return;
+
+		// A widget with no detail has nothing to open, and doc 06 §1 makes that a
+		// legitimate manifest. Better that the tile simply does not respond than
+		// that an empty panel flies out of it.
+		if (getManifest(tile.widgetId)?.loadDetail === undefined) return;
+
+		const rect = gridRef?.tileRect(instanceId) ?? null;
+		const detail: TpDetailState = {
+			instanceId,
+			widgetId: tile.widgetId,
+			// exactOptionalPropertyTypes (doc 20 §2): omit the field, never set it
+			// to undefined — and history.state has to survive a structured clone,
+			// which a DOMRect does not reliably do.
+			...(rect === null
+				? {}
+				: { rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } })
+		};
+
+		// `/(app)/w/[id]` rather than `/w/[id]`: SvelteKit's generated RouteId
+		// union spells a grouped route with its group, even though the group never
+		// appears in the URL resolve() returns. Writing the plain path compiles to
+		// "Expected 1 arguments, but got 2", because the id is then not a known
+		// parameterised route.
+		//
+		// The path *is* resolved; the rule's heuristic cannot see resolve() through
+		// a template literal, and the query is what carries the instance. Same
+		// shape, and same reason, as the gate's `?lang=` links in +layout.svelte.
+		const url = `${resolve('/(app)/w/[id]', { id: tile.widgetId })}?i=${encodeURIComponent(instanceId)}`;
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		pushState(url, { detail });
+	}
+
+	/** Narrowed rather than trusted: `page.state` is restored verbatim from a
+	 *  history entry a previous build may have written (core/detail.ts). */
+	const detailTarget = $derived(isDetailState(page.state.detail) ? page.state.detail : null);
 </script>
 
 <svelte:head>
@@ -119,11 +171,26 @@
 			widgets={components}
 			editMode={ui.editMode}
 			{onLayoutChange}
+			{onOpenDetail}
 			{onRemove}
 			{onUpdateSettings}
 		/>
 	{/if}
 </main>
+
+{#if detailTarget !== null}
+	<!--
+		Closing pops the entry this page pushed, which is what makes ×, Esc, the
+		scrim and Back all take the same route out. `rectOf` re-measures on the way
+		back down because the grid may have reflowed while the panel was open
+		(doc 13 §5.3).
+	-->
+	<TpDetailOverlay
+		detail={detailTarget}
+		rectOf={(instanceId) => gridRef?.tileRect(instanceId) ?? null}
+		onClose={() => history.back()}
+	/>
+{/if}
 
 <style>
 	main {

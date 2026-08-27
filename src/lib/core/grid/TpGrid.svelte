@@ -184,6 +184,22 @@
 		return hosts.size;
 	}
 
+	/**
+	 * Where a tile is on screen right now — the FLIP origin, and on close the
+	 * FLIP target, which doc 13 §5.3 requires be recomputed because the grid may
+	 * have reflowed while the panel was open.
+	 *
+	 * It lives here rather than in the caller because the `gs-id` selector is
+	 * gridstack's DOM contract, and this file is the only one that is allowed to
+	 * know it — `removeTile` above uses the same query for the same reason.
+	 */
+	export function tileRect(instanceId: string): DOMRect | null {
+		const el = containerEl?.querySelector<GridItemHTMLElement>(
+			`.grid-stack-item[gs-id="${CSS.escape(instanceId)}"]`
+		);
+		return el?.getBoundingClientRect() ?? null;
+	}
+
 	// ── lifecycle ────────────────────────────────────────────────────────────
 
 	$effect(() => {

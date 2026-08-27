@@ -20,6 +20,45 @@ tier: clock → timer → calc → notes → todo → calendar → toolbox.
 - **Edge cases:** DST transitions (always derive from Intl, never offset
   math); invalid stored zone → drop + warn.
 
+### Built 2026-08-27 — four deviations, each noted back per doc 19 §6
+
+1. **The day/night tint is an equatorial terminator.** This section asks for
+   "sunrise/sunset approximation (pure astronomy calc, no API)", which needs a
+   latitude — and an IANA zone id carries no coordinates. The only ways to get
+   one are a vendored several-KB table that goes stale every tzdata release, or
+   a network call this section itself rules out. So `solarPhase()` computes the
+   subsolar meridian (including the equation of time) and measures the zone's
+   own meridian against it: under 90° day, 90–96° civil twilight, beyond that
+   night. That is exactly right at the equator, and runs early at high
+   latitudes — Reykjavík reads "night" at 23:00 in June. **The detail footer
+   says so**, rather than letting the shading quietly lie. A latitude table is
+   the upgrade path if this ever matters enough.
+
+2. **Zone ids are canonicalised on the way in.** ECMA-402 and IANA disagree
+   about which zone name is canonical, and engines disagree with each other.
+   Measured on V8: `Intl.supportedValuesOf('timeZone')` returns `Asia/Saigon`,
+   `Asia/Calcutta` and `Europe/Kiev`, and `resolvedOptions().timeZone`
+   normalises `Asia/Ho_Chi_Minh` **to** `Asia/Saigon`. For a product built
+   around Vietnamese identity (doc 12 §1) that is the one name it most needed
+   right, wrong. A twelve-entry rename table in `service.ts` fixes the spelling
+   at every entrance — platform, picker, storage — so what is stored and shown
+   is the modern name, and a deck written by one browser does not grow a
+   duplicate row when opened in another.
+
+3. **The meeting-planner strip is an `<input type="range">.** "Drag a time
+   marker" is what it does; being operable from the arrow keys and Home/End is
+   what it also does, for free, which no amount of pointer-event code would
+   have given.
+
+4. **Twelve zones, not unlimited.** The list lives in `tp.layout.v1`, which doc
+   05 §1 budgets under 100 KB. The tile shows the first three of them, which is
+   what this section's "0–3 compact rows" already said.
+
+`loading` and `empty` are unreachable for this widget and are not implemented:
+the time needs no fetch, and a clock always has something to say. That is a
+statement about this widget rather than about its doc 17 §3 class, and doc 06
+§3 now covers both kinds.
+
 ## 2. `timer` — Countdown & Pomodoro
 
 - **Tile:** two modes via settings — countdown (ring progress + mm:ss) or
