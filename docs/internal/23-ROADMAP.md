@@ -124,10 +124,49 @@ widget's offline class, with per-widget unreachability recorded alongside. And
 `w/[id]` moved inside the `(app)` route group: doc 03 drew it outside, which
 would have served notes and todo content full-screen before the legal gate.
 
+Merged as `3938fd3` (PR #1, squash — the `main` ruleset allows no other
+method) and deployed by Cloudflare Workers Builds the same day. Verified on
+production: the deck, all four new widgets, the detail overlay and the backup
+round-trip, plus the layout holding to 500 % zoom (doc 19 §5).
+
+One CI failure on the way, worth the line: a component test clicked a
+full-viewport scrim at its midpoint, where the centred panel sits. It passed
+locally and lost the race on a slower runner. Three call sites now aim at a
+corner, and doc 19 §4 says so.
+
 ## Week 3 — Tier 1, batch 2 + proxy skeleton
 calendar + lunar module port w/ test vectors · toolbox · quote ·
 `/api/_lib` pipeline (KV cache, limiter, breaker, envelope) + `/api/weather`
 + `/api/geocode` live. **M3:** first networked data flows end-to-end.
+
+**What Week 3 starts from.** Week 2 left four things deliberately unfinished
+for it, each with a reason rather than as a slip:
+
+1. **`swr()` is still only specified** (doc 04 §2, written Week 1). It lands
+   here with `/api/weather` as its first consumer, because it cannot be tested
+   honestly before there is a fetcher and MSW fixtures. `msw` is still on
+   knip's `ignoreDependencies` list waiting for exactly that; delete the line
+   when it is wired.
+2. **`dateKeyOf` exists twice**, in `widgets/timer/service.ts` and
+   `widgets/todo/service.ts`, both with a comment saying so. doc 03 §1 moves
+   reuse into `core/` when there *is* reuse rather than in anticipation — the
+   calendar is the third caller, so it graduates now, and `events` uses the
+   same key format (doc 05 §3).
+3. **Journeys #3 and #4 are unwritten** because both need networked data. The
+   overlay mechanism they lean on is already covered by
+   `e2e/detail-expansion`, so #3 only has to add the chart and the fixture.
+4. **Diagnostics section 8 is still two rows of four** (doc 13 §10): the swr
+   cache ages and breaker states arrive with their modules, here.
+
+Two carried notes that are not Week 3's job but are easy to trip over. The RSS
+DOMPurify profile joins `core/sanitize.ts` in Week 6 as a *separate function*,
+not a flag on the notes one — the two threat models differ, and a boolean
+parameter is one typo away from applying the wrong profile. And
+`TpMarkdown.svelte` is the only `{@html}` in the application; keep it that way.
+
+The lunar port is the one piece with no room for interpretation: doc 07 §6
+pins it to Asia/Ho_Chi_Minh regardless of viewer zone, and doc 19 §3.1 lists
+the vectors it has to satisfy before anything renders.
 
 ## Week 4 — Weather · Currency
 weather widget+detail (ECharts bridge built here, theme-linked) ·

@@ -232,7 +232,9 @@ is omitted (no scheduler entry at all).
 | music | media | 2×1 | 4×2 | 6×3 | no | — |
 | media | media | 2×2 | 4×3 | 8×5 | no | — |
 
-Week 1 registers `clock` only; the array grows a row per widget as each lands
-(doc 23). `core/registry.test.ts` asserts every *registered* manifest matches
-its row here, so the table stays authoritative without failing on rows whose
-widget has not been built yet.
+The array grows a row per widget as each lands (doc 23): `clock` in Week 1;
+`timer`, `calc`, `notes` and `todo` in Week 2, so five of fifteen are
+registered as of 2026-08-27. `core/registry.test.ts` asserts every *registered*
+manifest matches its row here, so the table stays authoritative without failing
+on rows whose widget has not been built yet — and it checks all fifteen rows
+parse, so a silent edit to an unbuilt row cannot pass either.

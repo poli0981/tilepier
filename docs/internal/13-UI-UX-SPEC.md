@@ -108,7 +108,8 @@ deck.
 
 The seed is **filtered through the registry**, so it only ever contains widgets
 that exist in the current build. That makes the five-tile deck above the Week 3
-state, when calendar and quote land; the Week 1 seed is `clock` alone. M1
+state, when calendar and quote land. It was `clock` alone in Week 1 and is
+`clock` + `notes` from Week 2. M1
 delivers a deck you can arrange, and a deck seeded with widgets that do not
 exist is not one. (Corrected 2026-08-19.)
 

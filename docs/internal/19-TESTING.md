@@ -88,12 +88,40 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
 Markets/music E2E are manual-checklist in v1 (real APIs / real files);
 their logic is unit/component-covered.
 
+**Written so far** (2026-08-27): #1, #2, #5, #6 and #7, plus three supporting
+specs that are not numbered journeys — `legal-gate`, `error-pages` and
+`detail-expansion`. The last covers doc 06 §6's handshake, which journey #3
+would otherwise take for granted when the weather detail lands in Week 4; #3
+and #4 both wait on the first networked widget. 92 e2e in total, under three
+minutes.
+
+One rule this suite learned the hard way, recorded because it has now cost a
+red CI run: **never click a full-viewport scrim at its midpoint.** A panel
+centred on top of it occupies exactly that point, so the click lands on the
+panel — or does not, depending on how far through an opening animation it has
+got, which differs between a developer's machine and a runner. Use
+`{ position: { x: 4, y: 4 } }`.
+
 ## 5. Manual test matrix (release gate)
 
 Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android
 Chrome. Music FSA path: Chromium only + fallback verified on Firefox.
 Reduced-motion, 200 % zoom, keyboard-only pass, screen-reader spot check
 (NVDA) on dashboard + one detail.
+
+This is the **Week 8 release gate** and is not run per week. What *is* worth
+doing at each milestone is a spot check of the surfaces that week added, on the
+deployed build — the charter's QA strategy is dogfooding in production, and a
+milestone nobody has looked at is not one.
+
+**Week 2 spot check, 2026-08-27, on production.** All clear. The tier-1 widgets
+and the detail overlay were exercised by hand after deploy, and the layout held
+to **500 % zoom** without breaking — two and a half times the matrix's own
+figure, and worth recording because the grid collapses by *grid width*
+(doc 06 §5.4) rather than by viewport width, so it was not obvious the
+breakpoints would behave at that extreme. The rest of the matrix above — the
+browser sweep, keyboard-only and NVDA — remains Week 8 work and has not been
+run.
 
 ## 6. Widget Definition of Done (per widget, tracked in PR template)
 

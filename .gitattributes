@@ -1,0 +1,17 @@
+# Line endings: LF in the repository, and LF in the working tree too.
+#
+# The repository already stored LF — `core.autocrlf` handled that — but on
+# Windows that same setting checks every file *out* with CRLF, and Prettier
+# defaults to `endOfLine: 'lf'`. So `prettier --check`, which `pnpm lint` and
+# `pnpm verify` both run, failed on all 83 source files the moment a branch
+# switch rewrote the working tree. CI never saw it: CI checks out on Linux.
+#
+# Added 2026-08-27, after exactly that happened on the merge of Week 2 and left
+# `pnpm verify` red on a tree with no actual changes in it. `eol=lf` makes the
+# checkout match what the tooling expects, so the trap does not come back on
+# the next branch switch.
+* text=auto eol=lf
+
+# The only binary in the repository (doc 12 §3's self-hosted subsets). `binary`
+# is shorthand for `-text -diff`, so git neither converts nor tries to diff it.
+*.woff2 binary
