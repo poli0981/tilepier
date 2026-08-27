@@ -83,11 +83,46 @@ on remove" rests on, and `TpWidgetHost` wires that teardown from the start.
 Backup export/import (doc 05 §6) moves to Week 2, when notes and todos give it
 something to round-trip.
 
-## Week 2 — Tier 1, batch 1
-clock detail (world clock; the tile shipped in Week 1) · timer
+## Week 2 — Tier 1, batch 1 · **COMPLETE 2026-08-27, M2 met**
+~~clock detail (world clock; the tile shipped in Week 1) · timer
 (+focusSessions) · calc · notes · todo — tiles + details + states + tests per
 DoD · backup export/import (doc 05 §6) + e2e journey #6, now that there is data
-to round-trip. **M2:** the deck is already a usable daily tool.
+to round-trip.~~ **M2:** the deck is already a usable daily tool.
+
+Shipped in seven commits. The roadmap line above assumed infrastructure that
+did not exist, and that gap was most of the week: there was **no detail overlay
+and no `/w/[id]` route at all**, no `lib/i18n/fmt.ts`, no debounced Dexie
+writer, no exporter, no notes sanitiser profile, no `tokens:audit` — and
+`ci.yml` ran neither i18n gate despite doc 14 §4 claiming one was CI-blocking
+from Week 1. The quality gates landed first, deliberately, so the four widgets
+were held to them from their first line.
+
+Numbers at the milestone: 577 unit and component tests (up from 271), 92 e2e
+(from 70), 92.0 % lines and 85.4 % branches, entry chunk 2.7 KB gz of a 200 KB
+budget, largest tile chunk 1.9 KB of 40 KB, 306 message keys with no drift,
+zero hardcoded strings and zero raw hex outside `app.css`.
+
+**Five bugs found by the work rather than by review**, each recorded where it
+belongs. `TpGrid` mounted hosts with static props, so doc 06 §2's
+`onUpdateSettings` contract was a write to storage the widget never saw — it
+had been latent since Week 1 and affected every widget (doc 06 §5 rule 11). The
+calculator's `divide` guaranteed decimal *places* and called them significant
+digits, losing eight digits converting millimetres to miles (doc 07 §3). The
+notes DOMPurify config had `USE_PROFILES` *widening* the allowlist it looked
+like it narrowed, and a strict `ALLOWED_URI_REGEXP` silently stripping
+`type="checkbox"` (doc 07 §4). And the backup importer held its parsed file in
+a `$state`, which deep-proxies — IndexedDB cannot clone a `Proxy`, so every
+import failed, silently, until the restore learned to report failure (doc 05
+§6). The last three were caught by tests written to the specs' own
+requirements: the converter's round-trip sweep, doc 19 §3.6's XSS corpus, and
+journey #6.
+
+Two specification contradictions were resolved rather than worked around. Doc
+06 §3 required eight tile states of every widget while doc 17 §3 classed
+tier-1 widgets "fully functional" offline — the states are now keyed to the
+widget's offline class, with per-widget unreachability recorded alongside. And
+`w/[id]` moved inside the `(app)` route group: doc 03 drew it outside, which
+would have served notes and todo content full-screen before the legal gate.
 
 ## Week 3 — Tier 1, batch 2 + proxy skeleton
 calendar + lunar module port w/ test vectors · toolbox · quote ·

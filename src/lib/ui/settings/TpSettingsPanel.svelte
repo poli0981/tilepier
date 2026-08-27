@@ -1,9 +1,20 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
-	import { readLog } from '$lib/core/log-buffer';
+	import { logEntry, readLog } from '$lib/core/log-buffer';
 	import { scheduler } from '$lib/core/scheduler';
 	import { db } from '$lib/core/storage/db';
+	import {
+		applyImport,
+		backupFilename,
+		buildBackup,
+		readBackup,
+		summariseImport,
+		type TpBackup,
+		type TpBackupTable,
+		type TpImportMode,
+		type TpImportSummary
+	} from '$lib/core/storage/exporter';
 	import { LOCALES, switchLocale, type TpLocale } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 	import { LOCAL_KEYS } from '$lib/shared-constants';
@@ -69,11 +80,136 @@
 	}
 
 	async function eraseEverything(): Promise<void> {
-		// doc 16 §6. The export-first offer arrives with the exporter in Week 2;
-		// until then the confirm says plainly that nothing is being saved.
+		// doc 16 §3.6. The export sits directly above this in the panel, and the
+		// confirm copy points at it rather than implying a backup was taken.
 		for (const key of Object.values(LOCAL_KEYS)) localStorage.removeItem(key);
 		await db.delete();
 		location.reload();
+	}
+
+	/* ─────────────────────────────────────────────────── backup (doc 05 §6) */
+
+	/**
+	 * **`$state.raw`, not `$state`, and this is load-bearing.**
+	 *
+	 * `$state` deep-proxies whatever it is given. A backup read from a file is
+	 * then a `Proxy`, its `dexie` rows are proxies, and `bulkPut` fails with
+	 * `DataCloneError: #<Object> could not be cloned` — IndexedDB structured-
+	 * clones what it stores, and a Proxy is not cloneable. The import did
+	 * nothing at all, and before the `try` below it did nothing *silently*.
+	 * Found 2026-08-27 by journey #6.
+	 *
+	 * `.raw` is the right answer rather than a workaround: all three of these
+	 * are snapshots that are replaced wholesale and never mutated in place, so
+	 * there is nothing for a deep proxy to observe — and a backup can be
+	 * megabytes, which is a lot of object to wrap for no reason.
+	 */
+	let pending = $state.raw<TpBackup | null>(null);
+	let preview = $state.raw<TpImportSummary | null>(null);
+	let outcome = $state.raw<TpImportSummary | null>(null);
+
+	let invalid = $state(false);
+	let confirmingReplace = $state(false);
+	let failed = $state(false);
+
+	/**
+	 * Hands the browser a file. A blob URL rather than a data: URL — a data URL
+	 * of a few megabytes of notes is a string the browser has to hold entire,
+	 * and Safari caps it. The object URL is revoked on the next frame, which is
+	 * after the click has been dispatched and before it can leak.
+	 */
+	function download(name: string, json: string): void {
+		const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+		const anchor = document.createElement('a');
+		anchor.href = url;
+		anchor.download = name;
+		anchor.click();
+		requestAnimationFrame(() => URL.revokeObjectURL(url));
+	}
+
+	async function exportBackup(): Promise<void> {
+		const backup = await buildBackup(
+			{ schemaVersion: 1, grid: [...deck.tiles] },
+			settings.snapshot
+		);
+		download(backupFilename(), JSON.stringify(backup, null, '	'));
+	}
+
+	async function chooseFile(file: File | undefined): Promise<void> {
+		outcome = null;
+		confirmingReplace = false;
+		if (file === undefined) return;
+
+		const backup = readBackup(await file.text());
+		if (backup === null) {
+			invalid = true;
+			pending = null;
+			preview = null;
+			return;
+		}
+
+		// doc 05 §6's dry run: validate, then show what would change, then let
+		// the user decide. Nothing has been written at this point.
+		invalid = false;
+		pending = backup;
+		preview = await summariseImport(backup, 'merge');
+	}
+
+	/**
+	 * Applies a backup, and **says so when it cannot**.
+	 *
+	 * The `try` is not decoration. The click handler can only call this as
+	 * `void restore(...)`, so without it a rejected promise disappears entirely:
+	 * the panel would sit there looking like nothing had been asked of it, on
+	 * the one screen where the user is actively worried about their data. Found
+	 * 2026-08-27 by journey #6, where an import after an erase failed in exactly
+	 * that shape — silently.
+	 */
+	async function restore(mode: TpImportMode): Promise<void> {
+		const backup = pending;
+		if (backup === null) return;
+
+		failed = false;
+		try {
+			await applyRestore(backup, mode);
+		} catch (error) {
+			failed = true;
+			confirmingReplace = false;
+			logEntry('error', 'backup restore failed', { src: 'layout', error });
+		}
+	}
+
+	async function applyRestore(backup: TpBackup, mode: TpImportMode): Promise<void> {
+		// doc 05 §6: "Replace all" writes an automatic pre-import export first.
+		// A destructive restore that turns out to have been the wrong file is
+		// the one case where a forced backup earns its interruption.
+		if (mode === 'replace') {
+			const safety = await buildBackup(
+				{ schemaVersion: 1, grid: [...deck.tiles] },
+				settings.snapshot
+			);
+			download(backupFilename(), JSON.stringify(safety, null, '	'));
+		}
+
+		const result = await applyImport(backup, mode);
+		outcome = result.summary;
+		pending = null;
+		preview = null;
+		confirmingReplace = false;
+
+		if (mode !== 'replace') return;
+
+		// Only a replace restores the deck and the settings; a merge leaves this
+		// device's own arrangement and preferences alone, which is what
+		// non-destructive means for the two things that are not rows.
+		deck.replaceAll(result.layout.grid);
+		settings.restore(result.settings);
+		// doc 14 §1: a restored locale cannot be applied in place.
+		location.reload();
+	}
+
+	function tableLabel(table: TpBackupTable): string {
+		return m[`settings.backup.table.${table}`]();
 	}
 </script>
 
@@ -205,6 +341,126 @@
 			</button>
 		</div>
 		<p class="tp-note">{m['settings.deck.reset_note']()}</p>
+	</section>
+
+	<!--
+		doc 13 §10 section 5. It was omitted entirely until now rather than shown
+		disabled — an empty heading is noise, and a control that has never worked
+		is worse. It sits above Storage so that the erase confirm below can point
+		at it (doc 16 §3.6).
+	-->
+	<section aria-labelledby="s-backup">
+		<h2 id="s-backup">{m['settings.backup.title']()}</h2>
+
+		<div class="tp-row">
+			<span>{m['settings.backup.export']()}</span>
+			<button
+				type="button"
+				class="tp-action"
+				data-testid="backup-export"
+				onclick={() => void exportBackup()}
+			>
+				{m['settings.backup.export_action']()}
+			</button>
+		</div>
+		<p class="tp-note">{m['settings.backup.export_note']()}</p>
+
+		<div class="tp-row">
+			<span>{m['settings.backup.import']()}</span>
+			<label class="tp-action tp-file">
+				{m['settings.backup.import_action']()}
+				<input
+					type="file"
+					accept="application/json,.json"
+					data-testid="backup-file"
+					onchange={(event) => void chooseFile(event.currentTarget.files?.[0])}
+				/>
+			</label>
+		</div>
+
+		{#if invalid}
+			<p class="tp-warn" role="alert" data-testid="backup-invalid">
+				{m['settings.backup.invalid']()}
+			</p>
+		{/if}
+
+		{#if preview !== null}
+			<!-- doc 05 §6's diff summary: counts per table, before anything is
+			     written, and the two ways forward side by side. -->
+			<div class="tp-review" data-testid="backup-review">
+				<h3>{m['settings.backup.review']()}</h3>
+				<ul class="tp-counts">
+					{#each preview.tables.filter((row) => row.incoming > 0) as row (row.table)}
+						<li class="tp-num">
+							{m['settings.backup.row']({
+								table: tableLabel(row.table),
+								added: row.added,
+								updated: row.updated
+							})}
+						</li>
+					{/each}
+				</ul>
+
+				<div class="tp-confirm">
+					<button
+						type="button"
+						class="tp-action"
+						data-testid="backup-merge"
+						onclick={() => void restore('merge')}
+					>
+						{m['settings.backup.merge_action']()}
+					</button>
+
+					{#if confirmingReplace}
+						<button
+							type="button"
+							class="tp-action tp-action--danger"
+							data-testid="backup-replace-confirm"
+							onclick={() => void restore('replace')}
+						>
+							{m['settings.backup.replace_confirm']()}
+						</button>
+					{:else}
+						<button
+							type="button"
+							class="tp-action tp-action--danger"
+							data-testid="backup-replace"
+							onclick={() => (confirmingReplace = true)}
+						>
+							{m['settings.backup.replace_action']()}
+						</button>
+					{/if}
+
+					<button
+						type="button"
+						class="tp-action"
+						data-testid="backup-cancel"
+						onclick={() => {
+							pending = null;
+							preview = null;
+							confirmingReplace = false;
+						}}
+					>
+						{m['settings.backup.cancel']()}
+					</button>
+				</div>
+
+				<p class="tp-note">{m['settings.backup.merge_note']()}</p>
+				<p class="tp-note">{m['settings.backup.replace_note']()}</p>
+			</div>
+		{/if}
+
+		{#if failed}
+			<p class="tp-warn" role="alert" data-testid="backup-failed">
+				{m['settings.backup.failed']()}
+			</p>
+		{/if}
+
+		{#if outcome !== null}
+			<p class="tp-note" role="status" data-testid="backup-done">
+				{m['settings.backup.done']({ added: outcome.added, updated: outcome.updated })}
+			</p>
+		{/if}
 	</section>
 
 	<section aria-labelledby="s-storage">
@@ -457,6 +713,50 @@
 	.tp-build {
 		margin: 0;
 		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
+	}
+
+	/* A styled label wrapping a hidden input: the native file button cannot be
+	   restyled, and a bare one beside the panel's own controls looks like a
+	   piece of a different application. */
+	.tp-file {
+		display: inline-flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	.tp-file input {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.tp-file:focus-within {
+		border-color: var(--color-beacon);
+	}
+
+	.tp-review {
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		padding: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.tp-review h3 {
+		margin: 0 0 0.5rem;
+	}
+
+	.tp-counts {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		margin: 0 0 0.75rem;
+		padding: 0;
+		list-style: none;
+		color: var(--color-fg-mute);
 		font-size: var(--text-2xs);
 	}
 
