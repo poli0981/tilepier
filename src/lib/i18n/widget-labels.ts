@@ -31,6 +31,10 @@ const LABELS: Partial<Record<TpWidgetId, TpWidgetLabels>> = {
 	notes: {
 		title: () => m['widget.notes.title'](),
 		blurb: () => m['widget.notes.blurb']()
+	},
+	todo: {
+		title: () => m['widget.todo.title'](),
+		blurb: () => m['widget.todo.blurb']()
 	}
 };
 

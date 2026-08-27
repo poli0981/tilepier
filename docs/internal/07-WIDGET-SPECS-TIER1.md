@@ -245,6 +245,39 @@ shows the most recent one and says so, rather than silently rewriting its own
 - **Edge cases:** list deleted while a tile points to it → tile `empty`
   state with "choose list".
 
+### Built 2026-08-27 — five decisions
+
+1. **Reordering is by list, not by item.** This section says "Reorder via
+   native drag within the detail only", and the schema decides which thing that
+   can mean: doc 05 §3 gives `todoLists` an `order` field and `todos` none, and
+   a shipped `version(1)` block cannot gain one (CLAUDE.md rule 10). Items sort
+   by due date and then recency instead, which is the order a todo list wants
+   to be read in anyway.
+
+2. **The reorder control is a pair of arrow buttons, not HTML5 drag.** A drag
+   handle works with a mouse and with nothing else; two buttons work from a
+   keyboard, a screen reader and a phone. doc 13 §8's ≥ 40 px targets and
+   keyboard-only pass both point the same way.
+
+3. **The `today` filter includes what is already overdue.** Something due
+   yesterday is more today's problem than tomorrow's, and a filter that hid it
+   would be the one place the app quietly loses work.
+
+4. **Deleting a list deletes its items, in one transaction.** This section
+   rules out a soft delete for completing an item; deleting the list it lives
+   in is not one either. Orphaned rows would be invisible, would never be
+   cleaned up, and would ride along in every backup (doc 05 §6) forever.
+
+5. **Clearing a due date deletes the field** rather than setting it to
+   `undefined`. `exactOptionalPropertyTypes` (doc 20 §2) forbids the
+   assignment, and deletion is the more honest of the two: a record with no
+   `due` key is what "no date" means, and it is what an export then carries.
+
+The tile distinguishes "there are no lists" from "the list you chose is gone" —
+both are `empty` by doc 06 §3's taxonomy, but they are different sentences and
+lead to different actions. The second does **not** silently adopt another list:
+the user picked that one.
+
 ## 6. `calendar` — Calendar & Vietnamese Lunar
 
 - **Tile:** current month mini-grid; today ringed; event dots; when
