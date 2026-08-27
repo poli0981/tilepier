@@ -129,6 +129,45 @@ implemented, and is required, because the manifest declares
 - **Edge cases:** divide-by-zero → `Error` state inline; overflow → exponent
   display.
 
+### Built 2026-08-27 — decisions and one correction
+
+1. **`%` is postfix and means "divide by a hundred".** This section lists it in
+   the scientific row, so it acts on the value in front of it. The other
+   convention — `50 + 10%` meaning 55 — requires the operator to know what the
+   expression *meant*, gets `50 × 10%` wrong under the same rule, and differs
+   between calculator brands. One predictable meaning beats a clever one.
+
+2. **Every conversion factor is an exact decimal, by choice of base unit.**
+   Speed is based on km/h rather than m/s because m/s per km/h is five
+   eighteenths and no decimal can hold it, while km/h per m/s is exactly 3.6.
+   The imperial lengths are exact by definition (a foot *is* 0.3048 m). So a
+   conversion rounds once, at the division, and never accumulates.
+
+3. **Temperature has its own pair of affine functions**, written as
+   `°X = °C × scale + offset` — the direction with exact constants, since
+   Fahrenheit is 1.8 and 32 exactly where the inverse is five ninths. Every
+   conversion goes through Celsius rather than composing the two, because
+   composing them is where a sign or an offset goes missing.
+
+4. **The state is module-level and session-only.** `calc` is
+   `multiInstance: false` (doc 06 §7), so the tile and the detail share one
+   store: typing in the tile and opening the panel shows the same expression.
+   Nothing is persisted — a half-typed sum is not a preference, has no business
+   in `tp.layout.v1`, and would ride along in every backup.
+
+**A correction worth recording.** The first `divide` scaled the numerator by a
+fixed number of decimal *places* and called that twelve significant digits. It
+is not the same thing: `0.0125 ÷ 1609.344` came back with nine significant
+digits rather than fourteen, and converting millimetres to miles and back lost
+eight of them. The shift is now derived from the digit counts, so precision no
+longer depends on where the result happens to sit on the number line. Found by
+the converter's round-trip test, which is the reason to write a test that walks
+every pair rather than three interesting ones.
+
+`loading` is unreachable here. `empty` **is** reachable and is implemented —
+the tape with nothing on it yet is genuinely empty, and is the one tier-1
+widget so far where that state means something.
+
 ## 4. `notes` — Markdown Notes
 
 - **Tile:** pinned note (per-instance setting: which note) rendered as

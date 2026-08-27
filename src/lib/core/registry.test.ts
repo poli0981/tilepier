@@ -163,9 +163,18 @@ describe('lookup', () => {
 		expect(isOnDeck('clock', ['clock', 'clock'])).toBe(false);
 	});
 
+	it('reports a single-instance widget already on the deck as taken', () => {
+		// calc is multiInstance: false — a second one would share the same
+		// session store and have nothing new to show (doc 06 §4).
+		expect(isOnDeck('calc', ['calc'])).toBe(true);
+		expect(isOnDeck('calc', ['clock'])).toBe(false);
+	});
+
 	it('reports nothing for a widget this build does not have', () => {
 		// The drawer only lists registered manifests, but a caller reading ids
-		// out of a stored layout can ask about anything.
-		expect(isOnDeck('calc', ['calc'])).toBe(false);
+		// out of a stored layout can ask about anything. `weather` is in doc 06
+		// §7's table and lands in Week 4; until then there is no manifest to
+		// consult, and "is it on the deck" has no answer rather than a false one.
+		expect(isOnDeck('weather', ['weather'])).toBe(false);
 	});
 });

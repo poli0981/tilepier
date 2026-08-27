@@ -23,6 +23,10 @@ const LABELS: Partial<Record<TpWidgetId, TpWidgetLabels>> = {
 	timer: {
 		title: () => m['widget.timer.title'](),
 		blurb: () => m['widget.timer.blurb']()
+	},
+	calc: {
+		title: () => m['widget.calc.title'](),
+		blurb: () => m['widget.calc.blurb']()
 	}
 };
 
