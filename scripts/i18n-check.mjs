@@ -9,7 +9,8 @@
  * Exit 0 clean, exit 1 on any finding, one line per finding.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync, globSync, readFileSync } from 'node:fs';
+import { sep } from 'node:path';
 
 const BASE_LOCALE = 'vi';
 const LOCALES = ['vi', 'en'];
@@ -100,15 +101,26 @@ for (const key of Object.keys(base)) {
 	}
 }
 
-// 5 · every registered widget manifest has its title and blurb (doc 06 §1)
-const registryPath = 'src/lib/core/registry.ts';
-if (existsSync(registryPath)) {
-	const source = readFileSync(registryPath, 'utf8');
-	for (const match of source.matchAll(/i18nKey:\s*'(widget\.[a-z]+)'/g)) {
-		for (const suffix of ['title', 'blurb']) {
-			const key = `${match[1]}.${suffix}`;
-			if (!(key in base)) fail(`registry declares ${match[1]} but "${key}" is missing`);
-		}
+// 5 · every widget manifest has its title and blurb (doc 06 §1)
+//
+// Read from the manifest files, not from registry.ts. This check used to grep
+// registry.ts for `i18nKey: 'widget.x'` — but manifests live one per folder and
+// registry.ts carries only the *type*, written with backticks, so the pattern
+// matched nothing and the check silently never ran. Found 2026-08-27, at the
+// point four more manifests were about to land behind it.
+for (const path of globSync('src/lib/widgets/*/manifest.ts')) {
+	const file = path.split(sep).join('/');
+	const source = readFileSync(file, 'utf8');
+	const match = /i18nKey:\s*'(widget\.[a-z]+)'/.exec(source);
+
+	if (match === null) {
+		fail(`${file} declares no i18nKey (doc 06 §1)`);
+		continue;
+	}
+
+	for (const suffix of ['title', 'blurb']) {
+		const key = `${match[1]}.${suffix}`;
+		if (!(key in base)) fail(`${file} declares ${match[1]} but "${key}" is missing`);
 	}
 }
 

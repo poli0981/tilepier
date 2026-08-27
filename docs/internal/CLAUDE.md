@@ -39,12 +39,18 @@ pnpm test:cov       # the same, with doc 19 §2 coverage thresholds (what CI run
 pnpm test:e2e       # playwright
 pnpm knip           # dead code (CI-blocking)
 pnpm budgets        # bundle budget gate (after build)
+pnpm i18n:check     # en/vi catalogue drift (CI-blocking)
+pnpm i18n:audit     # hardcoded strings in .svelte (CI-blocking from Week 2)
+pnpm tokens:audit   # raw hex outside app.css (CI-blocking from Week 2)
 pnpm fonts:sync     # re-copy font subsets from @fontsource, enforces budget
 ```
 
 Not written yet, each landing with the feature that needs it:
-`tokens:audit` (Week 2, doc 20 §1) · `licenses:gen` (Week 8, doc 16 §5) ·
-`build:analyze` (on demand, doc 20 §6).
+`licenses:gen` (Week 8, doc 16 §5) · `build:analyze` (on demand, doc 20 §6).
+
+The three gates above exit non-zero by default; `i18n:audit` and
+`tokens:audit` take `--report-only` for a local sweep. Both were turned on in
+Week 2 with a backlog of zero.
 
 Three ordering rules worth knowing before they cost you an hour:
 

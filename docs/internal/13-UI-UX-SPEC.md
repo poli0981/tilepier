@@ -140,16 +140,17 @@ submit.
 | 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off) | Week 1 |
 | 3 | Hiển thị / Display | 24-hour clock, week starts on | Week 1 |
 | 4 | Bàn làm việc / Deck | reset layout to the seeded default (confirm) | Week 1 |
-| 5 | Sao lưu / Backup | export JSON, import with dry-run diff (doc 05 §6) | Week 2 |
+| 5 | Sao lưu / Backup | export JSON, import with dry-run diff (doc 05 §6) | Week 2 ✓ |
 | 6 | Bộ nhớ / Storage | `navigator.storage.estimate()`, warn > 80 %, "Xóa toàn bộ dữ liệu" (doc 16 §3.6) | Week 1 |
 | 7 | Báo lỗi / Report a bug | the doc 18 §4 dialog | Week 1 |
 | 8 | Chẩn đoán / Diagnostics | ring buffer, scheduler table, swr cache ages, breaker states — hidden unless `?debug=1` or `tp.settings.v1.debug` | Week 1, partial |
 | 9 | Giới thiệu / About | version + short SHA, links to `/about`, `/legal/*`, repository, licence | Week 1 |
 
-Section 5 is **omitted entirely** until it lands — an empty section header is
-noise, and a disabled control that has never worked is worse. Section 6 ships
-without the "offer an export first" step until section 5 exists; the confirm
-copy says so rather than implying a backup was taken.
+Section 5 was **omitted entirely** until it landed — an empty section header is
+noise, and a disabled control that has never worked is worse. It arrived on
+2026-08-27 and sits directly above Storage, so that section 6's erase confirm
+can point at it: the copy now says "export a backup above first" rather than
+"there is no automatic backup yet".
 
 Section 8 ships in Week 1 with the two data sources that exist by then, the log
 ring buffer and `scheduler.inspect()` (doc 04 §3); the swr and breaker rows

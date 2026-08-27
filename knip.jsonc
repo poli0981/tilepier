@@ -61,16 +61,10 @@
 		// the fonts above: the edge is real, it just is not an import.
 		"@inlang/plugin-message-format",
 		"@inlang/plugin-m-function-matcher",
-		// Week 2: component tests and API mocking (doc 19 §1); notes markdown
-		// (doc 07 §4) — DOMPurify is mandatory before any {@html} (doc 15 §4).
+		// Week 3: MSW fixtures for the first networked widget (doc 19 §1).
 		"msw",
-		"vitest-browser-svelte",
-		"marked",
-		"dompurify",
 		// Week 6: the RSS parser in the Worker (doc 10 §7).
-		"fast-xml-parser",
-		// Week 7: music library tag parsing in a Web Worker (doc 09 §2).
-		"music-metadata"
+		"fast-xml-parser"
 	],
 	"ignoreBinaries": ["wrangler"]
 }

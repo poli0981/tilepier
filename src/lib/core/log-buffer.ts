@@ -12,8 +12,23 @@
 
 export type TpLogLevel = 'info' | 'warn' | 'error';
 
+/**
+ * Where an entry came from (doc 18 §1's `src`). One value per *subsystem*, not
+ * per widget: fifteen widget ids in this union would make it a registry, and
+ * the ring buffer is fifty entries deep — which widget it was belongs in the
+ * message, where a reader can see it, not in a type nobody reads.
+ */
 export type TpLogSource =
-	'boot' | 'console' | 'onerror' | 'unhandledrejection' | 'boundary' | 'layout';
+	| 'boot'
+	| 'console'
+	| 'onerror'
+	| 'unhandledrejection'
+	| 'boundary'
+	| 'layout'
+	/** A widget reporting on its own data — a stored value it had to discard. */
+	| 'widget'
+	/** The detail overlay and its chunk loading (doc 06 §6). */
+	| 'detail';
 
 export interface TpLogEntry {
 	ts: number;

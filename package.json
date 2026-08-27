@@ -24,11 +24,12 @@
 		"test:e2e": "playwright install && playwright test",
 		"knip": "knip",
 		"budgets": "node scripts/check-budgets.mjs",
-		"verify": "pnpm run clean && pnpm run lint && pnpm run knip && pnpm run i18n:check && pnpm run test:cov && pnpm run build && pnpm run budgets",
+		"verify": "pnpm run clean && pnpm run lint && pnpm run knip && pnpm run i18n:check && pnpm run i18n:audit && pnpm run tokens:audit && pnpm run test:cov && pnpm run build && pnpm run budgets",
 		"fonts:sync": "node scripts/sync-fonts.mjs",
 		"i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --emit-ts-declarations",
 		"i18n:check": "node scripts/i18n-check.mjs",
 		"i18n:audit": "node scripts/i18n-audit.mjs",
+		"tokens:audit": "node scripts/tokens-audit.mjs",
 		"test:cov": "vitest run --coverage"
 	},
 	"dependencies": {

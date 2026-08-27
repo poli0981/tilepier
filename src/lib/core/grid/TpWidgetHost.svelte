@@ -144,9 +144,16 @@
 			{/snippet}
 		</svelte:boundary>
 	</div>
-	<footer class="tp-host__meta tp-num" data-testid="host-size">
-		{size.w}×{size.h} · {size.pxW}×{size.pxH}
-	</footer>
+	<!--
+		No host footer. doc 13 §3 draws one, and spike S1 filled it with the tile's
+		own dimensions as a measurement readout — useful for proving the
+		ResizeObserver worked, and product chrome for nobody. The footer that doc
+		13 §3 actually describes is "meta / actions", which is per-widget content:
+		notes shows updated-ago there, timer shows its streak. That belongs to the
+		widget, under doc 06 §5's own division — gridstack owns the wrapper, the
+		host owns the frame, and Svelte owns the content. Removed 2026-08-27, when
+		the first widget with something real to put there was written.
+	-->
 </div>
 
 <style>
@@ -219,7 +226,9 @@
 	.tp-host__body {
 		flex: 1 1 auto;
 		min-height: 0;
-		padding: 0 0.75rem;
+		/* The body reaches the bottom edge now that the host has no footer; the
+		   padding the footer used to provide moves here. */
+		padding: 0 0.75rem 0.5rem;
 		overflow: hidden;
 	}
 
@@ -251,13 +260,5 @@
 		cursor: pointer;
 		font: inherit;
 		padding: 0.25rem 0.6rem;
-	}
-
-	.tp-host__meta {
-		flex: 0 0 auto;
-		height: 22px;
-		padding: 0 0.75rem;
-		color: var(--color-fg-dim);
-		font-size: var(--text-2xs);
 	}
 </style>

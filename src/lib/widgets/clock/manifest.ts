@@ -16,7 +16,8 @@ const manifest: TpWidgetManifest = {
 	icon: 'clock',
 	sizes: { min: { w: 2, h: 1 }, max: { w: 6, h: 3 }, default: { w: 3, h: 2 } },
 	multiInstance: true,
-	loadWidget: () => import('./TpClockWidget.svelte')
+	loadWidget: () => import('./TpClockWidget.svelte'),
+	loadDetail: () => import('./TpClockDetail.svelte')
 };
 
 export default manifest;

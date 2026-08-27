@@ -79,13 +79,17 @@ describe('round-trips', () => {
 describe('deck', () => {
 	it('restores the seeded layout', async () => {
 		const screen = render(TpSettingsPanel);
+		const seeded = deck.tiles.length;
+
 		deck.add('clock');
 		deck.add('clock');
-		expect(deck.tiles.length).toBeGreaterThan(1);
+		expect(deck.tiles.length).toBe(seeded + 2);
 
 		await screen.getByTestId('reset-deck').click();
 
-		expect(deck.tiles).toHaveLength(1);
+		// Back to whatever doc 13 §9's seed filters down to in this build, not to
+		// a number that has to be re-edited each time a widget lands.
+		expect(deck.tiles).toHaveLength(seeded);
 	});
 });
 

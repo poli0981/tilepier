@@ -72,8 +72,40 @@ let { instanceId, settings, size, onOpenDetail, onUpdateSettings } = $props();
 
 `loading` (skeleton, doc 12 §7), `ready`, `empty` (first-run guidance with one
 action), `stale`/`stale-error` (badge), `offline`, `error` (inline, never a
-blank tile), `permission-needed` (geolocation/FSA prompt card). The DoD
-checklist (doc 19 §6) audits all of these per widget.
+blank tile), `permission-needed` (geolocation/notifications/FSA prompt card).
+The DoD checklist (doc 19 §6) audits these per widget.
+
+**Which of them apply is decided by the widget's doc 17 §3 offline class.**
+Amended 2026-08-27, when the four tier-1 widgets of Week 2 were about to be
+built against a list they cannot satisfy. A pure-client widget has no network,
+so `stale`, `stale-error` and `offline` are not states it can reach — doc 17 §3
+already says as much from the other side by classing it "fully functional"
+offline. The two sections contradicted each other from the day both were
+written. Requiring the states anyway buys branches that are unreachable in
+production and that assert nothing when a test forces them, which is worse than
+not having them: it reads as coverage.
+
+| doc 17 §3 class | Required | N/A by class |
+|---|---|---|
+| Pure-client (tier 1) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
+| Cached-data (weather, currency, markets, rss, quote) | all seven | — |
+| Search-dependent empty state (map, geocode, symbol add) | all seven | — |
+| Music / media (FSA/blob, files are local) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
+
+A state can also be unreachable for a **single widget** rather than for its
+whole class — the clock has no `loading`, because the time needs no fetch, and
+no `empty`, because it always has something to say. Those are as legitimate as
+the class exclusions and are recorded the same way: named in the widget's own
+spec section (docs 07–09) and in its PR, never left as an unexplained gap.
+"Implemented every state that can happen" and "implemented four of eight" look
+identical in a diff; only the note tells them apart.
+
+`permission-needed` is orthogonal to the class and is not counted in either
+column: it is required exactly when the manifest declares a `permissions`
+entry, and forbidden otherwise. That is what makes `permissions` a manifest
+field rather than a convention — `timer` declares `notifications`, `map`
+declares `geolocation`, `music` declares `fsa`, and nothing else declares
+anything.
 
 ## 4. Add/remove flow
 
@@ -140,6 +172,26 @@ The single most dangerous integration point. Fixed rules:
     it out of the entry chunk. (Added 2026-08-19, when the deck page first
     imported it for real; `/spike/s1` never hit this because it sets
     `ssr = false`.)
+
+11. **A mounted host's `tile` prop must be reactive; everything else must not
+    be.** `mount()` reads its `props` object once, so a tile passed as a plain
+    value is frozen at mount time. That is invisible until a tile's `settings`
+    change after mount — and then doc 06 §2's `onUpdateSettings` contract is a
+    write to storage the widget itself never sees: a detail panel sets a
+    preference, `tp.layout.v1` records it, the tile behind the panel goes on
+    rendering the old value, and only a reload reconciles them. `TpGrid` hands
+    the tile over through a getter backed by `$state.raw` and exposes
+    `updateTile(tile)`; the deck page's reconcile calls it for any tile whose
+    record identity changed while its id did not. `$state.raw` and not `$state`
+    because the store replaces a tile wholesale rather than mutating it, so a
+    deep proxy would cost a hop on every settings read and buy nothing. The
+    callbacks and the widget component stay plain values, and edit mode still
+    travels by the `.tp-edit` class rather than through props, because it is a
+    whole-grid concern. (Added 2026-08-27, found by an e2e test that switched
+    the timer to pomodoro from its detail and watched the tile keep saying
+    "countdown". Rule 9 says the `tiles` prop is a seed and every later change
+    goes through the imperative surface — this is the change rule 9 did not
+    have a method for.)
 
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:

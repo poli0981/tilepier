@@ -166,6 +166,24 @@ class DeckStore {
 		writeVersioned(LAYOUT_SPEC, this.#snapshot());
 	}
 
+	/**
+	 * doc 05 §6's import. Replaces the deck wholesale and writes at once rather
+	 * than through the debounce — the user asked for it and expects it to have
+	 * happened, the same reasoning `reset()` uses.
+	 *
+	 * Unknown widget ids are dropped on the way in, by the same rule `hydrate()`
+	 * applies: a backup can name a widget this build has not gained yet, or one
+	 * a later release removed, and neither may take the deck down (doc 05 §5).
+	 */
+	replaceAll(tiles: readonly TpTile[]): void {
+		this.#tiles = tiles
+			.filter((tile) => isWidgetId(tile.widgetId) && getManifest(tile.widgetId) !== undefined)
+			.map((tile) => ({ ...tile }));
+
+		this.#writer?.flush();
+		writeVersioned(LAYOUT_SPEC, this.#snapshot());
+	}
+
 	dispose(): void {
 		this.#writer?.dispose();
 		this.#writer = null;

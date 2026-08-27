@@ -184,6 +184,46 @@ createDebouncedWriter<T>(spec, delayMs): { schedule(v); flush(); dispose() }
   second confirmation and writes an automatic pre-import export first
   (BookmarkMagic forced-backup pattern).
 
+### Built 2026-08-27
+
+**"Newer `updatedAt` wins" only decides three of the seven tables.** `notes`,
+`todos` and — through the widgets that write them — nothing else carries a
+timestamp; `todoLists`, `events`, `playlists`, `tracks` and `savedPlaces` do
+not. For those, merge adds what is missing and leaves what is there alone.
+Without a timestamp there is no evidence the file's copy is newer, and
+overwriting on no evidence is how a restore quietly undoes an afternoon's work
+— which is the opposite of what "non-destructive default" is for.
+
+**A merge restores rows only; a replace also restores the deck and the
+settings.** Those two are not rows and are not owned by this module: the layout
+and the settings live in localStorage behind their own stores, so `applyImport`
+hands them back and the caller writes them. A merge deliberately leaves this
+device's own arrangement and preferences alone.
+
+**`apiCache` and `fxHistory` are not exported either**, alongside the audio
+blobs and FSA handles this section already excludes. The first is derivable and
+pruned on startup (§3); the second mirrors a server-side snapshot. A backup is
+the user's own data.
+
+**Validation is structural rather than exhaustive**, deliberately. It checks
+what the importer relies on: the envelope, a version it understands, a layout
+and a settings block that the app's own validators accept, and tables of
+objects with string ids. A row with an unexpected extra field is not
+corruption, and refusing a whole file over one would fail exactly the person
+who needs this — someone restoring after something already went wrong. A file
+from a *newer* build is refused, the same call §5 makes for a downgraded
+localStorage key.
+
+**One bug worth recording, because it would have shipped as "import does
+nothing".** The parsed backup was held in a Svelte `$state`, which deep-proxies
+what it is given. IndexedDB structured-clones what it stores and cannot clone a
+`Proxy`, so every `bulkPut` failed with `DataCloneError` — and because the
+click handler could only call the import as `void restore(...)`, the rejection
+vanished and the panel sat there looking untouched. Two fixes, both of which
+should have been there anyway: the snapshots are `$state.raw` (they are
+replaced wholesale and never mutated, and a backup can be megabytes), and a
+failed restore now says so and writes the detail to the ring buffer.
+
 ## 7. Quota & eviction stance
 
 `navigator.storage.estimate()` shown in Settings → Storage. On the blob

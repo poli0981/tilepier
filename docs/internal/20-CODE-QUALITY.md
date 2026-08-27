@@ -10,7 +10,17 @@
   exported/public types, plain names for file-local types.
 - CSS: Tailwind utilities first; the few bespoke classes use `tp-` prefix
   (`.tp-drag`); design tokens only via `@theme` variables — raw hex in
-  components is lint-flagged by a grep script (`pnpm tokens:audit`).
+  components is flagged by `pnpm tokens:audit`, **CI-blocking from Week 2**.
+
+  The rule it enforces, stated precisely enough to implement (added 2026-08-27
+  with the script): `src/app.css` may write hex, but only on a line that
+  *defines* a custom property — which is what the `@theme` block and the
+  light-theme mirror do. In every other `.svelte` and `.css` under `src/`, a
+  hex literal is a finding. Comments are blanked before matching, so doc 12
+  §2's own citation of `#46D5C8` cannot trip its own gate. One escape exists,
+  `tokens-audit-ignore`, honoured on the offending line or the line above it;
+  the only current use is the accent swatch list in `TpSettingsPanel.svelte`,
+  which doc 12 §2 makes user-selectable data rather than styling.
 - Widget ids: lowercase singular (`clock`, `markets`) — they appear in
   URLs, chunk names, i18n keys.
 

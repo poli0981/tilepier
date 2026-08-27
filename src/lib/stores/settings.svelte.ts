@@ -73,8 +73,15 @@ function isOneOf<T extends string>(value: unknown, allowed: readonly T[]): value
 	return typeof value === 'string' && (allowed as readonly string[]).includes(value);
 }
 
-/** Hand-written per doc 05 §6 — no runtime schema dependency. */
-function isSettings(candidate: unknown): candidate is TpSettings {
+/**
+ * Hand-written per doc 05 §6 — no runtime schema dependency.
+ *
+ * Exported so the backup importer can validate a settings block against the
+ * same rules this store writes by, rather than keeping a second copy that
+ * drifts (doc 20 §8's single-source rule). It is the only thing outside this
+ * module that needs it.
+ */
+export function isSettings(candidate: unknown): candidate is TpSettings {
 	if (typeof candidate !== 'object' || candidate === null) return false;
 	const s = candidate as Record<string, unknown>;
 	return (
@@ -214,6 +221,20 @@ class SettingsStore {
 
 	reset(): void {
 		this.#value = defaultSettings();
+		writeVersioned(SETTINGS_SPEC, this.#value);
+	}
+
+	/**
+	 * doc 05 §6's import. A whole block rather than a patch, because a backup
+	 * carries every field and a partial merge would leave the restored settings
+	 * half from the file and half from this device — which is neither.
+	 *
+	 * The caller reloads afterwards. A restored `locale` cannot be applied in
+	 * place (doc 14 §1: the prerendered shell, `<html lang>` and `boot.js` all
+	 * have to agree), and reloading is one line against an invalidation graph.
+	 */
+	restore(next: TpSettings): void {
+		this.#value = { ...next };
 		writeVersioned(SETTINGS_SPEC, this.#value);
 	}
 

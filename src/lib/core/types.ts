@@ -75,6 +75,22 @@ export interface TpTileSize extends TpWidgetSize {
 	tier: 'S' | 'M' | 'L';
 }
 
+/**
+ * Props every `Tp<Name>Detail.svelte` receives (doc 06 §2).
+ *
+ * Deliberately not a superset of `TpWidgetProps`: a detail has no `size`,
+ * because it is not in the grid and has no density tier to adapt to, and it
+ * gains `close` because unlike a tile it can dismiss itself. The overlay and
+ * the `/w/[id]` route both supply `close`; they just mean different things by
+ * it — one pops the history entry, the other goes back to the deck.
+ */
+export interface TpDetailProps {
+	instanceId: string;
+	settings: Record<string, unknown>;
+	onUpdateSettings?: ((partial: Record<string, unknown>) => void) | undefined;
+	close: () => void;
+}
+
 /** Props every `Tp<Name>Widget.svelte` receives (doc 06 §2). */
 export interface TpWidgetProps {
 	instanceId: string;

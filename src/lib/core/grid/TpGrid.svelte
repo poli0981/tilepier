@@ -65,8 +65,12 @@
 	 * `onHostsChange` instead.
 	 */
 	/* eslint-disable svelte/prefer-svelte-reactivity */
-	/** instanceId → the Svelte tree mounted inside that item's content element. */
-	const hosts = new Map<string, ReturnType<typeof mount>>();
+	/** instanceId → the mounted tree, plus the one lever that can change its
+	 *  props after the fact. See `mountHost` for why that lever exists. */
+	const hosts = new Map<
+		string,
+		{ handle: ReturnType<typeof mount>; setTile: (t: TpTile) => void }
+	>();
 	/** instanceId → tile record, so serialise() can rejoin positions with settings. */
 	const tileById = new Map<string, TpTile>();
 	/* eslint-enable svelte/prefer-svelte-reactivity */
@@ -89,25 +93,58 @@
 		const widget = widgets[tile.widgetId];
 		if (!widget) return;
 
+		/*
+		 * `tile` is handed over through a getter backed by `$state.raw`, and it
+		 * has to be.
+		 *
+		 * `mount()` reads its `props` object once. Passing the tile as a plain
+		 * value freezes it at mount time, which is invisible until something
+		 * changes a tile's `settings` after mount — and then doc 06 §2's whole
+		 * `onUpdateSettings` contract is a write to storage that the widget
+		 * itself never sees. A detail panel could set a preference, the layout
+		 * key would record it, the tile behind the panel would go on rendering
+		 * the old value, and only a reload would reconcile them. Found
+		 * 2026-08-27 by an e2e test that switched the timer to pomodoro from its
+		 * detail and watched the tile keep saying "countdown".
+		 *
+		 * `$state.raw` rather than `$state`: the tile is replaced wholesale by
+		 * the store on every edit, never mutated in place, so deep-proxying its
+		 * contents would buy nothing and cost a proxy on every settings read.
+		 *
+		 * Everything else stays a plain value. Edit mode still travels by the
+		 * `.tp-edit` class on the container rather than through props, because
+		 * it is a whole-grid concern and not a per-tile one.
+		 */
+		let current = $state.raw(tile);
+
+		const handle = mount(TpWidgetHost, {
+			target,
+			props: {
+				get tile() {
+					return current;
+				},
+				widget,
+				onOpenDetail,
+				onRemove,
+				onUpdateSettings
+			}
+		});
+
 		// Layout tolerates an unknown widgetId by dropping the tile (doc 05 §5);
 		// here that shows up as simply not mounting anything.
-		hosts.set(
-			tile.instanceId,
-			// Static props: hosts are mounted imperatively, so anything that
-			// changes after mount — edit mode, notably — reaches them through the
-			// `.tp-edit` class on this container rather than through here.
-			mount(TpWidgetHost, {
-				target,
-				props: { tile, widget, onOpenDetail, onRemove, onUpdateSettings }
-			})
-		);
+		hosts.set(tile.instanceId, {
+			handle,
+			setTile: (next: TpTile) => {
+				current = next;
+			}
+		});
 		onHostsChange?.(hosts.size);
 	}
 
 	function unmountHost(instanceId: string) {
-		const handle = hosts.get(instanceId);
-		if (!handle) return;
-		unmount(handle);
+		const entry = hosts.get(instanceId);
+		if (!entry) return;
+		unmount(entry.handle);
 		hosts.delete(instanceId);
 		onHostsChange?.(hosts.size);
 	}
@@ -182,6 +219,33 @@
 
 	export function mountedHostCount(): number {
 		return hosts.size;
+	}
+
+	/**
+	 * Where a tile is on screen right now — the FLIP origin, and on close the
+	 * FLIP target, which doc 13 §5.3 requires be recomputed because the grid may
+	 * have reflowed while the panel was open.
+	 *
+	 * It lives here rather than in the caller because the `gs-id` selector is
+	 * gridstack's DOM contract, and this file is the only one that is allowed to
+	 * know it — `removeTile` above uses the same query for the same reason.
+	 */
+	/**
+	 * Pushes a changed tile record into an already-mounted host — the other half
+	 * of the getter above. Position changes do not come through here (gridstack
+	 * owns those and reports them back out); this is for `settings`, which flow
+	 * the other way, from the store into the widget.
+	 */
+	export function updateTile(next: TpTile) {
+		tileById.set(next.instanceId, next);
+		hosts.get(next.instanceId)?.setTile(next);
+	}
+
+	export function tileRect(instanceId: string): DOMRect | null {
+		const el = containerEl?.querySelector<GridItemHTMLElement>(
+			`.grid-stack-item[gs-id="${CSS.escape(instanceId)}"]`
+		);
+		return el?.getBoundingClientRect() ?? null;
 	}
 
 	// ── lifecycle ────────────────────────────────────────────────────────────
