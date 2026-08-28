@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { TpWidgetProps } from '$lib/core/types';
 	import { fmtDate, fmtTime } from '$lib/i18n/fmt';
+	import { lunarOfDate, vnDateOf } from '$lib/lunar/amlich';
+	import { fmtLunarShort } from '$lib/lunar/format';
 	import { settings } from '$lib/stores/settings.svelte';
 	import {
 		TILE_ZONE_ROWS,
@@ -30,8 +32,11 @@
 	 * always has something to say. `error` is the host's `svelte:boundary`
 	 * (doc 17 §6). That leaves `ready`, which is the whole tile.
 	 *
-	 * The lunar date line (doc 07 §1, vi only) needs `lib/lunar`, which is ported
-	 * in Week 3; the footer makes room for it now.
+	 * The lunar date line is vi-only, which is doc 07 §1's call and not doc 14
+	 * §6's: that section asks the lunar strings to *switch* correctly, and the
+	 * calendar's lunar panel is where they switch. On a tile the size of a
+	 * postcard, an English reader gains nothing from a transliterated can-chi
+	 * year, and the space is better spent on the zone rows.
 	 */
 	let { settings: tileSettings, size }: TpWidgetProps = $props();
 
@@ -64,6 +69,28 @@
 	const date = $derived(fmtDate(now, settings.locale));
 
 	/**
+	 * The civil date **in Vietnam**, as a string, so the astronomy below runs
+	 * once a day rather than once a second: a Svelte 5 `$derived` propagates only
+	 * when its value actually changes, and this one changes at Vietnamese
+	 * midnight. Reading `now` directly in `lunar` would recompute a new-moon
+	 * solution on every tick of a clock.
+	 */
+	const vnDateKey = $derived.by(() => {
+		const vn = vnDateOf(now);
+		return `${String(vn.y)}/${String(vn.m)}/${String(vn.d)}`;
+	});
+
+	/** doc 07 §1: `T7 30/08 · 08/07 Bính Ngọ`. Empty outside the lunar module's
+	 *  supported range (doc 07 §6) rather than showing a placeholder — a date
+	 *  line that says nothing is better than one that says "—". */
+	const lunar = $derived.by(() => {
+		if (settings.locale !== 'vi') return '';
+		const [y, m, d] = vnDateKey.split('/').map(Number) as [number, number, number];
+		const value = lunarOfDate({ d, m, y });
+		return value === null ? '' : fmtLunarShort(value, 'vi');
+	});
+
+	/**
 	 * doc 07 §1: 0–3 compact rows, and only once the tile is at least two rows
 	 * tall. The detail follows up to twelve; the tile shows the head of that list
 	 * rather than a scroller, because a tile that scrolls is a tile you have to
@@ -86,7 +113,13 @@
 <div class="tp-clock" data-tier={size.tier}>
 	<time class="tp-clock__time tp-num" datetime={new Date(now).toISOString()}>{time}</time>
 	{#if size.tier !== 'S'}
-		<p class="tp-clock__date">{date}</p>
+		<p class="tp-clock__date">
+			<span>{date}</span>
+			{#if lunar !== ''}
+				<span class="tp-clock__sep" aria-hidden="true">·</span>
+				<span class="tp-clock__lunar tp-num">{lunar}</span>
+			{/if}
+		</p>
 	{/if}
 
 	{#if rows.length > 0}
@@ -134,6 +167,18 @@
 		margin: 0;
 		color: var(--color-fg-mute);
 		font-size: var(--text-xs);
+	}
+
+	.tp-clock__sep {
+		color: var(--color-ink-500);
+	}
+
+	/* doc 12 §3: the lunar day and month are numbers the user reads off, so they
+	   are mono like every other figure on this tile. The can-chi year is not,
+	   but splitting one short line across two fonts reads worse than the
+	   inconsistency it would fix. */
+	.tp-clock__lunar {
+		color: var(--color-fg-dim);
 	}
 
 	.tp-clock__zones {

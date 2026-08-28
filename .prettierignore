@@ -29,3 +29,9 @@ wrangler.jsonc
 /project.inlang/.meta.json
 /project.inlang/README.md
 /project.inlang/cache/
+
+# Carried verbatim from QuoteAtlas's generator (see src/lib/lunar/README.md).
+# Reformatting it would make every future re-sync show a whole-file diff and
+# hide whether the vectors themselves moved — which is the one thing a diff of
+# this file has to be able to say.
+/src/lib/lunar/__fixtures__/
