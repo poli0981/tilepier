@@ -52,11 +52,16 @@ gate has not been accepted.
 
 | Class | Offline behavior |
 |-------|------------------|
-| Pure-client (tier 1) | Fully functional |
-| Cached-data (weather, fx, markets, rss, quote) | Last Dexie payload + stale badge; refresh suppressed until `online` |
+| Pure-client (tier 1, and `quote`) | Fully functional |
+| Cached-data (weather, fx, markets, rss) | Last Dexie payload + stale badge; refresh suppressed until `online` |
 | Search-dependent empty states (map search, geocode, symbol add) | Offline card: "cần mạng để tìm kiếm" |
 | Map tiles | Browser-cached tiles render; new tiles gray grid + offline chip |
 | Music/media (FSA/blob) | Fully functional (files are local) |
+
+`quote` moved rows on 2026-08-28, when it was built. Its dataset is bundled
+(doc 08 §3) so there is nothing to go stale and nothing to suppress: offline it
+is fully functional, which is the whole point of computing the daily pick from
+the date rather than fetching it. doc 06 §3 carries the same correction.
 
 `stores/online.svelte.ts`: `navigator.onLine` + `online/offline` events +
 a fetch-failure heuristic (2 consecutive TypeErrors → treat offline even
