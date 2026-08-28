@@ -18,8 +18,15 @@ import TpClockWidget from './TpClockWidget.svelte';
 const SIZE: TpTileSize = { w: 3, h: 2, pxW: 300, pxH: 200, tier: 'M' };
 const SMALL: TpTileSize = { w: 2, h: 1, pxW: 180, pxH: 72, tier: 'S' };
 
-/** 09:00 on 2026-08-28 in Hanoi — a Friday, lunar 16/07 of Bính Ngọ. */
-const AT = Date.UTC(2026, 7, 28, 2, 0);
+/**
+ * 10:00 on 2026-08-28 — lunar 16/07 of Bính Ngọ.
+ *
+ * Built with the local `Date` constructor rather than `Date.UTC`, so the date
+ * under test is the 28th on a runner in any zone. The lunar date on the tile is
+ * the lunar date *of the date shown beside it*, so a fixture that drifted
+ * across midnight by zone would assert a different thing on CI than locally.
+ */
+const AT = new Date(2026, 7, 28, 10, 0);
 
 function props(size: TpTileSize = SIZE) {
 	return { instanceId: 'wgt_clock', settings: {}, size };
@@ -55,14 +62,16 @@ describe('the date line (doc 07 §1)', () => {
 		await expect.element(screen.getByText(/lunar month/)).not.toBeInTheDocument();
 	});
 
-	it('computes from the Vietnamese day, not the runner’s', async () => {
-		// 23:00 UTC on the 27th is already the 28th in Hanoi. A tile that read
-		// the browser's own date would show the previous lunar day for every
-		// viewer west of Vietnam for part of each day.
-		vi.setSystemTime(Date.UTC(2026, 7, 27, 23, 0));
+	it('shows the lunar date of the solar date beside it', async () => {
+		// The two halves of this line have to agree. The conversion is pinned to
+		// UTC+7 (doc 07 §6) but *which* date is shown is the viewer's own, so a
+		// tile showing Vietnam's current lunar day would contradict its own
+		// solar date for part of every day west of Vietnam.
+		vi.setSystemTime(new Date(2026, 7, 27, 23, 0));
 		settings.patch({ locale: 'vi' });
 		const screen = render(TpClockWidget, props());
-		await expect.element(screen.getByText('16/07 Bính Ngọ')).toBeInTheDocument();
+		// The 27th, not the 28th — 15/07, not 16/07.
+		await expect.element(screen.getByText('15/07 Bính Ngọ')).toBeInTheDocument();
 	});
 
 	it('disappears with the whole date line at the smallest tier', async () => {

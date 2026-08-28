@@ -266,10 +266,12 @@ export function convertLunar2Solar(
 /* ────────────────────────────────────────── the pinned-zone public surface */
 
 /**
- * Every lunar computation in TilePier runs at UTC+7 regardless of where the
- * viewer is (doc 07 §6). A Vietnamese calendar read in Berlin is still the
- * Vietnamese calendar; letting the browser's zone decide would silently move
- * Tết for anyone abroad, which is precisely the reader this matters most to.
+ * Every solar-to-lunar *conversion* runs at UTC+7 regardless of where the
+ * viewer is (doc 07 §6). A new-moon boundary falls at an instant, so computing
+ * it against the browser's own offset would put whole lunar months a day out
+ * for anyone abroad — moving Tết for precisely the reader it matters most to.
+ * A date converts the same way for everyone; only which date you are on is
+ * local.
  *
  * Not exported: it is the default of every converter below, so a caller that
  * wanted it would be about to pass it back in, and knip is CI-blocking on an
@@ -285,42 +287,6 @@ export function isSupportedYear(year: number): boolean {
 }
 
 /**
- * The **civil date in Vietnam** at a given instant.
- *
- * Read through `Intl` rather than by adding seven hours, because that is the
- * platform's own tz database answering "what is the date there right now" —
- * the one question this is ever asked. Note the deliberate asymmetry with
- * `VN_UTC_OFFSET_HOURS`: the converters below pin +7 for the whole 1900–2100
- * range because that is the offset Hồ Ngọc Đức's tables are computed at, while
- * `Asia/Ho_Chi_Minh` carries real history (the zone was not +7 throughout).
- * The two only ever disagree about dates before 1975, and nothing asks this
- * function about those.
- */
-export function vnDateOf(at: number | Date): TpSolarDate {
-	const parts = vnFormatter().formatToParts(at);
-	const read = (type: Intl.DateTimeFormatPartTypes): number => {
-		const value = parts.find((part) => part.type === type)?.value;
-		return value === undefined ? Number.NaN : Number(value);
-	};
-	return { d: read('day'), m: read('month'), y: read('year') };
-}
-
-let cachedFormatter: Intl.DateTimeFormat | undefined;
-
-function vnFormatter(): Intl.DateTimeFormat {
-	// Constructing a DateTimeFormat is two orders of magnitude dearer than
-	// using one, and the clock tile asks for this once a second (i18n/fmt.ts
-	// memoises for the same reason).
-	cachedFormatter ??= new Intl.DateTimeFormat('en-CA', {
-		timeZone: 'Asia/Ho_Chi_Minh',
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit'
-	});
-	return cachedFormatter;
-}
-
-/**
  * The lunar date for a **solar calendar date** — what a calendar cell shows.
  * `null` outside doc 07 §6's supported range.
  */
@@ -329,9 +295,24 @@ export function lunarOfDate(solar: TpSolarDate): TpLunarDate | null {
 	return convertSolar2Lunar(solar.d, solar.m, solar.y, VN_UTC_OFFSET_HOURS);
 }
 
-/** The lunar date **in Vietnam** at a given instant — what "today" means here. */
+/**
+ * The lunar date of the calendar date an instant falls on, read in the
+ * **viewer's own zone**.
+ *
+ * That is not a contradiction of the pin above, and the distinction is the
+ * whole of it: *which* calendar date a viewer is on is a question about their
+ * clock, and *what lunar date that calendar date is* is the question this
+ * module pins to UTC+7. A printed Vietnamese calendar answers the second for
+ * every reader on earth and leaves the first to the reader.
+ *
+ * Doing it the other way round — showing everyone Vietnam's current lunar day —
+ * makes the clock tile contradict itself for eight hours a day in California:
+ * the solar date on the line would be the 30th and the lunar date beside it
+ * would be the 31st's.
+ */
 export function lunarOf(at: number | Date): TpLunarDate | null {
-	return lunarOfDate(vnDateOf(at));
+	const date = at instanceof Date ? at : new Date(at);
+	return lunarOfDate({ d: date.getDate(), m: date.getMonth() + 1, y: date.getFullYear() });
 }
 
 /**

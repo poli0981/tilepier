@@ -8,7 +8,6 @@ import {
 	lunarOfDate,
 	solarOfLunar,
 	SUPPORTED_RANGE,
-	vnDateOf,
 	type TpLunarDate
 } from './amlich';
 import { canChiYear } from './format';
@@ -252,32 +251,41 @@ describe('amlich — frozen pairs', () => {
 	});
 });
 
-describe('amlich — the zone is pinned to Vietnam (doc 07 §6)', () => {
-	// The whole point of the module. `TZ` cannot be changed inside a running
-	// process, so the pin is demonstrated the way it actually works: `vnDateOf`
-	// reads the date *in Vietnam* from an instant, and every viewer on earth
-	// passes the same instant.
-	it('reads the Vietnamese civil date rather than the runner own one', () => {
-		// 23:00 UTC on the 27th is already the 28th in Hanoi (+7).
-		expect(vnDateOf(Date.UTC(2026, 7, 27, 23, 0))).toEqual({ d: 28, m: 8, y: 2026 });
-		// 00:30 UTC on the 28th is still the 28th there, at 07:30 local.
-		expect(vnDateOf(Date.UTC(2026, 7, 28, 0, 30))).toEqual({ d: 28, m: 8, y: 2026 });
-		// An hour before Vietnamese midnight it is still the 27th.
-		expect(vnDateOf(Date.UTC(2026, 7, 27, 16, 0))).toEqual({ d: 27, m: 8, y: 2026 });
+describe('amlich — the conversion is pinned to UTC+7 (doc 07 §6, doc 19 §3.1)', () => {
+	it('takes a calendar date, not an instant, so no clock can influence it', () => {
+		// The pin is structural rather than defensive: `lunarOfDate` has no way
+		// to read a zone, because it is never given one. This is the assertion
+		// doc 19 §3.1 asks for — a viewer in UTC-8 and one in UTC+7 looking at
+		// the same date get the same lunar day — stated as the property that
+		// makes it true, since `TZ` cannot be changed inside a running process.
+		expect(lunarOfDate({ d: 17, m: 2, y: 2026 })).toEqual({
+			day: 1,
+			month: 1,
+			year: 2026,
+			leap: false
+		});
+		expect(lunarOfDate({ d: 17, m: 2, y: 2026 })).toEqual(convertSolar2Lunar(17, 2, 2026, 7));
 	});
 
-	it('gives a viewer in UTC-8 the same lunar day as one in UTC+7', () => {
-		// This instant is 09:00 on 2026-08-28 in Hanoi and 18:00 on the *27th*
-		// in Los Angeles. Both must read the same lunar date, or the calendar
-		// would quietly move Tết for anyone abroad.
-		const instant = Date.UTC(2026, 7, 28, 2, 0);
-		expect(lunarOf(instant)).toEqual(lunarOfDate({ d: 28, m: 8, y: 2026 }));
-		expect(lunarOf(instant)).not.toEqual(lunarOfDate({ d: 27, m: 8, y: 2026 }));
+	it('is pinned to +7 specifically, and the pin changes answers', () => {
+		// If +7 and +8 agreed everywhere, the pin would be decoration. They do
+		// not: Tết 2007 is 17 February in Vietnam and 18 February at UTC+8, and
+		// that single day is the reason this module exists rather than `Intl`.
+		expect(convertSolar2Lunar(17, 2, 2007, 7)).toMatchObject({ day: 1, month: 1 });
+		expect(convertSolar2Lunar(17, 2, 2007, 8)).not.toMatchObject({ day: 1, month: 1 });
+		expect(lunarOfDate({ d: 17, m: 2, y: 2007 })).toEqual(convertSolar2Lunar(17, 2, 2007, 7));
+	});
+
+	it('reads the viewer own calendar date from an instant', () => {
+		// Which date you are on is local; what lunar date that is, is pinned.
+		// Built from a local Date so the assertion holds on a runner in any zone.
+		const at = new Date(2026, 7, 28, 10, 0);
+		expect(lunarOf(at)).toEqual(lunarOfDate({ d: 28, m: 8, y: 2026 }));
 	});
 
 	it('accepts a Date as readily as a timestamp', () => {
-		const at = Date.UTC(2026, 7, 28, 2, 0);
-		expect(lunarOf(new Date(at))).toEqual(lunarOf(at));
+		const at = new Date(2026, 7, 28, 10, 0);
+		expect(lunarOf(at.getTime())).toEqual(lunarOf(at));
 	});
 });
 

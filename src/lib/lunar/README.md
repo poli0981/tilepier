@@ -12,6 +12,23 @@ implementation — and is carried over from QuoteAtlas, a sibling project of thi
 one, together with its test vectors. Doc 16 §5 requires the credit line above to
 appear both here and on `/legal/licenses`; it does so in both places.
 
+## What "pinned to UTC+7" does and does not mean
+
+doc 07 §6 fixes the lunar computation to Asia/Ho_Chi_Minh "regardless of viewer
+zone". That is a statement about the **conversion**, not about which date the UI
+shows. A new-moon boundary falls at an instant, so computing it against the
+browser's own offset would put whole lunar months a day out for anyone abroad —
+moving Tết for exactly the reader it matters most to. Hence `timeZone = 7`
+everywhere, and `lunarOfDate` taking a calendar date rather than an instant, so
+there is no clock for a zone to leak in through.
+
+Which calendar date a viewer is _on_ stays local. A printed Vietnamese calendar
+answers "what lunar date is 30 August" for every reader on earth and leaves "what
+day is it" to the reader; this module does the same. Doing it the other way round
+— showing everyone Vietnam's current lunar day — makes the clock tile contradict
+itself for eight hours a day in California, with the solar date on the line
+reading the 30th and the lunar date beside it belonging to the 31st.
+
 ## Why this exists at all
 
 `Intl`'s `chinese` calendar computes at UTC+8 and **genuinely diverges from the
@@ -48,10 +65,9 @@ day-range invariant exists.
 
 | Export                                      | For                                                     |
 | ------------------------------------------- | ------------------------------------------------------- |
-| `lunarOf(at)`                               | the lunar date **in Vietnam** at an instant — "today"   |
-| `lunarOfDate(solar)`                        | the lunar date of a calendar cell                       |
+| `lunarOfDate(solar)`                        | the lunar date of a calendar date — the core of it      |
+| `lunarOf(at)`                               | the same, for the date an instant falls on              |
 | `solarOfLunar(lunar)`                       | the detail panel's converter, running backwards         |
-| `vnDateOf(at)`                              | the civil date in Vietnam at an instant                 |
 | `convertSolar2Lunar` / `convertLunar2Solar` | the raw maths, unguarded, for the vector suite          |
 | `julianDayOf(solar)`                        | the day-level can-chi cycle counts in Julian days       |
 | `SUPPORTED_RANGE` / `isSupportedYear`       | doc 07 §6's 1900–2100 guard                             |

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TpWidgetProps } from '$lib/core/types';
 	import { fmtDate, fmtTime } from '$lib/i18n/fmt';
-	import { lunarOfDate, vnDateOf } from '$lib/lunar/amlich';
+	import { lunarOfDate } from '$lib/lunar/amlich';
 	import { fmtLunarShort } from '$lib/lunar/format';
 	import { settings } from '$lib/stores/settings.svelte';
 	import {
@@ -69,23 +69,36 @@
 	const date = $derived(fmtDate(now, settings.locale));
 
 	/**
-	 * The civil date **in Vietnam**, as a string, so the astronomy below runs
-	 * once a day rather than once a second: a Svelte 5 `$derived` propagates only
-	 * when its value actually changes, and this one changes at Vietnamese
-	 * midnight. Reading `now` directly in `lunar` would recompute a new-moon
-	 * solution on every tick of a clock.
+	 * The displayed calendar date, as a string, so the astronomy below runs once
+	 * a day rather than once a second: a Svelte 5 `$derived` propagates only
+	 * when its value actually changes, and this one changes at midnight. Reading
+	 * `now` directly in `lunar` would recompute a new-moon solution on every
+	 * tick of a clock.
 	 */
-	const vnDateKey = $derived.by(() => {
-		const vn = vnDateOf(now);
-		return `${String(vn.y)}/${String(vn.m)}/${String(vn.d)}`;
+	const dayKey = $derived.by(() => {
+		const at = new Date(now);
+		return `${String(at.getFullYear())}/${String(at.getMonth() + 1)}/${String(at.getDate())}`;
 	});
 
-	/** doc 07 §1: `T7 30/08 · 08/07 Bính Ngọ`. Empty outside the lunar module's
-	 *  supported range (doc 07 §6) rather than showing a placeholder — a date
-	 *  line that says nothing is better than one that says "—". */
+	/**
+	 * doc 07 §1: `T7 30/08 · 08/07 Bính Ngọ`.
+	 *
+	 * The lunar date of **the date on the line beside it**, not of whatever date
+	 * it currently is in Vietnam. The conversion is pinned to UTC+7 either way
+	 * (doc 07 §6), which is the part that has to be pinned; showing Vietnam's
+	 * current day instead would make this line contradict itself for eight hours
+	 * a day in California, with the solar date reading the 30th and the lunar
+	 * date beside it belonging to the 31st.
+	 *
+	 * Empty outside the module's supported range rather than showing a
+	 * placeholder — a date line that says nothing beats one that says "—".
+	 */
 	const lunar = $derived.by(() => {
 		if (settings.locale !== 'vi') return '';
-		const [y, m, d] = vnDateKey.split('/').map(Number) as [number, number, number];
+		// Read back out of `dayKey` rather than from `now`, deliberately: reading
+		// `now` here would make this a dependency of the second hand again and
+		// undo the whole point of the derivation above.
+		const [y, m, d] = dayKey.split('/').map(Number) as [number, number, number];
 		const value = lunarOfDate({ d, m, y });
 		return value === null ? '' : fmtLunarShort(value, 'vi');
 	});
