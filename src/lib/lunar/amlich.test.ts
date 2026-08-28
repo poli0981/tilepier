@@ -238,6 +238,52 @@ describe('amlich — leap months', () => {
 		// 2023's leap month is 2; a leap 5 is not a date.
 		expect(solarOfLunar({ day: 1, month: 5, year: 2023, leap: true })).toBeNull();
 	});
+
+	it('refuses a leap month in a year that has none at all', () => {
+		// The case the raw converter misses. Its leap guard lives inside the
+		// `b11 - a11 > 365` branch, so it only fires for years that *have* a leap
+		// month; 2026 has none, and a leap 1 of 2026 came back as ordinary Tết —
+		// a wrong answer rather than a refusal. `solarOfLunar` round-trips.
+		expect(convertLunar2Solar(1, 1, 2026, true)).toEqual({ d: 17, m: 2, y: 2026 });
+		expect(solarOfLunar({ day: 1, month: 1, year: 2026, leap: true })).toBeNull();
+		expect(solarOfLunar({ day: 1, month: 1, year: 2026, leap: false })).toEqual({
+			d: 17,
+			m: 2,
+			y: 2026
+		});
+	});
+
+	it('refuses day 30 of a month that only has 29', () => {
+		// Caught by the same round trip: the raw converter walks on into the
+		// following month rather than saying the date is not there.
+		const twentyNine = vectors.pairs
+			.map((p) => p.split('=')[1] ?? '')
+			.filter((label) => label.startsWith('30/'));
+		// The fixture has 30ths in it, so a blanket "no 30th exists" would be
+		// wrong — this is about the months that end on the 29th.
+		expect(twentyNine.length).toBeGreaterThan(0);
+
+		// Lunar month 2 of 2026 runs 29 days; month 1 runs 30. Both are asserted,
+		// so this cannot pass by refusing every 30th.
+		expect(solarOfLunar({ day: 29, month: 2, year: 2026, leap: false })).not.toBeNull();
+		expect(solarOfLunar({ day: 30, month: 2, year: 2026, leap: false })).toBeNull();
+		expect(solarOfLunar({ day: 30, month: 1, year: 2026, leap: false })).not.toBeNull();
+	});
+
+	it('still answers for every day the forward direction produced', () => {
+		// The guard must refuse only impossible dates. Every lunar date reachable
+		// from a real solar date in range has to survive it, or the converter
+		// would start refusing dates the grid is already showing.
+		let checked = 0;
+		for (let t = Date.UTC(2020, 0, 1); t <= Date.UTC(2030, 11, 31); t += DAY) {
+			const at = new Date(t);
+			const solar = { d: at.getUTCDate(), m: at.getUTCMonth() + 1, y: at.getUTCFullYear() };
+			const lunar = lunarOfDate(solar);
+			expect(solarOfLunar(lunar as TpLunarDate), `${iso(solar)}`).toEqual(solar);
+			checked++;
+		}
+		expect(checked).toBeGreaterThan(4000);
+	});
 });
 
 describe('amlich — frozen pairs', () => {

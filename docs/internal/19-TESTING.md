@@ -102,6 +102,17 @@ panel — or does not, depending on how far through an opening animation it has
 got, which differs between a developer's machine and a runner. Use
 `{ position: { x: 4, y: 4 } }`.
 
+A second of the same kind, added 2026-08-28 for the component suite: **never
+assert a spy straight after a click** — wrap it in `vi.waitFor`. A locator's
+`.click()` resolves when the click is dispatched, not when whatever it caused
+has finished, and on a cold run (Vite re-optimising its dependency graph while
+the first file executes, which adding files to the project triggers) the gap is
+wide enough to lose. It cost one red `test:cov` on a timer assertion written in
+Week 2 that had passed every run until the Week 3 files landed beside it.
+Everything else in that file already went through `waitFor` or `expect.element`,
+which is the same wait by another name; the one that did not was the one that
+broke.
+
 ## 5. Manual test matrix (release gate)
 
 Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android

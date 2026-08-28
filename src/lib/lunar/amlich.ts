@@ -317,9 +317,18 @@ export function lunarOf(at: number | Date): TpLunarDate | null {
 
 /**
  * The solar date a lunar date falls on — the detail panel's converter running
- * backwards. `null` for a leap month that year does not have, and `null` when
- * the answer would fall outside the supported range, so a caller never has to
- * recognise `{ d: 0, m: 0, y: 0 }` as a failure.
+ * backwards. `null` for a date that does not exist, and `null` when the answer
+ * would fall outside the supported range, so a caller never has to recognise
+ * `{ d: 0, m: 0, y: 0 }` as a failure.
+ *
+ * **The answer is verified by converting it back**, and that is load-bearing
+ * rather than belt-and-braces. `convertLunar2Solar`'s own leap-month guard sits
+ * inside its `b11 - a11 > 365` branch, so it only fires when the lunar year
+ * *has* a leap month: asking for a leap month of a year with none — leap 1 of
+ * 2026, say — fell straight through and returned the ordinary month's date,
+ * which is a wrong answer rather than a refusal. The round trip catches that,
+ * and catches day 30 of a 29-day month for free, where the raw converter walks
+ * on into the following month.
  */
 export function solarOfLunar(lunar: TpLunarDate): TpSolarDate | null {
 	const solar = convertLunar2Solar(
@@ -329,8 +338,18 @@ export function solarOfLunar(lunar: TpLunarDate): TpSolarDate | null {
 		lunar.leap,
 		VN_UTC_OFFSET_HOURS
 	);
-	if (solar.y === 0) return null;
-	return isSupportedYear(solar.y) ? solar : null;
+	if (solar.y === 0 || !isSupportedYear(solar.y)) return null;
+
+	const back = convertSolar2Lunar(solar.d, solar.m, solar.y, VN_UTC_OFFSET_HOURS);
+	if (
+		back.day !== lunar.day ||
+		back.month !== lunar.month ||
+		back.year !== lunar.year ||
+		back.leap !== lunar.leap
+	) {
+		return null;
+	}
+	return solar;
 }
 
 /** Julian day number of a solar date — the day-level can-chi cycle counts in

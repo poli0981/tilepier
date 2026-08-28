@@ -129,6 +129,20 @@ export function canChiDay(solar: TpSolarDate): string {
 export type TpLunarLocale = 'vi' | 'en';
 
 /**
+ * The name of a lunar month on its own — `tháng Bảy`, or `7th lunar month`.
+ * The calendar header needs it without a day attached, which is the one thing
+ * neither formatter below can give it.
+ */
+export function lunarMonthName(month: number, locale: TpLunarLocale, leap = false): string {
+	if (locale === 'en') {
+		const ordinal = ORDINALS[month - 1] ?? String(month);
+		return leap ? `${ordinal} leap lunar month` : `${ordinal} lunar month`;
+	}
+	const name = MONTHS[month - 1] ?? String(month);
+	return leap ? `tháng ${name} (nhuận)` : `tháng ${name}`;
+}
+
+/**
  * The compact form the clock tile and the calendar header carry (doc 14 §3):
  * `08/07 Bính Ngọ` in Vietnamese, `7th day, 7th lunar month` in English.
  *
