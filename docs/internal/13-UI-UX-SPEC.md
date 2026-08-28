@@ -93,8 +93,29 @@ show "on deck" disabled state. Search filters by name.
 - Tiles are `section` landmarks labeled by widget title + instance name.
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).
-- Contrast: fg on ink-900 = 11.9:1; fg-mute = 5.1:1 (AA for normal text);
-  audit every semantic-on-surface pair in Week 8 (doc 23).
+- Contrast: **measured 2026-08-28**, when `widgets/toolbox/color.ts` gave the
+  suite something to measure with. `fg` on `ink-900` is **15.35:1** and `fg-mute`
+  is **7.16:1** — both comfortably AA, and both better than the 11.9 and 5.1 this
+  line asserted before anything had computed them. `color.test.ts` now asserts
+  the pair against the tokens, so the two cannot drift apart again.
+
+  **`fg-dim` on `ink-900` is 3.51:1**, which is AA for large text only and fails
+  AA for normal text. doc 12 §2 gives it "tertiary, timestamps", and it is used
+  at `--text-2xs` for the notes updated-ago line, the clock's zone deltas and the
+  calendar's lunar day numbers — all normal-size text. Left as measured rather
+  than fixed here: raising it is a design-token change, and doc 23 puts the
+  contrast audit in Week 8 where the whole ramp can move together. Recorded so
+  that audit starts from a known finding rather than rediscovering it.
+
+  A second finding for the same audit, recorded 2026-08-28: **tile controls are
+  below the 40 px target above.** The todo tile has shipped 36, 32 and 28 px
+  controls since Week 2 and the toolbox tile follows it at 28 px, because three
+  40 px tabs plus a panel do not fit a 2×2 tile. Detail panels do hold the rule
+  and the toolbox detail is built to it. Either the rule wants a tile exception
+  or the tiles want redesigning; that is a Week 8 call, and it is written down
+  here so it is made rather than discovered.
+
+  The full sweep of every semantic-on-surface pair remains Week 8 (doc 23).
 - Charts: every ECharts view paired with an accessible summary line
   (e.g., "AAPL 1M: +4.2%, range 182–199") — cheap, honest a11y.
 

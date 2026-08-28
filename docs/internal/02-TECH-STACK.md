@@ -31,6 +31,7 @@ Rule: pin minors in `package.json` (`^` within major), let Renovate raise PRs.
 | music-metadata | latest | Browser build; ID3/FLAC/Vorbis tags + cover art for the music widget. |
 | marked + dompurify | latest | Notes markdown preview. DOMPurify mandatory before any `{@html}`. |
 | fast-xml-parser | **5.x** | Server-side RSS/Atom/RDF parsing in the Worker (doc 10 §7). Added 2026-08-10 — it was required by docs 10 and 16 but missing from this table. |
+| qrcode-generator | **2.0.x** | MIT, **zero dependencies**, by the original author. The toolbox's QR tab (doc 07 §7). Added 2026-08-28 — that section says "small vendored QR encoder", and vendoring was measured before it was rejected: Nayuki's TypeScript source is 990 lines and produces **43 errors** under this repo's `noUncheckedIndexedAccess`, so carrying it verbatim would have meant `@ts-nocheck` plus exclusions in eslint, prettier, knip and coverage — five holes in a repo that has none. A zero-dep package goes through Renovate and `pnpm audit` like everything else. `qrcode` was the alternative doc 07 §7 named and is not it: three transitive dependencies including `yargs`. |
 | vite-plugin-pwa | latest | Workbox precache + offline fallback (doc 17). Subject to Spike S5. |
 
 Deliberately **not** used: no UI component library (design system is bespoke,

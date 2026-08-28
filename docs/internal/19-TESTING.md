@@ -113,6 +113,14 @@ Everything else in that file already went through `waitFor` or `expect.element`,
 which is the same wait by another name; the one that did not was the one that
 broke.
 
+And a third, which is the corner rule's other half: **the browser project pins
+`browser.viewport`**. Without it Vitest sizes each file's iframe by how many
+files are running beside it, so a centred detail panel can cover the scrim's own
+corner and the corner rule stops working — silently, and only once someone adds
+a test file. `e2e/TpDetailOverlay`'s scrim click had followed the rule since
+Week 2 and started failing on the run that added the Week 3 files, in isolation
+passing every time. Pinned at 1280×800 in `vite.config.ts` on 2026-08-28.
+
 ## 5. Manual test matrix (release gate)
 
 Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android

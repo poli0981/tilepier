@@ -103,6 +103,7 @@ unambiguous insertion point.
 | Nominatim | policy: UA + caching | technical compliance (doc 10 §6) + credit |
 | Finnhub / Twelve Data / Binance / Stooq | per ToS | credit lines in markets detail + licenses |
 | gridstack (MIT), ECharts (Apache-2.0), MapLibre (BSD-3), Dexie (Apache-2.0), Svelte/Kit (MIT), Tailwind (MIT), marked (MIT), DOMPurify (Apache-2.0/MPL dual), music-metadata (MIT), Paraglide (Apache-2.0), fast-xml-parser (MIT), icon sources (ISC) | — | license texts reproduced in licenses page bundle |
+| qrcode-generator (Kazuhiko Arase) | MIT | licence text in the licences page bundle; "QR Code" is a registered trademark of DENSO WAVE, which the library's own notice records and this page carries |
 | Be Vietnam Pro, JetBrains Mono | OFL 1.1 | OFL text shipped with fonts; fonts not sold separately |
 | Hồ Ngọc Đức lunar algorithm | published algorithm w/ permission notice | credit line in licenses + `lib/lunar/README` (carry the same notice used in QuoteAtlas) |
 

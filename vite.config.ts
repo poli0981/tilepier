@@ -122,6 +122,14 @@ export default defineConfig({
 					browser: {
 						enabled: true,
 						provider: playwright(),
+						// Pinned, and load-bearing rather than tidy. Without it the
+						// iframe a file renders into is sized by how many files happen
+						// to be running beside it, so a centred detail panel can cover
+						// the scrim's own corner — the exact geometry doc 19 §4's
+						// corner-click rule exists to avoid. A suite whose layout
+						// depends on its own file count fails on the run *after* the
+						// one that added a file, which is the worst way to find out.
+						viewport: { width: 1280, height: 800 },
 						instances: [{ browser: 'chromium', headless: true }]
 					},
 					// Storage and <html> leak between component tests otherwise.
