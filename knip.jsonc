@@ -61,8 +61,6 @@
 		// the fonts above: the edge is real, it just is not an import.
 		"@inlang/plugin-message-format",
 		"@inlang/plugin-m-function-matcher",
-		// Week 3: MSW fixtures for the first networked widget (doc 19 §1).
-		"msw",
 		// Week 6: the RSS parser in the Worker (doc 10 §7).
 		"fast-xml-parser"
 	],

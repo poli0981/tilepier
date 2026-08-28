@@ -120,6 +120,8 @@
 	"settings.storage.erase_note": "Deletes the layout, the settings and the whole local database on this device. It cannot be undone — export a backup above first if you might want any of it back.",
 	"settings.diagnostics.title": "Diagnostics",
 	"settings.diagnostics.scheduler": "Scheduler",
+	"settings.diagnostics.swr": "Cached data",
+	"settings.diagnostics.no_cache": "nothing cached yet",
 	"settings.diagnostics.no_tasks": "No tasks registered.",
 	"settings.diagnostics.log": "Recent log",
 	"settings.about.title": "About",

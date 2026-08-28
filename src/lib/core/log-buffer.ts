@@ -27,6 +27,11 @@ export type TpLogSource =
 	| 'layout'
 	/** A widget reporting on its own data — a stored value it had to discard. */
 	| 'widget'
+	/** The data layer: a cache read that failed, a 429, a `BAD_REQUEST` that
+	 *  means this build asked wrongly (doc 04 §2, doc 17 §4). Added Week 3 with
+	 *  `core/swr.svelte.ts`, so a report can tell a network fault from a widget
+	 *  one without reading the message. */
+	| 'swr'
 	/** The detail overlay and its chunk loading (doc 06 §6). */
 	| 'detail';
 

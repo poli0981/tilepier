@@ -120,6 +120,8 @@
 	"settings.storage.erase_note": "Xóa bố cục, cài đặt và toàn bộ cơ sở dữ liệu trên máy này. Không thể hoàn tác — hãy xuất một bản sao lưu ở trên trước nếu bạn còn cần đến.",
 	"settings.diagnostics.title": "Chẩn đoán",
 	"settings.diagnostics.scheduler": "Bộ lập lịch",
+	"settings.diagnostics.swr": "Dữ liệu đã lưu",
+	"settings.diagnostics.no_cache": "chưa có gì được lưu",
 	"settings.diagnostics.no_tasks": "Chưa có tác vụ nào đăng ký.",
 	"settings.diagnostics.log": "Nhật ký gần đây",
 	"settings.about.title": "Giới thiệu",

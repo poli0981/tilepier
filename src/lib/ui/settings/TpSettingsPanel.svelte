@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { logEntry, readLog } from '$lib/core/log-buffer';
 	import { scheduler } from '$lib/core/scheduler';
+	import { swrCache } from '$lib/core/swr.svelte';
 	import { db } from '$lib/core/storage/db';
 	import {
 		applyImport,
@@ -530,6 +531,31 @@
 									<td>{task.label}</td>
 									<td>{task.state}</td>
 									<td class="tp-num">{task.consecutiveFailures}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+
+			<!--
+				doc 13 §10 §8: the swr cache ages, which arrive with their module in
+				Week 3. Nothing on the deck is networked yet, so this table is
+				normally empty — and that is the honest thing for it to say rather
+				than being left out until it can be full.
+			-->
+			<h3>{m['settings.diagnostics.swr']()}</h3>
+			{#if swrCache.inspect().length === 0}
+				<p class="tp-note">{m['settings.diagnostics.no_cache']()}</p>
+			{:else}
+				<div class="tp-scroll">
+					<table>
+						<tbody>
+							{#each swrCache.inspect() as row (row.key)}
+								<tr>
+									<td>{row.key}</td>
+									<td>{row.status}</td>
+									<td class="tp-num">{row.ageMs === null ? '—' : Math.round(row.ageMs / 1000)}</td>
 								</tr>
 							{/each}
 						</tbody>
