@@ -2,7 +2,6 @@
 	import type { Component } from 'svelte';
 	import { logEntry } from '$lib/core/log-buffer';
 	import { getManifest } from '$lib/core/registry';
-	import { scheduler } from '$lib/core/scheduler';
 	import type { TpTileSize, TpWidgetProps } from '$lib/core/types';
 	import { widgetLabels } from '$lib/i18n/widget-labels';
 	import { m } from '$lib/paraglide/messages';
@@ -18,6 +17,15 @@
 	 *
 	 * `size` is passed down rather than read from the DOM — doc 06 §2: widgets
 	 * never measure themselves, the host observes and reports.
+	 *
+	 * The host does **not** register the manifest's `refresh` with the scheduler.
+	 * It used to, with an empty `run` waiting for Week 3 to fill in — and that
+	 * could never have worked: `scheduler.register` refcounts by id and the first
+	 * registration's options win, so a widget registering under its own
+	 * `instanceId` would silently join the no-op and never run. Widgets own their
+	 * cadence through `core/refresh.svelte.ts` instead. doc 19 §6's "no scheduler
+	 * leaks on remove" is unaffected: the effect simply lives one component
+	 * deeper, and a widget unmounts with its host.
 	 */
 	interface Props {
 		tile: TpTile;
@@ -61,26 +69,6 @@
 		observer.observe(el);
 
 		return () => observer.disconnect();
-	});
-
-	// Registers whatever the manifest declares, and returns `unregister` as the
-	// teardown. This is what makes doc 19 §6's "no scheduler leaks on remove"
-	// structural: removing a tile unmounts the host, which runs this cleanup,
-	// so there is no separate discipline to remember. `e2e/s1-grid` asserts
-	// scheduler.size returns to baseline across fifty add/remove cycles.
-	$effect(() => {
-		const refresh = manifest?.refresh;
-		if (refresh === undefined || refresh.kind === 'manual') return;
-
-		const handle = scheduler.register(tile.instanceId, {
-			cadence: refresh,
-			label: `${tile.widgetId}:${tile.instanceId}`,
-			run: () => {
-				// Widgets own their own fetching through swr() (Week 3); the host
-				// only owns the schedule and its teardown.
-			}
-		});
-		return () => handle.unregister();
 	});
 </script>
 

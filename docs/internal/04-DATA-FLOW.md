@@ -188,10 +188,28 @@ seam the fake-timer suites drive directly instead of stubbing `setInterval`.
 > Handle and introspection added 2026-08-19. `register()` previously returned
 > nothing and there was **no deregistration API anywhere in the suite**, while
 > doc 19 §6's DoD requires "no scheduler leaks on remove" — the two could not
-> both be satisfied (doc 22 §Exit review, item 3). The host now registers inside
-> an `$effect` and returns `unregister` as the teardown, so removing a tile
-> cannot leave a live entry behind. **Specified and implemented in Week 1**,
-> because that teardown path is what the DoD rests on.
+> both be satisfied (doc 22 §Exit review, item 3). Registration happens inside an
+> `$effect` that returns `unregister` as its teardown, so removing a tile cannot
+> leave a live entry behind. **Specified and implemented in Week 1**, because
+> that teardown path is what the DoD rests on.
+
+### Who registers
+
+**The widget, not the host.** Corrected 2026-08-28. This section said "the host
+now registers inside an `$effect`", and `TpWidgetHost` did — with an empty `run`,
+waiting for the Week 3 data layer to fill in. That could never have worked, and
+the reason is two rules of this section meeting: `register()` refcounts by id and
+**the first registration's options win**, so a widget registering under its own
+`instanceId` would silently join the host's no-op entry and never run. The
+contract read as wired and was not, which is the same shape as the doc 06 §5
+rule 11 bug found in Week 2.
+
+The host therefore registers nothing. A widget that declares a `refresh` calls
+`useRefresh(id, cadence, run)` from `core/refresh.svelte.ts`, which is the same
+`$effect`-with-teardown one component deeper. The DoD is unaffected — a widget
+unmounts with its host — and `id` stays the caller's choice per the rule above,
+which is now a choice something can actually make: `calendar` and `quote` pass
+their `instanceId`, and a networked widget will pass its data key.
 
 ## 4. Request lifecycle example — weather tile
 
