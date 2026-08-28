@@ -175,8 +175,22 @@ can point at it: the copy now says "export a backup above first" rather than
 "there is no automatic backup yet".
 
 Section 8 ships in Week 1 with the two data sources that exist by then, the log
-ring buffer and `scheduler.inspect()` (doc 04 §3); the swr and breaker rows
-arrive with their own modules in Week 3.
+ring buffer and `scheduler.inspect()` (doc 04 §3).
+
+**The swr rows arrived 2026-08-28** with `core/swr.svelte.ts`, reading
+`swrCache.inspect()` — key, status and age in seconds. Nothing on the deck is
+networked until Week 4, so the table normally reads "nothing cached"; that is
+the honest thing for it to say rather than being left out until it can be full.
+
+**The breaker rows did not, and that is a deliberate deferral to Week 5.** They
+need `GET /api/_health`, which doc 11 §9 gates behind `env.DEV_DASH_TOKEN` — a
+secret, and secrets are not declared in `wrangler.jsonc`. Typing one means
+`wrangler types` reading a gitignored `.dev.vars`, so the committed
+`worker-configuration.d.ts` would differ between a developer's checkout and CI
+and `wrangler types --check` would fail on one of them. That is a real problem
+with a real answer and it is not a Week 3 problem: doc 23 puts the quota
+telemetry watch at Week 5, which is when a breaker table first has anything to
+say. Recorded here rather than left as a gap in a numbered list.
 
 Section 7 ships in Week 1 deliberately, out of order of apparent usefulness: it
 is what makes the ring buffer worth having, and M1's stated QA strategy is

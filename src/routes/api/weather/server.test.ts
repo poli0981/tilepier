@@ -48,7 +48,14 @@ function call(options: CallOptions = {}): Promise<Response> {
 	)({ request, url, platform: { env: { TILEPIER_CACHE: kv } } });
 }
 
-const PAYLOAD = { place: { lat: 21.02, lon: 105.85, timezone: 'Asia/Ho_Chi_Minh' } };
+/** The normalized shape the endpoint produces since 2026-08-28 (doc 10 §2). */
+const PAYLOAD = {
+	place: { lat: 21.02, lon: 105.85, timezone: 'Asia/Ho_Chi_Minh' },
+	hourly: [],
+	daily: [],
+	air: null,
+	attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
+};
 
 function seedCache(kv: KVNamespace & { store: Map<string, string> }, ageMs: number): void {
 	kv.store.set(
@@ -212,11 +219,14 @@ describe('the upstream path', () => {
 	it('still answers when only air quality fails', async () => {
 		stubUpstream({ aqiFails: true });
 
-		const body = (await (await call()).json()) as { ok: boolean; data: { airQuality: unknown } };
+		// `air`, not `airQuality`: the field moved with the normalisation on
+		// 2026-08-28 (doc 10 §2), and `null` is what it says when the extra call
+		// failed.
+		const body = (await (await call()).json()) as { ok: boolean; data: { air: unknown } };
 
 		// doc 10: AQI is an extra. Losing it must not cost the forecast.
 		expect(body.ok).toBe(true);
-		expect(body.data.airQuality).toBeNull();
+		expect(body.data.air).toBeNull();
 	});
 
 	it('carries the attribution the licence requires', async () => {

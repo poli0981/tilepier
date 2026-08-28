@@ -33,6 +33,15 @@ the client; grep-guard in CI, doc 21 §5).
 - Geocoding (fallback only): `https://geocoding-api.open-meteo.com/v1/search`.
 - Normalize: Worker maps to `TpWeatherPayload` (our shape) — client never
   sees raw upstream shape (schema-version isolation, doc 04 §5).
+  **Built 2026-08-28.** It had not been: the endpoint shipped in Week 0 with
+  `hourly` and `daily` passed straight through as `unknown`, which is the
+  opposite of this line. `routes/api/_lib/normalize.ts` now turns the nine
+  parallel arrays into rows — a reader had to index all nine in step to
+  describe one hour — and **trims 168 hours to 48**, since doc 08 §1 asks for
+  a 24-hour chart and a 12-hour sparkline and 48 covers either from any point
+  in the day. The other 120 are five times the payload for a view that does
+  not exist. Every field is read defensively: a missing column yields `NaN`
+  rather than a zero, because 0 °C is a temperature and a gap is not.
 - Failure: 4xx (bad coords) → 400 to client; 5xx/timeout → stale-serve.
 
 ## 3. FX — rates + self-accumulated history
@@ -92,6 +101,19 @@ the client; grep-guard in CI, doc 21 §5).
   it). Normalize both to `{name, displayName, lat, lon, type}`.
 - On-map attribution control must stay enabled (ODbL condition) — never
   hide it via CSS.
+
+**Built 2026-08-28**, ahead of the map widget that will use it, because the
+weather widget's place picker (doc 08 §1) needs it in Week 4. Photon leads and
+Nominatim only sees what Photon could not answer — that ordering is the policy
+compliance, not an optimisation. Two decisions worth recording:
+
+- **A search that found nothing is cached.** It is an answer, and re-asking two
+  volunteer-run services the same unanswerable question on every keystroke is
+  exactly what their fair-use policies exist to prevent.
+- **The cache key normalises case and whitespace but keeps diacritics.**
+  `Hà Nội` and `  HÀ   NỘI  ` are the same search; `Hà Nội` and `Ha Noi` are not,
+  because they are different questions upstream and folding them would make two
+  searches share one answer.
 
 ## 7. RSS (arbitrary user feeds)
 

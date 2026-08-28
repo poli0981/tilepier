@@ -6,6 +6,8 @@ import { checkRateLimit } from '../_lib/ratelimit';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
 import { fail, isCrossSite, ok } from '../_lib/respond';
 import { geohash, parseCoords } from '../_lib/geohash';
+import { normalizeWeather } from '../_lib/normalize';
+import type { TpWeatherPayload } from '$lib/api-types';
 
 /**
  * `GET /api/weather?lat&lon` — doc 11 §3, upstream doc 10 §2.
@@ -27,15 +29,6 @@ const FORECAST =
 const AIR_QUALITY =
 	'https://air-quality-api.open-meteo.com/v1/air-quality' +
 	'?hourly=european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide&forecast_days=1';
-
-/** Our shape, not Open-Meteo's — schema-version isolation (doc 10 §2). */
-interface TpWeatherPayload {
-	place: { lat: number; lon: number; timezone: string };
-	hourly: unknown;
-	daily: unknown;
-	airQuality: unknown | null;
-	attribution: string;
-}
 
 export const GET: RequestHandler = async ({ request, url, platform }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
@@ -88,19 +81,17 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 
 		if (forecast.status === 'rejected') throw forecast.reason;
 
-		const payload: TpWeatherPayload = {
-			place: {
-				lat: coords.lat,
-				lon: coords.lon,
-				timezone: String(forecast.value.data.timezone ?? 'UTC')
-			},
-			hourly: forecast.value.data.hourly ?? null,
-			daily: forecast.value.data.daily ?? null,
-			// AQI is a nice-to-have: a failure there must not cost the forecast.
-			airQuality: air.status === 'fulfilled' ? (air.value.data.hourly ?? null) : null,
-			// Carried in the payload so the UI cannot forget it (doc 10 §3).
-			attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
-		};
+		// doc 10 §2: the client never sees the upstream shape. Until 2026-08-28
+		// this passed `hourly` and `daily` straight through as `unknown`, which
+		// was the opposite of what that section requires. `_lib/normalize.ts`
+		// turns nine parallel arrays into rows and trims the 168 hours upstream
+		// returns to the 48 doc 08 §1 can use. AQI stays a nice-to-have: a
+		// failure there must not cost the forecast.
+		const payload: TpWeatherPayload = normalizeWeather(
+			coords,
+			forecast.value.data,
+			air.status === 'fulfilled' ? air.value.data.hourly : null
+		);
 
 		// doc 11 §8: cache persistence rides on waitUntil so the response does
 		// not wait on it — and, just as importantly, so a throttled KV write
