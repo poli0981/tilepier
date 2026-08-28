@@ -158,6 +158,27 @@ doing at each milestone is a spot check of the surfaces that week added, on the
 deployed build — the charter's QA strategy is dogfooding in production, and a
 milestone nobody has looked at is not one.
 
+**Week 3 spot check, 2026-08-28, on production.** All clear. The endpoint half
+was checked by request: `/api/geocode` answers normalised results and reports
+`x-tp-cache: HIT` on a second call with `cache-control: max-age=43200`, which is
+half the 24 h TTL doc 11 §2 specifies — so the KV cache and the header rule are
+both right on a real PoP rather than in a stubbed test. `/api/weather` returns
+the normalised `TpWeatherPayload`: 48 hourly rows trimmed from upstream's 168,
+7 daily, AQI bundled, attribution in the payload. That is the first time doc 10
+§2 has actually held.
+
+The interface half was checked by hand, because it is the half no test in this
+repo can settle. The deck's four seeded tiles, the lunar line on the clock and
+the lunar footer on the quote, a vi↔en switch moving can-chi and every label,
+calendar event CRUD with the converter and the observance list, and the
+diagnostics tables behind `?debug=1`. **And a QR of Vietnamese text scanned with
+a phone** — `qr.test.ts` says outright that it can prove the byte encoding and
+not the symbol, since no decoder is available to it; a phone is the decoder, and
+this is the step that closes that gap. Everything returned what was expected.
+
+The browser sweep, keyboard-only and NVDA remain Week 8 work and have not been
+run.
+
 **Week 2 spot check, 2026-08-27, on production.** All clear. The tier-1 widgets
 and the detail overlay were exercised by hand after deploy, and the layout held
 to **500 % zoom** without breaking — two and a half times the matrix's own

@@ -224,6 +224,12 @@ anything. Journey #3 moves to Week 4 with the weather detail. Quote's
 share-as-image is **cut**, which doc 08 §3 anticipated by calling it a stretch
 and doc 23's slip policy by listing it.
 
+Merged as `676c316` (PR #2, squash — the `main` ruleset allows no other method)
+and deployed by Cloudflare Workers Builds the same day. **Verified on
+production**: the two endpoints by request, the interface by hand, and a QR of
+Vietnamese text scanned with a phone — which is the one check no test in this
+repo can make, and `qr.test.ts` says so in as many words. Details in doc 19 §5.
+
 One decision went against the letter of a spec and is recorded in doc 02 and doc
 07 §7: the QR encoder is a zero-dependency package rather than a vendored file.
 Vendoring was measured first — 990 lines producing 43 errors under
@@ -235,6 +241,42 @@ weather widget+detail (ECharts bridge built here, theme-linked) ·
 fx endpoint + snapshot mechanism + currency widget/detail (history chart
 against accumulating snapshots) · offline/stale polish pass on both.
 **M4:** tier-2 pattern (swr + proxy + echarts) proven and documented back.
+
+**What Week 4 starts from.** Week 3 left five things for it, each deliberately:
+
+1. **`swr()` exists and nothing consumes it.** `core/api.ts` and
+   `core/swr.svelte.ts` are complete and tested, and the weather tile is their
+   first real caller — which is what actually meets M3's "end-to-end", a week
+   late by design. The data key is `cacheKey.weather(geohash5)`, already in
+   `shared-constants.ts`; the scheduler id is that key rather than the
+   `instanceId`, so two tiles on one place fetch once (doc 04 §3).
+2. **`/api/weather` returns a real `TpWeatherPayload`.** 48 hourly rows and 7
+   daily, camelCase, AQI bundled, attribution inside. `NaN` marks a gap that
+   upstream did not send — the chart has to skip those rather than plot zero.
+3. **The rate-limit toast has a coordinator and no component.** `swr` already
+   throttles to one notice per `BACKOFF.toastThrottleMs`; doc 13 §7 describes
+   the toast itself (bottom-centre, one at a time, 4 s), and weather is the
+   first widget that can trigger one. `stores/ui.svelte.ts` has no toast state
+   yet.
+4. **Journeys #3 and #4's second half.** #3 is the weather detail with its
+   chart, and doc 19 §4 notes the overlay handshake it leans on is already
+   covered by `e2e/detail-expansion`, so #3 only has to add the chart and the
+   fixture. #4's offline half is written; the stale badges belong to the weather
+   tile. `src/lib/core/__fixtures__/weather.ts` is the recorded envelope, and
+   MSW is wired for the node project.
+5. **`lib/charts/` is Week 0 spike code with no consumer** and is excluded from
+   coverage on that basis (doc 19 §2). It re-enters here, and the exclusion
+   should come off with it.
+
+The seeded deck reaches five tiles this week, when `weather` stops being
+filtered out (doc 13 §9) — `e2e/_lib/seed.ts` holds that number in one place
+now, and it has to move with the registry.
+
+Two carried notes that are not Week 4's job. `fg-dim` measures 3.51:1 and tile
+controls sit below the 40 px target (doc 13 §8), and widget chunks are not
+precached so a first detail open offline fails (doc 17 §2) — all three are Week
+8, all three are written down so that pass starts from a list rather than a
+discovery.
 
 ## Week 5 — Markets
 crypto ticker/klines endpoints · stock quote/series/search endpoints
