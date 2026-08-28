@@ -134,10 +134,10 @@ full-viewport scrim at its midpoint, where the centred panel sits. It passed
 locally and lost the race on a slower runner. Three call sites now aim at a
 corner, and doc 19 §4 says so.
 
-## Week 3 — Tier 1, batch 2 + proxy skeleton
-calendar + lunar module port w/ test vectors · toolbox · quote ·
+## Week 3 — Tier 1, batch 2 + proxy skeleton · **COMPLETE 2026-08-28, M3 met**
+~~calendar + lunar module port w/ test vectors · toolbox · quote ·
 `/api/_lib` pipeline (KV cache, limiter, breaker, envelope) + `/api/weather`
-+ `/api/geocode` live. **M3:** first networked data flows end-to-end.
++ `/api/geocode` live.~~ **M3:** first networked data flows end-to-end.
 
 **What Week 3 starts from.** Week 2 left four things deliberately unfinished
 for it, each with a reason rather than as a slip:
@@ -167,6 +167,68 @@ parameter is one typo away from applying the wrong profile. And
 The lunar port is the one piece with no room for interpretation: doc 07 §6
 pins it to Asia/Ho_Chi_Minh regardless of viewer zone, and doc 19 §3.1 lists
 the vectors it has to satisfy before anything renders.
+
+### Shipped, in nine commits
+
+Three widgets — calendar, toolbox, quote — plus the lunar module, `swr()` and
+its envelope client, `/api/geocode`, and the weather payload doc 10 §2 had
+required since Week 0 and never had. Eight of fifteen widgets are registered.
+
+**M3 is met with an asterisk that is worth stating rather than glossing.** The
+milestone reads "first networked data flows end-to-end", and every piece of that
+flow exists and is tested — envelope, cache, status, two live endpoints — but
+nothing on the deck consumes it yet, because doc 23 puts the first networked
+*widget* in Week 4. That was known at the start of the week and chosen
+deliberately: `swr()`'s shipping consumer is doc 13 §10 §8's cache-age table,
+and journey #3 moves to Week 4 with the weather detail it describes.
+
+**Numbers at the milestone:** 962 unit and component tests (from 577), 98 e2e
+(from 92), 93.8 % lines and 87.2 % branches, entry chunk 3.0 KB gz of 200 KB,
+largest tile chunk 1.8 KB of 40 KB, 419 message keys with no drift, zero
+hardcoded strings and zero raw hex outside `app.css`.
+
+**Six faults found by the work rather than by review.** Four were latent bugs,
+two were specification contradictions:
+
+1. **`TpWidgetHost` registered a scheduler no-op** keyed on `instanceId`, and
+   `register()` refcounts with first-registration-wins — so a widget could never
+   supply a real `run` for its own id. Latent since Week 1, harmless only
+   because no widget had a cadence until this week's two.
+2. **`online.init()` was never called anywhere**, so `isOnline` was permanently
+   true: the doc 13 §7 offline chip could not appear and doc 04 §3's wake on
+   reconnect could not fire. Latent since Week 1, and journey #4 is precisely
+   the test that was missing.
+3. **Adding a widget not already on the deck mounted an empty tile.** The deck
+   page loads components once from the seeded ids. Invisible because journey #2
+   adds `clock` — already seeded — and asserts wrapper counts, which were right.
+4. **`convertLunar2Solar` answered instead of refusing.** Its leap-month guard
+   sits inside the branch for years that *have* a leap month, so leap 1/1 of
+   2026 returned ordinary Tết. `solarOfLunar` now verifies by converting back.
+5. **doc 13 §8's contrast figures were wrong** — asserted as 11.9 and 5.1,
+   measured at 15.35 and 7.16 — and the same sweep found `fg-dim` at 3.51, a
+   large-text-only pass used at `--text-2xs` in three widgets.
+6. **`/api/weather` was not normalizing anything**, contradicting doc 10 §2
+   since Week 0.
+
+Two specification contradictions resolved rather than worked around: `quote` sat
+in doc 06 §3 and doc 17 §3's cached-data class while doc 08 §3 said its dataset
+is bundled; and `MALFORMED` was "never retried" in doc 04 §2 and "treat as
+UPSTREAM_DOWN" in doc 17 §4.
+
+**Deferred out of Week 3, each with a reason rather than a slip.** `/api/_health`
+and the diagnostics breaker rows move to Week 5: they need `env.DEV_DASH_TOKEN`,
+and typing a secret means `wrangler types` reading a gitignored `.dev.vars`, so
+the committed types would differ between a checkout and CI. Week 5 is where doc
+23 already puts the quota watch, which is when a breaker table first says
+anything. Journey #3 moves to Week 4 with the weather detail. Quote's
+share-as-image is **cut**, which doc 08 §3 anticipated by calling it a stretch
+and doc 23's slip policy by listing it.
+
+One decision went against the letter of a spec and is recorded in doc 02 and doc
+07 §7: the QR encoder is a zero-dependency package rather than a vendored file.
+Vendoring was measured first — 990 lines producing 43 errors under
+`noUncheckedIndexedAccess`, needing `@ts-nocheck` and four tooling exclusions in
+a repo that has none.
 
 ## Week 4 — Weather · Currency
 weather widget+detail (ECharts bridge built here, theme-linked) ·

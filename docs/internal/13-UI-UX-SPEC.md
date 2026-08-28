@@ -128,11 +128,16 @@ dismiss forever). No account prompts, no tour videos, ≤ 30 s to a useful
 deck.
 
 The seed is **filtered through the registry**, so it only ever contains widgets
-that exist in the current build. That makes the five-tile deck above the Week 3
-state, when calendar and quote land. It was `clock` alone in Week 1 and is
-`clock` + `notes` from Week 2. M1
-delivers a deck you can arrange, and a deck seeded with widgets that do not
-exist is not one. (Corrected 2026-08-19.)
+that exist in the current build. It was `clock` alone in Week 1, `clock` +
+`notes` from Week 2, and is **four tiles from Week 3** — clock, calendar, notes,
+quote. M1 delivers a deck you can arrange, and a deck seeded with widgets that
+do not exist is not one. (Corrected 2026-08-19.)
+
+The five-tile deck above is the **Week 4** state, not Week 3's: `weather` is in
+the list and lands in Week 4 (doc 23), so it is filtered out until then. Said
+plainly on 2026-08-28, because the previous sentence claimed Week 3 and the
+e2e suite carried the number as a literal in six files — it now lives once, in
+`e2e/_lib/seed.ts`.
 
 "Dismiss forever" is `tp.settings.v1.coachDismissed` (doc 05 §2). It had nowhere
 to live under the three-key rule until that field was added.
