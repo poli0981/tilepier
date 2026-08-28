@@ -93,7 +93,7 @@
 			const next = new Map(tiles.map((tile) => [tile.instanceId, tile]));
 			for (const tile of tiles) {
 				const before = synced.get(tile.instanceId);
-				if (before === undefined) grid.addTile(tile);
+				if (before === undefined) void addLoaded(grid, tile);
 				else if (before !== tile) grid.updateTile(tile);
 			}
 			for (const id of synced.keys()) {
@@ -102,6 +102,34 @@
 			synced = next;
 		});
 	});
+
+	/**
+	 * Adds a tile, loading its component first if this deck has never had one.
+	 *
+	 * The component map above is built once from the *seeded* deck's ids, so a
+	 * widget added from the drawer that was not already on the deck has no entry
+	 * in it — and `TpGrid.mountHost` then returned silently, leaving an empty
+	 * wrapper that only filled in after a reload. Found 2026-08-28 by
+	 * `e2e/journey-4`, which is the first journey to add a widget that is not
+	 * `clock`; `journey-2` adds `clock`, which the seed already loaded.
+	 *
+	 * The loaded component is kept, so a second tile of the same widget does not
+	 * wait again.
+	 */
+	async function addLoaded(grid: ReturnType<typeof TpGridType>, tile: TpTile): Promise<void> {
+		const known = components?.[tile.widgetId];
+		if (known !== undefined) {
+			grid.addTile(tile, known);
+			return;
+		}
+
+		const manifest = getManifest(tile.widgetId);
+		if (manifest === undefined) return;
+
+		const loaded = (await manifest.loadWidget()).default;
+		components = { ...(components ?? {}), [tile.widgetId]: loaded };
+		grid.addTile(tile, loaded);
+	}
 
 	function onLayoutChange(layout: TpLayout): void {
 		deck.applyLayout(layout);

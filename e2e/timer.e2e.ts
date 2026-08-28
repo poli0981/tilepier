@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { seedLayout } from './_lib/seed';
 
 /**
  * The two promises doc 07 §2 makes that only a real browser can be held to:
@@ -22,20 +23,9 @@ async function acceptGate(page: Page): Promise<void> {
 
 /** Puts a single timer tile on the deck with the given settings. */
 async function seedTimer(page: Page, settings: Record<string, unknown>): Promise<void> {
-	await page.evaluate(
-		({ key, settings: bag }) => {
-			localStorage.setItem(
-				key,
-				JSON.stringify({
-					schemaVersion: 1,
-					grid: [
-						{ instanceId: 'wgt_timer1', widgetId: 'timer', x: 0, y: 0, w: 3, h: 2, settings: bag }
-					]
-				})
-			);
-		},
-		{ key: LAYOUT_KEY, settings }
-	);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_timer1', widgetId: 'timer', x: 0, y: 0, w: 3, h: 2, settings }
+	]);
 	await page.reload();
 }
 

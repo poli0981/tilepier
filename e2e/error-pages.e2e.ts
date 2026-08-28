@@ -43,7 +43,10 @@ test('the bug dialog assembles a report the user can read and edit', async ({ pa
 	// doc 18 §2: environment, a layout hash, and the log — never the layout.
 	expect(text).toContain('version:');
 	expect(text).toContain('layoutHash:');
-	expect(text).toContain('widgets: clock');
+	// The list is alphabetical and grows with the registry (doc 13 §9's seed),
+	// so this checks the line exists and names a widget rather than pinning an
+	// order that changes every time a widget lands.
+	expect(text).toMatch(/widgets: .*clock/);
 	expect(text).toContain('--- log ---');
 	expect(text).not.toContain('"grid"');
 

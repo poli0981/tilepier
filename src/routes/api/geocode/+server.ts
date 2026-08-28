@@ -7,6 +7,7 @@ import { normalizeNominatim, normalizePhoton } from '../_lib/normalize';
 import { checkRateLimit } from '../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../_lib/respond';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
+import { parseGeocodeQuery, type TpGeocodeQuery } from '../_lib/geocode-query';
 
 /**
  * `GET /api/geocode?q&lang` — doc 11 §3, upstreams doc 10 §6.
@@ -27,45 +28,11 @@ const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 /** doc 10 §6: mandatory, and the reason this endpoint may use Nominatim at all. */
 const NOMINATIM_UA = 'TilePier/1.0 (tilepier.win)';
 
-const LANGS = ['vi', 'en'] as const;
-type Lang = (typeof LANGS)[number];
-
-const QUERY_MIN = 2;
-const QUERY_MAX = 80;
+/** doc 10 §6's `limit=5`. A search box shows five rows; asking for more spends
+ *  a volunteer service's capacity on results nobody scrolls to. */
 const LIMIT = 5;
 
 const ATTRIBUTION = 'Search by Photon/komoot, data © OpenStreetMap contributors (ODbL)';
-
-/**
- * One spelling per query, so `Hà Nội`, ` hà nội ` and `HÀ NỘI` share a cache
- * entry instead of three (doc 04 §5). Diacritics are **kept**: they change the
- * result upstream, so folding them here would make two different searches share
- * an answer.
- */
-export function normalizeQuery(raw: string): string {
-	return raw.trim().toLowerCase().replace(/\s+/g, ' ').normalize('NFC');
-}
-
-interface Parsed {
-	q: string;
-	qNorm: string;
-	lang: Lang;
-}
-
-export function parseQuery(url: URL): Parsed | null {
-	const raw = url.searchParams.get('q');
-	if (raw === null) return null;
-
-	const q = raw.trim();
-	if (q.length < QUERY_MIN || q.length > QUERY_MAX) return null;
-
-	const requested = url.searchParams.get('lang') ?? 'vi';
-	// An unknown language is a bad request rather than a silent default: it
-	// would otherwise cache one language's answers under another's key.
-	if (!(LANGS as readonly string[]).includes(requested)) return null;
-
-	return { q, qNorm: normalizeQuery(q), lang: requested as Lang };
-}
 
 export const GET: RequestHandler = async ({ request, url, platform }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
@@ -73,7 +40,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 	const kv = platform?.env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
-	const parsed = parseQuery(url);
+	const parsed = parseGeocodeQuery(url);
 	if (parsed === null) return fail('BAD_REQUEST');
 
 	const limit = await checkRateLimit(kv, request);
@@ -140,7 +107,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 	);
 
 	async function search(
-		query: Parsed
+		query: TpGeocodeQuery
 	): Promise<{ results: TpGeocodeResult[]; source: string } | null> {
 		const photon = await tryPhoton(query);
 		if (photon !== null) return { results: photon, source: 'photon' };
@@ -151,7 +118,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		return null;
 	}
 
-	async function tryPhoton(query: Parsed): Promise<TpGeocodeResult[] | null> {
+	async function tryPhoton(query: TpGeocodeQuery): Promise<TpGeocodeResult[] | null> {
 		const breaker = await readBreaker(kv!, 'photon');
 		if (breakerVerdict(breaker, Date.now()) === 'open') return null;
 
@@ -169,7 +136,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		}
 	}
 
-	async function tryNominatim(query: Parsed): Promise<TpGeocodeResult[] | null> {
+	async function tryNominatim(query: TpGeocodeQuery): Promise<TpGeocodeResult[] | null> {
 		const breaker = await readBreaker(kv!, 'nominatim');
 		if (breakerVerdict(breaker, Date.now()) === 'open') return null;
 

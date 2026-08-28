@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TpGeocodePayload } from '$lib/api-types';
 import { cacheKey } from '$lib/shared-constants';
-import { GET, normalizeQuery, parseQuery } from './+server';
+import { GET } from './+server';
+import { normalizeQuery, parseGeocodeQuery } from '../_lib/geocode-query';
 
 /**
  * doc 11 §3's second endpoint, and the first with a **fallback chain**.
@@ -123,8 +124,8 @@ describe('normalizeQuery', () => {
 	});
 });
 
-describe('parseQuery', () => {
-	const parse = (search: string) => parseQuery(new URL(`https://x/api/geocode${search}`));
+describe('parseGeocodeQuery', () => {
+	const parse = (search: string) => parseGeocodeQuery(new URL(`https://x/api/geocode${search}`));
 
 	it('accepts a real query', () => {
 		expect(parse('?q=Hà Nội&lang=vi')).toMatchObject({ q: 'Hà Nội', lang: 'vi' });

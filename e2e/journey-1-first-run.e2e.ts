@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { SEEDED_TILES } from './_lib/seed';
 
 /**
  * doc 19 §4 journey #1 — first run, end to end: gate → accept → seeded deck →
@@ -62,7 +63,7 @@ test('first run: gate, accept, seeded deck, coach, dismissed for good', async ({
 	// 3 · the seeded deck renders — doc 13 §9, registry-filtered. Two tiles as
 	//     of Week 2 (clock and notes); the full five arrive with calendar and
 	//     quote in Week 3.
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 	await expect(page.locator('.tp-clock__time')).toBeVisible();
 
 	// 4 · the coach appears once and is dismissible
@@ -74,7 +75,7 @@ test('first run: gate, accept, seeded deck, coach, dismissed for good', async ({
 	await page.reload();
 	await expect(page.getByRole('dialog')).toBeHidden();
 	await expect(page.getByTestId('coach')).toBeHidden();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 });
 
 test('the seeded deck is shown but not committed until something touches it', async ({ page }) => {
@@ -86,7 +87,7 @@ test('the seeded deck is shown but not committed until something touches it', as
 
 	// The seed renders, but nothing has been stored: a visitor who bounces
 	// leaves no layout behind, and the first real action is what commits it.
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 	expect(await page.evaluate(() => localStorage.getItem('tp.layout.v1'))).toBeNull();
 });
 
@@ -100,7 +101,7 @@ test('first run creates exactly the three documented localStorage keys', async (
 	// A real deck action, which is what commits the layout.
 	await page.getByTestId('open-drawer').click();
 	await page.getByTestId('add-clock').click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES + 1);
 
 	// doc 05 §2 and CLAUDE.md rule 10. The type system forbids a fourth in
 	// source; this checks nothing reached storage by another route — Paraglide's

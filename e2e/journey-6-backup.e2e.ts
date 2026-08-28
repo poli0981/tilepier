@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SEEDED_TILES } from './_lib/seed';
 import { readFile } from 'node:fs/promises';
 
 /**
@@ -97,9 +98,9 @@ test('a backup round-trips the deck and the notes', async ({ page }) => {
 	// A third tile, so the restored deck is distinguishable from the seed.
 	await page.getByTestId('open-drawer').click();
 	await page.getByTestId('add-clock').click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES + 1);
 	await page.getByTestId('drawer-scrim').click({ position: { x: 4, y: 4 } });
-	await awaitStoredTiles(page, 3);
+	await awaitStoredTiles(page, SEEDED_TILES + 1);
 
 	const json = await exportBackup(page);
 	expect(json).toContain('survives the wipe');
@@ -116,10 +117,10 @@ test('a backup round-trips the deck and the notes', async ({ page }) => {
 	// writes the layout and reloads. Navigating on the click alone races it, and
 	// the page would be torn down before the layout was restored. Waiting for
 	// the layout key to hold the restored deck is the signal that it finished.
-	await awaitStoredTiles(page, 3);
+	await awaitStoredTiles(page, SEEDED_TILES + 1);
 
 	await page.goto('/');
-	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES + 1);
 	await expect(page.getByTestId('notes-preview')).toContainText('survives the wipe');
 });
 

@@ -31,6 +31,15 @@ gate has not been accepted.
   double-caching creates staleness confusion).
 - Update flow: SW `waiting` → quiet toast "phiên bản mới — tải lại"
   (skipWaiting only on user action; never reload under the user).
+- **Widget chunks are not precached, and that has a visible consequence.**
+  Found 2026-08-28 by journey #4: opening a widget's detail for the *first* time
+  with no connection fails, because the chunk has never been fetched and
+  cache-first has nothing to serve. The precache list above is the app shell by
+  design — precaching fifteen widgets' tile and detail chunks would make the
+  install heavy for a deck that uses four of them. The options are a
+  runtime-cache rule that keeps whatever has been opened once, or precaching the
+  chunks of the widgets actually on the deck. Both are Week 8 PWA-pass work
+  (doc 23); recorded here so that pass starts from a known finding.
 - Install: standard manifest (name, icons incl. maskable, theme colors both
   schemes); no install nagging — browser affordance only.
 - **Resolved 2026-08-10 (spike S5): the fallback is what ships.**

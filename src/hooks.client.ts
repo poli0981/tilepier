@@ -1,6 +1,7 @@
 import type { ClientInit, HandleClientError } from '@sveltejs/kit';
 import { installLogBuffer, logEntry } from '$lib/core/log-buffer';
 import { installLocaleStrategy } from '$lib/i18n';
+import { online } from '$lib/stores/online.svelte';
 import { deck } from '$lib/stores/deck.svelte';
 import { settings } from '$lib/stores/settings.svelte';
 
@@ -29,6 +30,13 @@ export const init: ClientInit = () => {
 	// to know which widgets are on the deck (doc 18 §2), and it reported "none"
 	// until this moved.
 	deck.hydrate();
+	// **Never called before 2026-08-28.** `stores/online.svelte.ts` shipped in
+	// Week 1 with `navigator.onLine` and the `online`/`offline` listeners behind
+	// an `init()` that nothing invoked, so `isOnline` was permanently `true`:
+	// the doc 13 §7 chip could not appear, and the scheduler's doc 04 §3 wake on
+	// reconnect could not fire. Found by writing doc 19 §4's journey #4, which
+	// is exactly the test that was missing.
+	online.init();
 	installLocaleStrategy();
 	installLogBuffer({
 		version: __TP_BUILD__.version,
