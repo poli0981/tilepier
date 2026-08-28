@@ -87,8 +87,8 @@ not having them: it reads as coverage.
 
 | doc 17 §3 class | Required | N/A by class |
 |---|---|---|
-| Pure-client (tier 1) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
-| Cached-data (weather, currency, markets, rss, quote) | all seven | — |
+| Pure-client (tier 1, and `quote`) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
+| Cached-data (weather, currency, markets, rss) | all seven | — |
 | Search-dependent empty state (map, geocode, symbol add) | all seven | — |
 | Music / media (FSA/blob, files are local) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
 
@@ -99,6 +99,15 @@ the class exclusions and are recorded the same way: named in the widget's own
 spec section (docs 07–09) and in its PR, never left as an unexplained gap.
 "Implemented every state that can happen" and "implemented four of eight" look
 identical in a diff; only the note tells them apart.
+
+**`quote` moved out of the cached-data row on 2026-08-28**, when it was built.
+Doc 08 §3 has always said its dataset is bundled and that it makes no network
+call — that section calls the widget "effectively Tier 1" and only sits in the
+tier-2 document for historical ordering. So `stale`, `stale-error` and `offline`
+were three states it could not reach, listed as required, which is the same
+contradiction this table was amended to fix for tier 1 in Week 2. It reaches all
+four of the pure-client states and does so genuinely: `loading` is real, because
+the 23 KB catalogue arrives on a dynamic import.
 
 `permission-needed` is orthogonal to the class and is not counted in either
 column: it is required exactly when the manifest declares a `permissions`
@@ -233,8 +242,8 @@ is omitted (no scheduler entry at all).
 | media | media | 2×2 | 4×3 | 8×5 | no | — |
 
 The array grows a row per widget as each lands (doc 23): `clock` in Week 1;
-`timer`, `calc`, `notes` and `todo` in Week 2, so five of fifteen are
-registered as of 2026-08-27. `core/registry.test.ts` asserts every *registered*
+`timer`, `calc`, `notes` and `todo` in Week 2; `calendar`, `toolbox` and `quote`
+in Week 3, so **eight of fifteen** are registered as of 2026-08-28. `core/registry.test.ts` asserts every *registered*
 manifest matches its row here, so the table stays authoritative without failing
 on rows whose widget has not been built yet — and it checks all fifteen rows
 parse, so a silent edit to an unbuilt row cannot pass either.

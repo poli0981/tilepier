@@ -1,0 +1,2940 @@
+{
+	"version": 1,
+	"source": "QuoteAtlas data/quotes — CC0, public-domain and own-translation entries only",
+	"counts": {
+		"total": 386,
+		"bilingual": 284,
+		"viOnly": 56,
+		"enOnly": 46
+	},
+	"quotes": [
+		{
+			"id": "en-0001",
+			"en": "Where there is a will, there is a way.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0002",
+			"en": "A journey of a thousand miles begins with a single step.",
+			"source": "Chinese proverb",
+			"rights": "public-domain",
+			"tags": ["beginnings", "perseverance"]
+		},
+		{
+			"id": "en-0003",
+			"en": "Actions speak louder than words.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"tags": ["action"]
+		},
+		{
+			"id": "en-0004",
+			"en": "Knowledge is power.",
+			"author": "Francis Bacon",
+			"year": 1597,
+			"rights": "public-domain",
+			"tags": ["knowledge"]
+		},
+		{
+			"id": "en-0005",
+			"en": "That which does not kill us makes us stronger.",
+			"author": "Friedrich Nietzsche",
+			"year": 1888,
+			"rights": "public-domain",
+			"tags": ["resilience"]
+		},
+		{
+			"id": "en-0006",
+			"en": "Write it on your heart that every day is the best day in the year.",
+			"author": "Ralph Waldo Emerson",
+			"year": 1870,
+			"rights": "public-domain",
+			"tags": ["gratitude", "time"]
+		},
+		{
+			"id": "en-0008",
+			"en": "New Year's Day is every man's birthday.",
+			"author": "Charles Lamb",
+			"work": "New Year's Eve",
+			"year": 1821,
+			"rights": "public-domain",
+			"vi": "Ngày đầu năm là sinh nhật của tất cả mọi người."
+		},
+		{
+			"id": "en-0009",
+			"en": "Ring out the old, ring in the new.",
+			"author": "Tennyson",
+			"work": "In Memoriam",
+			"year": 1850,
+			"rights": "public-domain",
+			"vi": "Rung chuông tiễn cái cũ, rung chuông đón cái mới."
+		},
+		{
+			"id": "en-0010",
+			"en": "Hope smiles from the threshold of the year to come.",
+			"author": "Tennyson",
+			"rights": "public-domain",
+			"vi": "Hy vọng mỉm cười từ ngưỡng cửa của năm sắp tới."
+		},
+		{
+			"id": "en-0011",
+			"en": "Well begun is half done.",
+			"source": "Proverb (gốc Horace/Aristotle)",
+			"rights": "public-domain",
+			"vi": "Khởi đầu tốt là đã xong một nửa."
+		},
+		{
+			"id": "en-0012",
+			"en": "A good beginning makes a good ending.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Khởi đầu tốt đẹp làm nên kết thúc tốt đẹp."
+		},
+		{
+			"id": "en-0013",
+			"en": "Finish each day and be done with it. Tomorrow is a new day.",
+			"author": "Emerson",
+			"rights": "public-domain",
+			"vi": "Hãy kết thúc mỗi ngày và buông nó xuống. Ngày mai là một ngày mới."
+		},
+		{
+			"id": "en-0014",
+			"en": "The first step is the hardest.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Bước đầu tiên bao giờ cũng khó nhất."
+		},
+		{
+			"id": "en-0015",
+			"en": "Love conquers all things.",
+			"author": "Virgil",
+			"work": "Eclogues",
+			"rights": "public-domain",
+			"vi": "Tình yêu chinh phục tất cả."
+		},
+		{
+			"id": "en-0016",
+			"en": "The course of true love never did run smooth.",
+			"author": "Shakespeare",
+			"work": "A Midsummer Night's Dream",
+			"rights": "public-domain",
+			"vi": "Đường tình chân thật chưa bao giờ bằng phẳng."
+		},
+		{
+			"id": "en-0017",
+			"en": "Love looks not with the eyes, but with the mind.",
+			"author": "Shakespeare",
+			"work": "A Midsummer Night's Dream",
+			"rights": "public-domain",
+			"vi": "Tình yêu không nhìn bằng mắt, mà nhìn bằng tâm trí."
+		},
+		{
+			"id": "en-0018",
+			"en": "Love all, trust a few, do wrong to none.",
+			"author": "Shakespeare",
+			"work": "All's Well That Ends Well",
+			"rights": "public-domain",
+			"vi": "Hãy yêu mọi người, tin một số ít, và đừng làm hại ai."
+		},
+		{
+			"id": "en-0019",
+			"en": "Absence makes the heart grow fonder.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Xa mặt càng thêm nhớ."
+		},
+		{
+			"id": "en-0020",
+			"en": "Faint heart never won fair lady.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Nhát gan thì chẳng bao giờ chiếm được trái tim ai."
+		},
+		{
+			"id": "en-0021",
+			"en": "Love begets love.",
+			"source": "Proverb (gốc Theocritus)",
+			"rights": "public-domain",
+			"vi": "Yêu thương sinh ra yêu thương."
+		},
+		{
+			"id": "en-0022",
+			"en": "Love is blind.",
+			"source": "Proverb (Chaucer, 1405)",
+			"rights": "public-domain",
+			"vi": "Yêu nhau củ ấu cũng tròn."
+		},
+		{
+			"id": "en-0023",
+			"en": "Ain't I a woman?",
+			"author": "Sojourner Truth",
+			"rights": "public-domain",
+			"vi": "Chẳng lẽ tôi không phải là một người phụ nữ sao?"
+		},
+		{
+			"id": "en-0024",
+			"en": "I do not wish them to have power over men, but over themselves.",
+			"author": "Mary Wollstonecraft",
+			"work": "A Vindication of the Rights of Woman",
+			"year": 1792,
+			"rights": "public-domain",
+			"vi": "Tôi không mong họ có quyền lực trên đàn ông, mà là trên chính mình."
+		},
+		{
+			"id": "en-0025",
+			"en": "I would rather be a rebel than a slave.",
+			"author": "Emmeline Pankhurst",
+			"rights": "public-domain",
+			"vi": "Tôi thà làm kẻ nổi loạn còn hơn làm nô lệ."
+		},
+		{
+			"id": "en-0026",
+			"en": "Deeds, not words.",
+			"source": "Khẩu hiệu WSPU",
+			"year": 1903,
+			"rights": "public-domain",
+			"vi": "Hành động, không phải lời nói."
+		},
+		{
+			"id": "en-0027",
+			"en": "Nothing in life is to be feared, it is only to be understood.",
+			"author": "Marie Curie",
+			"rights": "public-domain",
+			"vi": "Không có gì trong đời đáng sợ, chỉ có điều cần được thấu hiểu."
+		},
+		{
+			"id": "en-0028",
+			"en": "Failure is impossible.",
+			"author": "Susan B. Anthony",
+			"rights": "public-domain",
+			"vi": "Thất bại là điều không thể xảy ra."
+		},
+		{
+			"id": "en-0029",
+			"en": "The best protection any woman can have is courage.",
+			"author": "Elizabeth Cady Stanton",
+			"rights": "public-domain",
+			"vi": "Sự bảo vệ tốt nhất mà một người phụ nữ có thể có là lòng can đảm."
+		},
+		{
+			"id": "en-0030",
+			"en": "A woman must have money and a room of her own.",
+			"author": "Virginia Woolf",
+			"work": "A Room of One's Own",
+			"year": 1929,
+			"rights": "public-domain",
+			"vi": "Người phụ nữ phải có tiền và một căn phòng của riêng mình."
+		},
+		{
+			"id": "en-0031",
+			"en": "God has written the promise of resurrection on every leaf in springtime.",
+			"author": "Martin Luther",
+			"rights": "public-domain",
+			"vi": "Thượng đế đã viết lời hứa phục sinh lên từng chiếc lá mùa xuân."
+		},
+		{
+			"id": "en-0032",
+			"en": "Christ is risen! He is risen indeed!",
+			"source": "Paschal greeting",
+			"rights": "public-domain",
+			"vi": "Chúa đã sống lại! Ngài đã sống lại thật!"
+		},
+		{
+			"id": "en-0033",
+			"en": "After winter comes spring.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Sau mùa đông là mùa xuân."
+		},
+		{
+			"id": "en-0034",
+			"en": "Hot cross buns, one a penny, two a penny.",
+			"source": "Nursery rhyme (Good Friday)",
+			"rights": "public-domain",
+			"vi": "Bánh thánh giá nóng hổi, một xu một chiếc, hai xu hai chiếc."
+		},
+		{
+			"id": "en-0035",
+			"en": "Hope springs eternal.",
+			"author": "Alexander Pope",
+			"work": "An Essay on Man",
+			"year": 1734,
+			"rights": "public-domain",
+			"vi": "Hy vọng thì bất tận."
+		},
+		{
+			"id": "en-0036",
+			"en": "No cross, no crown.",
+			"author": "William Penn",
+			"year": 1669,
+			"rights": "public-domain",
+			"vi": "Không có thập giá thì không có vương miện."
+		},
+		{
+			"id": "en-0037",
+			"en": "The darkest hour is just before the dawn.",
+			"author": "Thomas Fuller",
+			"year": 1650,
+			"rights": "public-domain",
+			"vi": "Giờ khắc tối tăm nhất là ngay trước bình minh."
+		},
+		{
+			"id": "en-0038",
+			"en": "Except a corn of wheat fall into the ground and die, it abideth alone.",
+			"source": "John 12:24",
+			"year": 1611,
+			"rights": "public-domain",
+			"vi": "Nếu hạt lúa mì không rơi xuống đất mà chết đi, nó vẫn chỉ là một mình."
+		},
+		{
+			"id": "en-0039",
+			"en": "God could not be everywhere, so he made mothers.",
+			"source": "Jewish proverb",
+			"rights": "public-domain",
+			"vi": "Thượng đế không thể ở khắp mọi nơi, nên Người tạo ra những người mẹ."
+		},
+		{
+			"id": "en-0040",
+			"en": "The hand that rocks the cradle rules the world.",
+			"author": "William Ross Wallace",
+			"year": 1865,
+			"rights": "public-domain",
+			"vi": "Bàn tay đưa nôi là bàn tay cai trị thế giới."
+		},
+		{
+			"id": "en-0041",
+			"en": "A mother's love endures through all.",
+			"author": "Washington Irving",
+			"rights": "public-domain",
+			"vi": "Tình mẹ vượt qua tất cả."
+		},
+		{
+			"id": "en-0042",
+			"en": "A mother understands what a child does not say.",
+			"source": "Jewish proverb",
+			"rights": "public-domain",
+			"vi": "Người mẹ hiểu cả những điều con không nói ra."
+		},
+		{
+			"id": "en-0043",
+			"en": "There is only one pretty child in the world, and every mother has it.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Trên đời chỉ có một đứa trẻ xinh đẹp, và mẹ nào cũng có nó."
+		},
+		{
+			"id": "en-0044",
+			"en": "The mother's breath is always sweet.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Hơi thở của mẹ luôn ngọt ngào."
+		},
+		{
+			"id": "en-0045",
+			"en": "An ounce of mother is worth a pound of clergy.",
+			"source": "Spanish proverb",
+			"rights": "public-domain",
+			"vi": "Một chút tình mẹ đáng giá hơn cả trăm lời giáo huấn."
+		},
+		{
+			"id": "en-0046",
+			"en": "Where there is a mother in the house, matters speed well.",
+			"author": "Amos Bronson Alcott",
+			"rights": "public-domain",
+			"vi": "Nơi nào có mẹ trong nhà, nơi đó mọi việc đều hanh thông."
+		},
+		{
+			"id": "en-0047",
+			"en": "A wise son maketh a glad father.",
+			"source": "Proverbs 10:1",
+			"year": 1611,
+			"rights": "public-domain",
+			"vi": "Con khôn ngoan làm cha vui lòng."
+		},
+		{
+			"id": "en-0048",
+			"en": "It is a wise father that knows his own child.",
+			"author": "Shakespeare",
+			"work": "The Merchant of Venice",
+			"rights": "public-domain",
+			"vi": "Phải là người cha khôn ngoan mới hiểu được con mình."
+		},
+		{
+			"id": "en-0049",
+			"en": "Like father, like son.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Cha nào con nấy."
+		},
+		{
+			"id": "en-0050",
+			"en": "One father is more than a hundred schoolmasters.",
+			"author": "George Herbert",
+			"work": "Jacula Prudentum",
+			"year": 1651,
+			"rights": "public-domain",
+			"vi": "Một người cha còn hơn cả trăm ông thầy."
+		},
+		{
+			"id": "en-0051",
+			"en": "The father's virtue is the child's best inheritance.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Đức của cha là gia tài quý nhất của con."
+		},
+		{
+			"id": "en-0052",
+			"en": "It is not flesh and blood but the heart which makes us fathers.",
+			"author": "Friedrich Schiller",
+			"rights": "public-domain",
+			"vi": "Không phải máu thịt, mà chính trái tim mới làm nên người cha."
+		},
+		{
+			"id": "en-0053",
+			"en": "A father's a treasure; a brother's a comfort; a friend is both.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Cha là kho báu; anh em là niềm an ủi; bạn bè là cả hai."
+		},
+		{
+			"id": "en-0054",
+			"en": "A father is a banker provided by nature.",
+			"source": "French proverb",
+			"rights": "public-domain",
+			"vi": "Người cha là ngân hàng mà tạo hoá ban tặng."
+		},
+		{
+			"id": "en-0055",
+			"en": "Trick or treat!",
+			"source": "Truyền thống",
+			"rights": "public-domain",
+			"vi": "Cho kẹo hay bị ghẹo!"
+		},
+		{
+			"id": "en-0056",
+			"en": "By the pricking of my thumbs, something wicked this way comes.",
+			"author": "Shakespeare",
+			"work": "Macbeth",
+			"rights": "public-domain",
+			"vi": "Ngón cái tôi giật giật — có điều gì đó tà ác đang tới."
+		},
+		{
+			"id": "en-0057",
+			"en": "From ghoulies and ghosties and long-leggedy beasties, good Lord deliver us!",
+			"source": "Scottish traditional prayer",
+			"rights": "public-domain",
+			"vi": "Khỏi lũ ma quỷ, hồn ma và những sinh vật chân dài — xin Chúa cứu chúng con!"
+		},
+		{
+			"id": "en-0058",
+			"en": "Samhain — the night when the veil between worlds grows thin.",
+			"source": "Celtic folklore",
+			"rights": "public-domain",
+			"vi": "Samhain — đêm mà tấm màn giữa hai thế giới mỏng đi."
+		},
+		{
+			"id": "en-0059",
+			"en": "Speak of the devil and he shall appear.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Nhắc quỷ thì quỷ hiện."
+		},
+		{
+			"id": "en-0060",
+			"en": "Hell is empty and all the devils are here.",
+			"author": "Shakespeare",
+			"work": "The Tempest",
+			"rights": "public-domain",
+			"vi": "Địa ngục trống rỗng, bởi lũ quỷ đều ở đây cả rồi."
+		},
+		{
+			"id": "en-0061",
+			"en": "Every family has a skeleton in the closet.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Nhà nào cũng có một bộ xương giấu trong tủ."
+		},
+		{
+			"id": "en-0062",
+			"en": "There are darknesses in life, and there are lights.",
+			"author": "Bram Stoker",
+			"work": "Dracula",
+			"year": 1897,
+			"rights": "public-domain",
+			"vi": "Trong đời có những vùng tối, và cũng có những vùng sáng."
+		},
+		{
+			"id": "en-0063",
+			"en": "Gratitude is the memory of the heart.",
+			"author": "Jean Baptiste Massieu",
+			"rights": "public-domain",
+			"vi": "Lòng biết ơn là ký ức của trái tim."
+		},
+		{
+			"id": "en-0064",
+			"en": "Gratitude is not only the greatest of virtues, but the parent of all others.",
+			"author": "Cicero",
+			"work": "Pro Plancio",
+			"rights": "public-domain",
+			"vi": "Lòng biết ơn không chỉ là đức tính lớn nhất, mà còn là mẹ của mọi đức tính khác."
+		},
+		{
+			"id": "en-0065",
+			"en": "If the only prayer you say is thank you, that is enough.",
+			"author": "Meister Eckhart",
+			"rights": "public-domain",
+			"vi": "Nếu lời cầu nguyện duy nhất bạn nói là \"cảm ơn\", thế là đủ."
+		},
+		{
+			"id": "en-0066",
+			"en": "Count your blessings.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Hãy đếm những phúc lành của mình."
+		},
+		{
+			"id": "en-0067",
+			"en": "Enough is as good as a feast.",
+			"source": "Middle English proverb",
+			"rights": "public-domain",
+			"vi": "Đủ đầy cũng ngon như một bữa tiệc."
+		},
+		{
+			"id": "en-0068",
+			"en": "He is a wise man who does not grieve for what he has not.",
+			"author": "Epictetus",
+			"rights": "public-domain",
+			"vi": "Người khôn ngoan là người không sầu não vì những thứ mình không có."
+		},
+		{
+			"id": "en-0069",
+			"en": "I can no other answer make but thanks, and thanks.",
+			"author": "Shakespeare",
+			"work": "Twelfth Night",
+			"rights": "public-domain",
+			"vi": "Tôi không thể đáp lại gì khác ngoài lời cảm ơn, và cảm ơn."
+		},
+		{
+			"id": "en-0070",
+			"en": "Harvest comes not every day, though it comes every year.",
+			"author": "George Herbert",
+			"rights": "public-domain",
+			"vi": "Mùa gặt không đến mỗi ngày, dù năm nào cũng có."
+		},
+		{
+			"id": "en-0071",
+			"en": "I will honour Christmas in my heart, and try to keep it all the year.",
+			"author": "Dickens",
+			"work": "A Christmas Carol",
+			"year": 1843,
+			"rights": "public-domain",
+			"vi": "Tôi sẽ tôn vinh Giáng sinh trong tim, và cố giữ nó suốt cả năm."
+		},
+		{
+			"id": "en-0072",
+			"en": "God bless us, every one!",
+			"author": "Dickens",
+			"work": "A Christmas Carol",
+			"year": 1843,
+			"rights": "public-domain",
+			"vi": "Cầu Chúa ban phước cho tất cả chúng ta!"
+		},
+		{
+			"id": "en-0073",
+			"en": "Merry Christmas and a Happy New Year!",
+			"source": "Truyền thống",
+			"rights": "public-domain",
+			"vi": "Giáng sinh vui vẻ và Năm mới hạnh phúc!"
+		},
+		{
+			"id": "en-0074",
+			"en": "Christmas comes but once a year.",
+			"author": "Thomas Tusser",
+			"year": 1557,
+			"rights": "public-domain",
+			"vi": "Giáng sinh mỗi năm chỉ đến một lần."
+		},
+		{
+			"id": "en-0075",
+			"en": "Christmas is not a time nor a season, but a state of mind.",
+			"author": "Calvin Coolidge",
+			"year": 1927,
+			"rights": "public-domain",
+			"vi": "Giáng sinh không phải một thời điểm hay một mùa, mà là một trạng thái tâm hồn."
+		},
+		{
+			"id": "en-0076",
+			"en": "A green Christmas makes a fat churchyard.",
+			"source": "English proverb",
+			"rights": "public-domain",
+			"vi": "Giáng sinh không tuyết thì nghĩa địa đầy."
+		},
+		{
+			"id": "en-0077",
+			"en": "Blessed is the season which engages the whole world in a conspiracy of love.",
+			"author": "Hamilton Wright Mabie",
+			"rights": "public-domain",
+			"vi": "Phúc thay mùa lễ khiến cả thế giới đồng lòng trong một âm mưu của tình yêu."
+		},
+		{
+			"id": "en-0078",
+			"en": "Yes, Virginia, there is a Santa Claus.",
+			"author": "Francis P. Church",
+			"work": "The Sun",
+			"year": 1897,
+			"rights": "public-domain",
+			"vi": "Đúng vậy Virginia, ông già Noel có thật."
+		},
+		{
+			"id": "en-0079",
+			"en": "What's past is prologue.",
+			"author": "Shakespeare",
+			"work": "The Tempest",
+			"rights": "public-domain",
+			"vi": "Quá khứ chỉ là lời mở đầu."
+		},
+		{
+			"id": "en-0080",
+			"en": "The end of one thing is the beginning of another.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Kết thúc của điều này là khởi đầu của điều khác."
+		},
+		{
+			"id": "en-0081",
+			"en": "Confine yourself to the present.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "public-domain",
+			"vi": "Hãy an trú trong hiện tại."
+		},
+		{
+			"id": "en-0082",
+			"en": "While we are postponing, life speeds by.",
+			"author": "Seneca",
+			"work": "Letters to Lucilius",
+			"rights": "public-domain",
+			"vi": "Trong lúc ta trì hoãn, cuộc đời cứ vụt qua."
+		},
+		{
+			"id": "en-0083",
+			"en": "Better late than never.",
+			"source": "Proverb",
+			"rights": "public-domain",
+			"vi": "Muộn còn hơn không."
+		},
+		{
+			"id": "en-0084",
+			"en": "Lost time is never found again.",
+			"author": "Benjamin Franklin",
+			"work": "Poor Richard's Almanack",
+			"rights": "public-domain",
+			"vi": "Thời gian đã mất không bao giờ tìm lại được."
+		},
+		{
+			"id": "en-0085",
+			"en": "New year, new luck.",
+			"source": "German proverb (\"Neues Jahr, neues Glück\")",
+			"rights": "public-domain",
+			"vi": "Năm mới, vận mới."
+		},
+		{
+			"id": "en-0086",
+			"en": "Waste no more time arguing what a good man should be. Be one.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "public-domain",
+			"vi": "Đừng phí thời gian tranh luận người tốt là thế nào. Hãy là một người tốt."
+		},
+		{
+			"id": "en-0087",
+			"en": "Our greatest glory consists not in never falling, but in rising every time we fall.",
+			"author": "Oliver Goldsmith",
+			"work": "The Citizen of the World",
+			"year": 1760,
+			"rights": "public-domain",
+			"vi": "Vinh quang lớn nhất của ta không nằm ở chỗ không bao giờ ngã, mà ở chỗ lần nào ngã cũng đứng dậy.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0088",
+			"en": "Energy and persistence conquer all things.",
+			"author": "Benjamin Franklin",
+			"work": "Poor Richard's Almanack",
+			"rights": "public-domain",
+			"vi": "Nghị lực và sự bền bỉ chinh phục tất cả.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0089",
+			"en": "Genius is one percent inspiration and ninety-nine percent perspiration.",
+			"author": "Thomas Edison",
+			"year": 1932,
+			"rights": "public-domain",
+			"vi": "Thiên tài là một phần trăm cảm hứng và chín mươi chín phần trăm mồ hôi.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0090",
+			"en": "Nothing in the world can take the place of persistence.",
+			"author": "Calvin Coolidge",
+			"year": 1929,
+			"rights": "public-domain",
+			"vi": "Không gì trên đời có thể thay thế được sự kiên trì.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0091",
+			"en": "Patience and time do more than strength or passion.",
+			"author": "Jean de La Fontaine",
+			"work": "Fables",
+			"rights": "public-domain",
+			"vi": "Kiên nhẫn và thời gian làm được nhiều hơn sức mạnh hay đam mê.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0092",
+			"en": "Difficulties strengthen the mind, as labour does the body.",
+			"author": "Seneca",
+			"rights": "public-domain",
+			"vi": "Khó khăn rèn luyện tâm trí, như lao động rèn luyện thân thể.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0093",
+			"en": "He conquers who endures.",
+			"author": "Persius",
+			"work": "Satires",
+			"rights": "public-domain",
+			"vi": "Ai chịu đựng được, người ấy chiến thắng.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0094",
+			"en": "Success is the sum of small efforts repeated day in and day out.",
+			"author": "Robert Collier",
+			"rights": "public-domain",
+			"vi": "Thành công là tổng của những nỗ lực nhỏ được lặp lại ngày qua ngày.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "en-0095",
+			"en": "Courage is resistance to fear, mastery of fear, not absence of fear.",
+			"author": "Mark Twain",
+			"work": "Pudd'nhead Wilson",
+			"year": 1894,
+			"rights": "public-domain",
+			"vi": "Dũng cảm là chống lại nỗi sợ, làm chủ nỗi sợ — chứ không phải không có nỗi sợ.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0096",
+			"en": "Fortune favours the bold.",
+			"author": "Virgil",
+			"work": "Aeneid",
+			"rights": "public-domain",
+			"vi": "Vận may mỉm cười với người dám.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0097",
+			"en": "Do the thing you fear, and the death of fear is certain.",
+			"author": "Ralph Waldo Emerson",
+			"rights": "public-domain",
+			"vi": "Hãy làm điều bạn sợ, và cái chết của nỗi sợ là điều chắc chắn.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0098",
+			"en": "Valour is the contempt of death and pain.",
+			"author": "Tacitus",
+			"rights": "public-domain",
+			"vi": "Dũng khí là sự coi thường cái chết và nỗi đau.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0099",
+			"en": "None but the brave deserves the fair.",
+			"author": "John Dryden",
+			"work": "Alexander's Feast",
+			"year": 1697,
+			"rights": "public-domain",
+			"vi": "Chỉ người dũng cảm mới xứng đáng với người đẹp.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0100",
+			"en": "To see what is right and not do it is want of courage.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"vi": "Thấy điều đúng mà không làm là thiếu dũng khí.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0101",
+			"en": "Boldness, be my friend.",
+			"author": "Shakespeare",
+			"work": "Cymbeline",
+			"rights": "public-domain",
+			"vi": "Táo bạo ơi, hãy làm bạn với ta.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0102",
+			"en": "Necessity makes even the timid brave.",
+			"author": "Sallust",
+			"work": "Catiline",
+			"rights": "public-domain",
+			"vi": "Cùng đường thì kẻ nhút nhát cũng hoá gan dạ.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "en-0103",
+			"en": "I know that I know nothing.",
+			"author": "Socrates",
+			"work": "Apology",
+			"rights": "public-domain",
+			"vi": "Tôi biết rằng tôi không biết gì cả.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0104",
+			"en": "He who knows others is wise; he who knows himself is enlightened.",
+			"author": "Lao Tzu",
+			"work": "Tao Te Ching",
+			"rights": "own-translation",
+			"vi": "Biết người là khôn; biết mình là sáng.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0105",
+			"en": "Real knowledge is to know the extent of one's ignorance.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"vi": "Tri thức thật sự là biết được giới hạn hiểu biết của mình.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0106",
+			"en": "The happiness of your life depends upon the quality of your thoughts.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "public-domain",
+			"vi": "Hạnh phúc của đời bạn phụ thuộc vào phẩm chất những suy nghĩ của bạn.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0107",
+			"en": "As long as you live, keep learning how to live.",
+			"author": "Seneca",
+			"work": "Letters to Lucilius",
+			"rights": "public-domain",
+			"vi": "Còn sống ngày nào, hãy còn học cách sống ngày ấy.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0108",
+			"en": "We have two ears and one mouth, so we should listen more than we say.",
+			"author": "Epictetus",
+			"rights": "public-domain",
+			"vi": "Ta có hai tai và một miệng, nên hãy nghe nhiều hơn nói.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0109",
+			"en": "Nothing is so firmly believed as that which we least know.",
+			"author": "Montaigne",
+			"work": "Essays",
+			"rights": "public-domain",
+			"vi": "Không gì được tin chắc bằng thứ ta ít biết nhất.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "en-0112",
+			"en": "Whether you think you can, or you think you can't — you're right.",
+			"author": "Henry Ford",
+			"rights": "public-domain",
+			"vi": "Dù bạn nghĩ mình làm được hay không làm được — bạn đều đúng.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0113",
+			"en": "Success is measured by the obstacles overcome, not the position reached.",
+			"author": "Booker T. Washington",
+			"work": "Up from Slavery",
+			"year": 1901,
+			"rights": "public-domain",
+			"vi": "Thành công được đo bằng những trở ngại đã vượt qua, không phải vị trí đã đạt tới.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0114",
+			"en": "Far better it is to dare mighty things than to take rank with those poor spirits.",
+			"author": "Theodore Roosevelt",
+			"rights": "public-domain",
+			"vi": "Dám làm điều lớn lao còn hơn nhiều so với đứng chung hàng với những kẻ nhu nhược.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0115",
+			"en": "Success is dependent on effort.",
+			"author": "Sophocles",
+			"rights": "public-domain",
+			"vi": "Thành công phụ thuộc vào nỗ lực.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0116",
+			"en": "Chance favours only the prepared mind.",
+			"author": "Louis Pasteur",
+			"rights": "public-domain",
+			"vi": "Cơ hội chỉ mỉm cười với tâm trí đã chuẩn bị.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0117",
+			"en": "The men who have succeeded are men who have chosen one line and stuck to it.",
+			"author": "Andrew Carnegie",
+			"rights": "public-domain",
+			"vi": "Những người thành công là những người chọn một con đường và bám lấy nó.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0118",
+			"en": "Great things are not done by impulse, but by a series of small things brought together.",
+			"author": "Vincent van Gogh",
+			"year": 1882,
+			"rights": "public-domain",
+			"vi": "Việc lớn không thành nhờ bốc đồng, mà nhờ nhiều việc nhỏ được ghép lại.",
+			"tags": ["success"]
+		},
+		{
+			"id": "en-0119",
+			"en": "Happiness depends upon ourselves.",
+			"author": "Aristotle",
+			"work": "Nicomachean Ethics",
+			"rights": "public-domain",
+			"vi": "Hạnh phúc phụ thuộc vào chính chúng ta.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0120",
+			"en": "True happiness is to enjoy the present, without anxious dependence upon the future.",
+			"author": "Seneca",
+			"rights": "public-domain",
+			"vi": "Hạnh phúc thật sự là tận hưởng hiện tại, không phấp phỏng bám víu vào tương lai.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0121",
+			"en": "That man is richest whose pleasures are cheapest.",
+			"author": "Henry David Thoreau",
+			"year": 1856,
+			"rights": "public-domain",
+			"vi": "Người giàu nhất là người có những niềm vui rẻ nhất.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0122",
+			"en": "It is not how much we have, but how much we enjoy, that makes happiness.",
+			"author": "Charles Spurgeon",
+			"rights": "public-domain",
+			"vi": "Hạnh phúc không nằm ở việc ta có bao nhiêu, mà ở việc ta tận hưởng bao nhiêu.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0123",
+			"en": "The best way to cheer yourself is to try to cheer someone else up.",
+			"author": "Mark Twain",
+			"work": "Notebook",
+			"rights": "public-domain",
+			"vi": "Cách tốt nhất để vui lên là thử làm cho người khác vui.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0124",
+			"en": "Ask yourself whether you are happy, and you cease to be so.",
+			"author": "John Stuart Mill",
+			"work": "Autobiography",
+			"rights": "public-domain",
+			"vi": "Hỏi mình có hạnh phúc không, là lúc bạn thôi hạnh phúc.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0125",
+			"en": "Be content with what you have; rejoice in the way things are.",
+			"author": "Lao Tzu",
+			"work": "Tao Te Ching",
+			"rights": "own-translation",
+			"vi": "Hãy bằng lòng với những gì mình có; hãy vui với những gì đang là.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0126",
+			"en": "There is no duty we so much underrate as the duty of being happy.",
+			"author": "Robert Louis Stevenson",
+			"rights": "public-domain",
+			"vi": "Không bổn phận nào bị ta xem nhẹ bằng bổn phận phải hạnh phúc.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "en-0127",
+			"en": "Learning without thought is labour lost; thought without learning is perilous.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"vi": "Học mà không suy nghĩ là công cốc; suy nghĩ mà không học là nguy hiểm.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0128",
+			"en": "The roots of education are bitter, but the fruit is sweet.",
+			"author": "Aristotle",
+			"rights": "public-domain",
+			"vi": "Rễ của học vấn thì đắng, nhưng quả thì ngọt.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0129",
+			"en": "The mind is not a vessel to be filled but a fire to be kindled.",
+			"author": "Plutarch",
+			"work": "On Listening",
+			"rights": "public-domain",
+			"vi": "Trí óc không phải cái bình để đổ đầy, mà là ngọn lửa để nhen lên.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0130",
+			"en": "While we teach, we learn.",
+			"author": "Seneca",
+			"rights": "public-domain",
+			"vi": "Trong lúc dạy, ta học.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0131",
+			"en": "Learning never exhausts the mind.",
+			"author": "Leonardo da Vinci",
+			"rights": "public-domain",
+			"vi": "Học tập không bao giờ làm kiệt trí óc.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0132",
+			"en": "Live as if you were to die tomorrow. Learn as if you were to live forever.",
+			"author": "Mahatma Gandhi",
+			"rights": "public-domain",
+			"vi": "Hãy sống như thể mai bạn sẽ chết. Hãy học như thể bạn sẽ sống mãi.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0133",
+			"en": "The authority of those who teach is often an obstacle to those who want to learn.",
+			"author": "Cicero",
+			"work": "De Natura Deorum",
+			"rights": "public-domain",
+			"vi": "Uy quyền của người dạy thường là vật cản với người muốn học.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0134",
+			"en": "I am still learning.",
+			"author": "Michelangelo",
+			"rights": "public-domain",
+			"vi": "Tôi vẫn đang học.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "en-0135",
+			"en": "It is not that we have a short time to live, but that we waste a lot of it.",
+			"author": "Seneca",
+			"work": "On the Shortness of Life",
+			"rights": "public-domain",
+			"vi": "Không phải ta có ít thời gian để sống, mà là ta phí phạm quá nhiều.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0136",
+			"en": "Dost thou love life? Then do not squander time.",
+			"author": "Benjamin Franklin",
+			"work": "Poor Richard's Almanack",
+			"rights": "public-domain",
+			"vi": "Bạn có yêu cuộc sống không? Vậy thì đừng hoang phí thời gian.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0137",
+			"en": "Do not act as if you were going to live ten thousand years.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "public-domain",
+			"vi": "Đừng sống như thể bạn sẽ sống mười ngàn năm.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0138",
+			"en": "Time is the most valuable thing a man can spend.",
+			"author": "Theophrastus",
+			"rights": "public-domain",
+			"vi": "Thời gian là thứ quý giá nhất mà con người có thể tiêu.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0139",
+			"en": "Seize the day, trusting as little as possible in tomorrow.",
+			"author": "Horace",
+			"work": "Odes",
+			"rights": "public-domain",
+			"vi": "Hãy nắm lấy ngày hôm nay, và đặt ít niềm tin nhất có thể vào ngày mai.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0140",
+			"en": "Time is what we want most, but what we use worst.",
+			"author": "William Penn",
+			"work": "Some Fruits of Solitude",
+			"year": 1693,
+			"rights": "public-domain",
+			"vi": "Thời gian là thứ ta muốn nhất, nhưng lại dùng tệ nhất.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0141",
+			"en": "A man who dares to waste one hour of time has not discovered the value of life.",
+			"author": "Charles Darwin",
+			"rights": "public-domain",
+			"vi": "Người dám phí một giờ đồng hồ là người chưa khám phá ra giá trị của cuộc đời.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0142",
+			"en": "The two most powerful warriors are patience and time.",
+			"author": "Leo Tolstoy",
+			"work": "War and Peace",
+			"rights": "public-domain",
+			"vi": "Hai chiến binh mạnh nhất là kiên nhẫn và thời gian.",
+			"tags": ["time"]
+		},
+		{
+			"id": "en-0143",
+			"en": "Character is destiny.",
+			"author": "Heraclitus",
+			"rights": "public-domain",
+			"vi": "Tính cách là số phận.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0144",
+			"en": "With malice toward none, with charity for all.",
+			"author": "Abraham Lincoln",
+			"year": 1865,
+			"rights": "public-domain",
+			"vi": "Không ác ý với ai, mà bác ái với tất cả.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0145",
+			"en": "Character is much easier kept than recovered.",
+			"author": "Thomas Paine",
+			"work": "The American Crisis",
+			"rights": "public-domain",
+			"vi": "Giữ nhân cách dễ hơn nhiều so với lấy lại nó.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0146",
+			"en": "Without a struggle, there can be no progress.",
+			"author": "Frederick Douglass",
+			"rights": "public-domain",
+			"vi": "Không có đấu tranh thì không thể có tiến bộ.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0147",
+			"en": "A good reputation is more valuable than money.",
+			"author": "Publilius Syrus",
+			"work": "Sententiae",
+			"rights": "public-domain",
+			"vi": "Danh tiếng tốt còn quý hơn tiền bạc.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0148",
+			"en": "Integrity without knowledge is weak and useless.",
+			"author": "Samuel Johnson",
+			"work": "Rasselas",
+			"year": 1759,
+			"rights": "public-domain",
+			"vi": "Chính trực mà thiếu tri thức thì yếu ớt và vô dụng.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0149",
+			"en": "It is better to offer no excuse than a bad one.",
+			"author": "George Washington",
+			"year": 1783,
+			"rights": "public-domain",
+			"vi": "Không viện cớ còn hơn viện một cớ tồi.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0150",
+			"en": "The superior man is modest in speech but exceeds in action.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"vi": "Người quân tử nói thì dè dặt, mà làm thì vượt trội.",
+			"tags": ["character"]
+		},
+		{
+			"id": "en-0151",
+			"en": "The best-laid schemes o' mice an' men gang aft agley.",
+			"author": "Robert Burns",
+			"work": "To a Mouse",
+			"year": 1785,
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0152",
+			"en": "A man's a man for a' that.",
+			"author": "Robert Burns",
+			"year": 1795,
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0153",
+			"en": "O wad some Power the giftie gie us to see oursels as ithers see us!",
+			"author": "Robert Burns",
+			"work": "To a Louse",
+			"year": 1786,
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0154",
+			"en": "Lang may yer lum reek.",
+			"source": "Scots traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0155",
+			"en": "Here's tae us, wha's like us?",
+			"source": "Scots traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0156",
+			"en": "Whit's fur ye'll no go by ye.",
+			"source": "Scots",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0157",
+			"en": "Mony a mickle maks a muckle.",
+			"source": "Scots",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0158",
+			"en": "Slàinte mhath!",
+			"source": "Scottish Gaelic",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0159",
+			"en": "Pancake Tuesday's a very happy day, if you don't give us a holiday, we'll all run away.",
+			"source": "Shroving rhyme",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0160",
+			"en": "Snick, snack, the pan's hot, we be come a-shroving.",
+			"source": "Cornish shroving rhyme",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0161",
+			"en": "Shrove Tuesday, Shrove Tuesday, when Jack went to plough.",
+			"source": "Traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0162",
+			"en": "As flat as a pancake.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0163",
+			"en": "You cannot eat your cake and have it.",
+			"source": "English (ghi nhận 1546)",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0164",
+			"en": "The proof of the pudding is in the eating.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0165",
+			"en": "Hunger is the best sauce.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0166",
+			"en": "After a feast, a fast.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0167",
+			"en": "Cry \"God for Harry, England, and Saint George!\"",
+			"author": "Shakespeare",
+			"work": "Henry V",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0168",
+			"en": "This royal throne of kings, this sceptred isle.",
+			"author": "Shakespeare",
+			"work": "Richard II",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0169",
+			"en": "St George he was for England.",
+			"source": "Traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0170",
+			"en": "England expects that every man will do his duty.",
+			"author": "Nelson",
+			"year": 1805,
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0171",
+			"en": "An Englishman's home is his castle.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0172",
+			"en": "Fortune favours the brave.",
+			"source": "Latin (\"Fortis fortuna adiuvat\")",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0173",
+			"en": "Courage mounteth with occasion.",
+			"author": "Shakespeare",
+			"work": "King John",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0174",
+			"en": "Cowards die many times before their deaths.",
+			"author": "Shakespeare",
+			"work": "Julius Caesar",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0175",
+			"en": "Remember, remember the fifth of November, gunpowder treason and plot.",
+			"source": "Traditional (phổ biến TK19)",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0176",
+			"en": "Penny for the Guy!",
+			"source": "Traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0177",
+			"en": "A penny loaf to feed the Pope.",
+			"source": "Traditional bonfire rhyme",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0178",
+			"en": "Guy Fawkes, Guy Fawkes, 'twas his intent to blow up King and Parliament.",
+			"source": "Traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0179",
+			"en": "Holla boys, holla boys, let the bells ring!",
+			"source": "Traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0180",
+			"en": "There's no smoke without fire.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0181",
+			"en": "A little fire is quickly trodden out.",
+			"author": "Shakespeare",
+			"work": "Henry VI, Part 3",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0182",
+			"en": "Fire is a good servant but a bad master.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0183",
+			"en": "Christmas is coming, the goose is getting fat, please put a penny in the old man's hat.",
+			"source": "Nursery rhyme",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0184",
+			"en": "It is more blessed to give than to receive.",
+			"source": "Acts 20:35",
+			"year": 1611,
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0185",
+			"en": "Charity begins at home.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0186",
+			"en": "A gift long waited for is sold, not given.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0187",
+			"en": "Give a thing, and take a thing, to wear the devil's gold ring.",
+			"source": "Children's traditional",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0188",
+			"en": "Beggars can't be choosers.",
+			"source": "English",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0189",
+			"en": "He gives twice who gives quickly.",
+			"author": "Publilius Syrus (\"Bis dat qui cito dat\")",
+			"rights": "public-domain"
+		},
+		{
+			"id": "en-0190",
+			"en": "Eat, drink and be merry.",
+			"source": "Ecclesiastes 8:15",
+			"year": 1611,
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0001",
+			"vi": "Hãy khắc vào tim rằng mỗi ngày đều là ngày đẹp nhất trong năm.",
+			"author": "Emerson",
+			"work": "Society and Solitude",
+			"year": 1870,
+			"rights": "own-translation",
+			"en": "Write it on your heart that every day is the best day in the year."
+		},
+		{
+			"id": "vi-0002",
+			"vi": "Ngày đầu năm là sinh nhật của tất cả mọi người.",
+			"author": "Charles Lamb",
+			"work": "New Year's Eve",
+			"year": 1821,
+			"rights": "own-translation",
+			"en": "New Year's Day is every man's birthday."
+		},
+		{
+			"id": "vi-0003",
+			"vi": "Rung chuông tiễn cái cũ, rung chuông đón cái mới.",
+			"author": "Tennyson",
+			"work": "In Memoriam",
+			"year": 1850,
+			"rights": "own-translation",
+			"en": "Ring out the old, ring in the new."
+		},
+		{
+			"id": "vi-0004",
+			"vi": "Hy vọng mỉm cười từ ngưỡng cửa của năm sắp tới.",
+			"author": "Tennyson",
+			"rights": "own-translation",
+			"en": "Hope smiles from the threshold of the year to come."
+		},
+		{
+			"id": "vi-0005",
+			"vi": "Khởi đầu tốt là đã xong một nửa.",
+			"source": "Proverb (gốc Horace/Aristotle)",
+			"rights": "own-translation",
+			"en": "Well begun is half done."
+		},
+		{
+			"id": "vi-0006",
+			"vi": "Khởi đầu tốt đẹp làm nên kết thúc tốt đẹp.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "A good beginning makes a good ending."
+		},
+		{
+			"id": "vi-0007",
+			"vi": "Hãy kết thúc mỗi ngày và buông nó xuống. Ngày mai là một ngày mới.",
+			"author": "Emerson",
+			"rights": "own-translation",
+			"en": "Finish each day and be done with it. Tomorrow is a new day."
+		},
+		{
+			"id": "vi-0008",
+			"vi": "Bước đầu tiên bao giờ cũng khó nhất.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "The first step is the hardest."
+		},
+		{
+			"id": "vi-0009",
+			"vi": "Tình yêu chinh phục tất cả.",
+			"author": "Virgil",
+			"work": "Eclogues",
+			"rights": "own-translation",
+			"en": "Love conquers all things."
+		},
+		{
+			"id": "vi-0010",
+			"vi": "Đường tình chân thật chưa bao giờ bằng phẳng.",
+			"author": "Shakespeare",
+			"work": "A Midsummer Night's Dream",
+			"rights": "own-translation",
+			"en": "The course of true love never did run smooth."
+		},
+		{
+			"id": "vi-0011",
+			"vi": "Tình yêu không nhìn bằng mắt, mà nhìn bằng tâm trí.",
+			"author": "Shakespeare",
+			"work": "A Midsummer Night's Dream",
+			"rights": "own-translation",
+			"en": "Love looks not with the eyes, but with the mind."
+		},
+		{
+			"id": "vi-0012",
+			"vi": "Hãy yêu mọi người, tin một số ít, và đừng làm hại ai.",
+			"author": "Shakespeare",
+			"work": "All's Well That Ends Well",
+			"rights": "own-translation",
+			"en": "Love all, trust a few, do wrong to none."
+		},
+		{
+			"id": "vi-0013",
+			"vi": "Xa mặt càng thêm nhớ.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "Absence makes the heart grow fonder."
+		},
+		{
+			"id": "vi-0014",
+			"vi": "Nhát gan thì chẳng bao giờ chiếm được trái tim ai.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "Faint heart never won fair lady."
+		},
+		{
+			"id": "vi-0015",
+			"vi": "Yêu thương sinh ra yêu thương.",
+			"source": "Proverb (gốc Theocritus)",
+			"rights": "own-translation",
+			"en": "Love begets love."
+		},
+		{
+			"id": "vi-0016",
+			"vi": "Yêu nhau củ ấu cũng tròn.",
+			"source": "Proverb (Chaucer, 1405)",
+			"rights": "own-translation",
+			"en": "Love is blind."
+		},
+		{
+			"id": "vi-0017",
+			"vi": "Chẳng lẽ tôi không phải là một người phụ nữ sao?",
+			"author": "Sojourner Truth",
+			"rights": "own-translation",
+			"en": "Ain't I a woman?"
+		},
+		{
+			"id": "vi-0018",
+			"vi": "Tôi không mong họ có quyền lực trên đàn ông, mà là trên chính mình.",
+			"author": "Mary Wollstonecraft",
+			"work": "A Vindication of the Rights of Woman",
+			"year": 1792,
+			"rights": "own-translation",
+			"en": "I do not wish them to have power over men, but over themselves."
+		},
+		{
+			"id": "vi-0019",
+			"vi": "Tôi thà làm kẻ nổi loạn còn hơn làm nô lệ.",
+			"author": "Emmeline Pankhurst",
+			"rights": "own-translation",
+			"en": "I would rather be a rebel than a slave."
+		},
+		{
+			"id": "vi-0020",
+			"vi": "Hành động, không phải lời nói.",
+			"source": "Khẩu hiệu WSPU",
+			"year": 1903,
+			"rights": "own-translation",
+			"en": "Deeds, not words."
+		},
+		{
+			"id": "vi-0021",
+			"vi": "Không có gì trong đời đáng sợ, chỉ có điều cần được thấu hiểu.",
+			"author": "Marie Curie",
+			"rights": "own-translation",
+			"en": "Nothing in life is to be feared, it is only to be understood."
+		},
+		{
+			"id": "vi-0022",
+			"vi": "Thất bại là điều không thể xảy ra.",
+			"author": "Susan B. Anthony",
+			"rights": "own-translation",
+			"en": "Failure is impossible."
+		},
+		{
+			"id": "vi-0023",
+			"vi": "Sự bảo vệ tốt nhất mà một người phụ nữ có thể có là lòng can đảm.",
+			"author": "Elizabeth Cady Stanton",
+			"rights": "own-translation",
+			"en": "The best protection any woman can have is courage."
+		},
+		{
+			"id": "vi-0024",
+			"vi": "Người phụ nữ phải có tiền và một căn phòng của riêng mình.",
+			"author": "Virginia Woolf",
+			"work": "A Room of One's Own",
+			"year": 1929,
+			"rights": "own-translation",
+			"en": "A woman must have money and a room of her own."
+		},
+		{
+			"id": "vi-0025",
+			"vi": "Thượng đế đã viết lời hứa phục sinh lên từng chiếc lá mùa xuân.",
+			"author": "Martin Luther",
+			"rights": "own-translation",
+			"en": "God has written the promise of resurrection on every leaf in springtime."
+		},
+		{
+			"id": "vi-0026",
+			"vi": "Chúa đã sống lại! Ngài đã sống lại thật!",
+			"source": "Paschal greeting",
+			"rights": "own-translation",
+			"en": "Christ is risen! He is risen indeed!"
+		},
+		{
+			"id": "vi-0027",
+			"vi": "Sau mùa đông là mùa xuân.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "After winter comes spring."
+		},
+		{
+			"id": "vi-0028",
+			"vi": "Bánh thánh giá nóng hổi, một xu một chiếc, hai xu hai chiếc.",
+			"source": "Nursery rhyme (Good Friday)",
+			"rights": "own-translation",
+			"en": "Hot cross buns, one a penny, two a penny."
+		},
+		{
+			"id": "vi-0029",
+			"vi": "Hy vọng thì bất tận.",
+			"author": "Alexander Pope",
+			"work": "An Essay on Man",
+			"year": 1734,
+			"rights": "own-translation",
+			"en": "Hope springs eternal."
+		},
+		{
+			"id": "vi-0030",
+			"vi": "Không có thập giá thì không có vương miện.",
+			"author": "William Penn",
+			"year": 1669,
+			"rights": "own-translation",
+			"en": "No cross, no crown."
+		},
+		{
+			"id": "vi-0031",
+			"vi": "Giờ khắc tối tăm nhất là ngay trước bình minh.",
+			"author": "Thomas Fuller",
+			"year": 1650,
+			"rights": "own-translation",
+			"en": "The darkest hour is just before the dawn."
+		},
+		{
+			"id": "vi-0032",
+			"vi": "Nếu hạt lúa mì không rơi xuống đất mà chết đi, nó vẫn chỉ là một mình.",
+			"source": "John 12:24",
+			"year": 1611,
+			"rights": "own-translation",
+			"en": "Except a corn of wheat fall into the ground and die, it abideth alone."
+		},
+		{
+			"id": "vi-0033",
+			"vi": "Thượng đế không thể ở khắp mọi nơi, nên Người tạo ra những người mẹ.",
+			"source": "Jewish proverb",
+			"rights": "own-translation",
+			"en": "God could not be everywhere, so he made mothers."
+		},
+		{
+			"id": "vi-0034",
+			"vi": "Bàn tay đưa nôi là bàn tay cai trị thế giới.",
+			"author": "William Ross Wallace",
+			"year": 1865,
+			"rights": "own-translation",
+			"en": "The hand that rocks the cradle rules the world."
+		},
+		{
+			"id": "vi-0035",
+			"vi": "Tình mẹ vượt qua tất cả.",
+			"author": "Washington Irving",
+			"rights": "own-translation",
+			"en": "A mother's love endures through all."
+		},
+		{
+			"id": "vi-0036",
+			"vi": "Người mẹ hiểu cả những điều con không nói ra.",
+			"source": "Jewish proverb",
+			"rights": "own-translation",
+			"en": "A mother understands what a child does not say."
+		},
+		{
+			"id": "vi-0037",
+			"vi": "Trên đời chỉ có một đứa trẻ xinh đẹp, và mẹ nào cũng có nó.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "There is only one pretty child in the world, and every mother has it."
+		},
+		{
+			"id": "vi-0038",
+			"vi": "Hơi thở của mẹ luôn ngọt ngào.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "The mother's breath is always sweet."
+		},
+		{
+			"id": "vi-0039",
+			"vi": "Một chút tình mẹ đáng giá hơn cả trăm lời giáo huấn.",
+			"source": "Spanish proverb",
+			"rights": "own-translation",
+			"en": "An ounce of mother is worth a pound of clergy."
+		},
+		{
+			"id": "vi-0040",
+			"vi": "Nơi nào có mẹ trong nhà, nơi đó mọi việc đều hanh thông.",
+			"author": "Amos Bronson Alcott",
+			"rights": "own-translation",
+			"en": "Where there is a mother in the house, matters speed well."
+		},
+		{
+			"id": "vi-0041",
+			"vi": "Con khôn ngoan làm cha vui lòng.",
+			"source": "Proverbs 10:1",
+			"year": 1611,
+			"rights": "own-translation",
+			"en": "A wise son maketh a glad father."
+		},
+		{
+			"id": "vi-0042",
+			"vi": "Phải là người cha khôn ngoan mới hiểu được con mình.",
+			"author": "Shakespeare",
+			"work": "The Merchant of Venice",
+			"rights": "own-translation",
+			"en": "It is a wise father that knows his own child."
+		},
+		{
+			"id": "vi-0043",
+			"vi": "Cha nào con nấy.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "Like father, like son."
+		},
+		{
+			"id": "vi-0044",
+			"vi": "Một người cha còn hơn cả trăm ông thầy.",
+			"author": "George Herbert",
+			"work": "Jacula Prudentum",
+			"year": 1651,
+			"rights": "own-translation",
+			"en": "One father is more than a hundred schoolmasters."
+		},
+		{
+			"id": "vi-0045",
+			"vi": "Đức của cha là gia tài quý nhất của con.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "The father's virtue is the child's best inheritance."
+		},
+		{
+			"id": "vi-0046",
+			"vi": "Không phải máu thịt, mà chính trái tim mới làm nên người cha.",
+			"author": "Friedrich Schiller",
+			"rights": "own-translation",
+			"en": "It is not flesh and blood but the heart which makes us fathers."
+		},
+		{
+			"id": "vi-0047",
+			"vi": "Cha là kho báu; anh em là niềm an ủi; bạn bè là cả hai.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "A father's a treasure; a brother's a comfort; a friend is both."
+		},
+		{
+			"id": "vi-0048",
+			"vi": "Người cha là ngân hàng mà tạo hoá ban tặng.",
+			"source": "French proverb",
+			"rights": "own-translation",
+			"en": "A father is a banker provided by nature."
+		},
+		{
+			"id": "vi-0049",
+			"vi": "Cho kẹo hay bị ghẹo!",
+			"source": "Truyền thống",
+			"rights": "own-translation",
+			"en": "Trick or treat!"
+		},
+		{
+			"id": "vi-0050",
+			"vi": "Ngón cái tôi giật giật — có điều gì đó tà ác đang tới.",
+			"author": "Shakespeare",
+			"work": "Macbeth",
+			"rights": "own-translation",
+			"en": "By the pricking of my thumbs, something wicked this way comes."
+		},
+		{
+			"id": "vi-0051",
+			"vi": "Khỏi lũ ma quỷ, hồn ma và những sinh vật chân dài — xin Chúa cứu chúng con!",
+			"source": "Scottish traditional prayer",
+			"rights": "own-translation",
+			"en": "From ghoulies and ghosties and long-leggedy beasties, good Lord deliver us!"
+		},
+		{
+			"id": "vi-0052",
+			"vi": "Samhain — đêm mà tấm màn giữa hai thế giới mỏng đi.",
+			"source": "Celtic folklore",
+			"rights": "own-translation",
+			"en": "Samhain — the night when the veil between worlds grows thin."
+		},
+		{
+			"id": "vi-0053",
+			"vi": "Nhắc quỷ thì quỷ hiện.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "Speak of the devil and he shall appear."
+		},
+		{
+			"id": "vi-0054",
+			"vi": "Địa ngục trống rỗng, bởi lũ quỷ đều ở đây cả rồi.",
+			"author": "Shakespeare",
+			"work": "The Tempest",
+			"rights": "own-translation",
+			"en": "Hell is empty and all the devils are here."
+		},
+		{
+			"id": "vi-0055",
+			"vi": "Nhà nào cũng có một bộ xương giấu trong tủ.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "Every family has a skeleton in the closet."
+		},
+		{
+			"id": "vi-0056",
+			"vi": "Trong đời có những vùng tối, và cũng có những vùng sáng.",
+			"author": "Bram Stoker",
+			"work": "Dracula",
+			"year": 1897,
+			"rights": "own-translation",
+			"en": "There are darknesses in life, and there are lights."
+		},
+		{
+			"id": "vi-0057",
+			"vi": "Lòng biết ơn là ký ức của trái tim.",
+			"author": "Jean Baptiste Massieu",
+			"rights": "own-translation",
+			"en": "Gratitude is the memory of the heart."
+		},
+		{
+			"id": "vi-0058",
+			"vi": "Lòng biết ơn không chỉ là đức tính lớn nhất, mà còn là mẹ của mọi đức tính khác.",
+			"author": "Cicero",
+			"work": "Pro Plancio",
+			"rights": "own-translation",
+			"en": "Gratitude is not only the greatest of virtues, but the parent of all others."
+		},
+		{
+			"id": "vi-0059",
+			"vi": "Nếu lời cầu nguyện duy nhất bạn nói là \"cảm ơn\", thế là đủ.",
+			"author": "Meister Eckhart",
+			"rights": "own-translation",
+			"en": "If the only prayer you say is thank you, that is enough."
+		},
+		{
+			"id": "vi-0060",
+			"vi": "Hãy đếm những phúc lành của mình.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "Count your blessings."
+		},
+		{
+			"id": "vi-0061",
+			"vi": "Đủ đầy cũng ngon như một bữa tiệc.",
+			"source": "Middle English proverb",
+			"rights": "own-translation",
+			"en": "Enough is as good as a feast."
+		},
+		{
+			"id": "vi-0062",
+			"vi": "Người khôn ngoan là người không sầu não vì những thứ mình không có.",
+			"author": "Epictetus",
+			"rights": "own-translation",
+			"en": "He is a wise man who does not grieve for what he has not."
+		},
+		{
+			"id": "vi-0063",
+			"vi": "Tôi không thể đáp lại gì khác ngoài lời cảm ơn, và cảm ơn.",
+			"author": "Shakespeare",
+			"work": "Twelfth Night",
+			"rights": "own-translation",
+			"en": "I can no other answer make but thanks, and thanks."
+		},
+		{
+			"id": "vi-0064",
+			"vi": "Mùa gặt không đến mỗi ngày, dù năm nào cũng có.",
+			"author": "George Herbert",
+			"rights": "own-translation",
+			"en": "Harvest comes not every day, though it comes every year."
+		},
+		{
+			"id": "vi-0065",
+			"vi": "Tôi sẽ tôn vinh Giáng sinh trong tim, và cố giữ nó suốt cả năm.",
+			"author": "Dickens",
+			"work": "A Christmas Carol",
+			"year": 1843,
+			"rights": "own-translation",
+			"en": "I will honour Christmas in my heart, and try to keep it all the year."
+		},
+		{
+			"id": "vi-0066",
+			"vi": "Cầu Chúa ban phước cho tất cả chúng ta!",
+			"author": "Dickens",
+			"work": "A Christmas Carol",
+			"year": 1843,
+			"rights": "own-translation",
+			"en": "God bless us, every one!"
+		},
+		{
+			"id": "vi-0067",
+			"vi": "Giáng sinh vui vẻ và Năm mới hạnh phúc!",
+			"source": "Truyền thống",
+			"rights": "own-translation",
+			"en": "Merry Christmas and a Happy New Year!"
+		},
+		{
+			"id": "vi-0068",
+			"vi": "Giáng sinh mỗi năm chỉ đến một lần.",
+			"author": "Thomas Tusser",
+			"year": 1557,
+			"rights": "own-translation",
+			"en": "Christmas comes but once a year."
+		},
+		{
+			"id": "vi-0069",
+			"vi": "Giáng sinh không phải một thời điểm hay một mùa, mà là một trạng thái tâm hồn.",
+			"author": "Calvin Coolidge",
+			"year": 1927,
+			"rights": "own-translation",
+			"en": "Christmas is not a time nor a season, but a state of mind."
+		},
+		{
+			"id": "vi-0070",
+			"vi": "Giáng sinh không tuyết thì nghĩa địa đầy.",
+			"source": "English proverb",
+			"rights": "own-translation",
+			"en": "A green Christmas makes a fat churchyard."
+		},
+		{
+			"id": "vi-0071",
+			"vi": "Phúc thay mùa lễ khiến cả thế giới đồng lòng trong một âm mưu của tình yêu.",
+			"author": "Hamilton Wright Mabie",
+			"rights": "own-translation",
+			"en": "Blessed is the season which engages the whole world in a conspiracy of love."
+		},
+		{
+			"id": "vi-0072",
+			"vi": "Đúng vậy Virginia, ông già Noel có thật.",
+			"author": "Francis P. Church",
+			"work": "The Sun",
+			"year": 1897,
+			"rights": "own-translation",
+			"en": "Yes, Virginia, there is a Santa Claus."
+		},
+		{
+			"id": "vi-0073",
+			"vi": "Quá khứ chỉ là lời mở đầu.",
+			"author": "Shakespeare",
+			"work": "The Tempest",
+			"rights": "own-translation",
+			"en": "What's past is prologue."
+		},
+		{
+			"id": "vi-0074",
+			"vi": "Kết thúc của điều này là khởi đầu của điều khác.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "The end of one thing is the beginning of another."
+		},
+		{
+			"id": "vi-0075",
+			"vi": "Hãy an trú trong hiện tại.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "own-translation",
+			"en": "Confine yourself to the present."
+		},
+		{
+			"id": "vi-0076",
+			"vi": "Trong lúc ta trì hoãn, cuộc đời cứ vụt qua.",
+			"author": "Seneca",
+			"work": "Letters to Lucilius",
+			"rights": "own-translation",
+			"en": "While we are postponing, life speeds by."
+		},
+		{
+			"id": "vi-0077",
+			"vi": "Muộn còn hơn không.",
+			"source": "Proverb",
+			"rights": "own-translation",
+			"en": "Better late than never."
+		},
+		{
+			"id": "vi-0078",
+			"vi": "Thời gian đã mất không bao giờ tìm lại được.",
+			"author": "Benjamin Franklin",
+			"work": "Poor Richard's Almanack",
+			"rights": "own-translation",
+			"en": "Lost time is never found again."
+		},
+		{
+			"id": "vi-0079",
+			"vi": "Năm mới, vận mới.",
+			"source": "German proverb (\"Neues Jahr, neues Glück\")",
+			"rights": "own-translation",
+			"en": "New year, new luck."
+		},
+		{
+			"id": "vi-0080",
+			"vi": "Đừng phí thời gian tranh luận người tốt là thế nào. Hãy là một người tốt.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "own-translation",
+			"en": "Waste no more time arguing what a good man should be. Be one."
+		},
+		{
+			"id": "vi-0081",
+			"vi": "Vinh quang lớn nhất của ta không nằm ở chỗ không bao giờ ngã, mà ở chỗ lần nào ngã cũng đứng dậy.",
+			"author": "Oliver Goldsmith",
+			"work": "The Citizen of the World",
+			"year": 1760,
+			"rights": "own-translation",
+			"en": "Our greatest glory consists not in never falling, but in rising every time we fall.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0082",
+			"vi": "Nghị lực và sự bền bỉ chinh phục tất cả.",
+			"author": "Benjamin Franklin",
+			"work": "Poor Richard's Almanack",
+			"rights": "own-translation",
+			"en": "Energy and persistence conquer all things.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0083",
+			"vi": "Thiên tài là một phần trăm cảm hứng và chín mươi chín phần trăm mồ hôi.",
+			"author": "Thomas Edison",
+			"year": 1932,
+			"rights": "own-translation",
+			"en": "Genius is one percent inspiration and ninety-nine percent perspiration.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0084",
+			"vi": "Không gì trên đời có thể thay thế được sự kiên trì.",
+			"author": "Calvin Coolidge",
+			"year": 1929,
+			"rights": "own-translation",
+			"en": "Nothing in the world can take the place of persistence.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0085",
+			"vi": "Kiên nhẫn và thời gian làm được nhiều hơn sức mạnh hay đam mê.",
+			"author": "Jean de La Fontaine",
+			"work": "Fables",
+			"rights": "own-translation",
+			"en": "Patience and time do more than strength or passion.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0086",
+			"vi": "Khó khăn rèn luyện tâm trí, như lao động rèn luyện thân thể.",
+			"author": "Seneca",
+			"rights": "own-translation",
+			"en": "Difficulties strengthen the mind, as labour does the body.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0087",
+			"vi": "Ai chịu đựng được, người ấy chiến thắng.",
+			"author": "Persius",
+			"work": "Satires",
+			"rights": "own-translation",
+			"en": "He conquers who endures.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0088",
+			"vi": "Thành công là tổng của những nỗ lực nhỏ được lặp lại ngày qua ngày.",
+			"author": "Robert Collier",
+			"rights": "own-translation",
+			"en": "Success is the sum of small efforts repeated day in and day out.",
+			"tags": ["perseverance"]
+		},
+		{
+			"id": "vi-0089",
+			"vi": "Dũng cảm là chống lại nỗi sợ, làm chủ nỗi sợ — chứ không phải không có nỗi sợ.",
+			"author": "Mark Twain",
+			"work": "Pudd'nhead Wilson",
+			"year": 1894,
+			"rights": "own-translation",
+			"en": "Courage is resistance to fear, mastery of fear, not absence of fear.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0090",
+			"vi": "Vận may mỉm cười với người dám.",
+			"author": "Virgil",
+			"work": "Aeneid",
+			"rights": "own-translation",
+			"en": "Fortune favours the bold.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0091",
+			"vi": "Hãy làm điều bạn sợ, và cái chết của nỗi sợ là điều chắc chắn.",
+			"author": "Ralph Waldo Emerson",
+			"rights": "own-translation",
+			"en": "Do the thing you fear, and the death of fear is certain.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0092",
+			"vi": "Dũng khí là sự coi thường cái chết và nỗi đau.",
+			"author": "Tacitus",
+			"rights": "own-translation",
+			"en": "Valour is the contempt of death and pain.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0093",
+			"vi": "Chỉ người dũng cảm mới xứng đáng với người đẹp.",
+			"author": "John Dryden",
+			"work": "Alexander's Feast",
+			"year": 1697,
+			"rights": "own-translation",
+			"en": "None but the brave deserves the fair.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0094",
+			"vi": "Thấy điều đúng mà không làm là thiếu dũng khí.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"en": "To see what is right and not do it is want of courage.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0095",
+			"vi": "Táo bạo ơi, hãy làm bạn với ta.",
+			"author": "Shakespeare",
+			"work": "Cymbeline",
+			"rights": "own-translation",
+			"en": "Boldness, be my friend.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0096",
+			"vi": "Cùng đường thì kẻ nhút nhát cũng hoá gan dạ.",
+			"author": "Sallust",
+			"work": "Catiline",
+			"rights": "own-translation",
+			"en": "Necessity makes even the timid brave.",
+			"tags": ["courage"]
+		},
+		{
+			"id": "vi-0097",
+			"vi": "Tôi biết rằng tôi không biết gì cả.",
+			"author": "Socrates",
+			"work": "Apology",
+			"rights": "own-translation",
+			"en": "I know that I know nothing.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0098",
+			"vi": "Biết người là khôn; biết mình là sáng.",
+			"author": "Lao Tzu",
+			"work": "Tao Te Ching",
+			"rights": "own-translation",
+			"en": "He who knows others is wise; he who knows himself is enlightened.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0099",
+			"vi": "Tri thức thật sự là biết được giới hạn hiểu biết của mình.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"en": "Real knowledge is to know the extent of one's ignorance.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0100",
+			"vi": "Hạnh phúc của đời bạn phụ thuộc vào phẩm chất những suy nghĩ của bạn.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "own-translation",
+			"en": "The happiness of your life depends upon the quality of your thoughts.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0101",
+			"vi": "Còn sống ngày nào, hãy còn học cách sống ngày ấy.",
+			"author": "Seneca",
+			"work": "Letters to Lucilius",
+			"rights": "own-translation",
+			"en": "As long as you live, keep learning how to live.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0102",
+			"vi": "Ta có hai tai và một miệng, nên hãy nghe nhiều hơn nói.",
+			"author": "Epictetus",
+			"rights": "own-translation",
+			"en": "We have two ears and one mouth, so we should listen more than we say.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0103",
+			"vi": "Không gì được tin chắc bằng thứ ta ít biết nhất.",
+			"author": "Montaigne",
+			"work": "Essays",
+			"rights": "own-translation",
+			"en": "Nothing is so firmly believed as that which we least know.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0104",
+			"vi": "Tri thức là sức mạnh.",
+			"author": "Francis Bacon",
+			"work": "Meditationes Sacrae",
+			"year": 1597,
+			"rights": "own-translation",
+			"en": "Knowledge is power.",
+			"tags": ["wisdom"]
+		},
+		{
+			"id": "vi-0106",
+			"vi": "Dù bạn nghĩ mình làm được hay không làm được — bạn đều đúng.",
+			"author": "Henry Ford",
+			"rights": "own-translation",
+			"en": "Whether you think you can, or you think you can't — you're right.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0107",
+			"vi": "Thành công được đo bằng những trở ngại đã vượt qua, không phải vị trí đã đạt tới.",
+			"author": "Booker T. Washington",
+			"work": "Up from Slavery",
+			"year": 1901,
+			"rights": "own-translation",
+			"en": "Success is measured by the obstacles overcome, not the position reached.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0108",
+			"vi": "Dám làm điều lớn lao còn hơn nhiều so với đứng chung hàng với những kẻ nhu nhược.",
+			"author": "Theodore Roosevelt",
+			"rights": "own-translation",
+			"en": "Far better it is to dare mighty things than to take rank with those poor spirits.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0109",
+			"vi": "Thành công phụ thuộc vào nỗ lực.",
+			"author": "Sophocles",
+			"rights": "own-translation",
+			"en": "Success is dependent on effort.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0110",
+			"vi": "Cơ hội chỉ mỉm cười với tâm trí đã chuẩn bị.",
+			"author": "Louis Pasteur",
+			"rights": "own-translation",
+			"en": "Chance favours only the prepared mind.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0111",
+			"vi": "Những người thành công là những người chọn một con đường và bám lấy nó.",
+			"author": "Andrew Carnegie",
+			"rights": "own-translation",
+			"en": "The men who have succeeded are men who have chosen one line and stuck to it.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0112",
+			"vi": "Việc lớn không thành nhờ bốc đồng, mà nhờ nhiều việc nhỏ được ghép lại.",
+			"author": "Vincent van Gogh",
+			"year": 1882,
+			"rights": "own-translation",
+			"en": "Great things are not done by impulse, but by a series of small things brought together.",
+			"tags": ["success"]
+		},
+		{
+			"id": "vi-0113",
+			"vi": "Hạnh phúc phụ thuộc vào chính chúng ta.",
+			"author": "Aristotle",
+			"work": "Nicomachean Ethics",
+			"rights": "own-translation",
+			"en": "Happiness depends upon ourselves.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0114",
+			"vi": "Hạnh phúc thật sự là tận hưởng hiện tại, không phấp phỏng bám víu vào tương lai.",
+			"author": "Seneca",
+			"rights": "own-translation",
+			"en": "True happiness is to enjoy the present, without anxious dependence upon the future.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0115",
+			"vi": "Người giàu nhất là người có những niềm vui rẻ nhất.",
+			"author": "Henry David Thoreau",
+			"year": 1856,
+			"rights": "own-translation",
+			"en": "That man is richest whose pleasures are cheapest.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0116",
+			"vi": "Hạnh phúc không nằm ở việc ta có bao nhiêu, mà ở việc ta tận hưởng bao nhiêu.",
+			"author": "Charles Spurgeon",
+			"rights": "own-translation",
+			"en": "It is not how much we have, but how much we enjoy, that makes happiness.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0117",
+			"vi": "Cách tốt nhất để vui lên là thử làm cho người khác vui.",
+			"author": "Mark Twain",
+			"work": "Notebook",
+			"rights": "own-translation",
+			"en": "The best way to cheer yourself is to try to cheer someone else up.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0118",
+			"vi": "Hỏi mình có hạnh phúc không, là lúc bạn thôi hạnh phúc.",
+			"author": "John Stuart Mill",
+			"work": "Autobiography",
+			"rights": "own-translation",
+			"en": "Ask yourself whether you are happy, and you cease to be so.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0119",
+			"vi": "Hãy bằng lòng với những gì mình có; hãy vui với những gì đang là.",
+			"author": "Lao Tzu",
+			"work": "Tao Te Ching",
+			"rights": "own-translation",
+			"en": "Be content with what you have; rejoice in the way things are.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0120",
+			"vi": "Không bổn phận nào bị ta xem nhẹ bằng bổn phận phải hạnh phúc.",
+			"author": "Robert Louis Stevenson",
+			"rights": "own-translation",
+			"en": "There is no duty we so much underrate as the duty of being happy.",
+			"tags": ["happiness"]
+		},
+		{
+			"id": "vi-0121",
+			"vi": "Học mà không suy nghĩ là công cốc; suy nghĩ mà không học là nguy hiểm.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"en": "Learning without thought is labour lost; thought without learning is perilous.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0122",
+			"vi": "Rễ của học vấn thì đắng, nhưng quả thì ngọt.",
+			"author": "Aristotle",
+			"rights": "own-translation",
+			"en": "The roots of education are bitter, but the fruit is sweet.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0123",
+			"vi": "Trí óc không phải cái bình để đổ đầy, mà là ngọn lửa để nhen lên.",
+			"author": "Plutarch",
+			"work": "On Listening",
+			"rights": "own-translation",
+			"en": "The mind is not a vessel to be filled but a fire to be kindled.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0124",
+			"vi": "Trong lúc dạy, ta học.",
+			"author": "Seneca",
+			"rights": "own-translation",
+			"en": "While we teach, we learn.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0125",
+			"vi": "Học tập không bao giờ làm kiệt trí óc.",
+			"author": "Leonardo da Vinci",
+			"rights": "own-translation",
+			"en": "Learning never exhausts the mind.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0126",
+			"vi": "Hãy sống như thể mai bạn sẽ chết. Hãy học như thể bạn sẽ sống mãi.",
+			"author": "Mahatma Gandhi",
+			"rights": "own-translation",
+			"en": "Live as if you were to die tomorrow. Learn as if you were to live forever.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0127",
+			"vi": "Uy quyền của người dạy thường là vật cản với người muốn học.",
+			"author": "Cicero",
+			"work": "De Natura Deorum",
+			"rights": "own-translation",
+			"en": "The authority of those who teach is often an obstacle to those who want to learn.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0128",
+			"vi": "Tôi vẫn đang học.",
+			"author": "Michelangelo",
+			"rights": "own-translation",
+			"en": "I am still learning.",
+			"tags": ["learning"]
+		},
+		{
+			"id": "vi-0129",
+			"vi": "Không phải ta có ít thời gian để sống, mà là ta phí phạm quá nhiều.",
+			"author": "Seneca",
+			"work": "On the Shortness of Life",
+			"rights": "own-translation",
+			"en": "It is not that we have a short time to live, but that we waste a lot of it.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0130",
+			"vi": "Bạn có yêu cuộc sống không? Vậy thì đừng hoang phí thời gian.",
+			"author": "Benjamin Franklin",
+			"work": "Poor Richard's Almanack",
+			"rights": "own-translation",
+			"en": "Dost thou love life? Then do not squander time.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0131",
+			"vi": "Đừng sống như thể bạn sẽ sống mười ngàn năm.",
+			"author": "Marcus Aurelius",
+			"work": "Meditations",
+			"rights": "own-translation",
+			"en": "Do not act as if you were going to live ten thousand years.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0132",
+			"vi": "Thời gian là thứ quý giá nhất mà con người có thể tiêu.",
+			"author": "Theophrastus",
+			"rights": "own-translation",
+			"en": "Time is the most valuable thing a man can spend.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0133",
+			"vi": "Hãy nắm lấy ngày hôm nay, và đặt ít niềm tin nhất có thể vào ngày mai.",
+			"author": "Horace",
+			"work": "Odes",
+			"rights": "own-translation",
+			"en": "Seize the day, trusting as little as possible in tomorrow.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0134",
+			"vi": "Thời gian là thứ ta muốn nhất, nhưng lại dùng tệ nhất.",
+			"author": "William Penn",
+			"work": "Some Fruits of Solitude",
+			"year": 1693,
+			"rights": "own-translation",
+			"en": "Time is what we want most, but what we use worst.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0135",
+			"vi": "Người dám phí một giờ đồng hồ là người chưa khám phá ra giá trị của cuộc đời.",
+			"author": "Charles Darwin",
+			"rights": "own-translation",
+			"en": "A man who dares to waste one hour of time has not discovered the value of life.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0136",
+			"vi": "Hai chiến binh mạnh nhất là kiên nhẫn và thời gian.",
+			"author": "Leo Tolstoy",
+			"work": "War and Peace",
+			"rights": "own-translation",
+			"en": "The two most powerful warriors are patience and time.",
+			"tags": ["time"]
+		},
+		{
+			"id": "vi-0137",
+			"vi": "Tính cách là số phận.",
+			"author": "Heraclitus",
+			"rights": "own-translation",
+			"en": "Character is destiny.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0138",
+			"vi": "Không ác ý với ai, mà bác ái với tất cả.",
+			"author": "Abraham Lincoln",
+			"year": 1865,
+			"rights": "own-translation",
+			"en": "With malice toward none, with charity for all.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0139",
+			"vi": "Giữ nhân cách dễ hơn nhiều so với lấy lại nó.",
+			"author": "Thomas Paine",
+			"work": "The American Crisis",
+			"rights": "own-translation",
+			"en": "Character is much easier kept than recovered.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0140",
+			"vi": "Không có đấu tranh thì không thể có tiến bộ.",
+			"author": "Frederick Douglass",
+			"rights": "own-translation",
+			"en": "Without a struggle, there can be no progress.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0141",
+			"vi": "Danh tiếng tốt còn quý hơn tiền bạc.",
+			"author": "Publilius Syrus",
+			"work": "Sententiae",
+			"rights": "own-translation",
+			"en": "A good reputation is more valuable than money.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0142",
+			"vi": "Chính trực mà thiếu tri thức thì yếu ớt và vô dụng.",
+			"author": "Samuel Johnson",
+			"work": "Rasselas",
+			"year": 1759,
+			"rights": "own-translation",
+			"en": "Integrity without knowledge is weak and useless.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0143",
+			"vi": "Không viện cớ còn hơn viện một cớ tồi.",
+			"author": "George Washington",
+			"year": 1783,
+			"rights": "own-translation",
+			"en": "It is better to offer no excuse than a bad one.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0144",
+			"vi": "Người quân tử nói thì dè dặt, mà làm thì vượt trội.",
+			"author": "Confucius",
+			"work": "Analects",
+			"rights": "own-translation",
+			"en": "The superior man is modest in speech but exceeds in action.",
+			"tags": ["character"]
+		},
+		{
+			"id": "vi-0145",
+			"vi": "Thịt mỡ dưa hành câu đối đỏ / Cây nêu tràng pháo bánh chưng xanh",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0146",
+			"vi": "Mùng một Tết cha, mùng hai Tết mẹ, mùng ba Tết thầy",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0147",
+			"vi": "Đói ngày giỗ cha, no ba ngày Tết",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0148",
+			"vi": "Đầu năm mua muối, cuối năm mua vôi",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0149",
+			"vi": "Tết đến sau lưng / Ông vải thì mừng, con cháu thì lo",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0150",
+			"vi": "Số cô chẳng giàu thì nghèo / Ngày ba mươi Tết thịt treo trong nhà",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0151",
+			"vi": "Cu kêu ba tiếng cu kêu / Cho mau đến Tết dựng nêu ăn chè",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0152",
+			"vi": "Dửng dưng như bánh chưng ngày Tết",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0153",
+			"vi": "Thân em vừa trắng lại vừa tròn / Bảy nổi ba chìm với nước non",
+			"author": "Hồ Xuân Hương, Bánh trôi nước",
+			"work": "Bánh trôi nước",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0154",
+			"vi": "Tháng giêng ăn tết ở nhà / Tháng hai cờ bạc, tháng ba hội hè",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0155",
+			"vi": "Bảy nổi ba chìm",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0156",
+			"vi": "Tháng ba bà già chết rét",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0157",
+			"vi": "Bao giờ cho đến tháng ba / Ếch cắn cổ rắn tha ra ngoài đồng",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0158",
+			"vi": "Ai ơi bưng bát cơm đầy / Dẻo thơm một hạt đắng cay muôn phần",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0159",
+			"vi": "Ăn quả nhớ kẻ trồng cây",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0160",
+			"vi": "Của một đồng, công một nén",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0161",
+			"vi": "Dù ai đi ngược về xuôi / Nhớ ngày giỗ Tổ mùng mười tháng ba",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0162",
+			"vi": "Dù ai buôn bán gần xa / Nhớ ngày giỗ Tổ tháng ba mùng mười",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0163",
+			"vi": "Con người có tổ có tông / Như cây có cội, như sông có nguồn",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0164",
+			"vi": "Cây có cội mới nở cành xanh lá / Nước có nguồn mới bể cả sông sâu",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0165",
+			"vi": "Uống nước nhớ nguồn",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0166",
+			"vi": "Chim có tổ, người có tông",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0167",
+			"vi": "Bầu ơi thương lấy bí cùng / Tuy rằng khác giống nhưng chung một giàn",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0168",
+			"vi": "Nhiễu điều phủ lấy giá gương / Người trong một nước phải thương nhau cùng",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0169",
+			"vi": "Tháng tư đong đậu nấu chè / Ăn tết Đoan Ngọ trở về tháng năm",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0170",
+			"vi": "Tháng năm ngày tết Đoan Dương / Là ngày giỗ Mẹ Việt Thường Văn Lang",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0171",
+			"vi": "Mồng năm tháng năm, giết sâu bọ",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0172",
+			"vi": "Tháng năm chưa nằm đã sáng / Tháng mười chưa cười đã tối",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0173",
+			"vi": "Trông trời, trông đất, trông mây / Trông mưa, trông nắng, trông ngày, trông đêm",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0174",
+			"vi": "Được mùa chớ phụ ngô khoai / Đến khi thất bát lấy ai bạn cùng",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0175",
+			"vi": "Người ta đi cấy lấy công / Tôi nay đi cấy còn trông nhiều bề",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0176",
+			"vi": "Ăn được ngủ được là tiên / Không ăn không ngủ mất tiền thêm lo",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0177",
+			"vi": "Công cha như núi Thái Sơn / Nghĩa mẹ như nước trong nguồn chảy ra",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0178",
+			"vi": "Một lòng thờ mẹ kính cha / Cho tròn chữ hiếu mới là đạo con",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0179",
+			"vi": "Mẹ già như chuối chín cây / Gió lay mẹ rụng con phải mồ côi",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0180",
+			"vi": "Lên non mới biết non cao / Nuôi con mới biết công lao mẫu từ",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0181",
+			"vi": "Ơn cha nặng lắm ai ơi / Nghĩa mẹ bằng trời chín tháng cưu mang",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0182",
+			"vi": "Tu đâu cho bằng tu nhà / Thờ cha kính mẹ mới là chân tu",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0183",
+			"vi": "Cá không ăn muối cá ươn / Con cãi cha mẹ trăm đường con hư",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0184",
+			"vi": "Đói lòng ăn hột chà là / Để cơm nuôi mẹ, mẹ già yếu răng",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0185",
+			"vi": "Muốn ăn lúa tháng Năm, trông trăng rằm tháng Tám",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0186",
+			"vi": "Tỏ trăng mười bốn được tằm / Đục trăng hôm rằm thì được lúa chiêm",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0187",
+			"vi": "Ông giẳng ông giăng / Xuống chơi với tôi / Có bầu có bạn / Có ván cơm xôi",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0188",
+			"vi": "Thằng Cuội ngồi gốc cây đa / Để trâu ăn lúa gọi cha ời ời",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0189",
+			"vi": "Trăng quầng thì hạn, trăng tán thì mưa",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0190",
+			"vi": "Mưa tháng bảy gãy cành trám / Nắng tháng tám rám trái bòng",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0191",
+			"vi": "Trăng bao nhiêu tuổi trăng già / Núi bao nhiêu tuổi gọi là núi non",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0192",
+			"vi": "Đêm trăng thanh anh mới hỏi nàng / Tre non đủ lá đan sàng nên chăng",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0193",
+			"vi": "Thế gian một vợ một chồng / Chẳng như vua bếp hai ông một bà",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0194",
+			"vi": "Hai ông một bà",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0195",
+			"vi": "Thuận vợ thuận chồng, tát biển Đông cũng cạn",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0196",
+			"vi": "Chồng giận thì vợ bớt lời / Cơm sôi nhỏ lửa chẳng đời nào khê",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0197",
+			"vi": "Râu tôm nấu với ruột bầu / Chồng chan vợ húp gật đầu khen ngon",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0198",
+			"vi": "Nhà sạch thì mát, bát sạch ngon cơm",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0199",
+			"vi": "Của chồng công vợ",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		},
+		{
+			"id": "vi-0200",
+			"vi": "Có thực mới vực được đạo",
+			"source": "Tục ngữ Việt Nam",
+			"rights": "public-domain"
+		}
+	]
+}

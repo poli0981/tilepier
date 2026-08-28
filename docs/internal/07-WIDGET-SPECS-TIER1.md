@@ -312,3 +312,45 @@ Three tabs in one widget (charter decision 2026-07-19).
   `settings` (max 8).
 - **Tile view:** shows the last-used tab in compact form; detail shows all
   three full-width.
+
+### Built 2026-08-28 — four decisions
+
+1. **The QR encoder is a dependency, not a vendored file.** This section said
+   "small vendored QR encoder (MIT) — evaluate `qrcode` npm vs a lighter port".
+   Both were evaluated and neither won. `qrcode` brings three transitive
+   dependencies including `yargs`. Vendoring Nayuki's TypeScript was measured:
+   990 lines producing **43 errors** under `noUncheckedIndexedAccess`, so it
+   would have needed `@ts-nocheck` and exclusions in eslint, prettier, knip and
+   coverage — five holes in a repo that otherwise has none. `qrcode-generator`
+   is MIT, **zero-dependency**, by the original author, and goes through the
+   same Renovate and `pnpm audit` path as everything else (doc 02, doc 16 §5).
+
+2. **The text is encoded as UTF-8, which is not that library's default.** Its
+   `stringToBytes` is `charCodeAt(i) & 0xff`. `à` survives that by luck and `ộ`
+   does not — U+1ED9 truncates to 0xD9 and the scanned result is a different
+   character. For an app whose first locale is Vietnamese that is most inputs,
+   not an edge case. `qr.ts` overrides it with `TextEncoder`. That override is
+   also the honest limit of what the suite can check: the byte encoding is ours
+   and is asserted exactly; the matrix is the library's and, with no decoder
+   available, is checked for shape, determinism and its three finder patterns.
+
+3. **The QR is always dark-on-light, whatever the theme.** A scanner reads
+   contrast, and an inverted code fails on about half of them. The two literals
+   carry `tokens-audit-ignore` (doc 20 §1) because a QR is scanned rather than
+   styled — it is not a design surface.
+
+4. **Password options are session state; only the tab and the recent colours
+   are stored** (doc 05 §2). This section names those two and no more. Keeping
+   the options in settings beside a value that must never be stored would be an
+   invitation to add the value later "for convenience".
+
+`loading` is unreachable — the panels render immediately and the encoder loads
+behind an already-drawn empty state. `empty` **is** reachable and implemented
+twice: a QR tab with nothing typed, and a password tab before the first press.
+`error` is inline for text that will not fit a QR and for a hex field that is
+not a colour yet. `stale`, `stale-error` and `offline` are N/A by class.
+
+The colour tab's contrast maths is **not only this widget's**. doc 13 §8 puts a
+contrast audit of every semantic-on-surface pair in Week 8 and had asserted two
+figures without computing them; `color.ts` is where that audit gets its
+arithmetic, and running it corrected both (see doc 13 §8).

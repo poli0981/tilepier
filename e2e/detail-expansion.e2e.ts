@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { seedLayout } from './_lib/seed';
 
 /**
  * The detail-expansion handshake (doc 06 §6, doc 13 §5).
@@ -108,9 +109,7 @@ test('a deep link to a widget not on the deck offers to pin it', async ({ page }
 	await acceptGate(page);
 
 	// Empty the deck first, so the clock genuinely is not on it.
-	await page.evaluate((key) => {
-		localStorage.setItem(key, JSON.stringify({ schemaVersion: 1, grid: [] }));
-	}, LAYOUT_KEY);
+	await seedLayout(page, []);
 
 	await page.goto('/w/clock');
 

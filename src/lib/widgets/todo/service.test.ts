@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TpTodo, TpTodoList } from '$lib/core/storage/db';
-import {
-	countDone,
-	dateKeyOf,
-	dueState,
-	filterTodos,
-	moveList,
-	resolveList,
-	sortTodos
-} from './service';
+import { countDone, dueState, filterTodos, moveList, resolveList, sortTodos } from './service';
 
 /**
  * doc 07 §5's pure half — ordering, filtering and what a due date means. The
@@ -24,19 +16,6 @@ function todo(overrides: Partial<TpTodo> = {}): TpTodo {
 function list(overrides: Partial<TpTodoList> = {}): TpTodoList {
 	return { id: 'l', name: '', order: 0, ...overrides };
 }
-
-describe('dateKeyOf', () => {
-	it('reads the local date, zero-padded', () => {
-		expect(dateKeyOf(new Date(2026, 0, 5))).toBe('2026-01-05');
-		expect(dateKeyOf(new Date(2026, 9, 15))).toBe('2026-10-15');
-	});
-
-	it('does not slip a day at the edges of the day', () => {
-		// `toISOString()` is UTC by definition and is how this goes wrong.
-		expect(dateKeyOf(new Date(2026, 7, 27, 23, 59))).toBe('2026-08-27');
-		expect(dateKeyOf(new Date(2026, 7, 28, 0, 1))).toBe('2026-08-28');
-	});
-});
 
 describe('dueState', () => {
 	it('classifies a date against today', () => {

@@ -31,6 +31,15 @@ gate has not been accepted.
   double-caching creates staleness confusion).
 - Update flow: SW `waiting` → quiet toast "phiên bản mới — tải lại"
   (skipWaiting only on user action; never reload under the user).
+- **Widget chunks are not precached, and that has a visible consequence.**
+  Found 2026-08-28 by journey #4: opening a widget's detail for the *first* time
+  with no connection fails, because the chunk has never been fetched and
+  cache-first has nothing to serve. The precache list above is the app shell by
+  design — precaching fifteen widgets' tile and detail chunks would make the
+  install heavy for a deck that uses four of them. The options are a
+  runtime-cache rule that keeps whatever has been opened once, or precaching the
+  chunks of the widgets actually on the deck. Both are Week 8 PWA-pass work
+  (doc 23); recorded here so that pass starts from a known finding.
 - Install: standard manifest (name, icons incl. maskable, theme colors both
   schemes); no install nagging — browser affordance only.
 - **Resolved 2026-08-10 (spike S5): the fallback is what ships.**
@@ -52,11 +61,16 @@ gate has not been accepted.
 
 | Class | Offline behavior |
 |-------|------------------|
-| Pure-client (tier 1) | Fully functional |
-| Cached-data (weather, fx, markets, rss, quote) | Last Dexie payload + stale badge; refresh suppressed until `online` |
+| Pure-client (tier 1, and `quote`) | Fully functional |
+| Cached-data (weather, fx, markets, rss) | Last Dexie payload + stale badge; refresh suppressed until `online` |
 | Search-dependent empty states (map search, geocode, symbol add) | Offline card: "cần mạng để tìm kiếm" |
 | Map tiles | Browser-cached tiles render; new tiles gray grid + offline chip |
 | Music/media (FSA/blob) | Fully functional (files are local) |
+
+`quote` moved rows on 2026-08-28, when it was built. Its dataset is bundled
+(doc 08 §3) so there is nothing to go stale and nothing to suppress: offline it
+is fully functional, which is the whole point of computing the daily pick from
+the date rather than fetching it. doc 06 §3 carries the same correction.
 
 `stores/online.svelte.ts`: `navigator.onLine` + `online/offline` events +
 a fetch-failure heuristic (2 consecutive TypeErrors → treat offline even

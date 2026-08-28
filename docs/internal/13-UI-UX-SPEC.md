@@ -93,8 +93,29 @@ show "on deck" disabled state. Search filters by name.
 - Tiles are `section` landmarks labeled by widget title + instance name.
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).
-- Contrast: fg on ink-900 = 11.9:1; fg-mute = 5.1:1 (AA for normal text);
-  audit every semantic-on-surface pair in Week 8 (doc 23).
+- Contrast: **measured 2026-08-28**, when `widgets/toolbox/color.ts` gave the
+  suite something to measure with. `fg` on `ink-900` is **15.35:1** and `fg-mute`
+  is **7.16:1** — both comfortably AA, and both better than the 11.9 and 5.1 this
+  line asserted before anything had computed them. `color.test.ts` now asserts
+  the pair against the tokens, so the two cannot drift apart again.
+
+  **`fg-dim` on `ink-900` is 3.51:1**, which is AA for large text only and fails
+  AA for normal text. doc 12 §2 gives it "tertiary, timestamps", and it is used
+  at `--text-2xs` for the notes updated-ago line, the clock's zone deltas and the
+  calendar's lunar day numbers — all normal-size text. Left as measured rather
+  than fixed here: raising it is a design-token change, and doc 23 puts the
+  contrast audit in Week 8 where the whole ramp can move together. Recorded so
+  that audit starts from a known finding rather than rediscovering it.
+
+  A second finding for the same audit, recorded 2026-08-28: **tile controls are
+  below the 40 px target above.** The todo tile has shipped 36, 32 and 28 px
+  controls since Week 2 and the toolbox tile follows it at 28 px, because three
+  40 px tabs plus a panel do not fit a 2×2 tile. Detail panels do hold the rule
+  and the toolbox detail is built to it. Either the rule wants a tile exception
+  or the tiles want redesigning; that is a Week 8 call, and it is written down
+  here so it is made rather than discovered.
+
+  The full sweep of every semantic-on-surface pair remains Week 8 (doc 23).
 - Charts: every ECharts view paired with an accessible summary line
   (e.g., "AAPL 1M: +4.2%, range 182–199") — cheap, honest a11y.
 
@@ -107,11 +128,16 @@ dismiss forever). No account prompts, no tour videos, ≤ 30 s to a useful
 deck.
 
 The seed is **filtered through the registry**, so it only ever contains widgets
-that exist in the current build. That makes the five-tile deck above the Week 3
-state, when calendar and quote land. It was `clock` alone in Week 1 and is
-`clock` + `notes` from Week 2. M1
-delivers a deck you can arrange, and a deck seeded with widgets that do not
-exist is not one. (Corrected 2026-08-19.)
+that exist in the current build. It was `clock` alone in Week 1, `clock` +
+`notes` from Week 2, and is **four tiles from Week 3** — clock, calendar, notes,
+quote. M1 delivers a deck you can arrange, and a deck seeded with widgets that
+do not exist is not one. (Corrected 2026-08-19.)
+
+The five-tile deck above is the **Week 4** state, not Week 3's: `weather` is in
+the list and lands in Week 4 (doc 23), so it is filtered out until then. Said
+plainly on 2026-08-28, because the previous sentence claimed Week 3 and the
+e2e suite carried the number as a literal in six files — it now lives once, in
+`e2e/_lib/seed.ts`.
 
 "Dismiss forever" is `tp.settings.v1.coachDismissed` (doc 05 §2). It had nowhere
 to live under the three-key rule until that field was added.
@@ -154,8 +180,22 @@ can point at it: the copy now says "export a backup above first" rather than
 "there is no automatic backup yet".
 
 Section 8 ships in Week 1 with the two data sources that exist by then, the log
-ring buffer and `scheduler.inspect()` (doc 04 §3); the swr and breaker rows
-arrive with their own modules in Week 3.
+ring buffer and `scheduler.inspect()` (doc 04 §3).
+
+**The swr rows arrived 2026-08-28** with `core/swr.svelte.ts`, reading
+`swrCache.inspect()` — key, status and age in seconds. Nothing on the deck is
+networked until Week 4, so the table normally reads "nothing cached"; that is
+the honest thing for it to say rather than being left out until it can be full.
+
+**The breaker rows did not, and that is a deliberate deferral to Week 5.** They
+need `GET /api/_health`, which doc 11 §9 gates behind `env.DEV_DASH_TOKEN` — a
+secret, and secrets are not declared in `wrangler.jsonc`. Typing one means
+`wrangler types` reading a gitignored `.dev.vars`, so the committed
+`worker-configuration.d.ts` would differ between a developer's checkout and CI
+and `wrangler types --check` would fail on one of them. That is a real problem
+with a real answer and it is not a Week 3 problem: doc 23 puts the quota
+telemetry watch at Week 5, which is when a breaker table first has anything to
+say. Recorded here rather than left as a gap in a numbered list.
 
 Section 7 ships in Week 1 deliberately, out of order of apparent usefulness: it
 is what makes the ring buffer worth having, and M1's stated QA strategy is

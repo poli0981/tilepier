@@ -88,9 +88,19 @@ produces them: `empty` is a judgment about the *contents* of `data`, and
 `permission-needed` is a browser-permission state swr cannot see.
 
 Error codes map per doc 17 §4: `NETWORK` → `offline`; `RATE_LIMITED` →
-`rate-limited`; `QUOTA_EXHAUSTED` and `UPSTREAM_DOWN` → `stale-error` when a
-cached payload exists, `error` when none does; `BAD_REQUEST` and `MALFORMED` →
-`error`, logged loudly, never retried.
+`rate-limited`; `QUOTA_EXHAUSTED`, `UPSTREAM_DOWN` and `MALFORMED` →
+`stale-error` when a cached payload exists, `error` when none does;
+`BAD_REQUEST` → `error`, logged loudly, never retried.
+
+> **`MALFORMED` moved on 2026-08-28**, when the taxonomy was implemented. This
+> line grouped it with `BAD_REQUEST` as "never retried" while doc 17 §4 said
+> "treat as `UPSTREAM_DOWN`" — the two could not both hold. Resolved in doc 17
+> §4's favour: the realistic cause of a malformed body is an HTML error page
+> from the edge, not a request this build got wrong, and that clears by itself.
+> `BAD_REQUEST` keeps the never-retry rule because it is the one failure where
+> the same request genuinely will fail the same way forever. The codes stay
+> distinct so diagnostics can tell them apart; only the retry decision is
+> shared (`core/api.ts`, `isRetryable`).
 
 `revalidate()` **rejects** on failure rather than swallowing, because backoff
 belongs to the scheduler (§3). swr overrides the default curve only when the
@@ -100,6 +110,18 @@ the widget already holds.
 Client TTLs are deliberately ≥ the Worker KV TTLs (doc 11 §4) so the client
 never polls faster than the edge refreshes — extra polls would only get
 cache hits anyway.
+
+> **Implemented 2026-08-28**, split across two modules rather than one.
+> `core/api.ts` holds the envelope and the doc 17 §4 taxonomy — no runes, no
+> Dexie — and `core/swr.svelte.ts` holds caching, de-duplication and status. The
+> split is what lets the first be tested in the node project against MSW and the
+> second in the browser with plain stub fetchers, so neither suite has to fake
+> what the other one owns. `swrCache.inspect()` is the doc 13 §10 §8 table.
+>
+> The doc 17 §5 rate-limit **coordinator** lives in `swr.svelte.ts` because it
+> is the only module that sees every 429; the toast it will drive arrives in
+> Week 4 with the first widget that can produce one, since a toast component
+> with no trigger is what doc 20 §5 forbids.
 
 > Return shape added 2026-08-19. This section previously said "emit" four times
 > without saying emit *through what*, which left the entire data layer resting
@@ -188,10 +210,28 @@ seam the fake-timer suites drive directly instead of stubbing `setInterval`.
 > Handle and introspection added 2026-08-19. `register()` previously returned
 > nothing and there was **no deregistration API anywhere in the suite**, while
 > doc 19 §6's DoD requires "no scheduler leaks on remove" — the two could not
-> both be satisfied (doc 22 §Exit review, item 3). The host now registers inside
-> an `$effect` and returns `unregister` as the teardown, so removing a tile
-> cannot leave a live entry behind. **Specified and implemented in Week 1**,
-> because that teardown path is what the DoD rests on.
+> both be satisfied (doc 22 §Exit review, item 3). Registration happens inside an
+> `$effect` that returns `unregister` as its teardown, so removing a tile cannot
+> leave a live entry behind. **Specified and implemented in Week 1**, because
+> that teardown path is what the DoD rests on.
+
+### Who registers
+
+**The widget, not the host.** Corrected 2026-08-28. This section said "the host
+now registers inside an `$effect`", and `TpWidgetHost` did — with an empty `run`,
+waiting for the Week 3 data layer to fill in. That could never have worked, and
+the reason is two rules of this section meeting: `register()` refcounts by id and
+**the first registration's options win**, so a widget registering under its own
+`instanceId` would silently join the host's no-op entry and never run. The
+contract read as wired and was not, which is the same shape as the doc 06 §5
+rule 11 bug found in Week 2.
+
+The host therefore registers nothing. A widget that declares a `refresh` calls
+`useRefresh(id, cadence, run)` from `core/refresh.svelte.ts`, which is the same
+`$effect`-with-teardown one component deeper. The DoD is unaffected — a widget
+unmounts with its host — and `id` stays the caller's choice per the rule above,
+which is now a choice something can actually make: `calendar` and `quote` pass
+their `instanceId`, and a networked widget will pass its data key.
 
 ## 4. Request lifecycle example — weather tile
 

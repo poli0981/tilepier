@@ -40,7 +40,8 @@
 		"gridstack": "^12.6.0",
 		"maplibre-gl": "^5.24.0",
 		"marked": "^18.0.9",
-		"music-metadata": "^11.14.0"
+		"music-metadata": "^11.14.0",
+		"qrcode-generator": "^2.0.4"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

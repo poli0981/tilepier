@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SEEDED_TILES, seedLayout } from './_lib/seed';
 
 /**
  * doc 19 §4 journey #2 — layout persistence.
@@ -34,7 +35,7 @@ test('the seeded deck renders on first run', async ({ page }) => {
 
 	// doc 13 §9, registry-filtered: clock and notes as of Week 2, the full five
 	// once calendar and quote land in Week 3.
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 	await expect(page.getByRole('heading', { name: 'TilePier' })).toHaveCount(0);
 	await expect(page.locator('.tp-host__title').first()).toHaveText('Đồng hồ');
 });
@@ -46,25 +47,17 @@ test('the clock ticks, and reads its per-instance settings', async ({ page }) =>
 	// settings — so this covers the tile reading them as well as the tick.
 	// Without `showSeconds` the display only changes once a minute, which does
 	// not fit inside a 30 s test timeout.
-	await page.evaluate((key) => {
-		localStorage.setItem(
-			key,
-			JSON.stringify({
-				schemaVersion: 1,
-				grid: [
-					{
-						instanceId: 'wgt_tick',
-						widgetId: 'clock',
-						x: 0,
-						y: 0,
-						w: 3,
-						h: 2,
-						settings: { showSeconds: true }
-					}
-				]
-			})
-		);
-	}, LAYOUT_KEY);
+	await seedLayout(page, [
+		{
+			instanceId: 'wgt_tick',
+			widgetId: 'clock',
+			x: 0,
+			y: 0,
+			w: 3,
+			h: 2,
+			settings: { showSeconds: true }
+		}
+	]);
 	await page.reload();
 
 	const time = page.locator('.tp-clock__time');
@@ -137,18 +130,10 @@ test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) =
 	// doc 05 §5. `weather` is in the id union and in doc 06 §7, but has no
 	// manifest until Week 4 — exactly the shape of a widget removed in a
 	// future release, seen from the other direction.
-	await page.evaluate((key) => {
-		localStorage.setItem(
-			key,
-			JSON.stringify({
-				schemaVersion: 1,
-				grid: [
-					{ instanceId: 'wgt_keep', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} },
-					{ instanceId: 'wgt_gone', widgetId: 'weather', x: 3, y: 0, w: 3, h: 2, settings: {} }
-				]
-			})
-		);
-	}, LAYOUT_KEY);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_keep', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} },
+		{ instanceId: 'wgt_gone', widgetId: 'weather', x: 3, y: 0, w: 3, h: 2, settings: {} }
+	]);
 
 	await page.reload();
 
@@ -161,7 +146,7 @@ test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) =
 
 test('the drawer adds a widget, and it survives a reload', async ({ page }) => {
 	await acceptGate(page);
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 
 	// doc 13 §4: the drawer is an edit-mode surface, so opening it enters.
 	await page.getByTestId('open-drawer').click();
@@ -169,17 +154,17 @@ test('the drawer adds a widget, and it survives a reload', async ({ page }) => {
 	await expect(page.getByRole('main')).toHaveAttribute('data-edit', 'on');
 
 	await page.getByTestId('add-clock').click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES + 1);
 
 	await page.reload();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES + 1);
 });
 
 test('a tile can be removed, and the removal sticks', async ({ page }) => {
 	await acceptGate(page);
 	await page.getByTestId('open-drawer').click();
 	await page.getByTestId('add-clock').click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(3);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES + 1);
 	// A corner rather than the midpoint: the drawer is a sheet on top of a
 	// full-viewport scrim, and it grows with the registry. This passes today and
 	// would start failing the week a widget pushes the sheet over the centre.
@@ -187,10 +172,10 @@ test('a tile can be removed, and the removal sticks', async ({ page }) => {
 
 	// doc 06 §4: no confirm — removing a tile never deletes underlying data.
 	await page.locator('[data-testid^="remove-"]').first().click();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 
 	await page.reload();
-	await expect(page.locator('.grid-stack-item')).toHaveCount(2);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 });
 
 test('the coach shows once and stays dismissed', async ({ page }) => {

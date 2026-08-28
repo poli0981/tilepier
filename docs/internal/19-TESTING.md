@@ -88,12 +88,21 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
 Markets/music E2E are manual-checklist in v1 (real APIs / real files);
 their logic is unit/component-covered.
 
-**Written so far** (2026-08-27): #1, #2, #5, #6 and #7, plus three supporting
+**Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and
 `detail-expansion`. The last covers doc 06 §6's handshake, which journey #3
-would otherwise take for granted when the weather detail lands in Week 4; #3
-and #4 both wait on the first networked widget. 92 e2e in total, under three
-minutes.
+would otherwise take for granted when the weather detail lands in Week 4. **98
+e2e in total**, in about thirty seconds.
+
+**#4 is half written, and the written half is the half that exists.** Its stale
+badges need a widget with cached network data, and the first of those is weather
+in Week 4. What Week 3 could assert is the rest of that sentence — the offline
+chip appearing and clearing, and a deck made entirely of local widgets being
+*unchanged* rather than degraded. It was worth writing on its own: it found two
+real faults on its first run (`online.init()` never called, and an added widget
+mounting an empty tile), neither of which any other test could have seen.
+
+**#3 waits for Week 4** with the weather detail and its chart, as doc 23 says.
 
 One rule this suite learned the hard way, recorded because it has now cost a
 red CI run: **never click a full-viewport scrim at its midpoint.** A panel
@@ -101,6 +110,41 @@ centred on top of it occupies exactly that point, so the click lands on the
 panel — or does not, depending on how far through an opening animation it has
 got, which differs between a developer's machine and a runner. Use
 `{ position: { x: 4, y: 4 } }`.
+
+A second of the same kind, added 2026-08-28 for the component suite: **never
+assert a spy straight after a click** — wrap it in `vi.waitFor`. A locator's
+`.click()` resolves when the click is dispatched, not when whatever it caused
+has finished, and on a cold run (Vite re-optimising its dependency graph while
+the first file executes, which adding files to the project triggers) the gap is
+wide enough to lose. It cost one red `test:cov` on a timer assertion written in
+Week 2 that had passed every run until the Week 3 files landed beside it.
+Everything else in that file already went through `waitFor` or `expect.element`,
+which is the same wait by another name; the one that did not was the one that
+broke.
+
+And a third, which is the corner rule's other half: **the browser project pins
+`browser.viewport`**. Without it Vitest sizes each file's iframe by how many
+files are running beside it, so a centred detail panel can cover the scrim's own
+corner and the corner rule stops working — silently, and only once someone adds
+a test file. `e2e/TpDetailOverlay`'s scrim click had followed the rule since
+Week 2 and started failing on the run that added the Week 3 files, in isolation
+passing every time. Pinned at 1280×800 in `vite.config.ts` on 2026-08-28.
+
+And a fourth, for Playwright: **seed `localStorage` with `addInitScript` before
+the first navigation, never with `evaluate` after it.** The old pattern —
+navigate, `setItem`, reload — has a race that stayed invisible while the seeded
+deck was two tiles: gridstack compacts a four-tile grid on mount and emits
+`change`, the deck store schedules a debounced write (doc 04 §6), and the
+reload's `pagehide` flushes that write *over* whatever the test just put there.
+Four tests then failed somewhere unrelated to what they were checking.
+`e2e/_lib/seed.ts` does it before any page script runs, and applies once — an
+init script stays registered for every later navigation, so a test that seeds a
+timer, starts it and reloads would otherwise have the seed put back over the
+state it was reloading to check.
+
+`SEEDED_TILES` lives in the same file for the same kind of reason: doc 13 §9's
+first-run deck grows as widgets land — 1 in Week 1, 2 in Week 2, 4 now — and six
+files each carried the number as a literal.
 
 ## 5. Manual test matrix (release gate)
 

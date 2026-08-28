@@ -1,3 +1,4 @@
+import { dateKeyOf, dayKeysBack } from '$lib/core/date-key';
 import { newId } from '$lib/core/ids';
 import { db, type TpDb } from '$lib/core/storage/db';
 import {
@@ -216,26 +217,6 @@ export function streak(settings: TpTimerSettings): readonly boolean[] {
 
 /* ─────────────────────────────────────────────────────────── focus history */
 
-/**
- * `2026-08-27` in the viewer's own zone, which is the key doc 05 §3 gives
- * `focusSessions` and `events`.
- *
- * Local rather than UTC on purpose: "how much did I focus today" is a question
- * about the user's day, and a UTC key would move the boundary by up to
- * fourteen hours depending on where they are. Built from parts rather than
- * `toISOString()`, which is UTC by definition and is the way this goes wrong.
- *
- * Lives here rather than in `core/` because the timer is its only caller
- * today. It graduates when the calendar needs it in Week 3 — doc 03 §1's rule
- * is that reuse moves into `core` when there *is* reuse, not in anticipation.
- */
-export function dateKeyOf(at: number | Date): string {
-	const date = at instanceof Date ? at : new Date(at);
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-	return `${date.getFullYear()}-${month}-${day}`;
-}
-
 export async function logFocusSession(
 	session: { dateKey: string; focusMs: number },
 	target: TpDb = db
@@ -261,20 +242,7 @@ export async function focusHistory(
 	days: number = HISTORY_DAYS,
 	target: TpDb = db
 ): Promise<TpFocusDay[]> {
-	const keys: string[] = [];
-
-	// Walked with setDate(), not by subtracting 86_400_000 ms. A local day is
-	// not always 24 hours: on the day clocks go back it is 25, and fixed-
-	// millisecond arithmetic from local midnight then lands at 23:00 of the day
-	// *before* the one it meant — skipping a date and repeating another, twice a
-	// year, in a chart of the last fortnight. `setDate` is calendar arithmetic
-	// and absorbs it, the same way `scheduler.nextMidnight` uses `setHours(24)`.
-	for (let i = days - 1; i >= 0; i--) {
-		const day = new Date(now);
-		day.setHours(0, 0, 0, 0);
-		day.setDate(day.getDate() - i);
-		keys.push(dateKeyOf(day));
-	}
+	const keys = dayKeysBack(now, days);
 
 	const totals = new Map(keys.map((key) => [key, 0]));
 	const rows = await target.focusSessions

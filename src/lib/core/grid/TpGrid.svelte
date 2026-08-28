@@ -86,11 +86,11 @@
 		return el.querySelector<HTMLElement>('.grid-stack-item-content');
 	}
 
-	function mountHost(tile: TpTile, el: GridItemHTMLElement) {
+	function mountHost(tile: TpTile, el: GridItemHTMLElement, override?: Component<TpWidgetProps>) {
 		const target = contentElOf(el);
 		if (!target) return;
 
-		const widget = widgets[tile.widgetId];
+		const widget = override ?? widgets[tile.widgetId];
 		if (!widget) return;
 
 		/*
@@ -157,11 +157,27 @@
 	// ── public imperative surface ────────────────────────────────────────────
 	// Callers drive the grid through these; they never render items themselves.
 
-	export function addTile(tile: TpTile) {
+	/**
+	 * `widget` is the component to mount, and it is a parameter rather than a
+	 * lookup for a reason found on 2026-08-28: the `widgets` prop is loaded once
+	 * from the *seeded* deck's ids, so adding a widget whose chunk had never
+	 * been loaded found nothing in it and `mountHost` returned silently —
+	 * leaving a real `.grid-stack-item` wrapper with nothing inside. The tile
+	 * looked added, the layout recorded it, and it only appeared after a reload.
+	 *
+	 * Latent since Week 1 and invisible because `e2e/journey-2` adds `clock`,
+	 * which is already on the seeded deck and therefore already loaded; and
+	 * because that journey asserts wrapper *counts*, which were correct.
+	 *
+	 * Passing it in removes the timing question entirely — the caller awaits the
+	 * import and hands over the result, so there is no window in which the prop
+	 * has not propagated yet.
+	 */
+	export function addTile(tile: TpTile, widget?: Component<TpWidgetProps>) {
 		if (!grid || hosts.has(tile.instanceId)) return;
 		tileById.set(tile.instanceId, tile);
 		const el = grid.addWidget(toGridStackWidget(tile));
-		mountHost(tile, el);
+		mountHost(tile, el, widget);
 		emitLayout();
 	}
 

@@ -85,7 +85,10 @@ describe('countdown', () => {
 		await screen.getByTestId('timer-primary').click();
 
 		// doc 05 §2: it goes into the tile's own settings, as an instant.
-		expect(onUpdateSettings).toHaveBeenCalledTimes(1);
+		// Through `waitFor`, not asserted straight after the click: see doc 19 §4.
+		await vi.waitFor(() => {
+			expect(onUpdateSettings).toHaveBeenCalledTimes(1);
+		});
 		const patch = onUpdateSettings.mock.calls[0]?.[0] as { endsAt: number; pausedMs: null };
 		expect(patch.pausedMs).toBeNull();
 		expect(patch.endsAt).toBeGreaterThan(Date.now());
