@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { dateKeyOf } from '$lib/core/date-key';
 import {
 	complete,
-	dateKeyOf,
 	formatRemaining,
 	pause,
 	phaseDurationMs,
@@ -259,26 +259,6 @@ describe('streak', () => {
 			false,
 			false
 		]);
-	});
-});
-
-describe('dateKeyOf', () => {
-	it('reads the local date, not the UTC one', () => {
-		// Built from local Date parts on both sides, so this asserts local-ness
-		// on any runner rather than only on one east of Greenwich.
-		expect(dateKeyOf(new Date(2026, 7, 27, 23, 59))).toBe('2026-08-27');
-		expect(dateKeyOf(new Date(2026, 7, 28, 0, 0))).toBe('2026-08-28');
-	});
-
-	it('zero-pads, so the keys sort lexicographically', () => {
-		// Dexie ranges over this index; unpadded months would order 10 before 2.
-		expect(dateKeyOf(new Date(2026, 0, 5))).toBe('2026-01-05');
-		expect(dateKeyOf(new Date(2026, 9, 15))).toBe('2026-10-15');
-	});
-
-	it('accepts a timestamp as readily as a Date', () => {
-		const at = new Date(2026, 7, 27, 12, 0);
-		expect(dateKeyOf(at.getTime())).toBe(dateKeyOf(at));
 	});
 });
 

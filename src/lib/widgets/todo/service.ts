@@ -1,3 +1,4 @@
+import { dateKeyOf } from '$lib/core/date-key';
 import { newId } from '$lib/core/ids';
 import { db, type TpDb, type TpTodo, type TpTodoList } from '$lib/core/storage/db';
 
@@ -19,16 +20,6 @@ export const TODO_FILTERS: readonly TpTodoFilter[] = ['all', 'today', 'upcoming'
 /** How a due date reads against the clock — and the only thing that decides
  *  the chip's colour, so it is stated once rather than in two components. */
 export type TpDueState = 'overdue' | 'today' | 'upcoming' | 'none';
-
-/** `2026-08-30` in the viewer's own zone. Local rather than UTC, for the same
- *  reason the timer's is: "due today" is a question about the user's day.
- *  Graduates into `core` when a third caller wants it (doc 03 §1). */
-export function dateKeyOf(at: number | Date): string {
-	const date = at instanceof Date ? at : new Date(at);
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-	return `${date.getFullYear()}-${month}-${day}`;
-}
 
 export function dueState(due: string | undefined, now: number = Date.now()): TpDueState {
 	if (due === undefined || due === '') return 'none';

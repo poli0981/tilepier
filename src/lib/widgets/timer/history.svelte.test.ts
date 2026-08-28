@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDb, type TpDb } from '$lib/core/storage/db';
-import { HISTORY_DAYS, dateKeyOf, focusHistory, logFocusSession } from './service';
+import { dateKeyOf } from '$lib/core/date-key';
+import { HISTORY_DAYS, focusHistory, logFocusSession } from './service';
 
 /**
  * The Dexie half of doc 07 §2's history strip.
