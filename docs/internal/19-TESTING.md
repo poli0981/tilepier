@@ -199,6 +199,15 @@ was no `toHaveScreenshot` anywhere. `s1-grid` now asserts the item's four insets
 directly — one item, not the distance between two, so it holds at every column
 breakpoint.
 
+And a sixth, which is about a helper rather than a test: **`expect.poll`
+retries a mismatched value, but lets a thrown error through.** `journey-6`'s
+`awaitStoredTiles` polls `page.evaluate` while waiting for the backup restore to
+finish — and the restore *reloads* when it finishes, so roughly one run in four
+the poll landed on the teardown and failed with "Execution context was
+destroyed": the helper broke on the very event it existed to wait behind. A poll
+that watches something across a navigation has to catch and return a sentinel,
+not assume the page is still there. (2026-08-30.)
+
 `SEEDED_TILES` lives in the same file for the same kind of reason: doc 13 §9's
 first-run deck grows as widgets land — 1 in Week 1, 2 in Week 2, 4 now — and six
 files each carried the number as a literal.

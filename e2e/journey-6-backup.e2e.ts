@@ -39,12 +39,21 @@ async function writeNote(page: Page, text: string): Promise<void> {
  */
 async function awaitStoredTiles(page: Page, count: number): Promise<void> {
 	await expect
-		.poll(() =>
-			page.evaluate(() => {
-				const raw = localStorage.getItem('tp.layout.v1');
-				return raw === null ? 0 : (JSON.parse(raw) as { grid: unknown[] }).grid.length;
-			})
-		)
+		.poll(async () => {
+			try {
+				return await page.evaluate(() => {
+					const raw = localStorage.getItem('tp.layout.v1');
+					return raw === null ? 0 : (JSON.parse(raw) as { grid: unknown[] }).grid.length;
+				});
+			} catch {
+				// The restore writes the layout and then **reloads**, so a poll can
+				// land exactly on the teardown and come back with "Execution context
+				// was destroyed". `expect.poll` retries a mismatched value but lets a
+				// thrown error through, so without this the helper fails on the very
+				// reload it exists to wait behind — roughly one run in four.
+				return -1;
+			}
+		})
 		.toBe(count);
 }
 
