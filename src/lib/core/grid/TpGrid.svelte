@@ -325,10 +325,31 @@
 			}
 		});
 
-		for (const tile of tiles) {
-			tileById.set(tile.instanceId, tile);
-			mountHost(tile, grid.addWidget(toGridStackWidget(tile)));
+		// Suppressed for exactly the reason `rebuild()` suppresses, and it was
+		// missing here: gridstack fires `change` **synchronously from inside
+		// `addWidget`** as soon as an insertion makes it reposition the tiles
+		// already placed (`makeWidget` → `_triggerChangeEvent`). Mid-loop that
+		// reports a *prefix* of the deck, and the deck store persists whatever it
+		// is handed — so the layout is truncated to however many tiles had been
+		// added when the first collision happened, permanently. Measured on the
+		// five-tile Week 4 seed: one emit, at the third `addWidget`, three tiles
+		// out of five, and the two missing ones gone from `tp.layout.v1` for good.
+		//
+		// It never fired through Week 3 because the four-tile seed happened not to
+		// collide during the loop — the bug is a property of the arrangement, not
+		// of the count. doc 06 §5 rule 13.
+		suppressChange = true;
+		try {
+			for (const tile of tiles) {
+				tileById.set(tile.instanceId, tile);
+				mountHost(tile, grid.addWidget(toGridStackWidget(tile)));
+			}
+		} finally {
+			suppressChange = false;
 		}
+		// Once, with the whole deck — gridstack may have compacted it, and that
+		// is what the store should record.
+		emitLayout();
 
 		return () => {
 			// doc 06 §5.6: unmount every host, then destroy the grid without

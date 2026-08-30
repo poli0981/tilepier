@@ -91,8 +91,14 @@ their logic is unit/component-covered.
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and
 `detail-expansion`. The last covers doc 06 §6's handshake, which journey #3
-would otherwise take for granted when the weather detail lands in Week 4. **98
-e2e in total**, in about thirty seconds.
+would otherwise take for granted when the weather detail lands in Week 4. **100
+e2e as of 2026-08-30**, in about thirty seconds — Week 4 added two, both of
+them assertions the suite could not previously make: `s1-grid` measures
+gridstack's item inset (doc 06 §5 rule 12), and `journey-2` reloads a deck
+whose tiles collide on insertion and checks that all of them are still in
+storage afterwards (rule 13). Both were verified against the unfixed code
+first; a regression test written after a fix and never seen to fail is a
+regression test in name only.
 
 **#4 is half written, and the written half is the half that exists.** Its stale
 badges need a widget with cached network data, and the first of those is weather

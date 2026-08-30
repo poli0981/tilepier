@@ -230,6 +230,27 @@ The single most dangerous integration point. Fixed rules:
     `e2e/s1-grid.e2e.ts` now asserts the four insets directly, which stays valid
     at every column breakpoint.)
 
+13. **The initial add loop must suppress change events, exactly as `rebuild()`
+    does.** gridstack fires `change` **synchronously from inside `addWidget`**
+    as soon as an insertion repositions tiles that are already placed
+    (`makeWidget` -> `_triggerChangeEvent`). Mid-loop that reports a *prefix* of
+    the deck, and the deck store persists whatever it is handed - so
+    `tp.layout.v1` is truncated to however many tiles had been added when the
+    first collision happened, and the reader loses the rest on the next load.
+
+    Measured on a five-tile deck: one emit, at the third `addWidget`, three
+    tiles out of five. Five wrappers rendered and three were stored, so the DOM
+    and storage disagreed for exactly one load - which is why every count
+    assertion in the suite stayed green. Rule 8's teardown/batch split already
+    knew gridstack's event timing was the hazard here; this is the same hazard
+    on the way in, and `setup()` was the one path that had not been wrapped.
+
+    Emit **once**, after the loop, so the store still records the positions
+    gridstack compacted to. (Added 2026-08-30, found when the Week 4 seed
+    reached five tiles. Latent since Week 1: the bug is a property of the
+    *arrangement*, not of the count, and the four-tile deck happened not to
+    collide. `e2e/journey-2` now seeds an arrangement that does.)
+
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
 wrapper count, mounted host count, and serialised tile count must agree after
