@@ -37,7 +37,10 @@ describe('readChartTokens', () => {
 			fgDim: '#445566',
 			grid: '#778899',
 			series1: '#aabbcc',
-			series2: '#7B8FF2'
+			series2: '#7B8FF2',
+			series3: '#8798A8',
+			series4: '#D9A441',
+			series5: '#C084D6'
 		});
 	});
 

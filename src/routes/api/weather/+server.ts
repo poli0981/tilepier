@@ -22,13 +22,27 @@ import type { TpWeatherPayload } from '$lib/api-types';
 const FORECAST =
 	'https://api.open-meteo.com/v1/forecast' +
 	'?hourly=temperature_2m,precipitation_probability,precipitation,weather_code,' +
-	'wind_speed_10m,wind_direction_10m,relative_humidity_2m,uv_index,surface_pressure' +
+	'wind_speed_10m,wind_direction_10m,relative_humidity_2m,uv_index,surface_pressure,' +
+	'cloud_cover' +
 	'&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,' +
 	'precipitation_probability_max&timezone=auto&forecast_days=7';
 
+/**
+ * **`timezone=auto` is a correction, not a copy of the line above.**
+ *
+ * This call shipped without any `timezone` parameter at all, which means
+ * Open-Meteo answered in GMT while `normalizeAir` took `hourly[0]` and called
+ * it "now". For Hanoi that is 07:00 local; for a place west of GMT the array
+ * starts on the previous local day. The reading was wrong by the whole offset
+ * everywhere except Britain in winter, and nothing rendered it yet, so nothing
+ * complained. Found 2026-08-30 while the weather detail was being written.
+ *
+ * The parameter alone is not the fix — index 0 is still midnight — so
+ * `normalizeAir` now takes the place's zone and finds the current hour.
+ */
 const AIR_QUALITY =
 	'https://air-quality-api.open-meteo.com/v1/air-quality' +
-	'?hourly=european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide&forecast_days=1';
+	'?hourly=european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide&timezone=auto&forecast_days=1';
 
 export const GET: RequestHandler = async ({ request, url, platform }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
@@ -90,7 +104,8 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		const payload: TpWeatherPayload = normalizeWeather(
 			coords,
 			forecast.value.data,
-			air.status === 'fulfilled' ? air.value.data.hourly : null
+			air.status === 'fulfilled' ? air.value.data.hourly : null,
+			Date.now()
 		);
 
 		// doc 11 §8: cache persistence rides on waitUntil so the response does

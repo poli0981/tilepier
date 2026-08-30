@@ -49,6 +49,7 @@ export function normalizeHourly(hourly: unknown, limit = WEATHER_HOURS): TpWeath
 	const humidity = numbers(source['relative_humidity_2m']);
 	const uv = numbers(source['uv_index']);
 	const pressure = numbers(source['surface_pressure']);
+	const cloud = numbers(source['cloud_cover']);
 
 	return time.slice(0, limit).map((t, i) => ({
 		t,
@@ -60,7 +61,8 @@ export function normalizeHourly(hourly: unknown, limit = WEATHER_HOURS): TpWeath
 		windDeg: at(deg, i),
 		humidity: at(humidity, i),
 		uv: at(uv, i),
-		pressureHpa: at(pressure, i)
+		pressureHpa: at(pressure, i),
+		cloudPct: at(cloud, i)
 	}));
 }
 
@@ -90,38 +92,92 @@ export function normalizeDaily(daily: unknown): TpWeatherDay[] {
  * `null` when the call failed — doc 10 §2 makes AQI a nice-to-have that must
  * not cost the forecast.
  */
-export function normalizeAir(hourly: unknown): TpAirQuality | null {
+/**
+ * The wall clock at `timeZone`, truncated to the hour, in the spelling
+ * Open-Meteo uses for a local timestamp: `2026-08-30T14`.
+ *
+ * `Intl` rather than arithmetic, so DST is the platform's problem rather than
+ * ours. Workers ship full ICU, and an unknown zone throws — which is why the
+ * caller treats a throw as "fall back to index 0" instead of failing the
+ * request over a nice-to-have.
+ */
+function localHourStamp(timeZone: string, at: number): string | null {
+	try {
+		const parts = new Intl.DateTimeFormat('en-CA', {
+			timeZone,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			hour12: false
+		}).formatToParts(at);
+
+		const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';
+		const [y, mo, d, h] = [get('year'), get('month'), get('day'), get('hour')];
+		if (y === '' || mo === '' || d === '' || h === '') return null;
+		// `hour12: false` gives 24 for midnight in some engines; 00 is what
+		// Open-Meteo writes.
+		return `${y}-${mo}-${d}T${h === '24' ? '00' : h}`;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * The air-quality reading for the hour it is **at the place**.
+ *
+ * It used to be `hourly[0]`, and the call had no `timezone` parameter at all —
+ * so index 0 was 00:00 GMT and the "current" AQI was wrong by the whole offset
+ * everywhere but Britain in winter. Nothing rendered it yet, so nothing said
+ * so. Both halves are fixed together: the endpoint now asks for `timezone=auto`
+ * and this picks the matching hour out of the series.
+ *
+ * Falls back to index 0 when the stamps cannot be matched, which is what the
+ * old code did unconditionally — a stale AQI is a nice-to-have degrading, and
+ * doc 10 §2 is explicit that it must never cost the forecast.
+ */
+export function normalizeAir(
+	hourly: unknown,
+	timeZone = 'UTC',
+	at: number = Date.now()
+): TpAirQuality | null {
 	if (hourly === null || hourly === undefined) return null;
 	const source = hourly as Record<string, unknown>;
 
-	const first = (key: string): number | null => {
-		const value = numbers(source[key])[0];
+	const stamp = localHourStamp(timeZone, at);
+	const times = strings(source['time']);
+	const found = stamp === null ? -1 : times.findIndex((t) => t.slice(0, 13) === stamp);
+	const index = found === -1 ? 0 : found;
+
+	const nth = (key: string): number | null => {
+		const value = numbers(source[key])[index];
 		return value === undefined || Number.isNaN(value) ? null : value;
 	};
 
 	return {
-		europeanAqi: first('european_aqi'),
-		pm25: first('pm2_5'),
-		pm10: first('pm10'),
-		ozone: first('ozone'),
-		no2: first('nitrogen_dioxide')
+		europeanAqi: nth('european_aqi'),
+		pm25: nth('pm2_5'),
+		pm10: nth('pm10'),
+		ozone: nth('ozone'),
+		no2: nth('nitrogen_dioxide')
 	};
 }
 
 export function normalizeWeather(
 	coords: { lat: number; lon: number },
 	forecast: Record<string, unknown>,
-	air: unknown
+	air: unknown,
+	at: number = Date.now()
 ): TpWeatherPayload {
+	// The forecast's zone, not the air response's: they are the same place, and
+	// this one is already the payload's own answer to "where is this".
+	const timezone = typeof forecast['timezone'] === 'string' ? forecast['timezone'] : 'UTC';
+
 	return {
-		place: {
-			lat: coords.lat,
-			lon: coords.lon,
-			timezone: typeof forecast['timezone'] === 'string' ? forecast['timezone'] : 'UTC'
-		},
+		place: { lat: coords.lat, lon: coords.lon, timezone },
 		hourly: normalizeHourly(forecast['hourly']),
 		daily: normalizeDaily(forecast['daily']),
-		air: normalizeAir(air),
+		air: normalizeAir(air, timezone, at),
 		attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
 	};
 }

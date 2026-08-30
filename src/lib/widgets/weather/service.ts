@@ -223,6 +223,7 @@ export interface TpHourPoint {
 	at: number;
 	tempC: number | null;
 	precipProb: number | null;
+	cloudPct: number | null;
 }
 
 /**
@@ -268,7 +269,11 @@ export function hourlyPoints(
 			{
 				at,
 				tempC: isGap(row.tempC) ? null : (row.tempC as number),
-				precipProb: isGap(row.precipProb) ? null : (row.precipProb as number)
+				precipProb: isGap(row.precipProb) ? null : (row.precipProb as number),
+				// Undefined rather than null for an entry cached before `cloud_cover`
+				// was requested — the wx:v1 key did not change, so up to 24 h of
+				// entries answer without the column. `isGap` is false for neither.
+				cloudPct: isGap(row.cloudPct) ? null : (row.cloudPct as number)
 			}
 		];
 	});

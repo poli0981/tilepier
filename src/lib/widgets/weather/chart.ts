@@ -10,12 +10,10 @@ import type { TpHourPoint } from './service';
  * handling, the second axis, the absence of colour) are exactly the parts a
  * rendered-canvas test cannot see.
  *
- * **The cloud band doc 08 §1 also asks for is not here.** `cloud_cover` is not
- * among the nine hourly columns `/api/weather` requests, so plotting it needs a
- * `routes/api` change — and the air-quality call in that same file has its own
- * bug waiting (no `timezone` parameter at all), which wants fixing in the same
- * commit rather than separately. Both are written up in doc 08 §1; the chart
- * ships with two series.
+ * All three series doc 08 §1 asks for: the temperature line, the precipitation
+ * bars, and the cloud band behind them. `cloud_cover` joined the endpoint's
+ * hourly columns on 2026-08-30, alongside the air-quality timezone fix that
+ * file had been carrying.
  */
 
 /**
@@ -67,14 +65,31 @@ export function hourlyOption(points: readonly TpHourPoint[]): TpChartOption {
 				// `false` is the point: a `null` is an hour upstream did not send,
 				// and joining across it would draw a reading that does not exist.
 				connectNulls: false,
-				z: 2
+				z: 3
 			},
 			{
 				type: 'bar',
 				yAxisIndex: 1,
 				data: points.map((p) => [p.at, p.precipProb]),
-				z: 1,
+				z: 2,
 				barMaxWidth: 10
+			},
+			{
+				// The cloud band: third in the series list, so it takes step 3 of
+				// doc 12 §4.3's ramp — the quietest one, which is what a band
+				// sitting behind the other two should be. `areaStyle` with no
+				// colour of its own inherits the series colour, so the theme still
+				// owns it; only the opacity lives here, and an opacity is not a
+				// colour.
+				type: 'line',
+				yAxisIndex: 1,
+				data: points.map((p) => [p.at, p.cloudPct]),
+				smooth: true,
+				showSymbol: false,
+				connectNulls: false,
+				lineStyle: { opacity: 0 },
+				areaStyle: { opacity: 0.16 },
+				z: 1
 			}
 		]
 	};

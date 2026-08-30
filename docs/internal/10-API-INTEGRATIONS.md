@@ -25,11 +25,27 @@ the client; grep-guard in CI, doc 21 §5).
 
 - Forecast: `GET https://api.open-meteo.com/v1/forecast?latitude&longitude
   &hourly=temperature_2m,precipitation_probability,precipitation,weather_code,
-  wind_speed_10m,wind_direction_10m,relative_humidity_2m,uv_index,surface_pressure
+  wind_speed_10m,wind_direction_10m,relative_humidity_2m,uv_index,surface_pressure,
+  cloud_cover
   &daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,
   precipitation_probability_max&timezone=auto&forecast_days=7`
 - Air quality: `https://air-quality-api.open-meteo.com/v1/air-quality`
-  (`european_aqi`, pm2_5, pm10, o3, no2).
+  (`european_aqi`, pm2_5, pm10, o3, no2), **`&timezone=auto`**.
+
+  `cloud_cover` joined the hourly list on 2026-08-30 for doc 08 §1's cloud
+  band; it is the tenth column and costs no extra call.
+
+  **The air-quality call had no `timezone` parameter at all until the same
+  day**, which is worse than it sounds: Open-Meteo then answers in GMT, and
+  `normalizeAir` took `hourly[0]` and called it "now". For Hanoi that is 07:00
+  local; for a place west of GMT the series starts on the previous local day.
+  The reading was wrong by the whole offset everywhere except Britain in
+  winter. Nothing rendered it yet — the AQI gauge is a Week 4 cut — so nothing
+  complained, and it would have shipped into whichever week built the gauge.
+  The parameter alone is not the fix either, because index 0 is then local
+  midnight; `normalizeAir` takes the place's zone and finds the matching hour,
+  falling back to index 0 so a nice-to-have still degrades rather than
+  failing.
 - Geocoding (fallback only): `https://geocoding-api.open-meteo.com/v1/search`.
 - Normalize: Worker maps to `TpWeatherPayload` (our shape) — client never
   sees raw upstream shape (schema-version isolation, doc 04 §5).

@@ -11,9 +11,9 @@ import type { TpHourPoint } from './service';
  */
 
 const POINTS: TpHourPoint[] = [
-	{ at: 1_000, tempC: 28, precipProb: 10 },
-	{ at: 2_000, tempC: null, precipProb: null },
-	{ at: 3_000, tempC: 31, precipProb: 40 }
+	{ at: 1_000, tempC: 28, precipProb: 10, cloudPct: 40 },
+	{ at: 2_000, tempC: null, precipProb: null, cloudPct: null },
+	{ at: 3_000, tempC: 31, precipProb: 40, cloudPct: 90 }
 ];
 
 /** Every string anywhere in the option. */
@@ -48,14 +48,32 @@ describe('hourlyOption', () => {
 		expect(option.series[0]?.connectNulls).toBe(false);
 	});
 
-	it('gives the temperature the first series slot, and so the beacon', () => {
-		// doc 12 §4.1: the accent marks *the* primary element. Series order is
-		// what assigns the theme's colours, so this is the only place that
-		// decision can be made — and getting it backwards is invisible to every
-		// other assertion here.
+	it('orders the series so the reading with the beacon is the temperature', () => {
+		// doc 12 §4.1: the accent marks *the* primary element, and series order is
+		// what assigns the theme's colours — so this is the only place that
+		// decision can be made, and getting it backwards is invisible to every
+		// other assertion here. Temperature, then rain, then the cloud band on
+		// step 3, which doc 12 §4.3 makes the quietest.
 		const option = hourlyOption(POINTS) as { series: { type: string }[] };
-		expect(option.series[0]?.type).toBe('line');
-		expect(option.series[1]?.type).toBe('bar');
+		expect(option.series.map((x) => x.type)).toEqual(['line', 'bar', 'line']);
+	});
+
+	it('draws the cloud band as an area behind everything, with no line of its own', () => {
+		const option = hourlyOption(POINTS) as {
+			series: {
+				z?: number;
+				areaStyle?: { opacity?: number };
+				lineStyle?: { opacity?: number };
+				data: [number, number | null][];
+			}[];
+		};
+		const band = option.series[2];
+
+		expect(band?.areaStyle?.opacity).toBeGreaterThan(0);
+		expect(band?.lineStyle?.opacity).toBe(0);
+		expect(band?.z).toBeLessThan(option.series[1]?.z ?? 0);
+		// And a gap in the cloud column breaks the band too.
+		expect(band?.data[1]).toEqual([2_000, null]);
 	});
 
 	it('puts the bars on their own axis, bounded 0–100', () => {
@@ -70,6 +88,8 @@ describe('hourlyOption', () => {
 		expect(option.yAxis[1]).toMatchObject({ min: 0, max: 100 });
 		expect(option.series[0]?.yAxisIndex).toBe(0);
 		expect(option.series[1]?.yAxisIndex).toBe(1);
+		// The band is a percentage too, so it shares the bars' axis.
+		expect(option.series[2]?.yAxisIndex).toBe(1);
 	});
 
 	it('lets the temperature axis follow the data instead of anchoring at zero', () => {
@@ -94,7 +114,6 @@ describe('hourlyOption', () => {
 
 	it('survives an empty window', () => {
 		const option = hourlyOption([]) as { series: { data: unknown[] }[] };
-		expect(option.series[0]?.data).toEqual([]);
-		expect(option.series[1]?.data).toEqual([]);
+		for (const series of option.series) expect(series.data).toEqual([]);
 	});
 });

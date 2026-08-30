@@ -80,6 +80,8 @@ export interface TpWeatherHour {
 	humidity: TpMaybeNumber;
 	uv: TpMaybeNumber;
 	pressureHpa: TpMaybeNumber;
+	/** Total cloud cover, 0–100. doc 08 §1's cloud band. */
+	cloudPct: TpMaybeNumber;
 }
 
 export interface TpWeatherDay {

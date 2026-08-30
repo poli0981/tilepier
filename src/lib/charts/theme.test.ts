@@ -11,7 +11,10 @@ const TOKENS: TpChartTokens = {
 	fgDim: '#5C6B7A',
 	grid: '#3A4756',
 	series1: '#46D5C8',
-	series2: '#7B8FF2'
+	series2: '#7B8FF2',
+	series3: '#8798A8',
+	series4: '#D9A441',
+	series5: '#C084D6'
 };
 
 /** Every string anywhere in the theme, however deeply nested. */
@@ -24,7 +27,26 @@ function strings(value: unknown): string[] {
 
 describe('chartTheme', () => {
 	it('puts the series colours in order, so a chart takes them by position', () => {
-		expect(chartTheme(TOKENS).color).toEqual(['#46D5C8', '#7B8FF2']);
+		// doc 12 §4.3's five steps, and the order is the whole contract: a series
+		// takes its colour by its index in the option, so nothing else decides
+		// which reading gets the beacon.
+		expect(chartTheme(TOKENS).color).toEqual([
+			'#46D5C8',
+			'#7B8FF2',
+			'#8798A8',
+			'#D9A441',
+			'#C084D6'
+		]);
+	});
+
+	it('does not hand a later series one of the selectable accents', () => {
+		// A reader can set the accent to any of six colours (doc 12 §2), and
+		// series-1 follows it. If step 3, 4 or 5 were one of those, that reader's
+		// chart would draw two series in the same colour.
+		const accents = ['#46d5c8', '#7b8ff2', '#e8b750', '#57c785', '#e8705f', '#b48ce8'];
+		const later = [TOKENS.series3, TOKENS.series4, TOKENS.series5].map((c) => c.toLowerCase());
+
+		for (const colour of later) expect(accents, colour).not.toContain(colour);
 	});
 
 	it('themes every axis kind, not only the one the first chart happens to use', () => {
@@ -55,6 +77,12 @@ describe('chartTheme', () => {
 
 	it('is pure — the same tokens give an equal theme, and a different one differs', () => {
 		expect(chartTheme(TOKENS)).toEqual(chartTheme(TOKENS));
-		expect(chartTheme({ ...TOKENS, series1: '#ffffff' }).color).toEqual(['#ffffff', '#7B8FF2']);
+		expect(chartTheme({ ...TOKENS, series1: '#ffffff' }).color).toEqual([
+			'#ffffff',
+			'#7B8FF2',
+			'#8798A8',
+			'#D9A441',
+			'#C084D6'
+		]);
 	});
 });

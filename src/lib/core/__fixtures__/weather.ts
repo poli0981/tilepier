@@ -35,7 +35,8 @@ export const WEATHER_PAYLOAD: TpWeatherPayload = {
 			windDeg: 120,
 			humidity: 70,
 			uv: 7.2,
-			pressureHpa: 1006
+			pressureHpa: 1006,
+			cloudPct: 40
 		},
 		{
 			t: '2026-08-28T10:00',
@@ -47,7 +48,8 @@ export const WEATHER_PAYLOAD: TpWeatherPayload = {
 			windDeg: 130,
 			humidity: 66,
 			uv: 8.1,
-			pressureHpa: 1005
+			pressureHpa: 1005,
+			cloudPct: 65
 		},
 		{
 			t: '2026-08-28T11:00',
@@ -59,7 +61,8 @@ export const WEATHER_PAYLOAD: TpWeatherPayload = {
 			windDeg: 140,
 			humidity: 63,
 			uv: 8.6,
-			pressureHpa: 1004
+			pressureHpa: 1004,
+			cloudPct: 90
 		},
 		{
 			// The gap. See the note above: this is what a `NaN` looks like once it
@@ -73,7 +76,8 @@ export const WEATHER_PAYLOAD: TpWeatherPayload = {
 			windDeg: null,
 			humidity: null,
 			uv: null,
-			pressureHpa: null
+			pressureHpa: null,
+			cloudPct: null
 		}
 	],
 	daily: [

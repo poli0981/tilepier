@@ -13,13 +13,20 @@
  * `chartTheme` is pure.
  */
 
-/** The five values a TilePier chart needs, resolved from `@theme`. */
+/** What a TilePier chart draws with, resolved from `@theme`. */
 export interface TpChartTokens {
 	fg: string;
 	fgDim: string;
 	grid: string;
+	/** doc 12 §4.3's five-step ramp. Only series-1 is a token — the accent is
+	 *  user-overridable and the primary series follows it; the rest are fixed,
+	 *  charts-only, and calibrated against each other rather than against the
+	 *  UI palette. */
 	series1: string;
 	series2: string;
+	series3: string;
+	series4: string;
+	series5: string;
 }
 
 /**
@@ -41,7 +48,16 @@ const FALLBACK: TpChartTokens = {
 	grid: '#3A4756',
 	series1: '#46D5C8',
 	// Harbor blue — charts only, never a UI token (doc 12 §4.3).
-	series2: '#7B8FF2'
+	series2: '#7B8FF2',
+	// Steps 3–5, added 2026-08-30 when the weather detail's cloud band became
+	// the first third series. Deliberately descending in weight: step 3 is the
+	// quietest, because a third series is usually context behind the first two
+	// rather than a rival to them, and the accent must stay the one beacon in
+	// the view (doc 12 §4.1). None of them is any of the six selectable accents
+	// in Settings, so a reader's own colour cannot collide with a later series.
+	series3: '#8798A8',
+	series4: '#D9A441',
+	series5: '#C084D6'
 };
 
 /** Anything that is not a literal hex is refused rather than passed on, so a
@@ -62,7 +78,10 @@ export function readChartTokens(root: HTMLElement = document.documentElement): T
 		grid: read('--color-ink-500', FALLBACK.grid),
 		// The accent is user-overridable (doc 12 §2), so series-1 follows it.
 		series1: read('--color-beacon', FALLBACK.series1),
-		series2: FALLBACK.series2
+		series2: FALLBACK.series2,
+		series3: FALLBACK.series3,
+		series4: FALLBACK.series4,
+		series5: FALLBACK.series5
 	};
 }
 
@@ -87,7 +106,7 @@ export function chartTheme(tokens: TpChartTokens): Record<string, unknown> {
 		// doc 12 §3: numbers the reader watches are mono, and an axis is nothing
 		// but numbers the reader watches.
 		textStyle: { color: tokens.fg, fontFamily: 'JetBrains Mono, ui-monospace, monospace' },
-		color: [tokens.series1, tokens.series2],
+		color: [tokens.series1, tokens.series2, tokens.series3, tokens.series4, tokens.series5],
 		categoryAxis: axis,
 		valueAxis: axis,
 		timeAxis: axis,

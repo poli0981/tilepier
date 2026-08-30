@@ -28,7 +28,8 @@ const HOURLY = {
 	wind_direction_10m: [120, 130],
 	relative_humidity_2m: [70, 66],
 	uv_index: [7.2, 8.1],
-	surface_pressure: [1006, 1005]
+	surface_pressure: [1006, 1005],
+	cloud_cover: [40, 65]
 };
 
 const DAILY = {
@@ -42,9 +43,10 @@ const DAILY = {
 };
 
 describe('normalizeHourly', () => {
-	it('turns nine parallel arrays into rows', () => {
-		// The actual work of the normalisation: upstream makes a reader index
-		// nine arrays in step to describe one hour.
+	it('turns ten parallel arrays into rows', () => {
+		// The actual work of the normalisation: upstream makes a reader index ten
+		// arrays in step to describe one hour. `cloud_cover` joined them in
+		// Week 4 for doc 08 §1's cloud band.
 		const rows = normalizeHourly(HOURLY);
 		expect(rows).toHaveLength(2);
 		expect(rows[0]).toEqual({
@@ -57,7 +59,8 @@ describe('normalizeHourly', () => {
 			windDeg: 120,
 			humidity: 70,
 			uv: 7.2,
-			pressureHpa: 1006
+			pressureHpa: 1006,
+			cloudPct: 40
 		});
 	});
 
@@ -126,7 +129,44 @@ describe('normalizeDaily', () => {
 });
 
 describe('normalizeAir', () => {
-	it('reads the first hour, which is now for a gauge', () => {
+	/** A day of readings, one per hour, valued so the index is readable. */
+	const DAY = {
+		time: Array.from({ length: 24 }, (_, h) => `2026-08-28T${String(h).padStart(2, '0')}:00`),
+		european_aqi: Array.from({ length: 24 }, (_, h) => 100 + h),
+		pm2_5: Array.from({ length: 24 }, (_, h) => h),
+		pm10: Array.from({ length: 24 }, (_, h) => h * 2),
+		ozone: Array.from({ length: 24 }, (_, h) => h * 3),
+		nitrogen_dioxide: Array.from({ length: 24 }, (_, h) => h * 4)
+	};
+
+	it('reads the hour it is AT THE PLACE, not the first row', () => {
+		// The bug this replaced: the endpoint sent no `timezone` at all, so the
+		// series began at 00:00 GMT and `hourly[0]` was called "now". For Hanoi
+		// that is 07:00 local — the reading was wrong by the whole offset
+		// everywhere except Britain in winter, and nothing rendered it, so
+		// nothing said so.
+		const at = Date.UTC(2026, 7, 28, 7, 30); // 14:30 in Hanoi
+		expect(normalizeAir(DAY, 'Asia/Ho_Chi_Minh', at)?.europeanAqi).toBe(114);
+	});
+
+	it('lands on a different row for a different zone at the same instant', () => {
+		// The assertion the first one cannot make on its own: an implementation
+		// that ignored the zone would pass it by coincidence for one place.
+		const at = Date.UTC(2026, 7, 28, 7, 30);
+		expect(normalizeAir(DAY, 'Europe/London', at)?.europeanAqi).toBe(108);
+		expect(normalizeAir(DAY, 'UTC', at)?.europeanAqi).toBe(107);
+	});
+
+	it('falls back to the first row rather than losing the reading', () => {
+		// An unknown zone, or a series that does not cover the hour, degrades to
+		// what the old code always did. doc 10 §2: AQI must never cost the
+		// forecast.
+		const at = Date.UTC(2026, 7, 29, 7, 30); // a day the series does not hold
+		expect(normalizeAir(DAY, 'Asia/Ho_Chi_Minh', at)?.europeanAqi).toBe(100);
+		expect(normalizeAir(DAY, 'Not/AZone', at)?.europeanAqi).toBe(100);
+	});
+
+	it('reads the first hour when there are no stamps to match against', () => {
 		expect(
 			normalizeAir({
 				european_aqi: [42, 44],

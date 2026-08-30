@@ -121,6 +121,16 @@ watches change, it's mono + tnum. No exceptions.**
 3. Charts: series-1 = beacon; series-2 = `#7B8FF2` (harbor blue, charts
    only); further series from a fixed 5-step calibrated ramp defined in the
    ECharts theme — widgets don't invent colors.
+
+   The ramp was two steps until 2026-08-30, when the weather detail's cloud
+   band became the first third series. It is now
+   `beacon · #7B8FF2 · #8798A8 · #D9A441 · #C084D6`, in `charts/theme.ts`, and
+   it descends in weight on purpose: a third series is usually context behind
+   the first two rather than a rival to them, and the accent has to stay the
+   one beacon in the view (rule 1). Only step 1 is a token — the accent is
+   user-overridable, so series-1 follows it. **None of steps 3–5 is one of the
+   six selectable accents**, which a test asserts: a reader who picks harbor
+   blue would otherwise get two series in one colour.
 4. Backgrounds never pure black; hairlines (`ink-700`) over shadows for
    separation. Shadows exist only at the tile level.
 
