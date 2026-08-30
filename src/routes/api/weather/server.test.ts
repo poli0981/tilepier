@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
-import { geohash } from '../_lib/geohash';
+import { CACHE_POLICY, cacheKey, geohash } from '$lib/shared-constants';
 import { GET } from './+server';
 
 /**

@@ -31,6 +31,7 @@ export type TpIconName =
 	| 'settings'
 	| 'trash'
 	| 'search'
+	| 'locate'
 	| 'edit';
 
 /** `d` attributes only; stroke, size and caps come from the component. */
@@ -63,5 +64,6 @@ export const ICON_PATHS: Record<TpIconName, readonly string[]> = {
 	],
 	trash: ['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 14h10l1-14', 'M10 11v6', 'M14 11v6'],
 	search: ['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'M21 21l-4.3-4.3'],
+	locate: ['M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', 'M12 2v3', 'M12 19v3', 'M2 12h3', 'M19 12h3'],
 	edit: ['M12 20h9', 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z']
 };

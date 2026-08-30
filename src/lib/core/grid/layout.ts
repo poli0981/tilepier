@@ -1,4 +1,5 @@
 import type { GridStackWidget } from 'gridstack';
+import { getManifest } from '$lib/core/registry';
 
 /**
  * Layout serialisation for `tp.layout.v1` (doc 05 §2).
@@ -26,9 +27,40 @@ export interface TpLayout {
 	grid: TpTile[];
 }
 
-/** Tile → the shape `grid.addWidget()` wants. */
+/**
+ * Tile → the shape `grid.addWidget()` wants, size bounds included.
+ *
+ * The bounds are the manifest's `sizes.min` / `sizes.max` (doc 06 §7), read
+ * here rather than at the call sites because this is the one boundary every
+ * tile crosses on its way into the grid — `setup()`, `addTile()` and
+ * `rebuild()` all go through it. gridstack spends them twice: `nodeBoundFix`
+ * clamps a stored size on the way in, and `resizestart` turns them into the
+ * pixel limits of the drag itself.
+ *
+ * Until 2026-08-31 this returned position and size alone, so every manifest's
+ * limits were enforced nowhere and any tile could be drag-resized to 1×1 —
+ * 112×48 px with rule 12's inset honoured, which no widget has a rendering
+ * for. `core/registry.test.ts` asserted the numbers matched doc 06 §7's table
+ * and nothing asserted they were applied: a contract that reads as wired and
+ * is not (doc 06 §5 rule 14).
+ *
+ * A widgetId with no manifest stays unbounded, deliberately. doc 05 §5 says a
+ * layout naming a widget this build does not have is valid data rather than
+ * corruption, and dropping those tiles is the deck store's job — inventing a
+ * limit for one the registry cannot describe would be worse than none.
+ */
 export function toGridStackWidget(tile: TpTile): GridStackWidget {
-	return { id: tile.instanceId, x: tile.x, y: tile.y, w: tile.w, h: tile.h };
+	const node: GridStackWidget = { id: tile.instanceId, x: tile.x, y: tile.y, w: tile.w, h: tile.h };
+	const sizes = getManifest(tile.widgetId)?.sizes;
+	if (sizes === undefined) return node;
+
+	return {
+		...node,
+		minW: sizes.min.w,
+		minH: sizes.min.h,
+		maxW: sizes.max.w,
+		maxH: sizes.max.h
+	};
 }
 
 /**
@@ -38,6 +70,26 @@ export function toGridStackWidget(tile: TpTile): GridStackWidget {
  * round-trip through serialise → rebuild → serialise is byte-stable. Without
  * that, node ordering after a rebuild differs from the original insertion
  * order and the comparison in the S1 harness fails for no real reason.
+ *
+ * **An omitted `w` or `h` means the minimum, not the stored size.**
+ * `grid.save()` compresses its output through `Utils.removeInternalForSave`,
+ * which drops `w` when it equals `1` *or* `minW`, and `h` likewise — the value
+ * is re-created from the bounds on read, so gridstack has no reason to spend
+ * bytes on it. Resolving it the same way is therefore the only reading that
+ * round-trips.
+ *
+ * Falling back to the stored tile instead — which is what this did until
+ * 2026-08-31 — is always wrong for a size, because `tileById` is written on
+ * add, rebuild and settings changes and never on a resize: the record is the
+ * pre-resize one by definition. It was harmless only while `w === 1` was the
+ * sole way to trigger the omission and, in a grid whose tiles could reach 1×1,
+ * it was not even harmless then. With doc 06 §5 rule 14's bounds in place a
+ * tile dragged exactly to its minimum hits it every time, so a clock resized
+ * to 2×1 would have gone on being stored at whatever it was before.
+ *
+ * `x` and `y` keep the stored fallback: `removeInternalForSave` only drops
+ * `null`/`undefined`, and `0` is neither, so they are always present in
+ * practice and the fallback is defensive rather than load-bearing.
  */
 export function serialise(nodes: GridStackWidget[], tiles: Map<string, TpTile>): TpLayout {
 	const grid: TpTile[] = [];
@@ -48,12 +100,14 @@ export function serialise(nodes: GridStackWidget[], tiles: Map<string, TpTile>):
 		const tile = tiles.get(id);
 		if (!tile) continue;
 
+		const min = getManifest(tile.widgetId)?.sizes.min;
+
 		grid.push({
 			...tile,
 			x: node.x ?? tile.x,
 			y: node.y ?? tile.y,
-			w: node.w ?? tile.w,
-			h: node.h ?? tile.h
+			w: node.w ?? min?.w ?? 1,
+			h: node.h ?? min?.h ?? 1
 		});
 	}
 

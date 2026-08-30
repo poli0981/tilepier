@@ -7,6 +7,9 @@ import { SEEDED_TILES, seedLayout } from './_lib/seed';
  * The full loop: the seeded deck renders, the drawer adds a tile, edit mode is
  * reachable, a drag survives a reload, a tile can be removed, and a layout
  * naming a widget this build does not have degrades instead of breaking.
+ *
+ * And, since 2026-08-30, that a deck simply *survives being loaded* — which
+ * sounds too obvious to assert until it stops being true. See the last test.
  */
 
 const LAYOUT_KEY = 'tp.layout.v1';
@@ -124,15 +127,82 @@ test('a drag survives a reload', async ({ page }) => {
 	expect(after).toEqual(moved);
 });
 
+test('a deck that gridstack has to compact survives repeated reloads', async ({ page }) => {
+	// The assertion this suite did not have, and the one that catches doc 06 §5
+	// rule 13: `TpGrid.setup()` added the tiles without suppressing change
+	// events, and gridstack fires `change` synchronously from inside `addWidget`
+	// the moment an insertion repositions the tiles already placed. Mid-loop
+	// that reports a *prefix* of the deck, and the deck store persists what it
+	// is handed — so `tp.layout.v1` was truncated to however many tiles had been
+	// added when the first collision happened, permanently.
+	//
+	// The layout below is the one that surfaced it: the weather tile overlaps
+	// what is already placed, so gridstack repositions on the third `addWidget`
+	// and three of five tiles were stored. **The seeded deck does not trigger
+	// it** — its tiles are laid out so nothing collides during the loop — which
+	// is exactly why this was invisible through Week 3 and why the arrangement
+	// here is written out rather than reusing the seed.
+	//
+	// The DOM count is not enough to see it: five wrappers render, three are
+	// stored, and the reader loses two on the *next* load.
+	await acceptGate(page);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_a', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} },
+		{ instanceId: 'wgt_b', widgetId: 'calendar', x: 3, y: 0, w: 3, h: 3, settings: {} },
+		{ instanceId: 'wgt_c', widgetId: 'notes', x: 6, y: 0, w: 3, h: 3, settings: {} },
+		{ instanceId: 'wgt_d', widgetId: 'quote', x: 0, y: 2, w: 4, h: 2, settings: {} },
+		{ instanceId: 'wgt_e', widgetId: 'todo', x: 4, y: 3, w: 3, h: 3, settings: {} }
+	]);
+
+	for (let run = 0; run < 3; run += 1) {
+		await page.reload();
+		await expect(page.locator('.grid-stack-item')).toHaveCount(5);
+
+		await expect
+			.poll(async () => (await storedLayout(page))?.grid.length, {
+				message: `stored layout after reload ${String(run + 1)}`
+			})
+			.toBe(5);
+	}
+});
+
+test('a one-row tile leaves room for the controls its header floats above', async ({ page }) => {
+	// doc 06 §5 rule 13's neighbour, and the geometry doc 19 §4 says to assert
+	// somewhere: at h=1 the host header goes out of flow and sits over the top
+	// of the body (doc 13 §3), so a widget that uses the full width runs its
+	// last characters — an ellipsis, usually — under the expand icon. Measured
+	// at 4x1 before the fix: the line ended at x=414, the button starts at 396.
+	//
+	// `quote` is the vehicle because it is the widget that reaches that far; the
+	// rule under test belongs to the host, not to quote.
+	await acceptGate(page);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_flat', widgetId: 'quote', x: 0, y: 0, w: 4, h: 1, settings: {} }
+	]);
+	await page.reload();
+
+	const line = page.getByTestId('quote-text');
+	await expect(line).toBeVisible();
+
+	const text = await line.boundingBox();
+	const expand = await page.locator('.tp-host__open').first().boundingBox();
+	expect(text).not.toBeNull();
+	expect(expand).not.toBeNull();
+
+	expect(text!.x + text!.width, 'the line must stop before the expand control').toBeLessThanOrEqual(
+		expand!.x
+	);
+});
+
 test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) => {
 	await acceptGate(page);
 
-	// doc 05 §5. `weather` is in the id union and in doc 06 §7, but has no
-	// manifest until Week 4 — exactly the shape of a widget removed in a
-	// future release, seen from the other direction.
+	// doc 05 §5. `rss` is in the id union and in doc 06 §7, but has no manifest
+	// yet — exactly the shape of a widget removed in a future release, seen from
+	// the other direction. It took this role from `weather` in Week 4.
 	await seedLayout(page, [
 		{ instanceId: 'wgt_keep', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} },
-		{ instanceId: 'wgt_gone', widgetId: 'weather', x: 3, y: 0, w: 3, h: 2, settings: {} }
+		{ instanceId: 'wgt_gone', widgetId: 'rss', x: 3, y: 0, w: 3, h: 2, settings: {} }
 	]);
 
 	await page.reload();

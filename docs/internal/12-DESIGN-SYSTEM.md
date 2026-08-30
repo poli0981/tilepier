@@ -53,6 +53,27 @@ ink text `#1A222B`, same beacon). Theme switch = `data-theme` attribute on
 `<html>`; ECharts re-themes dynamically (v6 capability) via the token
 bridge in `lib/charts` — one source of truth, charts never hardcode hex.
 
+**Built 2026-08-30, and one rule makes the whole claim true or false.**
+`chart.setTheme()` merges into a chart's *defaults*, so any colour left in the
+option outranks the theme forever: a chart can observe `data-theme`, call
+`setTheme` on every switch, throw nothing, log nothing — and never change a
+pixel. So the option is **colourless by construction** and every colour lives in
+`charts/theme.ts`. The module split enforces it rather than asking for it:
+`echarts.ts` registers and creates, `options.ts` holds the vocabulary and the
+shared geometry with nothing but type imports, and `theme.ts` is the only place
+a colour appears. `hourlyOption`'s test asserts the option contains no `#`,
+`rgb` or `hsl` at all, which is the assertion that would catch the drift.
+
+Two smaller findings from the same work. Tokens reach a chart as **literal
+hex only**: `getComputedStyle().getPropertyValue()` returns a custom property's
+substituted-but-unresolved text, so `color-mix()` and `oklch()` arrive at
+zrender as those strings, and zrender's parser returns nothing for them — the
+chart draws invisibly rather than wrongly. `readChartTokens` refuses anything
+that is not literal hex and falls back. And ECharts 6 deprecated
+`grid.containLabel` in favour of `outerBoundsMode` / `outerBoundsContain`; the
+old key warns in dev and falls back internally unless a legacy shim is
+installed, which would cost bytes to buy back a deprecated path.
+
 Accent is user-overridable in Settings (stored `tp.settings.accent`);
 derived soft/deep values computed in OKLCH so any accent stays usable.
 Semantic colors are **not** overridable.
@@ -100,6 +121,16 @@ watches change, it's mono + tnum. No exceptions.**
 3. Charts: series-1 = beacon; series-2 = `#7B8FF2` (harbor blue, charts
    only); further series from a fixed 5-step calibrated ramp defined in the
    ECharts theme — widgets don't invent colors.
+
+   The ramp was two steps until 2026-08-30, when the weather detail's cloud
+   band became the first third series. It is now
+   `beacon · #7B8FF2 · #8798A8 · #D9A441 · #C084D6`, in `charts/theme.ts`, and
+   it descends in weight on purpose: a third series is usually context behind
+   the first two rather than a rival to them, and the accent has to stay the
+   one beacon in the view (rule 1). Only step 1 is a token — the accent is
+   user-overridable, so series-1 follows it. **None of steps 3–5 is one of the
+   six selectable accents**, which a test asserts: a reader who picks harbor
+   blue would otherwise get two series in one colour.
 4. Backgrounds never pure black; hairlines (`ink-700`) over shadows for
    separation. Shadows exist only at the tile level.
 
@@ -121,8 +152,17 @@ respects reduced-motion.
 Single internal set (`lib/ui/icons`, tree-shaken Svelte components):
 1.75 px stroke, 24 px grid, round caps — hand-picked/adapted (Lucide-style
 geometry, ISC-licensed sources, attributed in licenses page). Weather
-icons: dedicated 16-glyph set mapped from WMO codes, same stroke language.
-No emoji anywhere in UI chrome.
+icons: dedicated set mapped from WMO codes, same stroke language, in
+`lib/ui/icons/wmo.ts` rather than in `ICON_PATHS` - that record is reached from
+the entry chunk, so a glyph added there costs bytes for every reader including
+the ones with no weather tile. No emoji anywhere in UI chrome.
+
+**Seven glyphs shipped in Week 4, not the sixteen this line asked for**
+(2026-08-30). Sixteen hand-drawn 24 px paths is illustration time no dependency
+covers, and Week 4 was already four times its budget; the cut was taken in
+depth rather than in widgets, per doc 23's slip policy. `wmoGlyph` still maps
+the whole WMO range onto the seven, so nothing upstream sends falls through to
+`unknown`.
 
 ## 7. Motion
 

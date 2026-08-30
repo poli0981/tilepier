@@ -97,6 +97,73 @@ export const cacheKey = {
 /** Server-side KV keys carry this prefix; the bare key is what the client stores. */
 export const KV_PREFIX = 'kv:';
 
+/* ─────────────────────────────────────────────────────────── coordinates */
+
+/**
+ * Geohash and coordinate rounding live here, beside `cacheKey`, because doc 04
+ * §5's 1:1 guarantee is between a *client* `apiCache` key and a *Worker* KV key
+ * — and until Week 4 only the Worker could spell one. These two were in
+ * `routes/api/_lib/geohash.ts`, which doc 03 forbids a widget to import, so the
+ * weather tile had no way to name the entry it was subscribing to. Copying them
+ * would have broken the guarantee at cell edges, silently and only there.
+ *
+ * `parseCoords` stays on the Worker side: it reads a `URL`, which is request
+ * handling rather than shared vocabulary.
+ *
+ * Order matters and is asserted in the test beside this file: **round, then
+ * hash**, on both sides.
+ */
+
+const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+
+/**
+ * Geohash, used only for cache keys (`wx:v1:<geohash5>`, doc 04 §5).
+ *
+ * Five characters is roughly a 5 km cell. That is the point: it collapses
+ * everyone in a city onto one cache entry, which is what makes the quota model
+ * in doc 11 §5 work, and it coarsens the coordinate before it is ever written
+ * anywhere — coordinates are already rounded to 2 dp client-side and again
+ * server-side (doc 15 §7), and this rounds them a third time.
+ */
+export function geohash(lat: number, lon: number, precision = 5): string {
+	let latRange = [-90, 90];
+	let lonRange = [-180, 180];
+	let hash = '';
+	let bits = 0;
+	let bit = 0;
+	let even = true;
+
+	while (hash.length < precision) {
+		const range = even ? lonRange : latRange;
+		const mid = (range[0]! + range[1]!) / 2;
+		const value = even ? lon : lat;
+
+		if (value >= mid) {
+			bits = (bits << 1) + 1;
+			range[0] = mid;
+		} else {
+			bits = bits << 1;
+			range[1] = mid;
+		}
+		if (even) lonRange = range;
+		else latRange = range;
+
+		even = !even;
+		if (++bit === 5) {
+			hash += BASE32[bits];
+			bit = 0;
+			bits = 0;
+		}
+	}
+
+	return hash;
+}
+
+/** doc 11 §8 / doc 15 §7: the 2 dp rounding, enforced on both sides. */
+export function roundCoord(value: number): number {
+	return Math.round(value * 100) / 100;
+}
+
 /* ────────────────────────────────────────────────────── Twelve Data quota */
 
 /**

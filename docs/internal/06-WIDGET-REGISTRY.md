@@ -202,6 +202,102 @@ The single most dangerous integration point. Fixed rules:
     goes through the imperative surface — this is the change rule 9 did not
     have a method for.)
 
+12. **`margin` is an INSET on `.grid-stack-item-content`, not a CSS margin — and
+    a rule that sets `inset` there deletes the gutter silently.** gridstack
+    writes `margin: 12` out as `--gs-item-margin-top/right/bottom/left` on
+    `.grid-stack`, and `gridstack.css` spends them as `top`/`right`/`bottom`/
+    `left` on the content box inside an edge-to-edge wrapper. The whole visible
+    gutter is that inset. `TpGrid.svelte`'s scoped
+    `.grid-stack :global(.grid-stack-item-content)` compiles to a selector of
+    exactly the same specificity (Svelte bumps only the first scoped selector by
+    one class and uses `:where()` thereafter), so it wins on source order — and
+    `inset: 0` there had been erasing all four longhands since spike S1.
+
+    What made it survive a green suite for four weeks is that `margin: 12`
+    stayed correct in the `GridStack.init` options the whole time, and
+    `cacheRects`, collision and drop-target maths read `this.opts.margin*`
+    rather than the CSS. gridstack's model always assumed a 12 px gutter; only
+    the paint disagreed, so every behavioural test went on passing. Two things
+    followed from it that are worth knowing: the drop placeholder
+    (`.placeholder-content`, a different class the override never reached) was
+    24 px smaller than the tiles it predicted, and the se-resize handle — pinned
+    to the same custom properties — floated 12 px inside the tile corner instead
+    of on it.
+
+    `tileRect()` must return the **content** box for the same reason. The
+    wrapper is 24 px larger on each axis, and doc 13 §5's FLIP scales from those
+    four numbers. (Added 2026-08-30, from a screenshot: the tiles were touching.
+    `e2e/s1-grid.e2e.ts` now asserts the four insets directly, which stays valid
+    at every column breakpoint.)
+
+13. **The initial add loop must suppress change events, exactly as `rebuild()`
+    does.** gridstack fires `change` **synchronously from inside `addWidget`**
+    as soon as an insertion repositions tiles that are already placed
+    (`makeWidget` -> `_triggerChangeEvent`). Mid-loop that reports a *prefix* of
+    the deck, and the deck store persists whatever it is handed - so
+    `tp.layout.v1` is truncated to however many tiles had been added when the
+    first collision happened, and the reader loses the rest on the next load.
+
+    Measured on a five-tile deck: one emit, at the third `addWidget`, three
+    tiles out of five. Five wrappers rendered and three were stored, so the DOM
+    and storage disagreed for exactly one load - which is why every count
+    assertion in the suite stayed green. Rule 8's teardown/batch split already
+    knew gridstack's event timing was the hazard here; this is the same hazard
+    on the way in, and `setup()` was the one path that had not been wrapped.
+
+    Emit **once**, after the loop, so the store still records the positions
+    gridstack compacted to. (Added 2026-08-30, found when the Week 4 seed
+    reached five tiles. Latent since Week 1: the bug is a property of the
+    *arrangement*, not of the count, and the four-tile deck happened not to
+    collide. `e2e/journey-2` now seeds an arrangement that does.)
+
+14. **`toGridStackWidget` must emit the manifest's size bounds, and `serialise`
+    must read them back.** §7's `min` and `max` columns were enforced nowhere
+    until 2026-08-31: the converter returned `{id, x, y, w, h}` and nothing
+    else, so gridstack had no `minW`/`minH`/`maxW`/`maxH` to spend and every
+    tile drag-resized freely to 1×1 — 112×48 px once rule 12 restored the
+    inset, and no widget has a rendering for it. `core/registry.test.ts`
+    asserted the numbers matched the table in this file and nothing asserted
+    they were applied, which is the same shape as rules 9, 11 and 13: a
+    contract that reads as wired and is not.
+
+    The bounds belong in the converter and not at the call sites because it is
+    the one boundary every tile crosses on the way in — `setup()`, `addTile()`
+    and `rebuild()` all go through it. gridstack then spends them twice:
+    `engine.nodeBoundFix` clamps a stored size while `addWidget` runs, and
+    `resizestart` turns them into the pixel limits of the drag itself. A
+    widgetId with no manifest stays unbounded, because doc 05 §5 makes that
+    valid data and dropping those tiles is the deck store's job.
+
+    **A clamp on load reaches storage only through rule 13's post-loop emit.**
+    `addWidget` fixes the size but `_triggerAddEvent` clears the dirty flag
+    before `change` would carry it, so an added node never reports its own
+    clamp. Without that emit a deck saved at 1×1 renders at the minimum while
+    `tp.layout.v1` keeps the 1×1 indefinitely — rule 13's divergence, arriving
+    from the other side.
+
+    **And `serialise` must resolve an omitted `w` or `h` as the minimum, not as
+    the stored size.** `grid.save()` compresses through
+    `Utils.removeInternalForSave`, which drops `w` when it equals `1` *or*
+    `minW` — the value is re-created from the bounds on read. Falling back to
+    the stored tile is always wrong for a size, because `tileById` is written
+    on add, rebuild and settings changes and never on a resize; it was merely
+    unreachable while `w === 1` was the only trigger. Wiring the bounds up
+    makes it reachable on every drag to the minimum, so a clock resized to 2×1
+    would have gone on being stored at whatever it was before. Found by the
+    e2e below rather than by review, one run after the bounds landed.
+
+    (Added 2026-08-31. `e2e/s1-grid.e2e.ts` drags one tile past each limit and
+    checks the rendered cell size, and loads `/spike/s1?oob=1` — a deck seeded
+    at 1×1 — to check that the DOM and the emitted layout agree. The harness's
+    tiles became `timer`, the tightest manifest registered, because an id the
+    registry has never heard of gets no bounds and cannot express the
+    measurement. Doc 19 §4 records the three things about driving a gridstack
+    resize from Playwright that those tests had to learn the hard way,
+    including one still-open question: an injected resize sometimes produces
+    no `change` event at all, and whether a real pointer can do the same is
+    unanswered.)
+
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
 wrapper count, mounted host count, and serialised tile count must agree after
@@ -240,6 +336,10 @@ is omitted (no scheduler entry at all).
 | markets | finance | 2×2 | 3×3 | 6×6 | no | interval 60 s, visibleOnly |
 | music | media | 2×1 | 4×2 | 6×3 | no | — |
 | media | media | 2×2 | 4×3 | 8×5 | no | — |
+
+`min` and `max` are applied by `core/grid/layout.ts`, which turns them into
+gridstack's `minW`/`minH`/`maxW`/`maxH` for every tile it hands to the grid
+(§5 rule 14). They were table entries and nothing else until 2026-08-31.
 
 The array grows a row per widget as each lands (doc 23): `clock` in Week 1;
 `timer`, `calc`, `notes` and `todo` in Week 2; `calendar`, `toolbox` and `quote`

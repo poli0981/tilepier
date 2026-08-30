@@ -47,8 +47,18 @@ added, both found by the harness, both silent in production:
    while hosts and tiles stayed correct. Nothing throws and nothing warns.
    Teardown now runs outside the batch; only additions are batched.
 
-Two smaller notes for whoever writes the real grid:
+Three smaller notes for whoever writes the real grid:
 
+- **The spike's own `inset: 0` was a bug, and it shipped.** `TpGrid.svelte`
+  landed here with `.grid-stack :global(.grid-stack-item-content) { inset: 0;
+  overflow: visible }` and no comment. `overflow` was the part that was wanted;
+  `inset` silently deleted gridstack's entire 12 px item gutter, because that is
+  how gridstack spends `margin` (doc 06 §5 rule 12). It survived four weeks of
+  green CI — the harness above counts wrappers, hosts and tiles and asserts
+  layout round-trips, none of which can see a paint that disagrees with the
+  model. Fixed 2026-08-30 from a screenshot of touching tiles; `e2e/s1-grid`
+  now asserts the four insets, which is the assertion this spike should have
+  written in the first place.
 - gridstack only adds a class for the **disabled** state
   (`ui-draggable-disabled` / `ui-resizable-disabled`); there is no marker class
   when interaction is enabled. Assert absence, or better, assert inertness by

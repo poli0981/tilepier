@@ -98,8 +98,12 @@
 	});
 
 	/** The lunar overlay is locale-driven, not a setting (doc 07 §6), and it
-	 *  needs room: below this the cells are numbers and nothing else. */
-	const showLunar = $derived(settings.locale === 'vi' && size.pxW >= 210);
+	 *  needs room: below this the cells are numbers and nothing else.
+	 *
+	 *  186 and not the 210 this shipped with: `pxW` is the content box, and
+	 *  restoring gridstack's 12 px item margin took 24 px off it at every size.
+	 *  Held at 210 the same tile would have lost the overlay it has today. */
+	const showLunar = $derived(settings.locale === 'vi' && size.pxW >= 186);
 
 	/** doc 07 §6: `1/7` on the day a lunar month opens, so the reader can see
 	 *  *which* month started; the bare day everywhere else. */

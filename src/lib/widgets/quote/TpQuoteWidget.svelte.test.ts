@@ -38,14 +38,20 @@ vi.mock('./service', async (importOriginal) => {
  */
 
 const SIZE: TpTileSize = { w: 4, h: 2, pxW: 400, pxH: 160, tier: 'M' };
+/** One row and three columns — deliberately **not** tier S, which is `w <= 2`. */
+const SHORT: TpTileSize = { w: 3, h: 1, pxW: 320, pxH: 34, tier: 'M' };
 const AT = new Date(2026, 7, 28, 10, 0);
 
 const catalogue = await loadCatalogue();
 const pool = bilingualPool(catalogue);
 const expected = pickOfDay(pool, '2026-08-28');
 
-function props(bag: Record<string, unknown> = {}, onUpdateSettings = vi.fn()) {
-	return { instanceId: 'wgt_q', settings: bag, size: SIZE, onUpdateSettings };
+function props(
+	bag: Record<string, unknown> = {},
+	onUpdateSettings = vi.fn(),
+	size: TpTileSize = SIZE
+) {
+	return { instanceId: 'wgt_q', settings: bag, size, onUpdateSettings };
 }
 
 beforeEach(() => {
@@ -98,6 +104,40 @@ describe('the quote of the day', () => {
 		const english = render(TpQuoteWidget, props());
 		await expect.element(english.getByTestId('quote-text')).toBeInTheDocument();
 		await expect.element(english.getByTestId('quote-lunar')).not.toBeInTheDocument();
+	});
+});
+
+describe('the one-row tile (doc 13 §3)', () => {
+	it('is the line alone, and drops the footer with it', async () => {
+		// The footer is 21 pixels of the 34 a one-row tile has, and what it left
+		// for the line was a 7-pixel slot cut through the middle of the glyphs.
+		// doc 13 §3 gives that size a single hero value; here it is the line.
+		const screen = render(TpQuoteWidget, props({ favourites: [expected?.id] }, vi.fn(), SHORT));
+		await expect
+			.element(screen.getByTestId('quote-text'))
+			.toHaveTextContent(quoteText(expected!, 'vi'));
+
+		await expect.element(screen.getByTestId('quote-cite')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('quote-keep')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('quote-copy')).not.toBeInTheDocument();
+	});
+
+	it('drops the Vietnamese lunar footer at that height too', async () => {
+		// The one thing doc 08 §3 names that the short tile does not keep, and
+		// the reason the deviation is written back into that section.
+		const screen = render(TpQuoteWidget, props({}, vi.fn(), SHORT));
+		await expect.element(screen.getByTestId('quote-text')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('quote-lunar')).not.toBeInTheDocument();
+	});
+
+	it('keeps all of it one row taller, which is what makes this a height rule', async () => {
+		// `SHORT` is 3x1 and tier M, so a `size.tier === 'S'` test would have
+		// passed while the tile it describes stayed broken. The pair is the
+		// assertion: same tier, one more row, the whole footer back.
+		const screen = render(TpQuoteWidget, props({}, vi.fn(), { ...SHORT, h: 2, pxH: 80 }));
+		await expect.element(screen.getByTestId('quote-cite')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('quote-lunar')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('quote-copy')).toBeInTheDocument();
 	});
 });
 

@@ -42,7 +42,7 @@ just a lower number:
 | `lib/core/grid/**/*.svelte` | `e2e/s1-grid.e2e.ts` — the contract is an invariant across fifty add/remove cycles (wrapper, host and tile counts agreeing) that line coverage cannot see |
 | `lib/core/pwa.svelte.ts` | `e2e/s5-pwa.e2e.ts`, against a real service worker: registers, activates, serves `/offline`, never reloads under the user |
 | `lib/ui/**/*.svelte` | component tests and journeys #1/#2/#7. Same judgment this section already made for widget UI: shared chrome is markup and wiring, and line coverage of markup is weak signal. The `.ts` logic underneath stays inside the thresholds |
-| `lib/charts/**`, `lib/widgets/music/**` | nothing yet — Week 0 spike code that landed in the real repo ahead of its consumers (doc 22 §Exit review). Re-enters with charts in Week 4 and the music library in Week 7 |
+| `lib/widgets/music/**` | nothing yet — Week 0 spike code that landed in the real repo ahead of its consumer (doc 22 §Exit review). Re-enters with the music library in Week 7. **`lib/charts/**` came off this row on 2026-08-30**, when the weather detail became its consumer; it now sits in the global 75/75 bucket, and the split into `echarts.ts` / `options.ts` / `theme.ts` is partly what makes that reachable — the half worth asserting is pure |
 | `routes/spike/**` | harnesses, not product |
 
 Coverage runs via `pnpm test:cov` (`@vitest/coverage-v8`); plain `pnpm test`
@@ -91,8 +91,53 @@ their logic is unit/component-covered.
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and
 `detail-expansion`. The last covers doc 06 §6's handshake, which journey #3
-would otherwise take for granted when the weather detail lands in Week 4. **98
-e2e in total**, in about thirty seconds.
+would otherwise take for granted when the weather detail lands in Week 4. **103
+e2e as of 2026-08-31**, in about thirty seconds — Week 4 added five, all of
+them assertions the suite could not previously make: `s1-grid` measures
+gridstack's item inset (doc 06 §5 rule 12), drags a tile past each end of its
+manifest's size range and loads a deck seeded outside it (rule 14), and
+`journey-2` reloads a deck whose tiles collide on insertion and checks that all
+of them are still in storage afterwards (rule 13). Every one was verified
+against the unfixed code first; a regression test written after a fix and never
+seen to fail is a regression test in name only.
+
+The rule 14 tests earned that twice over. Run against the wired-up bounds but
+the old `serialise`, the load one failed again on a *different* fault — the grid
+showing a clamped 2×2 while the emitted layout still said 1×1 — which is how
+`grid.save()`'s habit of omitting a `w` that equals `minW` was found at all. It
+was not written with that in mind; it simply asserts that the DOM and the
+serialised layout agree, and that is the assertion that catches a divergence
+whichever side causes it.
+
+Three things about driving a gridstack resize from Playwright are written into
+`s1-grid`, because none is guessable and each cost an hour.
+
+**The default 1280 viewport is not a twelve-column grid.** It lands on §5.4's
+`{w: 1280, c: 6}` breakpoint, and `engine.save()` then reports the cached
+twelve-column layout in preference to the live nodes, so a drag shows on screen
+and not in the serialised layout at all. The viewport is declared through
+`test.use` rather than set mid-test for a second reason: resizing after the grid
+has mounted starts a column recalculation that moves every tile, and a
+`boundingBox()` read before that settles aims the pointer where a tile used to
+be. Locally it settles first; on CI it does not.
+
+**Revealing a resize handle takes a mouseout → mouseover pair**, not a move onto
+the tile: gridstack's `_mouseOver` returns early while
+`DDManager.overResizeElement` is set, and `_mouseOut` clears it only for the item
+being left, so a pointer left sitting inside a tile can wedge every handle in the
+grid shut. That one only ever failed on CI.
+
+**And an injected resize does not reliably produce a `change` event at all** —
+measured at two runs in eight. The tile ends the clamped size on screen and its
+`gs-w` says so, while `onLayoutChange` has fired exactly once for the whole test,
+which is the mount emit. Ending the gesture inside the tile rather than at its
+corner did not help and settling moves before the release made it worse, so the
+cause is **not** understood. The two drag tests therefore assert `gs-w`/`gs-h`
+and the load test carries the serialisation claim, which is the one that has no
+gesture in it and the one that caught the `serialise()` fault. **Whether a real
+pointer can lose a resize the same way is open and worth answering on its own**:
+if it can, a user's resize silently fails to persist, and no test arrangement
+would fix that.
 
 **#4 is half written, and the written half is the half that exists.** Its stale
 badges need a widget with cached network data, and the first of those is weather
@@ -102,7 +147,17 @@ chip appearing and clearing, and a deck made entirely of local widgets being
 real faults on its first run (`online.init()` never called, and an added widget
 mounting an empty tile), neither of which any other test could have seen.
 
-**#3 waits for Week 4** with the weather detail and its chart, as doc 23 says.
+**#3 is written** (2026-08-30), and it brought a mechanism the suite did not
+have: **a faked response**. Everything before it either needed no network or
+drove `context.setOffline`. MSW is wired for the node project only — there is no
+`mockServiceWorker.js` in `static/`, and doc 15 §6 keeps msw's postinstall
+denied — so journey #3 uses Playwright's own `page.route`, which the service
+worker leaves alone because it passes `/api/*` straight through. That is the
+mechanism every later networked journey should copy.
+
+It asserts the **canvas**, not the panel: the chart module is a separate lazy
+request, so "the detail opened" would pass with the chunk still in flight and
+the picture never drawn.
 
 One rule this suite learned the hard way, recorded because it has now cost a
 red CI run: **never click a full-viewport scrim at its midpoint.** A panel
@@ -141,6 +196,27 @@ Four tests then failed somewhere unrelated to what they were checking.
 init script stays registered for every later navigation, so a test that seeds a
 timer, starts it and reloads would otherwise have the seed put back over the
 state it was reloading to check.
+
+And a fifth, which is about what a suite *cannot* see rather than how to write
+it: **assert geometry somewhere, or a layout bug ships.** `e2e/s1-grid` counted
+wrappers, hosts and tiles, round-tripped layout JSON and dragged tiles through
+fifty cycles, and none of that could notice that every tile was painting
+edge-to-edge — gridstack's `margin: 12` was correct in the JS options, so the
+model, the collisions and the drop targets were all right and only the paint was
+wrong (doc 06 §5 rule 12). Until 2026-08-30 the four `boundingBox()` calls in the
+whole `e2e/` tree existed solely to compute a mouse origin for a drag, and there
+was no `toHaveScreenshot` anywhere. `s1-grid` now asserts the item's four insets
+directly — one item, not the distance between two, so it holds at every column
+breakpoint.
+
+And a sixth, which is about a helper rather than a test: **`expect.poll`
+retries a mismatched value, but lets a thrown error through.** `journey-6`'s
+`awaitStoredTiles` polls `page.evaluate` while waiting for the backup restore to
+finish — and the restore *reloads* when it finishes, so roughly one run in four
+the poll landed on the teardown and failed with "Execution context was
+destroyed": the helper broke on the very event it existed to wait behind. A poll
+that watches something across a navigation has to catch and return a sentinel,
+not assume the page is still there. (2026-08-30.)
 
 `SEEDED_TILES` lives in the same file for the same kind of reason: doc 13 §9's
 first-run deck grows as widgets land — 1 in Week 1, 2 in Week 2, 4 now — and six

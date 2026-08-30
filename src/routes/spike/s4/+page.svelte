@@ -18,12 +18,19 @@
 	async function loadCharts() {
 		busy = true;
 		try {
-			const { createChart, baseOption } = await import('$lib/charts/echarts');
+			const { createChart } = await import('$lib/charts/echarts');
+			const { baseOption } = await import('$lib/charts/options');
+			const { chartTheme, readChartTokens } = await import('$lib/charts/theme');
 			const el = document.getElementById('s4-chart');
 			if (!el) return;
 			const chart = createChart(el);
+			// Option first, then theme — `setTheme` early-returns while the chart
+			// has no model. The harness follows `TpChart.svelte`'s order because
+			// this route is what measures the shipped chunk.
 			chart.setOption({
 				...baseOption(),
+				xAxis: { type: 'time' },
+				yAxis: { type: 'value' },
 				series: [
 					{
 						type: 'line',
@@ -38,6 +45,7 @@
 					}
 				]
 			});
+			chart.setTheme(chartTheme(readChartTokens()));
 			note('echarts: chart rendered');
 		} finally {
 			busy = false;

@@ -10,7 +10,7 @@ import {
 import { mayFetch, parseCreditsLeft, readSpend, recordSpend, utcDateKey } from './budget';
 import { readCache, ttlSeconds, writeCache } from './kv-cache';
 import { checkRateLimit } from './ratelimit';
-import { geohash, parseCoords, roundCoord } from './geohash';
+import { parseCoords } from './geohash';
 
 /**
  * Worker `_lib` suite — doc 19 §3.5.
@@ -214,23 +214,19 @@ describe('soft rate limiter (doc 11 §7, doc 15 §7)', () => {
 });
 
 describe('coordinate handling (doc 15 §7)', () => {
+	// `roundCoord` and `geohash` moved to `$lib/shared-constants` so the client
+	// can spell its own cache key (doc 04 §5); their tests moved with them, to
+	// `shared-constants.test.ts`. What is left here is the half that reads a URL.
 	it('rounds to 2 dp, so a precise location never reaches KV', () => {
-		expect(roundCoord(21.028511)).toBe(21.03);
-		expect(roundCoord(105.804817)).toBe(105.8);
+		expect(parseCoords(new URL('https://x/api/weather?lat=21.028511&lon=105.804817'))).toEqual({
+			lat: 21.03,
+			lon: 105.8
+		});
 	});
 
 	it('rejects out-of-range and non-numeric input', () => {
 		expect(parseCoords(new URL('https://x/api/weather?lat=91&lon=0'))).toBeNull();
 		expect(parseCoords(new URL('https://x/api/weather?lat=0&lon=181'))).toBeNull();
 		expect(parseCoords(new URL('https://x/api/weather?lat=abc&lon=0'))).toBeNull();
-	});
-
-	it('collapses nearby coordinates onto one cache key', () => {
-		// The whole quota model rests on this: everyone in a city shares an entry.
-		const hanoi = geohash(21.03, 105.8);
-		const alsoHanoi = geohash(21.01, 105.82);
-		expect(hanoi).toBe(alsoHanoi);
-		expect(geohash(48.86, 2.35)).not.toBe(hanoi);
-		expect(hanoi).toHaveLength(5);
 	});
 });

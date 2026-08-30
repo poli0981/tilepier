@@ -261,7 +261,13 @@
 		const el = containerEl?.querySelector<GridItemHTMLElement>(
 			`.grid-stack-item[gs-id="${CSS.escape(instanceId)}"]`
 		);
-		return el?.getBoundingClientRect() ?? null;
+		// The content box, not the wrapper. gridstack sizes the wrapper edge to
+		// edge and insets the content by `margin` (12), so the wrapper is 24 px
+		// wider and taller than the tile a user can see. The FLIP scales from
+		// these four numbers, so handing it the wrapper starts the panel oversized
+		// and lands it off-origin. The two were the same box only while the
+		// `inset: 0` in this file's style block was deleting the gutter.
+		return (el && contentElOf(el))?.getBoundingClientRect() ?? null;
 	}
 
 	// ── lifecycle ────────────────────────────────────────────────────────────
@@ -319,10 +325,38 @@
 			}
 		});
 
-		for (const tile of tiles) {
-			tileById.set(tile.instanceId, tile);
-			mountHost(tile, grid.addWidget(toGridStackWidget(tile)));
+		// Suppressed for exactly the reason `rebuild()` suppresses, and it was
+		// missing here: gridstack fires `change` **synchronously from inside
+		// `addWidget`** as soon as an insertion makes it reposition the tiles
+		// already placed (`makeWidget` → `_triggerChangeEvent`). Mid-loop that
+		// reports a *prefix* of the deck, and the deck store persists whatever it
+		// is handed — so the layout is truncated to however many tiles had been
+		// added when the first collision happened, permanently. Measured on the
+		// five-tile Week 4 seed: one emit, at the third `addWidget`, three tiles
+		// out of five, and the two missing ones gone from `tp.layout.v1` for good.
+		//
+		// It never fired through Week 3 because the four-tile seed happened not to
+		// collide during the loop — the bug is a property of the arrangement, not
+		// of the count. doc 06 §5 rule 13.
+		suppressChange = true;
+		try {
+			for (const tile of tiles) {
+				tileById.set(tile.instanceId, tile);
+				mountHost(tile, grid.addWidget(toGridStackWidget(tile)));
+			}
+		} finally {
+			suppressChange = false;
 		}
+		// Once, with the whole deck — gridstack may have compacted it, and that
+		// is what the store should record. Rule 14's clamp reaches storage the
+		// same way and only this way: `addWidget` fixes an out-of-bounds stored
+		// size inside `nodeBoundFix`, but `_triggerAddEvent` clears the dirty
+		// flag that a `change` would have carried, so an added node never
+		// reports its own clamp. Without this emit a deck saved at 1×1 would
+		// render at the manifest minimum while `tp.layout.v1` kept the 1×1
+		// indefinitely — the divergence rule 13 was written about, arriving from
+		// the other side.
+		emitLayout();
 
 		return () => {
 			// doc 06 §5.6: unmount every host, then destroy the grid without
@@ -360,8 +394,23 @@
 		background-size: 24px 24px;
 	}
 
+	/*
+	 * Never set `inset` / `top` / `right` / `bottom` / `left` here.
+	 *
+	 * gridstack paints its `margin` as the INSET of this element inside an
+	 * edge-to-edge wrapper (gridstack.css, `.grid-stack > .grid-stack-item >
+	 * .grid-stack-item-content { top: var(--gs-item-margin-top); … }`), which it
+	 * writes from the init options. A rule here ties that one at (0,3,0) and wins
+	 * on source order, so `inset: 0` deleted the whole gutter — silently, because
+	 * `margin: 12` stayed in the JS opts and every piece of gridstack's own
+	 * collision and drop math went on assuming it. Only the paint disagreed.
+	 * Doc 06 §5 rule 12.
+	 *
+	 * `overflow` is a separate override, of a separate gridstack rule
+	 * (`overflow-x: hidden; overflow-y: auto`), and stays: it is what lets
+	 * `--shadow-tile` paint outside the content box.
+	 */
 	.grid-stack :global(.grid-stack-item-content) {
-		inset: 0;
 		overflow: visible;
 	}
 </style>

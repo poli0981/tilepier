@@ -8,6 +8,7 @@ import todo from '$lib/widgets/todo/manifest';
 import calendar from '$lib/widgets/calendar/manifest';
 import toolbox from '$lib/widgets/toolbox/manifest';
 import quote from '$lib/widgets/quote/manifest';
+import weather from '$lib/widgets/weather/manifest';
 import {
 	CATEGORY_ORDER,
 	type TpDetailProps,
@@ -53,9 +54,10 @@ export interface TpWidgetManifest {
 
 /**
  * Grows a row per widget as each lands (doc 23) — `clock` in Week 1, four more
- * through Week 2, `calendar`, `toolbox` and `quote` in Week 3. `core/registry.test.ts` checks each
- * *registered* manifest against its row in doc 06 §7, so the table stays
- * authoritative without failing on widgets that do not exist yet.
+ * through Week 2, `calendar`, `toolbox` and `quote` in Week 3, `weather` in
+ * Week 4. `core/registry.test.ts` checks each *registered* manifest against its
+ * row in doc 06 §7, so the table stays authoritative without failing on widgets
+ * that do not exist yet.
  */
 export const MANIFESTS: readonly TpWidgetManifest[] = [
 	clock,
@@ -65,7 +67,8 @@ export const MANIFESTS: readonly TpWidgetManifest[] = [
 	todo,
 	calendar,
 	toolbox,
-	quote
+	quote,
+	weather
 ];
 
 const BY_ID = new Map<string, TpWidgetManifest>(MANIFESTS.map((m) => [m.id, m]));

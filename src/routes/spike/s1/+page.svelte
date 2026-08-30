@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import TpGrid from '$lib/core/grid/TpGrid.svelte';
 	import type { TpLayout, TpTile } from '$lib/core/grid/layout';
 	import DummyWidget from './DummyWidget.svelte';
@@ -12,13 +13,29 @@
 	 * so assertions read real state instead of console text.
 	 */
 
-	const widgets = { dummy: DummyWidget };
+	/**
+	 * A registry id, mounting a stand-in component.
+	 *
+	 * The harness used `dummy` until 2026-08-31, which was fine while nothing
+	 * about a tile came from its manifest. doc 06 §5 rule 14 changed that:
+	 * `toGridStackWidget` now looks the widget up to emit `minW`/`minH`/`maxW`/
+	 * `maxH`, and an id the registry has never heard of gets no bounds — so a
+	 * `dummy` deck could not express the thing the clamp tests measure.
+	 *
+	 * `timer` because its manifest is the tightest registered: min 2×2,
+	 * default 3×2, max 4×3. Both limits are one drag away from the arrangement
+	 * below, so overshooting them is unambiguous rather than a 600 px flick.
+	 * `DummyWidget` still supplies the content; `widgets` is a component map
+	 * keyed by widget id, not the registry itself.
+	 */
+	const WIDGET_ID = 'timer';
+	const widgets = { [WIDGET_ID]: DummyWidget };
 
 	let seq = 0;
 	function makeTile(index: number): TpTile {
 		return {
 			instanceId: `wgt_${index.toString(36).padStart(4, '0')}`,
-			widgetId: 'dummy',
+			widgetId: WIDGET_ID,
 			x: (index % 4) * 3,
 			y: Math.floor(index / 4) * 2,
 			w: 3,
@@ -27,7 +44,22 @@
 		};
 	}
 
-	const initial: TpTile[] = Array.from({ length: 6 }, (_, i) => makeTile(i));
+	/**
+	 * `?oob=1` seeds tile 0 at 1×1 — outside `timer`'s 2×2 minimum, and exactly
+	 * the shape of a deck saved while rule 14's bounds were not wired up.
+	 * `e2e/s1-grid` uses it to check gridstack clamps a stored size on the way
+	 * in and that the clamped size is what `onLayoutChange` carries out, rather
+	 * than the grid and `tp.layout.v1` quietly disagreeing.
+	 *
+	 * Only tile 0, so every other invariant in that file still reads the same
+	 * six-tile arrangement it always has.
+	 */
+	const outOfBounds = page.url.searchParams.has('oob');
+
+	const initial: TpTile[] = Array.from({ length: 6 }, (_, i) => {
+		const seeded = makeTile(i);
+		return outOfBounds && i === 0 ? { ...seeded, w: 1, h: 1 } : seeded;
+	});
 	seq = initial.length;
 
 	let gridRef = $state<ReturnType<typeof TpGrid> | null>(null);

@@ -141,8 +141,10 @@ describe('lookup', () => {
 	it('finds a registered manifest and misses an unknown id', () => {
 		expect(getManifest('clock')?.id).toBe('clock');
 		// doc 05 §5's unknown-widgetId case: a layout may name a widget this
-		// build does not have.
-		expect(getManifest('weather')).toBeUndefined();
+		// build does not have. `rss` took this role from `weather` when the
+		// weather tile landed in Week 4 — the case is about the id union running
+		// ahead of the registry, so it moves to whichever id is still ahead.
+		expect(getManifest('rss')).toBeUndefined();
 		expect(getManifest('nonsense')).toBeUndefined();
 	});
 
@@ -172,9 +174,9 @@ describe('lookup', () => {
 
 	it('reports nothing for a widget this build does not have', () => {
 		// The drawer only lists registered manifests, but a caller reading ids
-		// out of a stored layout can ask about anything. `weather` is in doc 06
-		// §7's table and lands in Week 4; until then there is no manifest to
-		// consult, and "is it on the deck" has no answer rather than a false one.
-		expect(isOnDeck('weather', ['weather'])).toBe(false);
+		// out of a stored layout can ask about anything. `rss` is in doc 06 §7's
+		// table and lands later; until then there is no manifest to consult, and
+		// "is it on the deck" has no answer rather than a false one.
+		expect(isOnDeck('rss', ['rss'])).toBe(false);
 	});
 });

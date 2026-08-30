@@ -55,6 +55,23 @@
 		{ label: 'quote:midnight' }
 	);
 
+	/**
+	 * doc 13 §3's tier S — "single hero value, no header text (icon only)" —
+	 * keyed off the row count rather than off `size.tier`, because the tier is
+	 * `w <= 2 && h <= 1` and only the height half of that matters here. A 3x1
+	 * tile is tier M and has exactly the same ~34 pixels to work with as a 2x1
+	 * one; keying off the tier would have left every one-row tile wider than two
+	 * columns rendering the tall layout into a box that cannot hold it.
+	 *
+	 * The hero value is the line itself, on one ellipsised row. The citation and
+	 * the two actions go, which is the whole point: the footer is 21 of those
+	 * pixels and it was the footer that pushed the line down to a 7-pixel slot
+	 * and cut it through the middle of the glyphs. Nothing is lost that the
+	 * detail does not have — it carries the attribution, the copy and the keep.
+	 * doc 08 §3 carries the deviation, because the lunar footer goes with them.
+	 */
+	const short = $derived(size.h <= 1);
+
 	const quote = $derived(pool === null ? null : pickOfDay(pool, today));
 	const text = $derived(quote === null ? '' : quoteText(quote, settings.locale));
 	const attribution = $derived(quote === null ? '' : attributionOf(quote));
@@ -113,45 +130,52 @@
 	}
 </script>
 
-<div class="tp-quote" data-tier={size.tier}>
+<div class="tp-quote" data-tier={size.tier} class:tp-quote--short={short}>
 	{#if failed}
 		<p class="tp-quote__error" role="alert">{m['widget.quote.failed']()}</p>
 	{:else if pool === null}
 		<!-- doc 13 §7: a skeleton, never a spinner. The catalogue is 23 KB gz
 		     behind a dynamic import, so this is a real frame rather than a
-		     theoretical one. -->
+		     theoretical one. One bar at a row tall: three of them are 30 pixels
+		     of the 34 there are, which is a loading state that overflows into the
+		     ready one it is standing in for. -->
 		<div class="tp-quote__skeleton" aria-label={m['widget.quote.loading']()}>
-			<span></span><span></span><span></span>
+			<span></span>
+			{#if !short}
+				<span></span><span></span>
+			{/if}
 		</div>
 	{:else if quote !== null}
 		<blockquote class="tp-quote__text" data-testid="quote-text">{text}</blockquote>
-		<footer>
-			{#if attribution !== ''}
-				<cite class="tp-quote__cite" data-testid="quote-cite">{attribution}</cite>
-			{/if}
-			{#if lunar !== ''}
-				<span class="tp-quote__lunar tp-num" data-testid="quote-lunar">{lunar}</span>
-			{/if}
-			<button
-				type="button"
-				class="tp-quote__action"
-				aria-pressed={isKept}
-				aria-label={isKept ? m['widget.quote.unfavourite']() : m['widget.quote.favourite']()}
-				data-testid="quote-keep"
-				onclick={keep}
-			>
-				<TpIcon name={isKept ? 'check' : 'plus'} size={13} />
-			</button>
-			<button
-				type="button"
-				class="tp-quote__action"
-				aria-label={copied ? m['widget.quote.copied']() : m['widget.quote.copy']()}
-				data-testid="quote-copy"
-				onclick={() => void copy()}
-			>
-				<TpIcon name={copied ? 'check' : 'note'} size={13} />
-			</button>
-		</footer>
+		{#if !short}
+			<footer>
+				{#if attribution !== ''}
+					<cite class="tp-quote__cite" data-testid="quote-cite">{attribution}</cite>
+				{/if}
+				{#if lunar !== ''}
+					<span class="tp-quote__lunar tp-num" data-testid="quote-lunar">{lunar}</span>
+				{/if}
+				<button
+					type="button"
+					class="tp-quote__action"
+					aria-pressed={isKept}
+					aria-label={isKept ? m['widget.quote.unfavourite']() : m['widget.quote.favourite']()}
+					data-testid="quote-keep"
+					onclick={keep}
+				>
+					<TpIcon name={isKept ? 'check' : 'plus'} size={13} />
+				</button>
+				<button
+					type="button"
+					class="tp-quote__action"
+					aria-label={copied ? m['widget.quote.copied']() : m['widget.quote.copy']()}
+					data-testid="quote-copy"
+					onclick={() => void copy()}
+				>
+					<TpIcon name={copied ? 'check' : 'note'} size={13} />
+				</button>
+			</footer>
+		{/if}
 	{/if}
 </div>
 
@@ -177,8 +201,20 @@
 		font-size: var(--text-sm);
 	}
 
-	.tp-quote[data-tier='S'] .tp-quote__text {
+	/* The one-row tile. `[data-tier='S']` used to carry the smaller type here and
+	   is gone rather than kept alongside: tier S is `w <= 2 && h <= 1`, so every
+	   S tile is a short one and the rule was the narrow half of this one. */
+	.tp-quote--short .tp-quote__text {
 		font-size: var(--text-2xs);
+		/* `flex: 0 0 auto` so the line keeps its own height instead of being
+		   compressed to whatever is left — being clipped top and bottom is the
+		   bug. If a row is ever shorter than a line, the container's
+		   `overflow: hidden` clips the descenders and the sentence still reads,
+		   which is the failure mode worth having. */
+		flex: 0 0 auto;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	footer {

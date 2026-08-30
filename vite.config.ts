@@ -99,9 +99,9 @@ export default defineConfig({
 				// Harnesses, not product.
 				'src/routes/spike/**',
 				// Week 0 spike code that landed in the real repo (doc 22 §Exit
-				// review) ahead of the widgets that will use it. Each re-enters
-				// with its consumer: charts in Week 4, the music library in Week 7.
-				'src/lib/charts/**',
+				// review) ahead of the widget that will use it. `lib/charts/**`
+				// came off this list in Week 4 when the weather detail became its
+				// consumer; the music library re-enters in Week 7.
 				'src/lib/widgets/music/**'
 			],
 			thresholds: {

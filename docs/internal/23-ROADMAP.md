@@ -236,11 +236,80 @@ Vendoring was measured first — 990 lines producing 43 errors under
 `noUncheckedIndexedAccess`, needing `@ts-nocheck` and four tooling exclusions in
 a repo that has none.
 
-## Week 4 — Weather · Currency
+## Week 4 — Weather · Currency · **4a COMPLETE 2026-08-30, M4 met; 4b open**
 weather widget+detail (ECharts bridge built here, theme-linked) ·
 fx endpoint + snapshot mechanism + currency widget/detail (history chart
 against accumulating snapshots) · offline/stale polish pass on both.
 **M4:** tier-2 pattern (swr + proxy + echarts) proven and documented back.
+
+### The split, and the number behind it
+
+This week was measured before it was started, by eight assessment agents and
+three adversarial verifiers over the nine work items below. **21.25 focused
+days against a five-day solo week — 4.25×.** Verification removed about 1.5
+days of work that rested on false premises and added two findings that were
+worse than the plan assumed, so the number did not move in the direction that
+would have been convenient.
+
+| | item | complexity | difficulty | days |
+|---|---|:--:|:--:|--:|
+| A | ECharts bridge | 3 | 4 | 1.5 |
+| B | weather tile + service | 4 | 4 | 2.5 |
+| C | weather detail | 4 | 4 | 2.5 |
+| D | place picker + geolocation | 3 | 4 | 2.0 |
+| E | `/api/fx` + snapshots | 3 | 3 | 3.0 |
+| F | currency widget + detail | 4 | 4 | 4.0 |
+| G | toast host + stale badge | 4 | 4 | 2.5 |
+| H | tests, journeys, gates | 4 | 4 | 2.5 |
+| I | the tile-gap fix | 3 | 3 | 0.75 |
+
+*Complexity* is breadth — parts, files, contracts crossed. *Difficulty* is
+depth — how easy it is to get wrong and not notice. They are scored
+independently because they do not travel together: `fx` is broad and
+straightforward, the ECharts bridge is narrow and full of silent traps.
+
+Four **depth** cuts were taken rather than cutting widgets, which is the same
+move this doc's slip policy made for quote's share-as-image in Week 3: the
+currency history chart and `/api/fx/history` (−2.0), the AQI gauge and
+astronomy card (−0.8), seven WMO glyphs instead of sixteen (−0.5), and the
+stale badge in the widget body rather than a new `core/tile-status` channel
+(−0.5). That leaves ≈17.5, split as:
+
+- **Week 4a — weather.** Gap fix, tile, place picker, ECharts bridge, detail.
+- **Week 4b — currency.** `/api/fx` + snapshots, currency widget and detail,
+  the toast host and stale badge, journey #4's second half.
+
+**M4 is met by 4a alone**, and that is what the milestone sentence asks for:
+`swr()` has its first consumer, the proxy is exercised end to end, and the
+ECharts bridge is built, theme-linked, and back inside the coverage gate.
+currency is the pattern's *second* proof and moves without touching M4.
+
+### Week 4a — complete 2026-08-30
+
+Twelve commits, in one PR. Six of them are fixes to things Week 4a only found
+because it was the first work to *use* them, which is this codebase's recurring
+shape (doc 22 §S1, doc 06 §5 rules 12–14):
+
+- **gridstack's 12 px item margin was never painted.** `margin: 12` was correct
+  in the JS options the whole time — `cacheRects`, collision and drop maths all
+  assumed it — and one `inset: 0` in `TpGrid.svelte` deleted the gutter. Four
+  weeks of green CI; found from a screenshot of touching tiles.
+- **`TpGrid.setup()` did not suppress change events**, so gridstack's
+  synchronous `change` from inside `addWidget` reported a *prefix* of the deck
+  and the store persisted it. A five-tile deck came back from a reload with
+  three, permanently.
+- **`toGridStackWidget` never emitted the manifests' size bounds**, so every
+  tile could be resized to 1×1 regardless of its `sizes.min`.
+- **The h=1 header rule** doc 13 §3 always described was half-implemented, and
+  once implemented it needed a reserve for the controls it floats over.
+- **`journey-6` raced the reload it was waiting behind** — roughly one full
+  run in four.
+- **The air-quality upstream had no `timezone` parameter at all**, so its
+  "current" reading was wrong by the whole offset (doc 10 §2).
+
+Numbers at the end of 4a: nine of fifteen widgets registered, 1083
+unit/component tests, 107 e2e, 461 message keys, budgets 7/7 with the shared
+echarts chunk at 183.0 KB gz and the largest detail chunk at 4.2 KB.
 
 **What Week 4 starts from.** Week 3 left five things for it, each deliberately:
 
@@ -277,6 +346,38 @@ controls sit below the 40 px target (doc 13 §8), and widget chunks are not
 precached so a first detail open offline fails (doc 17 §2) — all three are Week
 8, all three are written down so that pass starts from a list rather than a
 discovery.
+
+**What 4a leaves for whoever picks this up.** Three of them are decisions
+rather than tasks, and two are about code that is already live:
+
+1. ~~**`ratelimit.ts:73` writes one KV entry per `/api/*` request**, which on
+   the free KV tier exceeds the 1 000 writes/day allowance at roughly a
+   thousand API requests.~~ **Resolved 2026-08-30: the account is on Workers
+   Paid**, recorded in `wrangler.jsonc` and doc 11 §7. The write is a metered
+   cost rather than a ceiling, and doc 10 §3's permanent daily fx snapshot is
+   unblocked — so Week 4b's `/api/fx/history` needs no free-tier budget
+   rationale for its `days` allowlist. Left visible rather than deleted,
+   because the limiter is still the app's highest-volume write and the note
+   says what to do if it ever shows up on a bill.
+2. **The scheduler's backoff is unreachable.** `execute`'s `finally` always
+   recomputes `nextDueAt` from the cadence, and `effectiveDue` is
+   `max(nextDueAt, backoffUntil)`, so for weather's 600 s cadence every backoff
+   below `BACKOFF.maxMs` (300 s) never fires. Docs 04 §2, 11 §7.3 and 17 §5 all
+   describe behaviour no code has. Settle it with the markets tile, which is
+   the first widget whose cadence is short enough for it to matter.
+3. **An injected resize does not reliably produce a gridstack `change`** — two
+   runs in eight ended with the clamped size on screen and no `onLayoutChange`
+   beyond the mount emit. If a real pointer can lose one the same way, a
+   reader's resize silently fails to persist. Recorded in doc 19 §4; it needs
+   an investigation, not a test tweak.
+4. **`useRefresh` returns `void`**, so no widget holds a `TpTaskHandle` and
+   doc 04 §2's `handle.backoff(...)` cannot be called. Decide the signature
+   before a second networked widget is built around the current one.
+5. **doc 12 §2a claims `--spacing`, `--tp-bar-h` and `--tp-page-pad` are
+   declared in `@theme`.** They are not, and every consumer uses a hardcoded
+   fallback — which is why the top bar sits on a 16 px rail while `main`
+   overrides to 24 px at ≥768 px. Its own small change, deliberately not folded
+   into the gap fix.
 
 ## Week 5 — Markets
 crypto ticker/klines endpoints · stock quote/series/search endpoints

@@ -17,6 +17,18 @@
 	// Edge cache + fx snapshots + soft rate-limit counters (doc 03 §Environment,
 	// doc 11 §4-§7). Preview deploys point at the preview namespace so cache
 	// experiments cannot pollute production (doc 21 §4).
+	//
+	// **The account is on Workers Paid** (confirmed 2026-08-30), and that is a
+	// deployment fact rather than a billing one. On the free tier KV allows
+	// 1 000 writes a day, and `_lib/ratelimit.ts` spends one per `/api/*`
+	// request carrying an address — so roughly a thousand API requests would
+	// exhaust the day before a single cache write or fx snapshot. Paid removes
+	// that ceiling and meters writes instead, which turns the limiter's write
+	// from a wall into a cost line worth watching (doc 11 §7) and unblocks doc
+	// 10 §3's permanent daily fx snapshot.
+	//
+	// Not the same thing as the *zone* plan doc 11 §7 names for its one free
+	// WAF rate-limiting rule. That is a different dimension and unchanged.
 	"kv_namespaces": [
 		{
 			"binding": "TILEPIER_CACHE",
