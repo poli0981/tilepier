@@ -11,7 +11,7 @@ import { online } from '$lib/stores/online.svelte';
 import { settings } from '$lib/stores/settings.svelte';
 import TpWeatherWidget from './TpWeatherWidget.svelte';
 import { weatherKey } from './service';
-import type { TpGeoPermission } from './geolocate';
+import type { TpGeoPermission, TpPositionSource } from './geolocate';
 
 /**
  * doc 08 §1's tile and doc 06 §3's states for it — the first widget in the app
@@ -248,6 +248,63 @@ describe('states (doc 06 §3)', () => {
 
 		await expect.element(screen.getByTestId('weather-empty')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('weather-permission')).not.toBeInTheDocument();
+	});
+});
+
+describe('picking a place (doc 06 §2)', () => {
+	it('hands the choice to the host rather than writing storage itself', async () => {
+		// doc 06 §2's round trip: the widget owns none of it. The deck store
+		// writes `tp.layout.v1`, `TpGrid.updateTile` pushes the new record back
+		// in, and the tile re-reads it — which is the contract a Week 2 bug broke
+		// by freezing the tile's props at mount (doc 06 §5 rule 11).
+		serve(WEATHER_OK);
+		const onUpdateSettings = vi.fn();
+		const at: TpPositionSource = () =>
+			Promise.resolve({ coords: { latitude: 21.028511, longitude: 105.804817 } });
+
+		const screen = render(
+			TpWeatherWidget,
+			props({ settings: {}, onUpdateSettings, positionSource: at })
+		);
+
+		await expect.element(screen.getByTestId('weather-empty')).toBeInTheDocument();
+		await screen.getByTestId('weather-locate').click();
+
+		await vi.waitFor(() => {
+			expect(onUpdateSettings).toHaveBeenCalledWith({
+				place: { name: '', lat: 21.03, lon: 105.8 },
+				useMyLocation: true
+			});
+		});
+	});
+
+	it('the denied card still offers search', async () => {
+		// doc 08 §1: a permission card that only reports the refusal leaves the
+		// reader at a dead end the tile can perfectly well get out of.
+		serve(WEATHER_OK);
+		const denied = (): Promise<TpGeoPermission> => Promise.resolve('denied');
+		const screen = render(
+			TpWeatherWidget,
+			props({ settings: { useMyLocation: true }, permissionSource: denied })
+		);
+
+		await expect.element(screen.getByTestId('weather-permission')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('weather-search')).toBeInTheDocument();
+	});
+
+	it('a stored place labels itself, and a located one is named live', async () => {
+		// A blank name is what geolocation stores — there is no reverse-geocode
+		// endpoint, and a translated string frozen into the layout would be wrong
+		// the moment the reader switched locale.
+		serve(WEATHER_OK);
+		const screen = render(
+			TpWeatherWidget,
+			props({ settings: { place: { name: '', lat: 21.02, lon: 105.85 } } })
+		);
+
+		await expect
+			.element(screen.getByTestId('weather-place'))
+			.toHaveTextContent(m['widget.weather.my_location']());
 	});
 });
 

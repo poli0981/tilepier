@@ -146,6 +146,12 @@
 			: sparklinePoints(payload, hourIndex, SPARKLINE_HOURS)
 	);
 
+	/** A place chosen through geolocation is stored with a blank name: there is
+	 *  no reverse-geocode endpoint to give it a real one, and a translated
+	 *  string would freeze into `tp.layout.v1` at the locale it was picked in.
+	 *  The label comes from the live catalogue instead. */
+	const placeName = $derived(place.name === '' ? m['widget.weather.my_location']() : place.name);
+
 	const ageLine = $derived(
 		handle?.cachedAt === undefined ? '' : fmtRelative(handle.cachedAt, settings.locale, now)
 	);
@@ -215,7 +221,7 @@
 		</p>
 	{:else}
 		<div class="tp-wx__head">
-			<span class="tp-wx__place" data-testid="weather-place">{place.name}</span>
+			<span class="tp-wx__place" data-testid="weather-place">{placeName}</span>
 			{#if status === 'offline'}
 				<span class="tp-wx__badge tp-wx__badge--offline" data-testid="weather-badge-offline">
 					{m['widget.weather.offline_short']()}

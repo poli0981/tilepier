@@ -45,6 +45,35 @@ where the next reader will look for them:
   issue an Open-Meteo request on first load for a tile they had not yet pointed
   anywhere.
 
+**The picker (2026-08-30).** This section puts the place picker in the detail.
+It ships **in the tile**, as the `empty` state itself, and the reason is doc 13
+§9: the first-run deck seeds a weather tile with no place, so a picker behind a
+detail panel would make the one tile a new reader is most likely to try the one
+that does nothing until they go looking. The detail will still carry it when it
+lands, for changing a place rather than choosing the first one.
+
+Three more decisions worth having written down:
+
+- **Search does not go through `swr()`.** That primitive is keyed on a data
+  identity the deck keeps looking at; a search box makes a new key per
+  keystroke, each wanted once. Routing it through `swr` would fill the dedupe
+  map and the Dexie `apiCache` with a row for every prefix on the way to the
+  word the reader meant. `/api/geocode` already caches for 24 h (doc 11 §4),
+  which is the caching that matters. Debounce is 400 ms, chosen against doc 11
+  §7's 30-per-10 s limiter so continuous typing cannot trip the gate the
+  forecast refresh also draws on.
+- **A geolocated place is stored with a blank `name`.** doc 10 §6 is forward
+  search only, so there is no reverse lookup to give it a real one, and a
+  translated label would freeze into `tp.layout.v1` at whichever locale it was
+  picked in and be wrong after a locale switch. The tile renders
+  `widget.weather.my_location` from the live catalogue when the name is empty.
+- **The rounding happens inside `geolocate.ts`**, in the same function that
+  receives the fix, and not at the call site. doc 16 §3 and doc 15 §7 require 2
+  dp *before the coordinate leaves the device*, and the Worker re-rounds on
+  arrival - so a precise coordinate would produce a byte-identical response and
+  the violation would be invisible from the outside. Both the node test and the
+  component test were run against an unrounded build first.
+
 ## 2. `currency` — Currency Converter (VND first-class)
 
 - **Source:** open.er-api.com daily rates (has VND); history from

@@ -1,10 +1,9 @@
+import { roundCoord } from '$lib/shared-constants';
+
 /**
- * The browser side of doc 08 §1's "use my location".
- *
- * Only the *permission* half lands here in the tile commit; asking for a
- * position belongs with the place picker. Kept separate from `service.ts`
- * because that module is pure and node-tested, and this one is nothing but
- * browser API surface.
+ * The browser side of doc 08 §1's "use my location" — the permission question
+ * and the position itself. Kept separate from `service.ts` because that module
+ * is pure and node-tested, and this one is nothing but browser API surface.
  *
  * Not a store, and deliberately not cached: a reader can change this in browser
  * settings while the tab is open, so the tile asks each time it renders the
@@ -41,3 +40,54 @@ export const browserGeoPermission: TpPermissionSource = async () => {
 		return 'unsupported';
 	}
 };
+
+/* ──────────────────────────────────────────────────────────── the position */
+
+/** All this module ever hands out: two numbers at 2 dp, ~1 km square. */
+export interface TpCoarsePosition {
+	lat: number;
+	lon: number;
+}
+
+/** Injectable for the same reason the permission source is: in headless
+ *  Chromium the real API exists and is auto-denied, so a test that patches
+ *  nothing exercises the failure branch alone and calls it coverage. */
+export type TpPositionSource = () => Promise<{ coords: { latitude: number; longitude: number } }>;
+
+/**
+ * doc 08 §1: asked on the reader's action, never on load. A one-shot read
+ * rather than `watchPosition` — the tile wants a place, not a track — and
+ * `enableHighAccuracy` stays off, because two decimal places is a ~1 km cell
+ * and turning the GPS on to fill it would cost battery for precision that is
+ * discarded a line later.
+ */
+export const browserPosition: TpPositionSource = () =>
+	new Promise((resolve, reject) => {
+		if (typeof navigator === 'undefined' || navigator.geolocation === undefined) {
+			reject(new Error('geolocation unavailable'));
+			return;
+		}
+		navigator.geolocation.getCurrentPosition(resolve, reject, {
+			enableHighAccuracy: false,
+			timeout: 10_000,
+			maximumAge: 60_000
+		});
+	});
+
+/**
+ * The reader's position, **already coarsened**.
+ *
+ * The rounding happens here, inside the module that receives the fix, and
+ * nowhere later — doc 16 §3 and doc 15 §7 require the coordinate to be at 2 dp
+ * *before it leaves the device*, and this is the only moment at which a
+ * precise one exists at all. Returning the raw fix and rounding at the call
+ * site would satisfy every test and violate the invariant, because the Worker
+ * re-rounds on arrival and the response is byte-identical either way. That is
+ * exactly the shape of a privacy bug that is invisible from the outside.
+ */
+export async function coarsePosition(
+	source: TpPositionSource = browserPosition
+): Promise<TpCoarsePosition> {
+	const fix = await source();
+	return { lat: roundCoord(fix.coords.latitude), lon: roundCoord(fix.coords.longitude) };
+}

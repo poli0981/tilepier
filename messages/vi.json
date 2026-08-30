@@ -421,8 +421,6 @@
 	"settings.backup.failed": "Khôi phục chưa hoàn tất. Không có thay đổi nào thêm — xem chi tiết ở mục Chẩn đoán.",
 	"widget.weather.title": "Thời tiết",
 	"widget.weather.blurb": "Một nơi, mười hai giờ tới",
-	"widget.weather.empty": "chưa chọn địa điểm",
-	"widget.weather.empty_hint": "chọn một nơi để xem dự báo",
 	"widget.weather.loading": "đang đọc dự báo",
 	"widget.weather.error": "không đọc được dự báo",
 	"widget.weather.rate_limited": "quá nhiều yêu cầu — chờ một lát",
@@ -432,7 +430,6 @@
 	"widget.weather.stale": "từ {age}",
 	"widget.weather.stale_hint": "số liệu gần nhất nhận được — bản mới đang trên đường",
 	"widget.weather.permission_blocked": "trình duyệt từ chối vị trí của bạn",
-	"widget.weather.permission_hint": "tìm địa điểm theo tên thay vì vậy",
 	"widget.weather.hi_lo": "{hi} / {lo}",
 	"widget.weather.precip_chance": "{percent}% mưa",
 	"widget.weather.sparkline_summary": "{hours} giờ tới, {min} đến {max}",
@@ -443,5 +440,15 @@
 	"widget.weather.wmo_rain": "mưa",
 	"widget.weather.wmo_snow": "tuyết",
 	"widget.weather.wmo_thunder": "dông",
-	"widget.weather.wmo_unknown": "không có số liệu"
+	"widget.weather.wmo_unknown": "không có số liệu",
+	"widget.weather.search_placeholder": "tìm một địa điểm",
+	"widget.weather.search_label": "tìm một địa điểm",
+	"widget.weather.searching": "đang tìm",
+	"widget.weather.no_results": "không thấy gì cho “{query}”",
+	"widget.weather.search_offline": "cần mạng để tìm kiếm",
+	"widget.weather.search_failed": "không chạy được tìm kiếm",
+	"widget.weather.use_my_location": "dùng vị trí của tôi",
+	"widget.weather.locating": "đang tìm bạn",
+	"widget.weather.locate_failed": "không đọc được vị trí — hãy tìm theo tên",
+	"widget.weather.my_location": "vị trí của tôi"
 }
