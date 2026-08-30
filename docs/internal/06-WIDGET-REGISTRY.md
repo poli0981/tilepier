@@ -251,6 +251,53 @@ The single most dangerous integration point. Fixed rules:
     *arrangement*, not of the count, and the four-tile deck happened not to
     collide. `e2e/journey-2` now seeds an arrangement that does.)
 
+14. **`toGridStackWidget` must emit the manifest's size bounds, and `serialise`
+    must read them back.** §7's `min` and `max` columns were enforced nowhere
+    until 2026-08-31: the converter returned `{id, x, y, w, h}` and nothing
+    else, so gridstack had no `minW`/`minH`/`maxW`/`maxH` to spend and every
+    tile drag-resized freely to 1×1 — 112×48 px once rule 12 restored the
+    inset, and no widget has a rendering for it. `core/registry.test.ts`
+    asserted the numbers matched the table in this file and nothing asserted
+    they were applied, which is the same shape as rules 9, 11 and 13: a
+    contract that reads as wired and is not.
+
+    The bounds belong in the converter and not at the call sites because it is
+    the one boundary every tile crosses on the way in — `setup()`, `addTile()`
+    and `rebuild()` all go through it. gridstack then spends them twice:
+    `engine.nodeBoundFix` clamps a stored size while `addWidget` runs, and
+    `resizestart` turns them into the pixel limits of the drag itself. A
+    widgetId with no manifest stays unbounded, because doc 05 §5 makes that
+    valid data and dropping those tiles is the deck store's job.
+
+    **A clamp on load reaches storage only through rule 13's post-loop emit.**
+    `addWidget` fixes the size but `_triggerAddEvent` clears the dirty flag
+    before `change` would carry it, so an added node never reports its own
+    clamp. Without that emit a deck saved at 1×1 renders at the minimum while
+    `tp.layout.v1` keeps the 1×1 indefinitely — rule 13's divergence, arriving
+    from the other side.
+
+    **And `serialise` must resolve an omitted `w` or `h` as the minimum, not as
+    the stored size.** `grid.save()` compresses through
+    `Utils.removeInternalForSave`, which drops `w` when it equals `1` *or*
+    `minW` — the value is re-created from the bounds on read. Falling back to
+    the stored tile is always wrong for a size, because `tileById` is written
+    on add, rebuild and settings changes and never on a resize; it was merely
+    unreachable while `w === 1` was the only trigger. Wiring the bounds up
+    makes it reachable on every drag to the minimum, so a clock resized to 2×1
+    would have gone on being stored at whatever it was before. Found by the
+    e2e below rather than by review, one run after the bounds landed.
+
+    (Added 2026-08-31. `e2e/s1-grid.e2e.ts` drags one tile past each limit and
+    checks the rendered cell size, and loads `/spike/s1?oob=1` — a deck seeded
+    at 1×1 — to check that the DOM and the emitted layout agree. The harness's
+    tiles became `timer`, the tightest manifest registered, because an id the
+    registry has never heard of gets no bounds and cannot express the
+    measurement. Doc 19 §4 records the three things about driving a gridstack
+    resize from Playwright that those tests had to learn the hard way,
+    including one still-open question: an injected resize sometimes produces
+    no `change` event at all, and whether a real pointer can do the same is
+    unanswered.)
+
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
 wrapper count, mounted host count, and serialised tile count must agree after
@@ -289,6 +336,10 @@ is omitted (no scheduler entry at all).
 | markets | finance | 2×2 | 3×3 | 6×6 | no | interval 60 s, visibleOnly |
 | music | media | 2×1 | 4×2 | 6×3 | no | — |
 | media | media | 2×2 | 4×3 | 8×5 | no | — |
+
+`min` and `max` are applied by `core/grid/layout.ts`, which turns them into
+gridstack's `minW`/`minH`/`maxW`/`maxH` for every tile it hands to the grid
+(§5 rule 14). They were table entries and nothing else until 2026-08-31.
 
 The array grows a row per widget as each lands (doc 23): `clock` in Week 1;
 `timer`, `calc`, `notes` and `todo` in Week 2; `calendar`, `toolbox` and `quote`

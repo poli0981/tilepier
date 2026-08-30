@@ -91,14 +91,53 @@ their logic is unit/component-covered.
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and
 `detail-expansion`. The last covers doc 06 §6's handshake, which journey #3
-would otherwise take for granted when the weather detail lands in Week 4. **100
-e2e as of 2026-08-30**, in about thirty seconds — Week 4 added two, both of
+would otherwise take for granted when the weather detail lands in Week 4. **103
+e2e as of 2026-08-31**, in about thirty seconds — Week 4 added five, all of
 them assertions the suite could not previously make: `s1-grid` measures
-gridstack's item inset (doc 06 §5 rule 12), and `journey-2` reloads a deck
-whose tiles collide on insertion and checks that all of them are still in
-storage afterwards (rule 13). Both were verified against the unfixed code
-first; a regression test written after a fix and never seen to fail is a
-regression test in name only.
+gridstack's item inset (doc 06 §5 rule 12), drags a tile past each end of its
+manifest's size range and loads a deck seeded outside it (rule 14), and
+`journey-2` reloads a deck whose tiles collide on insertion and checks that all
+of them are still in storage afterwards (rule 13). Every one was verified
+against the unfixed code first; a regression test written after a fix and never
+seen to fail is a regression test in name only.
+
+The rule 14 tests earned that twice over. Run against the wired-up bounds but
+the old `serialise`, the load one failed again on a *different* fault — the grid
+showing a clamped 2×2 while the emitted layout still said 1×1 — which is how
+`grid.save()`'s habit of omitting a `w` that equals `minW` was found at all. It
+was not written with that in mind; it simply asserts that the DOM and the
+serialised layout agree, and that is the assertion that catches a divergence
+whichever side causes it.
+
+Three things about driving a gridstack resize from Playwright are written into
+`s1-grid`, because none is guessable and each cost an hour.
+
+**The default 1280 viewport is not a twelve-column grid.** It lands on §5.4's
+`{w: 1280, c: 6}` breakpoint, and `engine.save()` then reports the cached
+twelve-column layout in preference to the live nodes, so a drag shows on screen
+and not in the serialised layout at all. The viewport is declared through
+`test.use` rather than set mid-test for a second reason: resizing after the grid
+has mounted starts a column recalculation that moves every tile, and a
+`boundingBox()` read before that settles aims the pointer where a tile used to
+be. Locally it settles first; on CI it does not.
+
+**Revealing a resize handle takes a mouseout → mouseover pair**, not a move onto
+the tile: gridstack's `_mouseOver` returns early while
+`DDManager.overResizeElement` is set, and `_mouseOut` clears it only for the item
+being left, so a pointer left sitting inside a tile can wedge every handle in the
+grid shut. That one only ever failed on CI.
+
+**And an injected resize does not reliably produce a `change` event at all** —
+measured at two runs in eight. The tile ends the clamped size on screen and its
+`gs-w` says so, while `onLayoutChange` has fired exactly once for the whole test,
+which is the mount emit. Ending the gesture inside the tile rather than at its
+corner did not help and settling moves before the release made it worse, so the
+cause is **not** understood. The two drag tests therefore assert `gs-w`/`gs-h`
+and the load test carries the serialisation claim, which is the one that has no
+gesture in it and the one that caught the `serialise()` fault. **Whether a real
+pointer can lose a resize the same way is open and worth answering on its own**:
+if it can, a user's resize silently fails to persist, and no test arrangement
+would fix that.
 
 **#4 is half written, and the written half is the half that exists.** Its stale
 badges need a widget with cached network data, and the first of those is weather

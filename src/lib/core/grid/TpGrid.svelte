@@ -348,7 +348,14 @@
 			suppressChange = false;
 		}
 		// Once, with the whole deck — gridstack may have compacted it, and that
-		// is what the store should record.
+		// is what the store should record. Rule 14's clamp reaches storage the
+		// same way and only this way: `addWidget` fixes an out-of-bounds stored
+		// size inside `nodeBoundFix`, but `_triggerAddEvent` clears the dirty
+		// flag that a `change` would have carried, so an added node never
+		// reports its own clamp. Without this emit a deck saved at 1×1 would
+		// render at the manifest minimum while `tp.layout.v1` kept the 1×1
+		// indefinitely — the divergence rule 13 was written about, arriving from
+		// the other side.
 		emitLayout();
 
 		return () => {
