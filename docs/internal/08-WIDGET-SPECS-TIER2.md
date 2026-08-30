@@ -20,8 +20,30 @@ TTLs are authoritative in doc 11 §4. Every widget here must exhibit correct
   (`permissions: ['geolocation']`), coordinates rounded to 2 decimals before
   ever leaving the device (privacy, doc 16 §3).
 - **Refresh:** scheduler 600 s; client ttl 600 s.
-- **Edge cases:** geocode zero-results state; geolocation denied →
+- **Edge cases:** geocode zero-results state; geolocation denied ->
   `permission-needed` card with search fallback.
+
+**Built 2026-08-30 (the tile).** Four things this section did not say, recorded
+where the next reader will look for them:
+
+- **The sparkline is gated on `h >= 3`, not on the density tier.** The tier is
+  `L` only at `w>=4 || h>=4` (doc 13 §3), so reaching for it would drop the
+  sparkline on every 3x3 and 2x3 tile - a whole size band rendering as if it
+  were the 3x2 default. Tier `S` is unreachable here at all, since `sizes.min`
+  is 2x2; named rather than skipped, per doc 06 §3's single-widget N/A rule.
+- **Seven WMO glyphs ship, not sixteen** (doc 12 §6). Week 4 came in at four
+  times its budget and the cut was taken in depth rather than in widgets, per
+  doc 23's slip policy. The full code range still maps - `wmoGlyph` folds
+  drizzle into rain, grains into snow and hail into thunder - so nothing
+  upstream sends renders as `unknown`. Widening the set is a change to
+  `ui/icons/wmo.ts` alone.
+- **The stale badge is in the tile body, not the host header** (doc 13 §7 puts
+  it in the header). See doc 13 §3 for why, and for what it would take to move.
+- **`empty` is the first-run state, and it does not fetch.** doc 13 §9 seeds
+  this tile with no place on purpose, so the subscription lives in an inner
+  component that only mounts once a place exists - otherwise every reader would
+  issue an Open-Meteo request on first load for a tile they had not yet pointed
+  anywhere.
 
 ## 2. `currency` — Currency Converter (VND first-class)
 

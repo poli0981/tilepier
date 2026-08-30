@@ -121,8 +121,17 @@ respects reduced-motion.
 Single internal set (`lib/ui/icons`, tree-shaken Svelte components):
 1.75 px stroke, 24 px grid, round caps — hand-picked/adapted (Lucide-style
 geometry, ISC-licensed sources, attributed in licenses page). Weather
-icons: dedicated 16-glyph set mapped from WMO codes, same stroke language.
-No emoji anywhere in UI chrome.
+icons: dedicated set mapped from WMO codes, same stroke language, in
+`lib/ui/icons/wmo.ts` rather than in `ICON_PATHS` - that record is reached from
+the entry chunk, so a glyph added there costs bytes for every reader including
+the ones with no weather tile. No emoji anywhere in UI chrome.
+
+**Seven glyphs shipped in Week 4, not the sixteen this line asked for**
+(2026-08-30). Sixteen hand-drawn 24 px paths is illustration time no dependency
+covers, and Week 4 was already four times its budget; the cut was taken in
+depth rather than in widgets, per doc 23's slip policy. `wmoGlyph` still maps
+the whole WMO range onto the seven, so nothing upstream sends falls through to
+`unknown`.
 
 ## 7. Motion
 

@@ -48,30 +48,50 @@ export type TpCacheStatus = 'HIT' | 'MISS' | 'STALE';
  * Open-Meteo returns nine parallel arrays and a reader has to index all of them
  * in step to describe one hour. A row is the thing the UI actually renders.
  */
+/**
+ * A number upstream did not send.
+ *
+ * `normalize.ts` marks a gap with `NaN` — deliberately, because 0 °C is a
+ * temperature and a gap is not. But the payload crosses `JSON.stringify` in
+ * `_lib/respond.ts`, and `JSON.stringify(NaN)` is `null`. So the Worker holds
+ * `NaN` and the client receives `null`, and this type has to admit both or it
+ * is a lie to one of them.
+ *
+ * It said plain `number` until Week 4, which typechecked `row.tempC.toFixed(1)`
+ * into a runtime crash on the first hour Open-Meteo left out. `normalize.test.ts`
+ * asserts `NaN` in-process and structurally cannot see the wire.
+ *
+ * The single guard on the client is `Number.isFinite`, which is false for both
+ * — `weather/service.ts` wraps it as `isGap`.
+ */
+export type TpMaybeNumber = number | null;
+
 export interface TpWeatherHour {
-	/** Local ISO time in `place.timezone`, as upstream returns it. */
+	/** Local ISO time in `place.timezone`, as upstream returns it. No offset:
+	 *  reading it with `new Date()` gives the *viewer's* zone, not the place's. */
 	t: string;
-	tempC: number;
-	precipProb: number;
-	precipMm: number;
+	tempC: TpMaybeNumber;
+	precipProb: TpMaybeNumber;
+	precipMm: TpMaybeNumber;
 	/** WMO code — doc 12 §6's icon set maps from this, never from a string. */
-	code: number;
-	windKph: number;
-	windDeg: number;
-	humidity: number;
-	uv: number;
-	pressureHpa: number;
+	code: TpMaybeNumber;
+	windKph: TpMaybeNumber;
+	windDeg: TpMaybeNumber;
+	humidity: TpMaybeNumber;
+	uv: TpMaybeNumber;
+	pressureHpa: TpMaybeNumber;
 }
 
 export interface TpWeatherDay {
 	/** `YYYY-MM-DD`. */
 	date: string;
-	code: number;
-	maxC: number;
-	minC: number;
+	code: TpMaybeNumber;
+	maxC: TpMaybeNumber;
+	minC: TpMaybeNumber;
+	/** Local ISO, same caveat as `TpWeatherHour.t`. */
 	sunrise: string;
 	sunset: string;
-	precipProbMax: number;
+	precipProbMax: TpMaybeNumber;
 }
 
 /** doc 08 §1's AQI gauge. `null` throughout when the air-quality call failed —

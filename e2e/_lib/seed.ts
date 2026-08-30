@@ -3,14 +3,14 @@
  *
  * That section seeds clock, weather, calendar, notes and quote, **filtered
  * through the registry** so it only contains widgets the build actually has —
- * which is why this number grows as widgets land rather than being fixed at
- * five. It was 1 in Week 1, 2 in Week 2, and is 4 now that `calendar` and
- * `quote` are registered; `weather` joins in Week 4.
+ * which is why this number grew as widgets landed rather than being fixed at
+ * five. It was 1 in Week 1, 2 in Week 2, 4 through Week 3, and is 5 now that
+ * `weather` is registered — the full deck doc 13 §9 describes.
  *
  * Here rather than repeated as a literal in six files, because every one of
  * them broke on the same day for the same uninteresting reason.
  */
-export const SEEDED_TILES = 4;
+export const SEEDED_TILES = 5;
 
 /**
  * Writes a layout **before the page ever loads**, and it has to be that way

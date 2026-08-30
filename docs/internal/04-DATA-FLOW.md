@@ -129,6 +129,46 @@ cache hits anyway.
 > implemented Week 3** with `/api/weather`'s first consumer — it cannot be
 > tested honestly before there is a fetcher and MSW fixtures.
 
+### What the first consumer settled (2026-08-30)
+
+The weather tile is `swr()`'s first real caller, and three things this section
+left open had to be answered before it could be written. All three shape every
+networked widget from Week 5 on, which is why they are recorded here rather
+than in doc 08 §1.
+
+- **`T` carries the envelope's `meta`.** `swr` derives its status from the
+  *client's* cache age alone, so a payload the Worker served past its KV TTL
+  because upstream was down (`x-tp-cache: STALE`, doc 11 §4) arrives with a
+  fresh `cachedAt` and reads as `fresh` - and the tile presents an hour-old
+  temperature as current, which §4's own worked example says must not happen.
+  `core/api.test.ts` already had a case named "carries the stale flag through
+  rather than swallowing it"; the first consumer would have swallowed it. So a
+  networked service's `T` is `{ payload, meta }`, and the tile treats
+  `meta.stale` as staleness alongside the status.
+
+- **`handle.backoff(...)` for a server-named `retryAfterS` is not reachable,
+  and this section describes it as though it were.** `useRefresh` returns
+  `void`, so no widget holds a `TpTaskHandle`; `TpApiError.retryAfterS` is
+  captured in `core/api.ts` and read nowhere. Left as-is rather than reshaping
+  `useRefresh` mid-week - but note that wiring it alone would buy nothing
+  observable: `scheduler.execute`'s `finally` always recomputes `nextDueAt`
+  from the cadence and `effectiveDue` is `max(nextDueAt, backoffUntil)`, so for
+  weather's 600 s cadence every backoff shorter than `BACKOFF.maxMs` (300 s) is
+  unreachable. Doc 11 §7.3 and doc 17 §5 describe the same behaviour and are
+  equally ahead of the code. Week 5, with the markets tile, is where this has
+  to be settled.
+
+- **A gap reaches the client as `null`, not `NaN`.** `normalize.ts` marks a
+  missing column with `NaN` deliberately (doc 10 §2 - 0 °C is a temperature and
+  a gap is not), but the payload crosses `JSON.stringify` in `_lib/respond.ts`
+  and `JSON.stringify(NaN)` is `null`. `api-types.ts` typed those fields as
+  plain `number` until Week 4, which typechecked `row.tempC.toFixed(1)` into a
+  runtime crash on the first hour upstream left out - caught by the host's
+  boundary, rendering a crash card where a forecast belongs. They are
+  `TpMaybeNumber` now, and the single client-side guard is `Number.isFinite`
+  (`isGap`), which is false for both spellings where `Number.isNaN` is false
+  for `null`.
+
 ## 3. Central scheduler (`core/scheduler.ts`)
 
 Exactly **one** `setInterval` in the whole app (tick = `SCHEDULER_TICK_MS`, 5 s).

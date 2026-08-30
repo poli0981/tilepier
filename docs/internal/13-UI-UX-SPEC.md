@@ -48,6 +48,15 @@ tile is tier M and needs the same treatment. (Clarified 2026-08-30: this line
 said "hidden entirely" and the code hid only the title, which cost an h=1 tile
 28 of its 48 px.)
 
+**The stale badge is in the widget's body, not this header** (2026-08-30, and
+§7 still describes the header). `TpWidgetHost` owns the header, hosts are
+mounted imperatively by `TpGrid` and cannot take a reactive prop (doc 06 §5
+rule 11), so a header badge needs a keyed status channel in `src/lib/core/**` -
+a change at the 90/80 coverage threshold that Week 4 cut. The cost of leaving
+it is five copies by Week 6 (weather, currency, markets, rss, map); the cost of
+moving it is one core module. Written down so the choice gets made rather than
+inherited.
+
 Density tiers from grid size (host computes, passes in `size`):
 - **S** (≤2×1): single hero value, no header text (icon only).
 - **M** (default): header + primary content.

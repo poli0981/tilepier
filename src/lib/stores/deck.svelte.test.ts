@@ -90,14 +90,17 @@ describe('hydrate', () => {
 	});
 
 	it('drops a tile whose widget this build does not have, warning once', () => {
-		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: 'weather' }]);
+		// `rss` took this role from `weather` when the weather tile landed in
+		// Week 4. The case is about the id union running ahead of the registry, so
+		// it moves to whichever id is still ahead of it.
+		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: 'rss' }]);
 
 		deck.hydrate();
 
 		expect(deck.tiles.map((t) => t.instanceId)).toEqual(['wgt_keep']);
 		const warnings = readLog().filter((e) => e.src === 'layout');
 		expect(warnings).toHaveLength(1);
-		expect(warnings[0]?.msg).toContain('weather');
+		expect(warnings[0]?.msg).toContain('rss');
 	});
 
 	it('rewrites immediately after dropping, so the warning does not repeat', () => {

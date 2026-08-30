@@ -5,7 +5,7 @@ import type { TpApiResponse, TpWeatherPayload } from '$lib/api-types';
  *
  * Trimmed hard on purpose: the real Open-Meteo response carries 168 hourly
  * values across nine variables, and a fixture that large tests the JSON parser
- * rather than the code under test. Three hours and two days is enough to prove
+ * rather than the code under test. Four hours and two days is enough to prove
  * the shape survives the round trip, and it stays readable in a diff.
  *
  * The envelope itself is verbatim from doc 11 §2, and the payload is the
@@ -13,6 +13,13 @@ import type { TpApiResponse, TpWeatherPayload } from '$lib/api-types';
  * which is what the endpoint has produced since 2026-08-28, and what doc 10 §2
  * required all along. `_lib/normalize.test.ts` covers the mapping itself; this
  * fixture is what a *client* sees.
+ *
+ * **The fourth hour is a gap, and it is spelled `null`.** That is the whole
+ * reason it is here. `normalize.ts` marks a missing column with `NaN`, but the
+ * payload crosses `JSON.stringify` in `_lib/respond.ts` on the way out and
+ * `JSON.stringify(NaN)` is `null`. No test in the repo crossed that boundary
+ * before Week 4, so `Number.isNaN` guards read as correct and would have let
+ * every real gap straight through to a `.toFixed()` on `null`.
  */
 
 export const WEATHER_PAYLOAD: TpWeatherPayload = {
@@ -53,6 +60,20 @@ export const WEATHER_PAYLOAD: TpWeatherPayload = {
 			humidity: 63,
 			uv: 8.6,
 			pressureHpa: 1004
+		},
+		{
+			// The gap. See the note above: this is what a `NaN` looks like once it
+			// has been through the envelope.
+			t: '2026-08-28T12:00',
+			tempC: null,
+			precipProb: null,
+			precipMm: null,
+			code: null,
+			windKph: null,
+			windDeg: null,
+			humidity: null,
+			uv: null,
+			pressureHpa: null
 		}
 	],
 	daily: [
