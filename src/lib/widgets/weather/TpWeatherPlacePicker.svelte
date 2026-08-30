@@ -6,8 +6,15 @@
 	import { online } from '$lib/stores/online.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import { contextOf, isSearchable, SEARCH_DEBOUNCE_MS, searchPlaces } from './geocode';
+	import {
+		contextOf,
+		dedupeResults,
+		isSearchable,
+		SEARCH_DEBOUNCE_MS,
+		searchPlaces
+	} from './geocode';
 	import { browserPosition, coarsePosition, type TpPositionSource } from './geolocate';
+	import { roundCoord } from '$lib/shared-constants';
 	import type { TpWeatherPlace } from './types';
 
 	/**
@@ -85,7 +92,7 @@
 		controller = own;
 
 		try {
-			const found = await searchPlaces(term, settings.locale, own.signal);
+			const found = dedupeResults(await searchPlaces(term, settings.locale, own.signal));
 			if (own.signal.aborted) return;
 			results = found;
 			phase = found.length === 0 ? 'empty' : 'results';
@@ -100,10 +107,17 @@
 	}
 
 	function choose(result: TpGeocodeResult): void {
-		// Already at 2 dp by the time it reaches the client — the Worker rounds
-		// before it caches (doc 15 §7) — and `readSettings` rounds again on the
-		// way back out, so the stored place cannot be finer than a ~1 km cell.
-		onPick({ name: result.name, lat: result.lat, lon: result.lon });
+		// **Rounded here**, and the comment this replaced said it was already
+		// done. It was not: `parseCoords` rounds the coordinates a *request*
+		// carries, but `normalizePhoton` passes a geocoder's own answer straight
+		// through — production returned `21.0283334, 105.854041` for Hà Nội, and
+		// that is what `tp.layout.v1` stored and the backup exported.
+		//
+		// Nothing precise ever left the device, because `weatherUrl` rounds and
+		// `readSettings` rounds again on the way out. But doc 08 §1 says 2 dp
+		// unconditionally, and storing more than is ever used is the part that
+		// was wrong — along with a comment that claimed otherwise.
+		onPick({ name: result.name, lat: roundCoord(result.lat), lon: roundCoord(result.lon) });
 	}
 
 	async function locate(): Promise<void> {

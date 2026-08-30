@@ -61,6 +61,31 @@ export async function searchPlaces(
 }
 
 /**
+ * Drops results a reader could not tell apart.
+ *
+ * Photon answers a road query with one feature per segment, all carrying the
+ * same `name` and the same `displayName` — a search for "Hà Nội" on production
+ * returned one city and **four identical "Ring Road 3 Expressway (Hanoi)"
+ * rows**, differing only in coordinates the list does not show. Offering a
+ * choice between rows that render the same is not a choice.
+ *
+ * Keyed on what is actually rendered rather than on coordinates: two segments
+ * 25 m apart are as indistinguishable to a reader as two at the same point,
+ * and the first is as good an answer as any.
+ */
+export function dedupeResults(results: readonly TpGeocodeResult[]): readonly TpGeocodeResult[] {
+	const seen = new Set<string>();
+	return results.filter((result) => {
+		// A JSON pair rather than a joined string: no separator can appear
+		// inside either half, so two rows cannot collide by punctuation.
+		const key = JSON.stringify([result.name, contextOf(result)]);
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+}
+
+/**
  * What to show on a row so two places with the same name can be told apart.
  *
  * Upstream's `displayName` repeats the name at its head far more often than

@@ -88,6 +88,24 @@ Three more decisions worth having written down:
   the violation would be invisible from the outside. Both the node test and the
   component test were run against an unrounded build first.
 
+**Two things the first production run found (2026-08-30).** Both had passed
+every test, because the geocode fixture was tidier than the real answer:
+
+- **A search result is not rounded.** `parseCoords` rounds the coordinates a
+  *request* carries; `normalizePhoton` passes a geocoder's own answer straight
+  through, so `/api/geocode` returned `21.0283334, 105.854041` for Hà Nội and
+  that is what `tp.layout.v1` stored and the backup exported. Nothing precise
+  ever left the device — `weatherUrl` rounds, and `readSettings` rounds again
+  on the way out — but this section says 2 dp unconditionally, and the picker's
+  own comment claimed the rounding was already done. It now rounds on pick, and
+  the fixture carries the real precision so a test can see it.
+- **Photon answers a road query with one feature per segment.** Searching
+  "Hà Nội" returned one city and **four rows a reader cannot tell apart**, same
+  name and same context, differing only in coordinates the list does not show.
+  `dedupeResults` drops rows that render identically, keyed on what is rendered
+  rather than on position — two segments 25 m apart are as indistinguishable as
+  two at the same point.
+
 ## 2. `currency` — Currency Converter (VND first-class)
 
 - **Source:** open.er-api.com daily rates (has VND); history from

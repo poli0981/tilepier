@@ -28,6 +28,11 @@ function serve(body: unknown, init: ResponseInit = {}): ReturnType<typeof vi.fn>
 	return spy;
 }
 
+/** A row renders its name and its context on two lines. Held as a constant
+ *  because a literal newline inside a string is easy to break and hard to
+ *  see. */
+const NEWLINE = String.fromCharCode(10);
+
 /** The doc 17 §3 heuristic: two consecutive network failures mean offline even
  *  if `navigator.onLine` disagrees. Reached through the store's own API rather
  *  than by writing its private state. */
@@ -69,12 +74,21 @@ describe('search', () => {
 		const screen = render(TpWeatherPlacePicker, { onPick: vi.fn() });
 
 		await screen.getByTestId('weather-search').fill('hà n');
-
 		await expect.element(screen.getByTestId('weather-results')).toBeInTheDocument();
-		await expect.element(screen.getByText('Hà Nội')).toBeInTheDocument();
-		await expect.element(screen.getByText('Hà Nam')).toBeInTheDocument();
-		// `displayName` is "Hà Nội, Việt Nam"; the name is not printed twice.
-		await expect.element(screen.getByText('Việt Nam').first()).toBeInTheDocument();
+
+		// Read off the rows rather than through `getByText`: a context line can
+		// contain another row's name — "Hà Nội, Việt Nam" holds "Hà Nội" — and a
+		// text lookup then matches two elements and fails on strict mode rather
+		// than on anything about the picker.
+		await vi.waitFor(() => {
+			const rows = [...document.querySelectorAll("[data-testid='weather-results'] button")];
+			// `displayName` repeats the name at its head; the row shows it once.
+			expect(rows.map((r) => (r as HTMLElement).innerText.split(NEWLINE))).toEqual([
+				['Hà Nội', 'Việt Nam'],
+				['Hà Nam', 'Việt Nam'],
+				['Ring Road 3 Expressway (Hanoi)', 'Hà Nội, Việt Nam']
+			]);
+		});
 	});
 
 	it('debounces a run of keystrokes into one request', async () => {
@@ -91,10 +105,12 @@ describe('search', () => {
 		expect(spy.mock.calls[0]?.[0]).toContain('lang=vi');
 	});
 
-	it('hands the chosen row’s own coordinates to the caller', async () => {
-		// The reason the fixture holds two places with a shared prefix: a picker
-		// that passed the first row regardless would pass this test's shape and
-		// fail its substance.
+	it('hands the chosen row’s own coordinates to the caller, at 2 dp', async () => {
+		// Two things at once, and both were wrong on production. The fixture holds
+		// two places with a shared prefix, so a picker that passed the first row
+		// regardless fails on substance rather than passing on shape — and the
+		// coordinates it stores must be rounded, because a geocoder's answer
+		// arrives at full precision (doc 08 §1, doc 16 §3).
 		serve(GEOCODE_OK);
 		const onPick = vi.fn();
 		const screen = render(TpWeatherPlacePicker, { onPick });
@@ -105,6 +121,22 @@ describe('search', () => {
 
 		await vi.waitFor(() => {
 			expect(onPick).toHaveBeenCalledWith({ name: 'Hà Nam', lat: 20.54, lon: 105.92 });
+		});
+	});
+
+	it('does not offer four rows that render the same', async () => {
+		// Production, searching "Hà Nội": one city and four identical "Ring Road 3
+		// Expressway (Hanoi)" rows, differing only in coordinates the list does
+		// not show. Offering a choice between them is not a choice.
+		serve(GEOCODE_OK);
+		const screen = render(TpWeatherPlacePicker, { onPick: vi.fn() });
+
+		await screen.getByTestId('weather-search').fill('hà n');
+		await expect.element(screen.getByTestId('weather-results')).toBeInTheDocument();
+
+		await vi.waitFor(() => {
+			const rows = document.querySelectorAll("[data-testid='weather-results'] button");
+			expect(rows).toHaveLength(3);
 		});
 	});
 
