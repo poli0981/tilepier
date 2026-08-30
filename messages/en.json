@@ -450,5 +450,15 @@
 	"widget.weather.use_my_location": "use my location",
 	"widget.weather.locating": "finding you",
 	"widget.weather.locate_failed": "could not read your location — search instead",
-	"widget.weather.my_location": "my location"
+	"widget.weather.my_location": "my location",
+	"widget.weather.empty_detail": "pick a place on the tile first",
+	"widget.weather.as_of": "as of {age}",
+	"widget.weather.chart_loading": "drawing the next day",
+	"widget.weather.chart_failed": "the chart could not be drawn",
+	"widget.weather.chart_summary": "next {hours} h: {min} to {max}, rain up to {rain}%",
+	"widget.weather.wind": "wind",
+	"widget.weather.humidity": "humidity",
+	"widget.weather.uv": "UV",
+	"widget.weather.pressure": "pressure",
+	"widget.weather.week": "the next seven days"
 }

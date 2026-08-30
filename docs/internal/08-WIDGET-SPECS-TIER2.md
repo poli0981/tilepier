@@ -39,6 +39,15 @@ where the next reader will look for them:
   `ui/icons/wmo.ts` alone.
 - **The stale badge is in the tile body, not the host header** (doc 13 §7 puts
   it in the header). See doc 13 §3 for why, and for what it would take to move.
+- **The detail ships without the AQI gauge, the astronomy card and the cloud
+  band** (2026-08-30). The first two are depth cuts taken when Week 4 measured
+  at four times its budget, per doc 23's slip policy. The third is different:
+  `cloud_cover` is not among the nine hourly columns `/api/weather` requests, so
+  the band needs a `routes/api` change — and the air-quality call in that same
+  file has a bug waiting (**no `timezone` parameter at all**, so its index 0 is
+  00:00 GMT rather than local, doc 04 §2), which wants fixing in the same
+  commit. The 24 h chart therefore ships with two series, temperature and
+  precipitation chance, which is what proves the tier-2 pattern M4 asks for.
 - **`empty` is the first-run state, and it does not fetch.** doc 13 §9 seeds
   this tile with no place on purpose, so the subscription lives in an inner
   component that only mounts once a place exists - otherwise every reader would

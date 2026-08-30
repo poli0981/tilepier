@@ -15,9 +15,9 @@ import type { TpWidgetManifest } from '$lib/core/registry';
  * `permissions: ['geolocation']` for doc 08 §1's "use my location", which makes
  * `permission-needed` required rather than forbidden (doc 06 §3).
  *
- * No `loadDetail` yet: the field is optional, `TpDetailOverlay` falls back to
- * `common.detail.none`, and knip is CI-blocking on a thunk pointing at a file
- * that does not exist. It arrives with the detail panel.
+ * `loadDetail` arrives with the panel — the field is optional, and knip is
+ * CI-blocking on a thunk pointing at a file that does not exist, so the tile
+ * shipped without one for exactly one commit.
  */
 const manifest: TpWidgetManifest = {
 	id: 'weather',
@@ -28,7 +28,8 @@ const manifest: TpWidgetManifest = {
 	multiInstance: true,
 	refresh: { kind: 'interval', everyMs: 600_000 },
 	permissions: ['geolocation'],
-	loadWidget: () => import('./TpWeatherWidget.svelte')
+	loadWidget: () => import('./TpWeatherWidget.svelte'),
+	loadDetail: () => import('./TpWeatherDetail.svelte')
 };
 
 export default manifest;

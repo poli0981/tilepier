@@ -53,6 +53,27 @@ ink text `#1A222B`, same beacon). Theme switch = `data-theme` attribute on
 `<html>`; ECharts re-themes dynamically (v6 capability) via the token
 bridge in `lib/charts` — one source of truth, charts never hardcode hex.
 
+**Built 2026-08-30, and one rule makes the whole claim true or false.**
+`chart.setTheme()` merges into a chart's *defaults*, so any colour left in the
+option outranks the theme forever: a chart can observe `data-theme`, call
+`setTheme` on every switch, throw nothing, log nothing — and never change a
+pixel. So the option is **colourless by construction** and every colour lives in
+`charts/theme.ts`. The module split enforces it rather than asking for it:
+`echarts.ts` registers and creates, `options.ts` holds the vocabulary and the
+shared geometry with nothing but type imports, and `theme.ts` is the only place
+a colour appears. `hourlyOption`'s test asserts the option contains no `#`,
+`rgb` or `hsl` at all, which is the assertion that would catch the drift.
+
+Two smaller findings from the same work. Tokens reach a chart as **literal
+hex only**: `getComputedStyle().getPropertyValue()` returns a custom property's
+substituted-but-unresolved text, so `color-mix()` and `oklch()` arrive at
+zrender as those strings, and zrender's parser returns nothing for them — the
+chart draws invisibly rather than wrongly. `readChartTokens` refuses anything
+that is not literal hex and falls back. And ECharts 6 deprecated
+`grid.containLabel` in favour of `outerBoundsMode` / `outerBoundsContain`; the
+old key warns in dev and falls back internally unless a legacy shim is
+installed, which would cost bytes to buy back a deprecated path.
+
 Accent is user-overridable in Settings (stored `tp.settings.accent`);
 derived soft/deep values computed in OKLCH so any accent stays usable.
 Semantic colors are **not** overridable.

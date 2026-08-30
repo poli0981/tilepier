@@ -214,3 +214,65 @@ export function sparklinePoints(
 
 	return { segments, minC, maxC, hours: rows.length };
 }
+
+/* ────────────────────────────────────────────────────────── the 24 h chart */
+
+/** One hour, ready to plot: an epoch instant and the two series' values. */
+export interface TpHourPoint {
+	/** Epoch ms, resolved through the *place's* zone — see `currentHourIndex`. */
+	at: number;
+	tempC: number | null;
+	precipProb: number | null;
+}
+
+/**
+ * Turns a local ISO stamp into an instant.
+ *
+ * `hourly[].t` carries no offset, so `Date.parse` would read it in the viewer's
+ * zone. Subtracting the place's offset is what makes a Hanoi forecast plot at
+ * Hanoi's hours no matter where it is being read.
+ */
+function instantOf(localIso: string, offsetMin: number): number {
+	// The shape is checked before the parse, because `Date.parse` is lenient
+	// enough to return a number for strings that are not times at all — so a
+	// `Number.isFinite` guard on its result catches nothing and the chart gets a
+	// point somewhere near 1970.
+	if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(localIso)) return Number.NaN;
+
+	// `Z` makes the parse explicit rather than implementation-defined, then the
+	// offset moves it back to the real instant.
+	const asUtc = Date.parse(`${localIso}:00Z`);
+	return Number.isFinite(asUtc) ? asUtc - offsetMin * 60_000 : Number.NaN;
+}
+
+/**
+ * `count` hours from `fromIndex`, as points a chart can take directly.
+ *
+ * Gaps become `null` rather than being dropped, so the line breaks at them
+ * instead of drawing a straight segment across a missing hour — the same
+ * contract the sparkline holds, and the reason doc 10 §2 refuses to substitute
+ * a zero.
+ */
+export function hourlyPoints(
+	payload: TpWeatherPayload,
+	fromIndex: number,
+	count: number
+): TpHourPoint[] {
+	const offsetMin = zoneOffsetMinutes(Date.now(), payload.place.timezone);
+	const start = Math.max(0, fromIndex);
+
+	return payload.hourly.slice(start, start + count).flatMap((row) => {
+		const at = instantOf(row.t, offsetMin);
+		if (!Number.isFinite(at)) return [];
+		return [
+			{
+				at,
+				tempC: isGap(row.tempC) ? null : (row.tempC as number),
+				precipProb: isGap(row.precipProb) ? null : (row.precipProb as number)
+			}
+		];
+	});
+}
+
+/** doc 08 §1's 24-hour window. */
+export const CHART_HOURS = 24;

@@ -6,6 +6,7 @@ import { cacheKey, geohash, roundCoord } from '$lib/shared-constants';
 import {
 	currentHourIndex,
 	fetchWeather,
+	hourlyPoints,
 	isGap,
 	readSettings,
 	sparklinePoints,
@@ -215,6 +216,47 @@ describe('sparklinePoints', () => {
 		};
 		const spark = sparklinePoints(flat, 0, 12);
 		expect(spark?.segments[0]?.every((p) => p.y === 1)).toBe(true);
+	});
+});
+
+describe('hourlyPoints — instants, not local strings', () => {
+	it('resolves each hour through the place’s zone', () => {
+		// The fixture's first hour is 09:00 in Asia/Ho_Chi_Minh (UTC+7), so the
+		// instant is 02:00 UTC. Parsed as though it were the viewer's local time,
+		// the whole chart slides by the offset difference — and lines up exactly
+		// for anyone testing from Hanoi.
+		const points = hourlyPoints(WEATHER_PAYLOAD, 0, 3);
+
+		expect(points).toHaveLength(3);
+		expect(points[0]?.at).toBe(Date.UTC(2026, 7, 28, 2, 0));
+		expect(points[1]?.at).toBe(Date.UTC(2026, 7, 28, 3, 0));
+	});
+
+	it('keeps a gap as null rather than dropping the hour', () => {
+		// Dropping it would join the line across the missing hour, which is the
+		// one thing doc 10 §2 says a gap must not become.
+		const points = hourlyPoints(WEATHER_PAYLOAD, 0, 4);
+
+		expect(points).toHaveLength(4);
+		expect(points[3]).toMatchObject({ tempC: null, precipProb: null });
+		expect(Number.isFinite(points[3]?.at)).toBe(true);
+	});
+
+	it('drops an hour whose stamp cannot be read at all', () => {
+		// A row with a broken `t` has no place on a time axis; NaN there is a
+		// point echarts draws at the epoch.
+		const broken: TpWeatherPayload = {
+			...WEATHER_PAYLOAD,
+			hourly: [{ ...WEATHER_PAYLOAD.hourly[0]!, t: 'not a time' }, WEATHER_PAYLOAD.hourly[1]!]
+		};
+		const points = hourlyPoints(broken, 0, 4);
+
+		expect(points).toHaveLength(1);
+		expect(Number.isFinite(points[0]?.at)).toBe(true);
+	});
+
+	it('stops at the end of the window rather than wrapping', () => {
+		expect(hourlyPoints(WEATHER_PAYLOAD, 2, 24)).toHaveLength(2);
 	});
 });
 

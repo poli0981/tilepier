@@ -450,5 +450,15 @@
 	"widget.weather.use_my_location": "dùng vị trí của tôi",
 	"widget.weather.locating": "đang tìm bạn",
 	"widget.weather.locate_failed": "không đọc được vị trí — hãy tìm theo tên",
-	"widget.weather.my_location": "vị trí của tôi"
+	"widget.weather.my_location": "vị trí của tôi",
+	"widget.weather.empty_detail": "chọn địa điểm trên thẻ trước đã",
+	"widget.weather.as_of": "số liệu {age}",
+	"widget.weather.chart_loading": "đang vẽ ngày tới",
+	"widget.weather.chart_failed": "không vẽ được biểu đồ",
+	"widget.weather.chart_summary": "{hours} giờ tới: {min} đến {max}, mưa tối đa {rain}%",
+	"widget.weather.wind": "gió",
+	"widget.weather.humidity": "độ ẩm",
+	"widget.weather.uv": "UV",
+	"widget.weather.pressure": "áp suất",
+	"widget.weather.week": "bảy ngày tới"
 }

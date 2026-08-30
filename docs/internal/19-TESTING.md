@@ -42,7 +42,7 @@ just a lower number:
 | `lib/core/grid/**/*.svelte` | `e2e/s1-grid.e2e.ts` — the contract is an invariant across fifty add/remove cycles (wrapper, host and tile counts agreeing) that line coverage cannot see |
 | `lib/core/pwa.svelte.ts` | `e2e/s5-pwa.e2e.ts`, against a real service worker: registers, activates, serves `/offline`, never reloads under the user |
 | `lib/ui/**/*.svelte` | component tests and journeys #1/#2/#7. Same judgment this section already made for widget UI: shared chrome is markup and wiring, and line coverage of markup is weak signal. The `.ts` logic underneath stays inside the thresholds |
-| `lib/charts/**`, `lib/widgets/music/**` | nothing yet — Week 0 spike code that landed in the real repo ahead of its consumers (doc 22 §Exit review). Re-enters with charts in Week 4 and the music library in Week 7 |
+| `lib/widgets/music/**` | nothing yet — Week 0 spike code that landed in the real repo ahead of its consumer (doc 22 §Exit review). Re-enters with the music library in Week 7. **`lib/charts/**` came off this row on 2026-08-30**, when the weather detail became its consumer; it now sits in the global 75/75 bucket, and the split into `echarts.ts` / `options.ts` / `theme.ts` is partly what makes that reachable — the half worth asserting is pure |
 | `routes/spike/**` | harnesses, not product |
 
 Coverage runs via `pnpm test:cov` (`@vitest/coverage-v8`); plain `pnpm test`
@@ -147,7 +147,17 @@ chip appearing and clearing, and a deck made entirely of local widgets being
 real faults on its first run (`online.init()` never called, and an added widget
 mounting an empty tile), neither of which any other test could have seen.
 
-**#3 waits for Week 4** with the weather detail and its chart, as doc 23 says.
+**#3 is written** (2026-08-30), and it brought a mechanism the suite did not
+have: **a faked response**. Everything before it either needed no network or
+drove `context.setOffline`. MSW is wired for the node project only — there is no
+`mockServiceWorker.js` in `static/`, and doc 15 §6 keeps msw's postinstall
+denied — so journey #3 uses Playwright's own `page.route`, which the service
+worker leaves alone because it passes `/api/*` straight through. That is the
+mechanism every later networked journey should copy.
+
+It asserts the **canvas**, not the panel: the chart module is a separate lazy
+request, so "the detail opened" would pass with the chunk still in flight and
+the picture never drawn.
 
 One rule this suite learned the hard way, recorded because it has now cost a
 red CI run: **never click a full-viewport scrim at its midpoint.** A panel
