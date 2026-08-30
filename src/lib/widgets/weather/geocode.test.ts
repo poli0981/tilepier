@@ -2,7 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TpApiError } from '$lib/core/api';
 import { GEOCODE_EMPTY, GEOCODE_OK, GEOCODE_PAYLOAD } from '$lib/core/__fixtures__/geocode';
 import { roundCoord } from '$lib/shared-constants';
-import { contextOf, geocodeUrl, isSearchable, QUERY_MIN, searchPlaces } from './geocode';
+import {
+	contextOf,
+	dedupeResults,
+	geocodeUrl,
+	isSearchable,
+	QUERY_MIN,
+	searchPlaces
+} from './geocode';
 import { coarsePosition, type TpPositionSource } from './geolocate';
 
 /**
@@ -51,11 +58,16 @@ describe('geocodeUrl', () => {
 });
 
 describe('searchPlaces', () => {
-	it('returns the matches from the envelope', async () => {
+	it('returns the matches from the envelope, untouched', async () => {
 		const spy = stubFetch(GEOCODE_OK);
 		const found = await searchPlaces('hà n', 'vi', new AbortController().signal);
 
-		expect(found.map((r) => r.name)).toEqual(['Hà Nội', 'Hà Nam']);
+		expect(found.map((r) => r.name)).toEqual([
+			'Hà Nội',
+			'Hà Nam',
+			'Ring Road 3 Expressway (Hanoi)',
+			'Ring Road 3 Expressway (Hanoi)'
+		]);
 		expect(spy.mock.calls[0]?.[0]).toBe('/api/geocode?q=h%C3%A0+n&lang=vi');
 	});
 
@@ -73,15 +85,47 @@ describe('searchPlaces', () => {
 		);
 	});
 
-	it('carries coordinates already at 2 dp', async () => {
-		// The Worker rounds before it caches (doc 15 §7), so a result that came
-		// back finer than this would mean the endpoint had stopped doing so.
+	it('carries the geocoder’s own precision, which is NOT 2 dp', async () => {
+		// This asserted the opposite until 2026-08-30, and the fixture's tidy
+		// coordinates let it pass. `parseCoords` rounds what a *request* carries;
+		// `normalizePhoton` passes a geocoder's answer straight through, so
+		// rounding is the picker's job at the moment it stores a place.
 		stubFetch(GEOCODE_OK);
 		const found = await searchPlaces('hà n', 'vi', new AbortController().signal);
-		for (const row of found) {
-			expect(row.lat).toBe(roundCoord(row.lat));
-			expect(row.lon).toBe(roundCoord(row.lon));
-		}
+		const first = found[0];
+
+		expect(first?.lat).not.toBe(roundCoord(first?.lat ?? 0));
+	});
+});
+
+describe('dedupeResults', () => {
+	it('drops rows a reader could not tell apart', () => {
+		// Photon answers a road query with one feature per segment, all sharing a
+		// name and a display name. Production returned four for `Hà Nội`.
+		const kept = dedupeResults(GEOCODE_PAYLOAD.results);
+
+		expect(kept.map((r) => r.name)).toEqual(['Hà Nội', 'Hà Nam', 'Ring Road 3 Expressway (Hanoi)']);
+	});
+
+	it('keeps the first of a duplicate pair', () => {
+		const kept = dedupeResults(GEOCODE_PAYLOAD.results);
+		const road = kept.find((r) => r.name.startsWith('Ring Road'));
+
+		expect(road?.lat).toBe(20.9808057);
+	});
+
+	it('keeps two places that share a name but not a context', () => {
+		// The case the rule must not over-reach on: same name, different place.
+		const kept = dedupeResults([
+			{ name: 'Springfield', displayName: 'Springfield, Illinois', lat: 1, lon: 2, type: 'city' },
+			{ name: 'Springfield', displayName: 'Springfield, Missouri', lat: 3, lon: 4, type: 'city' }
+		]);
+
+		expect(kept).toHaveLength(2);
+	});
+
+	it('leaves an empty list alone', () => {
+		expect(dedupeResults([])).toEqual([]);
 	});
 });
 
