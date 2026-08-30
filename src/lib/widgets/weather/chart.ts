@@ -34,7 +34,14 @@ export function hourlyOption(points: readonly TpHourPoint[]): TpChartOption {
 			axisLabel: { formatter: '{HH}:{mm}' }
 		},
 		yAxis: [
-			{ type: 'value', axisLabel: { formatter: '{value}°' } },
+			{
+				type: 'value',
+				axisLabel: { formatter: '{value}°' },
+				// Without this ECharts anchors a positive value axis at zero, and a
+				// day that runs 22–34° spends two thirds of the chart on degrees the
+				// forecast never reaches.
+				scale: true
+			},
 			{
 				type: 'value',
 				min: 0,
@@ -46,15 +53,11 @@ export function hourlyOption(points: readonly TpHourPoint[]): TpChartOption {
 				axisLabel: { show: false }
 			}
 		],
+		// Temperature first, because series order is what assigns the theme's
+		// colours and doc 12 §4.1 gives the beacon to *the* primary element. The
+		// forecast is the temperature; the rain chance is the context around it.
+		// Paint order is `z`, so the line still sits above the bars.
 		series: [
-			{
-				type: 'bar',
-				yAxisIndex: 1,
-				data: points.map((p) => [p.at, p.precipProb]),
-				// Second in the theme's colour array, and behind the line.
-				z: 1,
-				barMaxWidth: 10
-			},
 			{
 				type: 'line',
 				yAxisIndex: 0,
@@ -65,6 +68,13 @@ export function hourlyOption(points: readonly TpHourPoint[]): TpChartOption {
 				// and joining across it would draw a reading that does not exist.
 				connectNulls: false,
 				z: 2
+			},
+			{
+				type: 'bar',
+				yAxisIndex: 1,
+				data: points.map((p) => [p.at, p.precipProb]),
+				z: 1,
+				barMaxWidth: 10
 			}
 		]
 	};

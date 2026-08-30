@@ -35,7 +35,7 @@ describe('hourlyOption', () => {
 
 	it('keeps a gap as null rather than dropping the hour', () => {
 		const option = hourlyOption(POINTS) as { series: { data: [number, number | null][] }[] };
-		const line = option.series[1];
+		const line = option.series[0];
 
 		expect(line?.data).toHaveLength(3);
 		expect(line?.data[1]).toEqual([2_000, null]);
@@ -45,27 +45,43 @@ describe('hourlyOption', () => {
 		// doc 10 §2: a missing hour is not a zero and it is not a straight line
 		// between its neighbours either.
 		const option = hourlyOption(POINTS) as { series: { connectNulls?: boolean }[] };
-		expect(option.series[1]?.connectNulls).toBe(false);
+		expect(option.series[0]?.connectNulls).toBe(false);
+	});
+
+	it('gives the temperature the first series slot, and so the beacon', () => {
+		// doc 12 §4.1: the accent marks *the* primary element. Series order is
+		// what assigns the theme's colours, so this is the only place that
+		// decision can be made — and getting it backwards is invisible to every
+		// other assertion here.
+		const option = hourlyOption(POINTS) as { series: { type: string }[] };
+		expect(option.series[0]?.type).toBe('line');
+		expect(option.series[1]?.type).toBe('bar');
 	});
 
 	it('puts the bars on their own axis, bounded 0–100', () => {
 		// Precipitation chance is a percentage; sharing the temperature's axis
 		// would squash one of them flat.
 		const option = hourlyOption(POINTS) as {
-			yAxis: { min?: number; max?: number }[];
-			series: { yAxisIndex?: number; type: string }[];
+			yAxis: { min?: number; max?: number; scale?: boolean }[];
+			series: { yAxisIndex?: number }[];
 		};
 
 		expect(option.yAxis).toHaveLength(2);
 		expect(option.yAxis[1]).toMatchObject({ min: 0, max: 100 });
-		expect(option.series[0]?.type).toBe('bar');
-		expect(option.series[0]?.yAxisIndex).toBe(1);
-		expect(option.series[1]?.yAxisIndex).toBe(0);
+		expect(option.series[0]?.yAxisIndex).toBe(0);
+		expect(option.series[1]?.yAxisIndex).toBe(1);
+	});
+
+	it('lets the temperature axis follow the data instead of anchoring at zero', () => {
+		// A day that runs 22–34° would otherwise spend two thirds of the chart on
+		// degrees the forecast never reaches.
+		const option = hourlyOption(POINTS) as { yAxis: { scale?: boolean }[] };
+		expect(option.yAxis[0]?.scale).toBe(true);
 	});
 
 	it('draws the line above the bars', () => {
 		const option = hourlyOption(POINTS) as { series: { z?: number }[] };
-		expect(option.series[1]?.z).toBeGreaterThan(option.series[0]?.z ?? 0);
+		expect(option.series[0]?.z).toBeGreaterThan(option.series[1]?.z ?? 0);
 	});
 
 	it('is a time axis, labelled by hour rather than by date', () => {
