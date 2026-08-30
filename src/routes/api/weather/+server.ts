@@ -1,11 +1,11 @@
 import type { RequestHandler } from './$types';
-import { cacheKey } from '$lib/shared-constants';
+import { cacheKey, geohash } from '$lib/shared-constants';
 import { readCache, ttlSeconds, writeCache } from '../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
 import { checkRateLimit } from '../_lib/ratelimit';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
 import { fail, isCrossSite, ok } from '../_lib/respond';
-import { geohash, parseCoords } from '../_lib/geohash';
+import { parseCoords } from '../_lib/geohash';
 import { normalizeWeather } from '../_lib/normalize';
 import type { TpWeatherPayload } from '$lib/api-types';
 

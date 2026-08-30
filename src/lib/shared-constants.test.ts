@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CACHE_POLICY, STOCK_BUDGET, cacheKey, type TpCacheFamily } from './shared-constants';
+import {
+	CACHE_POLICY,
+	STOCK_BUDGET,
+	cacheKey,
+	geohash,
+	roundCoord,
+	type TpCacheFamily
+} from './shared-constants';
+import { parseCoords } from '../routes/api/_lib/geohash';
 
 /**
  * Doc 11 §4 is authoritative for cache TTLs and key names; this file is what
@@ -178,6 +186,59 @@ describe('cache keys', () => {
 			cacheKey.cryptoKlines('BTCUSDT', '1h')
 		];
 		for (const key of built) expect(key).not.toMatch(/\s/);
+	});
+});
+
+describe('coordinates (doc 04 §5, doc 15 §7)', () => {
+	// These two moved out of `routes/api/_lib/geohash.ts` in Week 4. Doc 03 does
+	// not let a widget import from `routes/api`, so while they lived there the
+	// client could not name the entry it was subscribing to — and doc 04 §5's
+	// whole point is that it is the *same* string on both sides.
+
+	it('rounds to 2 dp, so a precise location is coarsened before it is used', () => {
+		expect(roundCoord(21.028511)).toBe(21.03);
+		expect(roundCoord(105.804817)).toBe(105.8);
+	});
+
+	it('collapses nearby coordinates onto one cache key', () => {
+		// The quota model in doc 11 §5 rests on this: everyone in a city shares
+		// one entry.
+		const hanoi = geohash(21.03, 105.8);
+		const alsoHanoi = geohash(21.01, 105.82);
+		expect(hanoi).toBe(alsoHanoi);
+		expect(geohash(48.86, 2.35)).not.toBe(hanoi);
+		expect(hanoi).toHaveLength(5);
+	});
+
+	it('spells the same key on both sides, from an unrounded coordinate', () => {
+		// The one that matters, and the one a copy of these functions would have
+		// broken: **round, then hash**. Hashing first and rounding after agrees
+		// everywhere except near a cell edge, which is exactly where a divergence
+		// would never be noticed — the tile would work, and its `apiCache` row and
+		// the Worker's KV row would simply be different entries.
+		const raw = { lat: 21.028511, lon: 105.804817 };
+
+		// What a widget will compute, with nothing but `$lib`.
+		const client = cacheKey.weather(geohash(roundCoord(raw.lat), roundCoord(raw.lon)));
+
+		// What `routes/api/weather/+server.ts` computes, through the same path it
+		// actually takes: `parseCoords` rounds, then `geohash` hashes.
+		const url = new URL(`https://tilepier.win/api/weather?lat=${raw.lat}&lon=${raw.lon}`);
+		const coords = parseCoords(url);
+		expect(coords).not.toBeNull();
+		const server = cacheKey.weather(geohash(coords!.lat, coords!.lon));
+
+		expect(client).toBe(server);
+	});
+
+	it('rounding before hashing is not the same as hashing before rounding', () => {
+		// Guards the assertion above against passing for the wrong reason. If this
+		// ever stops finding a disagreement, the case is no longer near a cell edge
+		// and needs new coordinates rather than deleting.
+		const lat = 33.395537;
+		const lon = 43.143213;
+		expect(geohash(roundCoord(lat), roundCoord(lon))).toBe('svywj');
+		expect(geohash(lat, lon)).toBe('svytv');
 	});
 });
 
