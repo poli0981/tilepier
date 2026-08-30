@@ -350,12 +350,15 @@ discovery.
 **What 4a leaves for whoever picks this up.** Three of them are decisions
 rather than tasks, and two are about code that is already live:
 
-1. **`ratelimit.ts:73` writes one KV entry per `/api/*` request.** On the
-   Workers **free** KV tier that is 1 000 writes a day, so roughly 1 000 API
-   requests exhausts the allowance before a single cache write. Confirm the
-   account is on Paid and record it, or the soft limiter has to stop writing
-   per request — which is its own Week 5 item, not something the fx endpoints
-   can work around.
+1. ~~**`ratelimit.ts:73` writes one KV entry per `/api/*` request**, which on
+   the free KV tier exceeds the 1 000 writes/day allowance at roughly a
+   thousand API requests.~~ **Resolved 2026-08-30: the account is on Workers
+   Paid**, recorded in `wrangler.jsonc` and doc 11 §7. The write is a metered
+   cost rather than a ceiling, and doc 10 §3's permanent daily fx snapshot is
+   unblocked — so Week 4b's `/api/fx/history` needs no free-tier budget
+   rationale for its `days` allowlist. Left visible rather than deleted,
+   because the limiter is still the app's highest-volume write and the note
+   says what to do if it ever shows up on a bill.
 2. **The scheduler's backoff is unreachable.** `execute`'s `finally` always
    recomputes `nextDueAt` from the cadence, and `effectiveDue` is
    `max(nextDueAt, backoffUntil)`, so for weather's 600 s cadence every backoff

@@ -97,6 +97,16 @@ back-off, not perfection.
    (ipHash = SHA-256(ip + daily rotating salt), TTL 60 s) — over 30/10 s →
    429 + `retry-after`. Eventual consistency makes it approximate; that's
    fine (the zone rule is the wall). No raw IP is ever stored.
+
+   **It writes to KV on every request**, which is the highest-volume write in
+   the app by a wide margin — higher than the cache, because a cache write
+   happens only on a MISS. On Workers **Free** that alone would exceed the
+   1 000 writes/day allowance at roughly a thousand API requests; the account
+   is on **Paid** (recorded in `wrangler.jsonc`, confirmed 2026-08-30), so it
+   is a metered cost rather than a ceiling. Worth revisiting if the write
+   volume ever shows up on a bill: a counter that only writes when a bucket is
+   near its limit would cost a fraction of this and lose little, since the
+   zone rule is the actual wall.
 3. **Client behavior:** on 429 respect `retry-after`, exponential backoff
    (max 5 min), single global toast not per-widget spam (doc 17 §5).
 
