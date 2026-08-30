@@ -106,6 +106,43 @@ Three more decisions worth having written down:
 - **Edge cases:** locale switch mid-day keeps the same quote id, swaps
   translation if the dataset has one.
 
+### The one-row tile — one deviation, added 2026-08-30
+
+The tile above is the h ≥ 2 tile. At **h = 1 it is the line and nothing else**:
+no citation, no lunar footer, no keep, no copy, and the line ellipsised on one
+row. Dropping the lunar footer is the deviation from the paragraph above — it is
+the QuoteAtlas tie-in and it is genuinely gone at that size. The detail keeps
+all four, and a one-row tile is one press from it.
+
+The arithmetic is why. At `cellHeight: 72` (doc 06 §5.4) a one-row tile is 72 px
+tall, and the 28 px header, the 1 px borders and the body's own bottom padding
+leave the widget 34. The footer was 21 of those and the gap above it 6, so the
+line got a 7 px slot for a 19.5 px line — it was not ellipsised, it was **cut
+through the middle of the glyphs**, top and bottom. This is pre-existing rather
+than a regression: the earlier grid-margin correction gave every one-row tile a
+few pixels back, which was enough to make the clock legible at 2x1 and only
+enough to move quote from unreadable to badly readable. The exact figures shift
+with the row geometry; the sign of the subtraction does not.
+
+Two things about the shape of the fix are worth keeping:
+
+1. **It keys off `size.h <= 1`, not off `size.tier === 'S'`.** doc 13 §3's tier
+   S is `w <= 2 && h <= 1`, so a 3x1 tile is tier **M** and has exactly the same
+   34 px to work with as a 2x1 one. Tier is a density signal with the width
+   mixed into it, and the thing being solved here is purely vertical.
+   `TpClockWidget` splits the same decision both ways — its date line is behind
+   `size.tier !== 'S'` and its zone rows behind `size.h >= 2` — and only the
+   second is right: measured at 3x1 it renders the date line into 34 px and
+   clips its own hero digits by 4 px. Tracked separately; the same reading of
+   doc 13 §3 applies.
+2. **The loading skeleton is one bar at h = 1, not three.** Three are 30 px of
+   the 34, i.e. a loading state that overflows the ready state it stands in for.
+
+`sizes.min` stays `2x1` — one row is an allowed size, and now a designed one.
+It would not matter much if it changed: `toGridStackWidget` does not pass the
+manifest's min/max to gridstack, so every tile can be dragged to one row today
+regardless of what its manifest says (tracked separately).
+
 ## 4. `rss` — RSS / News Reader
 
 - **Source:** `/api/rss?url=` — the Worker fetches, parses (fast-xml-parser
