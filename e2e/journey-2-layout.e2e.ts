@@ -166,6 +166,34 @@ test('a deck that gridstack has to compact survives repeated reloads', async ({ 
 	}
 });
 
+test('a one-row tile leaves room for the controls its header floats above', async ({ page }) => {
+	// doc 06 §5 rule 13's neighbour, and the geometry doc 19 §4 says to assert
+	// somewhere: at h=1 the host header goes out of flow and sits over the top
+	// of the body (doc 13 §3), so a widget that uses the full width runs its
+	// last characters — an ellipsis, usually — under the expand icon. Measured
+	// at 4x1 before the fix: the line ended at x=414, the button starts at 396.
+	//
+	// `quote` is the vehicle because it is the widget that reaches that far; the
+	// rule under test belongs to the host, not to quote.
+	await acceptGate(page);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_flat', widgetId: 'quote', x: 0, y: 0, w: 4, h: 1, settings: {} }
+	]);
+	await page.reload();
+
+	const line = page.getByTestId('quote-text');
+	await expect(line).toBeVisible();
+
+	const text = await line.boundingBox();
+	const expand = await page.locator('.tp-host__open').first().boundingBox();
+	expect(text).not.toBeNull();
+	expect(expand).not.toBeNull();
+
+	expect(text!.x + text!.width, 'the line must stop before the expand control').toBeLessThanOrEqual(
+		expand!.x
+	);
+});
+
 test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) => {
 	await acceptGate(page);
 

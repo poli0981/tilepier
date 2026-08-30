@@ -259,6 +259,26 @@
 		pointer-events: auto;
 	}
 
+	/*
+	 * The body has to leave room for the controls the flat header floats above.
+	 *
+	 * Without it a widget that uses the full width at h=1 runs its last
+	 * characters — an ellipsis, usually — underneath the expand icon. Measured
+	 * on a 4×1 quote tile: the line's box ended at x=414 and the button starts
+	 * at x=396. The clock did not show it because a hero numeral is short and
+	 * left-aligned, which is why this survived the header rule's own review.
+	 *
+	 * Two widths because the cluster has two sizes: the expand button alone in
+	 * view mode, and the remove button beside it in edit mode.
+	 */
+	.tp-host[data-flat='true'] .tp-host__body {
+		padding-right: 2.25rem;
+	}
+
+	:global(.tp-edit) .tp-host[data-flat='true'] .tp-host__body {
+		padding-right: 4rem;
+	}
+
 	.tp-host__crash {
 		display: flex;
 		height: 100%;

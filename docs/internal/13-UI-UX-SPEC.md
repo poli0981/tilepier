@@ -43,8 +43,11 @@ handle (`draggable.handle: '.tp-drag'`) and it carries the edit-mode remove
 button, so `display: none` would make a 1-row tile neither draggable nor
 removable. It becomes `position: absolute` across the top instead, transparent
 to the pointer in view mode and solid again in edit mode, and the body takes the
-full height. Keyed on `h`, not on the tier — tier S is `w<=2 && h<=1`, so a 3×1
-tile is tier M and needs the same treatment. (Clarified 2026-08-30: this line
+full height, minus a reserve on the right for the controls the header floats
+above — without it a widget that uses the full width runs its last characters
+under the expand icon, which the clock did not show because a hero numeral is
+short and left-aligned. Keyed on `h`, not on the tier — tier S is
+`w<=2 && h<=1`, so a 3×1 tile is tier M and needs the same treatment. (Clarified 2026-08-30: this line
 said "hidden entirely" and the code hid only the title, which cost an h=1 tile
 28 of its 48 px.)
 
