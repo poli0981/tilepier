@@ -202,6 +202,34 @@ The single most dangerous integration point. Fixed rules:
     goes through the imperative surface — this is the change rule 9 did not
     have a method for.)
 
+12. **`margin` is an INSET on `.grid-stack-item-content`, not a CSS margin — and
+    a rule that sets `inset` there deletes the gutter silently.** gridstack
+    writes `margin: 12` out as `--gs-item-margin-top/right/bottom/left` on
+    `.grid-stack`, and `gridstack.css` spends them as `top`/`right`/`bottom`/
+    `left` on the content box inside an edge-to-edge wrapper. The whole visible
+    gutter is that inset. `TpGrid.svelte`'s scoped
+    `.grid-stack :global(.grid-stack-item-content)` compiles to a selector of
+    exactly the same specificity (Svelte bumps only the first scoped selector by
+    one class and uses `:where()` thereafter), so it wins on source order — and
+    `inset: 0` there had been erasing all four longhands since spike S1.
+
+    What made it survive a green suite for four weeks is that `margin: 12`
+    stayed correct in the `GridStack.init` options the whole time, and
+    `cacheRects`, collision and drop-target maths read `this.opts.margin*`
+    rather than the CSS. gridstack's model always assumed a 12 px gutter; only
+    the paint disagreed, so every behavioural test went on passing. Two things
+    followed from it that are worth knowing: the drop placeholder
+    (`.placeholder-content`, a different class the override never reached) was
+    24 px smaller than the tiles it predicted, and the se-resize handle — pinned
+    to the same custom properties — floated 12 px inside the tile corner instead
+    of on it.
+
+    `tileRect()` must return the **content** box for the same reason. The
+    wrapper is 24 px larger on each axis, and doc 13 §5's FLIP scales from those
+    four numbers. (Added 2026-08-30, from a screenshot: the tiles were touching.
+    `e2e/s1-grid.e2e.ts` now asserts the four insets directly, which stays valid
+    at every column breakpoint.)
+
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
 wrapper count, mounted host count, and serialised tile count must agree after

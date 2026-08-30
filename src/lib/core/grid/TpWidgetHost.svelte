@@ -72,7 +72,7 @@
 	});
 </script>
 
-<div class="tp-host" bind:this={contentEl} data-tier={tier}>
+<div class="tp-host" bind:this={contentEl} data-tier={tier} data-flat={tile.h <= 1}>
 	<header class="tp-drag">
 		{#if manifest !== undefined}
 			<TpIcon name={manifest.icon} size={14} />
@@ -146,6 +146,7 @@
 
 <style>
 	.tp-host {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -220,9 +221,42 @@
 		overflow: hidden;
 	}
 
-	/* Header disappears entirely at h=1 (doc 13 §3). */
-	.tp-host[data-tier='S'] header .tp-host__title {
+	/*
+	 * Header leaves the FLOW entirely at h=1 (doc 13 §3), rather than the tier-S
+	 * title-only hide this used to be.
+	 *
+	 * An h=1 tile paints 48 px once gridstack's 12 px inset is honoured, and the
+	 * host's own chrome costs 38 (2 border + 28 header + 8 body padding) — which
+	 * leaves 10 px for a 26.4 px hero numeral, clipped without a sound by
+	 * `.tp-host__body`'s `overflow: hidden`. Out of flow, the body gets all 38.
+	 *
+	 * Not `display: none`: the header IS the drag handle (doc 06 §5.4,
+	 * `draggable.handle: '.tp-drag'`) and carries the edit-mode remove button.
+	 * And keyed on `h`, not on the tier — tier S is `w<=2 && h<=1`, so a 3×1 tile
+	 * is tier M and needs this just as much.
+	 *
+	 * The band would otherwise swallow clicks on the top 28 px of the widget, so
+	 * it is transparent to the pointer in view mode and solid again in edit mode,
+	 * where being grabbable is the point.
+	 */
+	.tp-host[data-flat='true'] header {
+		position: absolute;
+		inset: 0 0 auto 0;
+		justify-content: flex-end;
+		pointer-events: none;
+	}
+
+	.tp-host[data-flat='true'] .tp-host__title {
 		display: none;
+	}
+
+	.tp-host[data-flat='true'] .tp-host__open,
+	.tp-host[data-flat='true'] .tp-host__remove {
+		pointer-events: auto;
+	}
+
+	:global(.tp-edit) .tp-host[data-flat='true'] header {
+		pointer-events: auto;
 	}
 
 	.tp-host__crash {

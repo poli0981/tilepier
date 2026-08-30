@@ -142,6 +142,18 @@ init script stays registered for every later navigation, so a test that seeds a
 timer, starts it and reloads would otherwise have the seed put back over the
 state it was reloading to check.
 
+And a fifth, which is about what a suite *cannot* see rather than how to write
+it: **assert geometry somewhere, or a layout bug ships.** `e2e/s1-grid` counted
+wrappers, hosts and tiles, round-tripped layout JSON and dragged tiles through
+fifty cycles, and none of that could notice that every tile was painting
+edge-to-edge — gridstack's `margin: 12` was correct in the JS options, so the
+model, the collisions and the drop targets were all right and only the paint was
+wrong (doc 06 §5 rule 12). Until 2026-08-30 the four `boundingBox()` calls in the
+whole `e2e/` tree existed solely to compute a mouse origin for a drag, and there
+was no `toHaveScreenshot` anywhere. `s1-grid` now asserts the item's four insets
+directly — one item, not the distance between two, so it holds at every column
+breakpoint.
+
 `SEEDED_TILES` lives in the same file for the same kind of reason: doc 13 §9's
 first-run deck grows as widgets land — 1 in Week 1, 2 in Week 2, 4 now — and six
 files each carried the number as a literal.

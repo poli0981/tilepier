@@ -7,7 +7,13 @@
   Bar hides on scroll-down / reveals on scroll-up (dashboard rarely
   scrolls on desktop; matters on mobile).
 - Dashboard fills the viewport; grid max-width 1680 px centered;
-  page padding 16/24 px.
+  page padding 16/24 px. That padding is measured to the **grid container**;
+  tiles then sit 12 px inside it (doc 06 §5 rules 4 and 12), so the outer gutter
+  reads 28/36 px against a 24 px gutter between tiles. The asymmetry is
+  deliberate — dropping the page padding to match would desynchronise the deck
+  from the top bar and the coach rails, which are on `--tp-page-pad`, and at
+  <768 px would put content 12 px from the screen edge. (Written down
+  2026-08-30, when restoring the item margin made the two numbers visible.)
 - No footer on the dashboard. Legal/about links live in Settings and the
   static pages.
 
@@ -32,6 +38,16 @@
 │ footer: meta / actions      │  ← optional, ≤ 22 px
 └────────────────────────────┘
 ```
+At **h=1 the header leaves the flow** rather than disappearing: it is the drag
+handle (`draggable.handle: '.tp-drag'`) and it carries the edit-mode remove
+button, so `display: none` would make a 1-row tile neither draggable nor
+removable. It becomes `position: absolute` across the top instead, transparent
+to the pointer in view mode and solid again in edit mode, and the body takes the
+full height. Keyed on `h`, not on the tier — tier S is `w<=2 && h<=1`, so a 3×1
+tile is tier M and needs the same treatment. (Clarified 2026-08-30: this line
+said "hidden entirely" and the code hid only the title, which cost an h=1 tile
+28 of its 48 px.)
+
 Density tiers from grid size (host computes, passes in `size`):
 - **S** (≤2×1): single hero value, no header text (icon only).
 - **M** (default): header + primary content.

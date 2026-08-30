@@ -198,6 +198,37 @@ test.describe('S1 · gridstack 12.6 × Svelte 5', () => {
 		await expect(disabled).toHaveCount(0);
 	});
 
+	test('gridstack’s item margin is painted, not just configured', async ({ page }) => {
+		// The regression this file could not see. gridstack turns `margin: 12`
+		// into `--gs-item-margin-*` and applies it as the INSET of
+		// `.grid-stack-item-content` inside an edge-to-edge wrapper — so a rule
+		// setting `inset` on that element deletes the whole gutter at equal
+		// specificity, and nothing notices: `margin: 12` stays in the JS opts, so
+		// cacheRects, collision and every drop test above go on passing. That is
+		// exactly what `inset: 0` did in TpGrid.svelte until doc 06 §5 rule 12.
+		//
+		// Asserted as the inset of one item rather than the distance between two,
+		// because that stays true at every column breakpoint and does not depend
+		// on which tiles happen to be adjacent.
+		const item = page.locator('.grid-stack-item').first();
+		const wrapper = await item.boundingBox();
+		const content = await item.locator('.grid-stack-item-content').boundingBox();
+		expect(wrapper).not.toBeNull();
+		expect(content).not.toBeNull();
+
+		const insets = {
+			top: content!.y - wrapper!.y,
+			left: content!.x - wrapper!.x,
+			bottom: wrapper!.y + wrapper!.height - (content!.y + content!.height),
+			right: wrapper!.x + wrapper!.width - (content!.x + content!.width)
+		};
+
+		for (const [side, value] of Object.entries(insets)) {
+			expect(value, `${side} inset`).toBeGreaterThan(11);
+			expect(value, `${side} inset`).toBeLessThan(13);
+		}
+	});
+
 	test('dragging a tile updates the serialised layout', async ({ page }) => {
 		const problems = watchConsole(page);
 		const before = Number(await page.getByTestId('change-count').innerText());
