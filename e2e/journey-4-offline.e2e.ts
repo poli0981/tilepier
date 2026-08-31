@@ -5,18 +5,26 @@ import { SEEDED_TILES } from './_lib/seed';
  * doc 19 §4 journey #4: "Offline emulation: toggle offline → stale badges
  * appear → tier-1 widgets still work → online → refresh clears badges."
  *
- * **Half of it, deliberately, and the half that exists.** Stale badges need a
- * widget with cached network data, and the first of those is weather in Week 4
- * — doc 23 says as much. What is testable now is the other three quarters of
- * that sentence, and it is the part that would be least obvious if it broke:
- * that going offline does not degrade a deck made entirely of local widgets.
+ * **Complete since 2026-08-31.** The first three quarters were written in
+ * Week 3 against a deck of purely local widgets, and that is not a lesser test:
+ * doc 17 §3 classes tier-1 as "fully functional" offline and doc 01 makes
+ * local-first the whole product, so a calendar that stopped taking events
+ * because the network went away would be a betrayal of both and nothing else in
+ * the suite would catch it.
  *
- * That is not a lesser test. doc 17 §3 classes tier-1 as "fully functional"
- * offline and doc 01 makes local-first the whole product; a calendar that
- * stopped taking events because the network went away would be a betrayal of
- * both, and nothing else in the suite would catch it.
+ * The badge half needed a widget holding cached network data, and `currency` is
+ * the one it got.
  *
- * The stale-badge assertions land here in Week 4, against the weather tile.
+ * **The last clause nearly became a substitution, and did not have to.** "online
+ * → refresh clears badges" has no reachable trigger at a 12 h cadence:
+ * `scheduler.execute`'s `finally` recomputes `nextDueAt` from the cadence, and
+ * `wake('online')` skips anything not yet due, so neither a reconnect nor a
+ * reload revalidates while the cached entry is young — and `swr` hydrating from
+ * Dexie sees an age of nearly nothing. The honest trigger is the entry actually
+ * ageing past the client TTL, which `page.clock.setFixedTime` arranges without
+ * faking a single timer the app depends on. Thirteen hours on, the tile
+ * revalidates, meets a refusal, and shows the `stale-error` badge doc 13 §7
+ * gives a retry button — which is the reader's own refresh.
  *
  * **One real limit these tests found and work around rather than hide.** A
  * widget's detail is a lazy chunk (doc 06 §1) and doc 17 §2's precache list is
@@ -42,9 +50,21 @@ async function acceptGate(page: Page): Promise<void> {
 	await expect(page.getByTestId('coach')).toBeHidden();
 }
 
-/** doc 13 §7: a quiet amber chip in the top bar, `role="status"`. */
+/**
+ * doc 13 §7: a quiet amber chip in the top bar, `role="status"`.
+ *
+ * Located by testid rather than by its words, since 2026-08-31. It used to be
+ * `getByRole('status').filter({ hasText: 'ngoại tuyến' })`, which was
+ * unambiguous only by accident: `widget.weather.offline_short` was the same
+ * Vietnamese string, and stayed invisible to this locator purely because the
+ * weather badge was a `<span>` with no role. The badge has since moved to the
+ * host header (doc 13 §7), where it would have matched — so the chip and the
+ * tile badge now say different things (`mất mạng` for a tile's data, this for
+ * the app's connection) *and* this is located structurally. Either fix alone
+ * would have been one refactor away from breaking six tests at once.
+ */
 function offlineChip(page: Page) {
-	return page.getByRole('status').filter({ hasText: 'ngoại tuyến' });
+	return page.getByTestId('offline-chip');
 }
 
 /** The calendar tile is on the seeded deck (doc 13 §9); its header's expand
@@ -164,4 +184,156 @@ test('the quote of the day is there offline, because it was computed', async ({
 	await expect(offlineChip(page)).toBeVisible();
 	await expect(page.getByTestId('quote-text')).toBeVisible();
 	await expect(page.getByTestId('quote-text')).not.toBeEmpty();
+});
+
+/* ─────────────────────────────────── the badge half (doc 19 §4 journey #4) */
+
+const FX_DATA = {
+	base: 'USD',
+	rates: { USD: 1, VND: 26_006.374497, EUR: 0.862295 },
+	asOf: 1_788_134_551_000,
+	nextUpdateAt: 1_788_221_421_000,
+	prevRates: null,
+	prevDate: null,
+	attribution: 'Rates By Exchange Rate API'
+};
+
+const FX_HISTORY_BODY = {
+	ok: true,
+	data: { base: 'USD', quote: 'VND', points: [], attribution: FX_DATA.attribution },
+	meta: { cachedAt: 1_788_134_551, source: 'er-api', stale: false }
+};
+
+/** What the tile is set to, so the seed and the assertions cannot drift. */
+const FX_TILE = {
+	instanceId: 'wgt_fx',
+	widgetId: 'currency',
+	x: 0,
+	y: 0,
+	w: 3,
+	h: 2,
+	settings: { base: 'USD', quote: 'VND', amount: 1 }
+};
+
+type FxMode = 'fresh' | 'served-stale' | 'down';
+
+/**
+ * Fakes both fx routes from one handler.
+ *
+ * **Branching on the URL rather than registering two patterns**, because a glob
+ * for the rates matches the history route too, and which registration wins is a
+ * detail of Playwright's ordering rather than something a test should lean on.
+ *
+ * The three modes are the three things a reader can be shown: a current table, a
+ * table the Worker served past its own KV TTL because upstream was down (doc 11
+ * §4, `meta.stale`), and a refusal.
+ */
+async function routeFx(page: Page, state: { mode: FxMode }): Promise<void> {
+	await page.route('**/api/fx**', async (route) => {
+		if (state.mode === 'down') {
+			await route.fulfill({ status: 503, json: { ok: false, error: { code: 'UPSTREAM_DOWN' } } });
+			return;
+		}
+		if (route.request().url().includes('/history')) {
+			await route.fulfill({ json: FX_HISTORY_BODY });
+			return;
+		}
+		await route.fulfill({
+			json: {
+				ok: true,
+				data: FX_DATA,
+				meta: {
+					cachedAt: 1_788_134_551,
+					source: 'er-api',
+					stale: state.mode === 'served-stale'
+				}
+			}
+		});
+	});
+}
+
+/** Seeds a deck of exactly one currency tile and waits for it to have rates. */
+async function seedCurrency(page: Page, state: { mode: FxMode }): Promise<void> {
+	await routeFx(page, state);
+	await acceptGate(page);
+	await page.addInitScript(
+		([key, value, sentinel]) => {
+			if (sessionStorage.getItem(sentinel as string) !== null) return;
+			sessionStorage.setItem(sentinel as string, '1');
+			localStorage.setItem(key as string, value as string);
+		},
+		['tp.layout.v1', JSON.stringify({ schemaVersion: 1, grid: [FX_TILE] }), 'tp.e2e.fx'] as const
+	);
+	await page.reload();
+	await expect(page.getByTestId('currency-hero')).toBeVisible();
+}
+
+test('a table the Worker served stale reaches the host header as a badge', async ({ page }) => {
+	// doc 11 §4's stale-serve, and the reason a networked service's `T` carries
+	// the envelope's `meta`: `swr` would call this fresh — it arrived a moment
+	// ago — so without `meta.stale` the tile would present a day-old rate as
+	// today's, which is the one failure mode this widget has.
+	const state: { mode: FxMode } = { mode: 'served-stale' };
+	await seedCurrency(page, state);
+
+	await expect(page.getByTestId('tile-badge')).toBeVisible();
+	// doc 17 §3's cached-data contract: the number stays, the badge explains it.
+	await expect(page.getByTestId('currency-hero')).toBeVisible();
+});
+
+test('the tile badge and the top-bar chip are two different things', async ({ page, context }) => {
+	// The regression guard for the whole collision analysis. They carried the
+	// same Vietnamese string until 2026-08-31 and stayed unambiguous only because
+	// the weather badge happened to have no role. One is the app's connection;
+	// the other is one tile's data, and a reader has to be able to tell which is
+	// which when both are on screen.
+	const state: { mode: FxMode } = { mode: 'served-stale' };
+	await seedCurrency(page, state);
+	await expect(page.getByTestId('tile-badge')).toBeVisible();
+
+	await context.setOffline(true);
+	await expect(offlineChip(page)).toBeVisible();
+
+	await expect(offlineChip(page)).toHaveCount(1);
+	await expect(page.getByTestId('tile-badge')).toHaveCount(1);
+	expect(await offlineChip(page).textContent()).not.toBe(
+		await page.getByTestId('tile-badge').textContent()
+	);
+
+	await context.setOffline(false);
+});
+
+test('rates that go old raise a retry, and pressing it clears the badge', async ({ page }) => {
+	/*
+	 * journey #4's last clause, and the only way to reach it.
+	 *
+	 * A 12 h cadence cannot come due inside a test: `scheduler.execute`'s
+	 * `finally` recomputes `nextDueAt` from the cadence, and `wake('online')`
+	 * skips anything not yet due — so neither a reconnect nor a reload produces a
+	 * revalidation while the cached entry is young. What *does* is the entry
+	 * genuinely ageing past the client TTL, which `page.clock.setFixedTime` can
+	 * arrange without faking any timer the app depends on.
+	 *
+	 * Thirteen hours on, `swr` hydrates from Dexie, sees it stale, revalidates,
+	 * and gets a refusal — which is `stale-error` with a payload in hand, the one
+	 * state doc 13 §7 gives a retry button.
+	 */
+	const state: { mode: FxMode } = { mode: 'fresh' };
+	await page.clock.setFixedTime(new Date('2026-08-31T10:00:00Z'));
+	await seedCurrency(page, state);
+	await expect(page.getByTestId('tile-badge')).toBeHidden();
+
+	state.mode = 'down';
+	await page.clock.setFixedTime(new Date('2026-08-31T23:00:00Z'));
+	await page.reload();
+
+	await expect(page.getByTestId('currency-hero')).toBeVisible();
+	const retry = page.getByTestId('tile-retry');
+	await expect(retry).toBeVisible();
+
+	state.mode = 'fresh';
+	await retry.click();
+
+	await expect(page.getByTestId('tile-badge')).toBeHidden();
+	await expect(page.getByTestId('currency-hero')).toBeVisible();
 });

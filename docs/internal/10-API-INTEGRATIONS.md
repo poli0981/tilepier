@@ -62,18 +62,41 @@ the client; grep-guard in CI, doc 21 §5).
 
 ## 3. FX — rates + self-accumulated history
 
-- Rates: `GET https://open.er-api.com/v6/latest/USD` → single base; Worker
-  computes cross rates for any pair from the USD table (their open endpoint
-  is one-base-per-call; one cached call covers all pairs).
+- Rates: `GET https://open.er-api.com/v6/latest/USD` → single base. Their open
+  endpoint is one-base-per-call, so doc 11 §3 gives `/api/fx` **no parameters
+  at all** and one cached call covers every pair — which means **the client
+  computes the cross rate**, `rates[to] / rates[from]`. (Corrected 2026-08-31:
+  this said the Worker computed it, which the endpoint's own signature forbids.
+  Sending a pair up would multiply one cache entry by 160².)
 - Upstream updates daily; `time_next_update_unix` honored: KV TTL = min(12 h,
-  time-to-next-update + 5 min).
+  time-to-next-update + 5 min). The cap is carried as `freshUntil` inside the
+  cached value rather than passed to the write, and it may only ever shorten —
+  doc 11 §4 has the mechanism and the two rules that keep it safe.
 - **History (the VND problem):** no keyless API provides VND history →
-  snapshot-on-read: first `/api/fx` request each UTC day also writes
-  `fx:snap:YYYY-MM-DD` (USD table, permanent — no KV TTL). `/api/fx/history
+  snapshot-on-read: the first `/api/fx` request after each upstream publication
+  also writes `fx:snap:YYYY-MM-DD` (USD table, permanent — no KV TTL).
+  **Keyed on the date upstream published, not on the Worker's clock**, which
+  differ for the ten minutes between UTC midnight and ER-API's daily push; a
+  snapshot filed under tomorrow's date in that window would be a wrong number
+  in a store that has no expiry and is never rewritten. `/api/fx/history
   ?pair=USD-VND&days=90` assembles the series from snapshots. Client mirrors
-  into Dexie `fxHistory` so the chart works offline. Storage cost:
+  into Dexie `fxHistory` so the chart works offline — **driven by `/api/fx`'s
+  own daily table rather than by the history response** (2026-08-31). `swr`
+  already caches the history the reader has looked at; what the mirror adds is
+  that one snapshot answers every pair and every range, so a reader who viewed
+  USD→VND and then switches to USD→EUR offline still gets a chart. One `put` per
+  published day on the tile's existing cadence, bounded at 400 rows (doc 05 §3). Storage cost:
   ~5 KB/day → trivial. Gaps (zero traffic that day) are legal; chart uses
   time axis, not index axis.
+- **Yesterday travels with today.** `/api/fx` reads the previous publication's
+  snapshot on a cache miss and returns it as `prevRates`/`prevDate` in the same
+  payload, which is what powers doc 08 §2's 24 h change column across the whole
+  table for one extra KV get. `/api/fx/history` stays the per-pair time series:
+  wide-and-shallow and narrow-and-deep, and neither can cheaply do the other's
+  job — covering 160 rows through the history endpoint would be 160 requests.
+  On the day this deploys there is no previous snapshot, so both fields are
+  `null` and the detail renders **no change column** rather than a column of
+  zeros. A 0.00 % is a claim; an absent column is the truth.
 - Attribution string is part of the normalized payload so the UI can't
   forget it.
 

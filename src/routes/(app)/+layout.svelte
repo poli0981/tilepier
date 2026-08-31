@@ -8,6 +8,7 @@
 	import { ui } from '$lib/stores/ui.svelte';
 	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
 	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
+	import TpRateLimitToast from '$lib/ui/TpRateLimitToast.svelte';
 	import TpShortcutsSheet from '$lib/ui/TpShortcutsSheet.svelte';
 	import TpTopBar from '$lib/ui/TpTopBar.svelte';
 	import type { TpWidgetId } from '$lib/core/types';
@@ -122,6 +123,8 @@
 	<TpAddDrawer {onAdd} />
 	<TpCoachOverlay />
 	<TpShortcutsSheet />
+	<!-- doc 13 §7: inside the gate, because only a networked widget can raise it. -->
+	<TpRateLimitToast />
 </div>
 
 <style>

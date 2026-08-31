@@ -149,6 +149,14 @@ export const db = createDb();
  *
  * `target` defaults to the singleton; it is a parameter so the behaviour can be
  * checked against a throwaway database rather than the user's own.
+ *
+ * **`fxHistory` is deliberately untouched here**, and that is a decision rather
+ * than an oversight. This function's contract is “cache”: everything it drops is
+ * derivable from a request that can be made again. The fx snapshots are not —
+ * no keyless API sells VND history back to us, which is the whole reason doc 10
+ * §3 has the client accumulating them — so dropping a row here would be
+ * dropping data. Its own bound lives with the code that writes it, as
+ * `MIRROR_MAX_DAYS` in `widgets/currency/service.ts`.
  */
 export async function pruneApiCache(now = Date.now(), target: TpDb = db): Promise<number> {
 	const WEEK = 7 * 24 * 60 * 60 * 1000;

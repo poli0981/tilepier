@@ -236,7 +236,7 @@ Vendoring was measured first — 990 lines producing 43 errors under
 `noUncheckedIndexedAccess`, needing `@ts-nocheck` and four tooling exclusions in
 a repo that has none.
 
-## Week 4 — Weather · Currency · **4a COMPLETE 2026-08-30, M4 met; 4b open**
+## Week 4 — Weather · Currency · **COMPLETE 2026-08-31, M4 met**
 weather widget+detail (ECharts bridge built here, theme-linked) ·
 fx endpoint + snapshot mechanism + currency widget/detail (history chart
 against accumulating snapshots) · offline/stale polish pass on both.
@@ -270,10 +270,15 @@ straightforward, the ECharts bridge is narrow and full of silent traps.
 
 Four **depth** cuts were taken rather than cutting widgets, which is the same
 move this doc's slip policy made for quote's share-as-image in Week 3: the
-currency history chart and `/api/fx/history` (−2.0), the AQI gauge and
+currency history chart and `/api/fx/history` (−2.0, **restored in 4b** — the
+endpoint is KV reads over a pile the snapshot side-effect accumulates anyway,
+and a chart with an honest empty state is cheaper than a detail that
+half-explains why it has none), the AQI gauge and
 astronomy card (−0.8), seven WMO glyphs instead of sixteen (−0.5), and the
 stale badge in the widget body rather than a new `core/tile-status` channel
-(−0.5). That leaves ≈17.5, split as:
+(−0.5, **restored in 4b** — the channel turned out to cost one file and a
+`$derived`, because a module import crosses the `mount()` boundary a prop
+cannot). That leaves ≈17.5, split as:
 
 - **Week 4a — weather.** Gap fix, tile, place picker, ECharts bridge, detail.
 - **Week 4b — currency.** `/api/fx` + snapshots, currency widget and detail,
@@ -365,6 +370,11 @@ rather than tasks, and two are about code that is already live:
    below `BACKOFF.maxMs` (300 s) never fires. Docs 04 §2, 11 §7.3 and 17 §5 all
    describe behaviour no code has. Settle it with the markets tile, which is
    the first widget whose cadence is short enough for it to matter.
+
+   **Merged with item 4 on 2026-08-31**, because they are one change: a handle
+   nobody can act on is not worth returning, and a backoff nothing honours is
+   not worth wiring. Both land with markets at 60 s — doc 04 §2 carries the
+   reasoning.
 3. **An injected resize does not reliably produce a gridstack `change`** — two
    runs in eight ended with the clamped size on screen and no `onLayoutChange`
    beyond the mount emit. If a real pointer can lose one the same way, a
@@ -372,12 +382,103 @@ rather than tasks, and two are about code that is already live:
    an investigation, not a test tweak.
 4. **`useRefresh` returns `void`**, so no widget holds a `TpTaskHandle` and
    doc 04 §2's `handle.backoff(...)` cannot be called. Decide the signature
-   before a second networked widget is built around the current one.
+   before a second networked widget is built around the current one. **Decided 2026-08-31: it stays
+   `void`.** `currency` was that second widget, and the decision is recorded in
+   doc 04 §2 rather than deferred again — see item 2, which this merges into.
 5. **doc 12 §2a claims `--spacing`, `--tp-bar-h` and `--tp-page-pad` are
    declared in `@theme`.** They are not, and every consumer uses a hardcoded
    fallback — which is why the top bar sits on a 16 px rail while `main`
    overrides to 24 px at ≥768 px. Its own small change, deliberately not folded
    into the gap fix.
+
+### Week 4b — complete 2026-08-31
+
+Eleven commits, in one PR. currency is the tenth registered widget and the
+tier-2 pattern's second proof: the first thing to *reuse* `swr()`, the `/api/*`
+pipeline and the ECharts bridge rather than invent them.
+
+**Two of the four depth cuts came back, and one was never a cut at all.**
+`/api/fx/history` and the history chart were restored on a deliberate call
+rather than by scope creep — the endpoint is KV reads over a pile the snapshot
+side-effect was going to accumulate anyway, and a chart with a documented empty
+state is cheaper than a detail that half-explains why it has no chart. The stale
+badge was the other: doc 13 §3 priced the `core/tile-status` channel as "one
+core module at the 90/80 threshold" against five copies by Week 6, and the
+module turned out to be one file and a `$derived`. The constraint that made it
+look expensive — a host mounted imperatively cannot take a reactive prop — was
+never in the way, because a prop is what has to cross `mount()`'s one-shot props
+object and a module import crosses nothing.
+
+**Numbers at the end of 4b:** ten of fifteen widgets registered, 1252
+unit/component tests (from 1083), 110 e2e (from 107), 498 message keys (from
+461), 94.31 % lines and 87.75 % branches, budgets 7/7 with the shared echarts
+chunk **unchanged at 183.0 KB gz** — `LineChart` was already in the `use()` set,
+which is why the second chart cost nothing.
+
+**Seven faults found by the work rather than by review.** Five were latent, two
+were the specification being ahead of the code:
+
+1. **`weather/server.test.ts`'s "fails when the KV binding is missing" never
+   reached the branch it names.** `call({ kv: undefined })` was read by the
+   helper as *the option was omitted* and handed the handler a working fake, so
+   the 503 it asserted came from the upstream-down path. Deleting the binding
+   guard entirely would not have failed it. Found only because writing the third
+   copy of that helper is when you read the second.
+2. **A tile holding cached data through a 429 showed no badge at all.** doc 04
+   §2's table maps `rate-limited` to `stale-error`, but weather's inline error
+   card only renders when there is *nothing* underneath it — so a live rate and
+   a frozen one looked identical.
+3. **The rate-limit toast rule was true and unobservable.** `swr`'s coordinator
+   has returned "should this notify?" since Week 3 and the call site discarded
+   it. doc 17 §5's "one toast per 60 s regardless of widget count" had never
+   been asserted; it is now, including the cross-key case that is the whole
+   reason the throttle lives in the module.
+4. **The retry control wore an `expand` icon**, which reads as "open" on a
+   button whose only job is "try again". The set had no refresh glyph; it does
+   now.
+5. **`page.clock.setFixedTime` made journey #4's last clause reachable.** "online
+   → refresh clears badges" has no trigger at a 12 h cadence — the scheduler's
+   `finally` recomputes `nextDueAt` and `wake('online')` skips anything not due —
+   and the first version of those tests asserted otherwise and failed. Ageing the
+   cache entry past its TTL is the honest trigger, and it needed no faked timer.
+6. **doc 10 §3 said the Worker computes cross rates.** It cannot: doc 11 §3 gives
+   `/api/fx` no parameters, deliberately, because one cached USD table covers
+   every pair and sending a pair up would multiply one entry by 160².
+7. **doc 11 §3 said `days≤365` while this document said "allowlist".** The
+   allowlist won, and §3 now says which — a free integer gives 365 CDN entries
+   per pair that one client can walk with a loop.
+
+**Three decisions taken rather than inherited.**
+
+`useRefresh` **keeps returning `void`** (doc 04 §2). Wiring a `TpTaskHandle`
+buys nothing observable while `scheduler.execute`'s `finally` recomputes
+`nextDueAt` unconditionally, and at currency's 12 h cadence a handle could do
+nothing the scheduler would honour. The signature change and the `finally` fix
+are one item, and it belongs to markets at 60 s in Week 5 — which retires items
+2 and 4 of 4a's carried list by merging them.
+
+**The snapshot is keyed on upstream's publication date, not the Worker's
+clock.** They differ for the ten minutes between UTC midnight and ER-API's daily
+push, and a snapshot filed under tomorrow's date there is a wrong number in a
+store with no expiry that is never rewritten. The same window would have made
+"yesterday" the very table in hand, so every 24 h change would have read
+exactly zero — a calm market rather than a bug.
+
+**`/api/fx/history` gets no `CACHE_POLICY` family.** A new family is four
+coupled edits — the policy, the key builder, doc 11 §4's table and the drift
+test that parses it — for a derived value whose inputs are already permanent.
+Its client-side swr key is therefore spelled in the widget rather than in
+`shared-constants.ts`, which is a deviation from doc 04 §5 worth naming: the
+convention is one string on both sides, and this one has no other side.
+
+**What 4b leaves behind.** The three items 4a left that are not yet closed —
+the unreliable injected resize (doc 19 §4), doc 12 §2a's undeclared spacing
+tokens, and the KV-write note on `ratelimit.ts` — stand as written. The
+`useRefresh` and scheduler-backoff items merge into one and move to Week 5. Two
+new ones: `fg-dim` at 3.51:1 and the 40 px tile-control target remain Week 8, and
+**the day-two production check is 2026-09-02** — the 24 h change column and the
+history chart both need a second calendar day of snapshots before they show
+anything, which is the one thing no test in this repo can bring forward.
 
 ## Week 5 — Markets
 crypto ticker/klines endpoints · stock quote/series/search endpoints

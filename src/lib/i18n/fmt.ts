@@ -167,3 +167,96 @@ export function fmtRelative(at: number | Date, locale: string, now: number = Dat
 	// and 90 minutes is "1 hour" rather than two.
 	return formatter.format(Math.trunc(deltaMs / step.perMs), step.unit);
 }
+
+/* ────────────────────────────────────────── numbers and money (doc 14 §3) */
+
+/**
+ * Memoised for the same reason the date formatters are: constructing an
+ * `Intl.NumberFormat` costs orders of magnitude more than using one, and the
+ * currency detail formats a table of them on every keystroke.
+ */
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+
+function numberFormatter(key: string, build: () => Intl.NumberFormat): Intl.NumberFormat {
+	const hit = numberFormatters.get(key);
+	if (hit !== undefined) return hit;
+
+	const made = build();
+	numberFormatters.set(key, made);
+	return made;
+}
+
+/**
+ * An amount of money, rounded the way that currency is written.
+ *
+ * doc 08 §2 asks for "display rounding per currency minor units; VND has 0
+ * decimals", and **ICU already knows that** — `style: 'currency'` reads it out
+ * of CLDR. A hand-written minor-units table would be a second, staler copy of
+ * data the platform ships, which is what doc 14 §3's "never hand-roll" is
+ * about.
+ *
+ * `narrowSymbol` per doc 14 §3, with one guard: it throws `RangeError` on
+ * engines that predate it, and an unknown code throws whatever `Intl` feels
+ * like. Either way the fallback is the plain symbol, and past that the code
+ * itself — a tile that renders "1000 XXX" is worse than one that renders a
+ * symbol nobody recognises, and both are far better than one that crashes.
+ */
+export function fmtCurrency(value: number, currency: string, locale: string): string {
+	try {
+		return numberFormatter(
+			`c:${locale}:${currency}`,
+			() =>
+				new Intl.NumberFormat(locale, {
+					style: 'currency',
+					currency,
+					currencyDisplay: 'narrowSymbol'
+				})
+		).format(value);
+	} catch {
+		try {
+			return numberFormatter(
+				`cs:${locale}:${currency}`,
+				() => new Intl.NumberFormat(locale, { style: 'currency', currency })
+			).format(value);
+		} catch {
+			return `${fmtRate(value, locale)} ${currency}`;
+		}
+	}
+}
+
+/**
+ * A rate, which is not a price and must not be rounded like one.
+ *
+ * Significant digits rather than fraction digits, because a rate's magnitude is
+ * not the currency's. VND per USD is ~26,000 and JPY per VND is ~0.006; asking
+ * for two decimals renders the first as noise and the second as zero. Six
+ * significant digits covers both and is what a bank board shows.
+ */
+export function fmtRate(rate: number, locale: string): string {
+	return numberFormatter(
+		`r:${locale}`,
+		() => new Intl.NumberFormat(locale, { maximumSignificantDigits: 6 })
+	).format(rate);
+}
+
+/**
+ * A move, as a signed percentage.
+ *
+ * Takes a fraction, because that is what `style: 'percent'` wants and letting
+ * Intl place the sign and the symbol is the difference between "+0,21 %" in
+ * Vietnamese and a hand-built string that is right in exactly one locale.
+ *
+ * `signDisplay: 'exceptZero'` because "+0.00 %" claims a rise that did not
+ * happen, and a bare "0 %" is the honest way to say a rate held.
+ */
+export function fmtPercentChange(fraction: number, locale: string): string {
+	return numberFormatter(
+		`p:${locale}`,
+		() =>
+			new Intl.NumberFormat(locale, {
+				style: 'percent',
+				signDisplay: 'exceptZero',
+				maximumFractionDigits: 2
+			})
+	).format(fraction);
+}

@@ -343,7 +343,8 @@ gridstack's `minW`/`minH`/`maxW`/`maxH` for every tile it hands to the grid
 
 The array grows a row per widget as each lands (doc 23): `clock` in Week 1;
 `timer`, `calc`, `notes` and `todo` in Week 2; `calendar`, `toolbox` and `quote`
-in Week 3, so **eight of fifteen** are registered as of 2026-08-28. `core/registry.test.ts` asserts every *registered*
+in Week 3, `weather` and `currency` in Week 4, so **ten of fifteen** are
+registered as of 2026-08-31. `core/registry.test.ts` asserts every *registered*
 manifest matches its row here, so the table stays authoritative without failing
 on rows whose widget has not been built yet — and it checks all fifteen rows
 parse, so a silent edit to an unbuilt row cannot pass either.

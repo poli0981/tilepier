@@ -38,6 +38,7 @@
 	}
 
 	let {
+		instanceId,
 		settings: tileSettings,
 		size,
 		onUpdateSettings,
@@ -125,7 +126,7 @@
 		leaves the old data key registered and the new one running nothing.
 	-->
 	{#key dataKey}
-		<TpWeatherReadout place={prefs.place} {size} {db} />
+		<TpWeatherReadout {instanceId} place={prefs.place} {size} {db} />
 	{/key}
 {/if}
 

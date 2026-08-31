@@ -26,13 +26,20 @@ function fakeKv(): KVNamespace & { store: Map<string, string> } {
 }
 
 interface CallOptions {
-	kv?: KVNamespace | undefined;
+	/**
+	 * Omitted gives a working fake. **`null` means the binding is genuinely
+	 * absent** — spelled apart from `undefined` because `undefined` is also what
+	 * an omitted option looks like, and the two collapsing is why the
+	 * missing-binding test passed for four weeks while never reaching the branch
+	 * it names (found 2026-08-31).
+	 */
+	kv?: KVNamespace | null;
 	search?: string;
 	headers?: Record<string, string>;
 }
 
 function call(options: CallOptions = {}): Promise<Response> {
-	const kv = options.kv === undefined ? fakeKv() : options.kv;
+	const kv = options.kv === undefined ? fakeKv() : (options.kv ?? undefined);
 	const url = new URL(
 		`https://tilepier.win/api/weather${options.search ?? '?lat=21.02&lon=105.85'}`
 	);
@@ -91,7 +98,7 @@ describe('guards', () => {
 	});
 
 	it('fails when the KV binding is missing rather than throwing', async () => {
-		const response = await call({ kv: undefined });
+		const response = await call({ kv: null });
 
 		expect(response.status).toBe(503);
 		expect(await response.json()).toMatchObject({ ok: false, error: { code: 'UPSTREAM_DOWN' } });

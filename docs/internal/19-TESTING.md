@@ -139,7 +139,21 @@ pointer can lose a resize the same way is open and worth answering on its own**:
 if it can, a user's resize silently fails to persist, and no test arrangement
 would fix that.
 
-**#4 is half written, and the written half is the half that exists.** Its stale
+**#4 is complete since 2026-08-31**, and the clause that looked unreachable
+turned out not to be. “online → refresh clears badges” has no trigger at
+`currency`’s 12 h cadence — `scheduler.execute`’s `finally` recomputes
+`nextDueAt` from the cadence and `wake('online')` skips anything not yet due, so
+neither a reconnect nor a reload revalidates a young entry. The honest trigger
+is the entry genuinely ageing past the client TTL, and `page.clock.setFixedTime`
+arranges that without faking a timer the app depends on: thirteen hours on, the
+tile revalidates, meets a refusal, and raises the `stale-error` badge doc 13 §7
+gives a retry button. The alternative considered and **not** taken was to call
+the retry button “refresh” and move on — an unexplained substitution is how a
+journey quietly stops testing the thing it is named after.
+
+What follows is the note as it stood while the second half was outstanding.
+
+**#4 was half written, and the written half was the half that existed.** Its stale
 badges need a widget with cached network data, and the first of those is weather
 in Week 4. What Week 3 could assert is the rest of that sentence — the offline
 chip appearing and clearing, and a deck made entirely of local widgets being
@@ -280,3 +294,26 @@ run.
       remove (S1 discipline)
 - [ ] Unit tests for its `service.ts`/logic; component test for states
 - [ ] Spec doc cross-checked; deviations noted back into docs 07–09
+
+**`currency`, 2026-08-31 — all nine met.** Recorded here because two of the
+boxes need naming rather than ticking.
+
+- **Density.** `min` is 2×1, so tier S is reachable and all three tiers are
+  exercised. At h=1 the tile is one line carrying `{amount} {base} =
+  {converted}` — a bare number there is a quantity with no unit attached to it
+  — and no controls at all. The loading skeleton is one bar rather than two,
+  which is doc 08 §3's quote post-mortem applied instead of rediscovered.
+- **States.** doc 17 §3 puts `currency` in the cached-data class, so all seven
+  are required and implemented. `permission-needed` is **forbidden rather than
+  absent**: the manifest declares no `permissions`, and doc 06 §3 makes the
+  state required exactly when it does. Named here per that section's rule, and
+  asserted against the manifest in the component tests so it stays true if
+  someone adds a permission without reading this.
+- **A11y.** The chart's summary line carries the pair, the range, the move and
+  the band it moved in. The 24 h change is signed by `Intl` before it is
+  tinted, so colour is reinforcement rather than the channel (doc 12 §4.2).
+- **Deviations noted back.** Three, all in doc 08 §2: the attribution link is
+  not visible at h=1 (doc 16 §5 carries the same note and the escalation), the
+  change column is absent rather than zero before a second day is recorded, and
+  the cross rate is computed client-side because doc 11 §3 gives `/api/fx` no
+  parameters.

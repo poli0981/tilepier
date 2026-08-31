@@ -2,12 +2,12 @@
 	import { untrack } from 'svelte';
 	import type { TpMaybeNumber } from '$lib/api-types';
 	import { useRefresh } from '$lib/core/refresh.svelte';
+	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import { fmtRelative } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import TpWeatherIcon from '$lib/ui/icons/TpWeatherIcon.svelte';
 	import { wmoGlyph, type TpWmoGlyph } from '$lib/ui/icons/wmo';
 	import type { TpTileSize } from '$lib/core/types';
@@ -49,13 +49,17 @@
 	 * Named here rather than skipped, per doc 06 §3's single-widget N/A rule.
 	 */
 	interface Props {
+		/** The tile this readout belongs to, so its status can reach the host
+		 *  header (doc 13 §7). Threaded down from `TpWeatherWidget`, which is
+		 *  where `TpWidgetProps` delivers it. */
+		instanceId: string;
 		place: TpWeatherPlace;
 		size: TpTileSize;
 		/** Test seam: a throwaway Dexie, the way `swr.svelte.test.ts` drives one. */
 		db?: TpDb | undefined;
 	}
 
-	let { place, size, db = undefined }: Props = $props();
+	let { instanceId, place, size, db = undefined }: Props = $props();
 
 	/**
 	 * The value at mount, deliberately, and `untrack` is how that is said out
@@ -187,6 +191,46 @@
 	function retry(): void {
 		void handle?.revalidate('retry');
 	}
+
+	/**
+	 * doc 13 §7’s badge, published to the host header through
+	 * `core/tile-status` rather than drawn here. It lived in this body until
+	 * 2026-08-31 for want of a channel; doc 13 §3 records the change.
+	 *
+	 * `rate-limited` joins `stale-error` because doc 04 §2’s table says it
+	 * should. It did not before: a tile holding cached data through a 429 showed
+	 * no badge at all, because the inline error card below only renders when
+	 * there is nothing to show underneath it.
+	 */
+	const badge = $derived.by<TpTileStatus | null>(() => {
+		if (reading === undefined) return null;
+		if (status === 'offline') return { kind: 'offline', age: '', retry: null };
+		if (status === 'stale-error' || status === 'rate-limited') {
+			return { kind: 'stale-error', age: ageLine, retry };
+		}
+		if (status === 'stale' || servedStale) return { kind: 'stale', age: ageLine, retry: null };
+		return null;
+	});
+
+	// `untrack` because `SvelteMap.set` reads before it writes, so a tracked
+	// write self-invalidates into `effect_update_depth_exceeded` — the same
+	// trap the `swr()` subscription above documents.
+	$effect(() => {
+		const next = badge;
+		untrack(() => setTileStatus(instanceId, next));
+	});
+
+	/**
+	 * Teardown, in its own effect on purpose. Folded into the one above, the
+	 * cleanup would fire on every re-run and turn each heartbeat into a delete
+	 * and an insert — which is exactly the churn `setTileStatus`’s identity
+	 * guard exists to avoid. No tracked reads here, so this runs once and its
+	 * cleanup is the unmount.
+	 */
+	$effect(() => {
+		const id = untrack(() => instanceId);
+		return () => setTileStatus(id, null);
+	});
 </script>
 
 <div class="tp-wx" data-testid="weather-readout" data-status={status}>
@@ -222,35 +266,6 @@
 	{:else}
 		<div class="tp-wx__head">
 			<span class="tp-wx__place" data-testid="weather-place">{placeName}</span>
-			{#if status === 'offline'}
-				<span class="tp-wx__badge tp-wx__badge--offline" data-testid="weather-badge-offline">
-					{m['widget.weather.offline_short']()}
-				</span>
-			{:else if status === 'stale' || status === 'stale-error' || servedStale}
-				<!-- doc 13 §7's stale badge. In the tile body rather than the host
-				     header: the header is `TpWidgetHost`'s, hosts are mounted
-				     imperatively and cannot take a reactive prop, and the shared
-				     channel that would fix that is a `core/` change Week 4 cut.
-				     Recorded as a deviation in doc 13 §3. -->
-				<span
-					class="tp-wx__badge tp-wx__badge--stale"
-					title={m['widget.weather.stale_hint']()}
-					data-testid="weather-badge-stale"
-				>
-					{m['widget.weather.stale']({ age: ageLine })}
-				</span>
-				{#if status === 'stale-error'}
-					<button
-						type="button"
-						class="tp-wx__retry tp-wx__retry--icon"
-						aria-label={m['common.retry']()}
-						data-testid="weather-retry"
-						onclick={retry}
-					>
-						<TpIcon name="expand" size={12} />
-					</button>
-				{/if}
-			{/if}
 		</div>
 
 		<div class="tp-wx__now">
@@ -324,28 +339,6 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-	}
-
-	.tp-wx__badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.25rem;
-		flex: none;
-		border-radius: var(--radius-ctl);
-		padding: 0 0.25rem;
-	}
-
-	/* doc 13 §7: an amber lamp, and never colour alone — the badge carries its
-	   own age text, so the dot is redundant reinforcement rather than the only
-	   channel (doc 12 §4.2). */
-	.tp-wx__badge--stale {
-		color: var(--color-warn);
-		background: color-mix(in oklch, var(--color-warn) 12%, transparent);
-	}
-
-	.tp-wx__badge--offline {
-		color: var(--color-fg-dim);
-		background: var(--color-ink-850);
 	}
 
 	.tp-wx__now {
@@ -428,12 +421,6 @@
 		cursor: pointer;
 		font: inherit;
 		padding: 0.125rem 0.5rem;
-	}
-
-	.tp-wx__retry--icon {
-		flex: none;
-		padding: 0.125rem;
-		border-color: transparent;
 	}
 
 	.tp-wx__skeleton {

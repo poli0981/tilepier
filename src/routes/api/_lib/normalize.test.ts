@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+	fxAsOf,
 	normalizeAir,
 	normalizeDaily,
+	normalizeFx,
 	normalizeHourly,
 	normalizeNominatim,
 	normalizePhoton,
@@ -324,5 +326,86 @@ describe('normalizeNominatim', () => {
 	it('is empty for a body that is not an array', () => {
 		expect(normalizeNominatim({ error: 'nope' })).toEqual([]);
 		expect(normalizeNominatim(null)).toEqual([]);
+	});
+});
+
+describe('normalizeFx (doc 10 §3)', () => {
+	/** 2026-08-31T10:00:00Z, standing in for a clock the tests do not control. */
+	const NOW = Date.parse('2026-08-31T10:00:00Z');
+
+	const BODY = {
+		result: 'success',
+		time_last_update_unix: 1_788_134_551,
+		time_next_update_unix: 1_788_221_421,
+		base_code: 'USD',
+		rates: { USD: 1, VND: 26_006.374497, EUR: 0.862295 }
+	};
+
+	it('reads upstream stamps as seconds and reports them as milliseconds', () => {
+		const payload = normalizeFx(BODY, null, NOW);
+		expect(payload.asOf).toBe(1_788_134_551_000);
+		expect(payload.nextUpdateAt).toBe(1_788_221_421_000);
+	});
+
+	it('falls back to our clock when upstream did not stamp the table', () => {
+		expect(normalizeFx({ rates: { VND: 1 } }, null, NOW).asOf).toBe(NOW);
+		expect(fxAsOf({}, NOW)).toBe(NOW);
+	});
+
+	it('reports no next update rather than inventing one', () => {
+		// The cap is then simply not applied, and doc 11 §4's row stands alone.
+		expect(normalizeFx({ rates: { VND: 1 } }, null, NOW).nextUpdateAt).toBeNull();
+		expect(normalizeFx({ ...BODY, time_next_update_unix: 0 }, null, NOW).nextUpdateAt).toBeNull();
+		expect(
+			normalizeFx({ ...BODY, time_next_update_unix: 'soon' }, null, NOW).nextUpdateAt
+		).toBeNull();
+	});
+
+	it('drops every rate it would not be safe to divide by', () => {
+		const payload = normalizeFx(
+			{ rates: { VND: 26_006, EUR: '0.86', GBP: -1, JPY: 0, KRW: null, EURO: 1.1, xyz: 2 } },
+			null,
+			NOW
+		);
+		// A zero would be an Infinity on somebody's tile; a two-letter or
+		// lowercase key is a new upstream field rather than a currency.
+		expect(payload.rates).toEqual({ VND: 26_006, USD: 1 });
+	});
+
+	it('adds the base to a table that arrived without it', () => {
+		// Every conversion divides by `rates[from]`, so a table missing its own
+		// base turns every USD row into undefined rather than into a wrong number.
+		expect(normalizeFx({ rates: { VND: 26_006 } }, null, NOW).rates['USD']).toBe(1);
+	});
+
+	it('leaves an empty table empty, so the endpoint can tell', () => {
+		// The one case where *not* helping is the point: an empty table is how
+		// `/api/fx` recognises an upstream that answered without answering, and a
+		// helpfully-injected `USD: 1` would make it look like an answer.
+		expect(normalizeFx({ result: 'error' }, null, NOW).rates).toEqual({});
+		expect(normalizeFx(null, null, NOW).rates).toEqual({});
+	});
+
+	it('carries yesterday through, re-validated', () => {
+		// We wrote that snapshot ourselves, but a KV value with no expiry outlives
+		// the build that wrote it, so it gets the same treatment as any other JSON.
+		const payload = normalizeFx(
+			BODY,
+			{ date: '2026-08-30', rates: { USD: 1, VND: 25_951.2, BAD: -3 } },
+			NOW
+		);
+		expect(payload.prevDate).toBe('2026-08-30');
+		expect(payload.prevRates).toEqual({ USD: 1, VND: 25_951.2 });
+	});
+
+	it('reports no previous day rather than an empty one', () => {
+		expect(normalizeFx(BODY, null, NOW).prevRates).toBeNull();
+		expect(normalizeFx(BODY, { date: '2026-08-30', rates: {} }, NOW).prevRates).toBeNull();
+		expect(normalizeFx(BODY, { date: '2026-08-30', rates: {} }, NOW).prevDate).toBeNull();
+	});
+
+	it('carries the attribution doc 16 §5 asks for', () => {
+		expect(normalizeFx(BODY, null, NOW).attribution).toBe('Rates By Exchange Rate API');
+		expect(normalizeFx(BODY, null, NOW).base).toBe('USD');
 	});
 });

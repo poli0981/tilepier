@@ -1,0 +1,408 @@
+import type { TpApiMeta, TpFxHistoryPayload, TpFxPayload } from '$lib/api-types';
+import { fetchEnvelope } from '$lib/core/api';
+import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
+import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
+import { logEntry } from '$lib/core/log-buffer';
+import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
+import { CURRENCY_DEFAULTS, MAX_AMOUNT, MAX_TARGETS, type TpCurrencySettings } from './types';
+
+/**
+ * The currency tile's data layer — the tier-2 pattern's second proof, and the
+ * first place it is reused rather than invented.
+ *
+ * Pure but for `fxSource`, so every decision the tile makes is testable in the
+ * node project without a DOM.
+ */
+
+/**
+ * What the tile subscribes to.
+ *
+ * `T` carries the envelope's `meta` for the reason `weather/service.ts` spells
+ * out at length: `swr` computes staleness from the *client's* cache age alone,
+ * so a table the Worker served past its KV TTL because ER-API was down arrives
+ * with a fresh `cachedAt` and would read as `fresh`. A day-old rate presented
+ * as today's is the whole failure mode this widget has.
+ */
+export interface TpFxReading {
+	payload: TpFxPayload;
+	meta: TpApiMeta;
+}
+
+/* ─────────────────────────────────────────────────────────────── the source */
+
+/**
+ * The data key, spelled the way the Worker spells it (doc 04 §5).
+ *
+ * **It does not depend on the pair**, and that is the endpoint's design showing
+ * through: one cached USD table answers every pair, and the division happens
+ * here. So unlike weather, a settings change never moves this key — which is
+ * why the tile needs no `{#key}` remount dance around its subscription. Said
+ * out loud because the next reader will arrive expecting weather's shape.
+ */
+export function fxKey(): string {
+	return cacheKey.fx();
+}
+
+/** doc 11 §3 gives this route no parameters at all. */
+export function fxUrl(): string {
+	return '/api/fx';
+}
+
+/** Not exported: `fxSource` is the only caller, and knip is CI-blocking on an
+ *  export nothing imports. */
+function fetchFx(): TpSwrFetcher<TpFxReading> {
+	return async (signal) => {
+		const result = await fetchEnvelope<TpFxPayload>(fxUrl(), signal);
+		return { payload: result.data, meta: result.meta };
+	};
+}
+
+/**
+ * Subscribe to the rate table.
+ *
+ * `target` is threaded through so a component test can drive a throwaway Dexie
+ * rather than the reader's own, the way `weather/service.ts` does.
+ */
+export function fxSource(target?: TpDb): TpSwrHandle<TpFxReading> {
+	// doc 08 §2's "12 h client ttl" is the same number as the Worker's KV TTL,
+	// which is the floor doc 04 §2 requires: a shorter client window would
+	// revalidate into a guaranteed HIT.
+	const options = { ttlMs: CACHE_POLICY.fx.ttlMs };
+
+	return target === undefined
+		? swr<TpFxReading>(fxKey(), fetchFx(), options)
+		: swr<TpFxReading>(fxKey(), fetchFx(), options, target);
+}
+
+/* ──────────────────────────────────────────────────────────────── settings */
+
+/** ISO 4217, and the same shape the Worker keeps in a rate table. */
+const CURRENCY_CODE = /^[A-Z]{3}$/;
+
+/** Not exported: callers reach it through `readSettings`, and knip is
+ *  CI-blocking on an export nothing imports. */
+function readCode(value: unknown, fallback: string): string {
+	if (typeof value !== 'string') return fallback;
+	const code = value.trim().toUpperCase();
+	return CURRENCY_CODE.test(code) ? code : fallback;
+}
+
+/**
+ * Fail-closed, in the style of `weather/service.ts` and `quote/service.ts`: a
+ * settings bag hand-edited into the layout, or written by an older build, must
+ * land on a working USD→VND tile rather than take the tile down.
+ *
+ * A code that passes this and is still absent from the rate table is a
+ * different thing — doc 08 §2's "upstream dropped it" edge case — and is the
+ * tile's business rather than this function's. Shape is checked here;
+ * availability is checked against the payload.
+ */
+export function readSettings(bag: Record<string, unknown>): TpCurrencySettings {
+	const amount = bag['amount'];
+
+	return {
+		base: readCode(bag['base'], CURRENCY_DEFAULTS.base),
+		quote: readCode(bag['quote'], CURRENCY_DEFAULTS.quote),
+		amount:
+			typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && amount <= MAX_AMOUNT
+				? amount
+				: CURRENCY_DEFAULTS.amount,
+		targets: readTargets(bag['targets'])
+	};
+}
+
+/**
+ * The detail's rows, deduped and bounded.
+ *
+ * An empty list is a legitimate answer — a reader can remove every row — so a
+ * bag carrying `[]` keeps it, and only a bag carrying something that is not a
+ * list at all falls back to the defaults.
+ */
+function readTargets(value: unknown): string[] {
+	if (!Array.isArray(value)) return [...CURRENCY_DEFAULTS.targets];
+
+	const seen = new Set<string>();
+	for (const entry of value) {
+		if (typeof entry !== 'string') continue;
+		const code = entry.trim().toUpperCase();
+		if (CURRENCY_CODE.test(code)) seen.add(code);
+		if (seen.size >= MAX_TARGETS) break;
+	}
+	return [...seen];
+}
+
+/* ──────────────────────────────────────────────────────────────── the maths */
+
+/**
+ * One rate out of one USD-based table.
+ *
+ * `null` rather than `NaN` for a code the table does not carry, because the
+ * tile has something to *say* about that (doc 08 §2: keep the row, mark it
+ * unavailable) and nothing to say about a `NaN`.
+ *
+ * Zero and negative rates are refused for the same reason `normalize.ts`
+ * refuses to store them: the division below would turn one into an `Infinity`
+ * on screen rather than into an obviously wrong number.
+ */
+function crossRate(table: Record<string, number> | null, from: string, to: string): number | null {
+	if (from === to) return 1;
+	if (table === null) return null;
+
+	const base = table[from];
+	const quote = table[to];
+	if (typeof base !== 'number' || !Number.isFinite(base) || base <= 0) return null;
+	if (typeof quote !== 'number' || !Number.isFinite(quote)) return null;
+
+	return quote / base;
+}
+
+export function rateFor(payload: TpFxPayload, from: string, to: string): number | null {
+	return crossRate(payload.rates, from, to);
+}
+
+export function convert(
+	payload: TpFxPayload,
+	amount: number,
+	from: string,
+	to: string
+): number | null {
+	const rate = rateFor(payload, from, to);
+	return rate === null ? null : amount * rate;
+}
+
+/**
+ * doc 08 §2's 24 h change, as a *fraction* — 0.0021, not 0.21.
+ *
+ * A fraction because `Intl.NumberFormat`'s `style: 'percent'` wants one, and
+ * letting it place the sign and the symbol is the difference between "+0,21 %"
+ * in Vietnamese and a hand-built string that is right in exactly one locale.
+ *
+ * `null` whenever there is nothing honest to say: on the day this ships there
+ * is no previous snapshot at all, and a pair can be missing from yesterday's
+ * table even when it is in today's. The caller renders **no change** in that
+ * case rather than a zero — a 0.00 % is a claim about the market, and an absent
+ * figure is the truth about what we know.
+ */
+export function change24h(payload: TpFxPayload, from: string, to: string): number | null {
+	const now = crossRate(payload.rates, from, to);
+	const before = crossRate(payload.prevRates, from, to);
+	if (now === null || before === null || before === 0) return null;
+
+	return (now - before) / before;
+}
+
+/**
+ * Every code the table can convert, sorted, for the pair pickers.
+ *
+ * Codes the reader has stored are folded in even when upstream dropped them, so
+ * the picker still shows the pair the tile is actually set to. Selecting an
+ * unavailable code is how a reader gets *out* of that state, and a picker that
+ * hid it would leave them stuck on a row they cannot change.
+ */
+export function currencyCodes(payload: TpFxPayload | undefined, ...stored: string[]): string[] {
+	const codes = new Set<string>(payload === undefined ? [] : Object.keys(payload.rates));
+	for (const code of stored) if (CURRENCY_CODE.test(code)) codes.add(code);
+
+	return [...codes].sort();
+}
+
+/* ────────────────────────────────────────────────────────── the history */
+
+/** How many real points doc 08 §2 wants before the chart is worth drawing. */
+export const HISTORY_MIN_POINTS = 14;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface TpHistoryReading {
+	payload: TpFxHistoryPayload;
+	meta: TpApiMeta;
+}
+
+/** A calendar day, and what the rate was that day. `null` is a day upstream
+ *  published nothing, which the chart has to break its line across. */
+export interface TpHistoryPoint {
+	/** Epoch ms at UTC midnight, because the chart plots against a time axis. */
+	at: number;
+	rate: number | null;
+}
+
+/**
+ * The history data key — spelled here, and **not** in `shared-constants.ts`.
+ *
+ * doc 04 §5's convention is that a client cache key and a Worker KV key are the
+ * same string. This one has no Worker counterpart: `/api/fx/history` assembles
+ * its answer from the `fx:snap:` pile and caches nothing of its own (doc 11
+ * §3), so there is no other side for the key to match. Written down because the
+ * next reader will reach for `cacheKey` and find nothing there.
+ */
+export function historyKey(base: string, quote: string, days: number): string {
+	return `fx:hist:v1:${base}-${quote}:${days}`;
+}
+
+export function historyUrl(base: string, quote: string, days: number): string {
+	const params = new URLSearchParams({ pair: `${base}-${quote}`, days: String(days) });
+	return `/api/fx/history?${params.toString()}`;
+}
+
+export function historySource(
+	base: string,
+	quote: string,
+	days: number,
+	target?: TpDb
+): TpSwrHandle<TpHistoryReading> {
+	const key = historyKey(base, quote, days);
+	const fetcher: TpSwrFetcher<TpHistoryReading> = async (signal) => {
+		const result = await fetchEnvelope<TpFxHistoryPayload>(historyUrl(base, quote, days), signal);
+		return { payload: result.data, meta: result.meta };
+	};
+	// One more point arrives per day, so the rate table's window is the right one
+	// here too — anything shorter revalidates into a guaranteed HIT.
+	const options = { ttlMs: CACHE_POLICY.fx.ttlMs };
+
+	return target === undefined
+		? swr<TpHistoryReading>(key, fetcher, options)
+		: swr<TpHistoryReading>(key, fetcher, options, target);
+}
+
+/**
+ * One entry per calendar day in the window, with `null` where nothing was
+ * recorded.
+ *
+ * The endpoint returns only the days it has, which is the honest wire shape.
+ * The chart needs the silence spelled out: on a time axis ECharts joins
+ * consecutive points however far apart they are, so without an explicit `null`
+ * a fortnight-long outage would be drawn as one confident straight line.
+ */
+/** `YYYY-MM-DD` in UTC, the way the Worker keys a snapshot (doc 10 §3). Kept
+ *  local rather than imported from `routes/api/_lib`: a widget reaching into
+ *  the Worker's own modules is the boundary doc 03 draws. */
+function utcDate(ms: number): string {
+	return new Date(ms).toISOString().slice(0, 10);
+}
+
+export function historyPoints(
+	payload: TpFxHistoryPayload,
+	days: number,
+	now: number
+): TpHistoryPoint[] {
+	// Guarded rather than trusted: the envelope is typed, not validated, and a
+	// panel that throws on a malformed body takes the whole detail down with it.
+	const rows = Array.isArray(payload.points) ? payload.points : [];
+	const byDate = new Map(rows.map((p) => [p.date, p.rate]));
+	const points: TpHistoryPoint[] = [];
+
+	for (let back = days - 1; back >= 0; back--) {
+		const date = utcDate(now - back * DAY_MS);
+		const at = Date.parse(date);
+		points.push({ at, rate: byDate.get(date) ?? null });
+	}
+
+	return points;
+}
+
+/** How many of those entries are real, which is what doc 08 §2's threshold
+ *  counts — a window of 365 mostly-empty days is not fourteen days of history. */
+export function historyDepth(points: readonly TpHistoryPoint[]): number {
+	return points.filter((p) => p.rate !== null).length;
+}
+
+/**
+ * doc 13 §8's accessible summary line, as data.
+ *
+ * `null` when there is nothing to summarise, so the caller renders the
+ * building-history copy rather than a sentence about an empty range.
+ */
+export function historySummary(
+	points: readonly TpHistoryPoint[]
+): { low: number; high: number; change: number } | null {
+	const rates = points.map((p) => p.rate).filter((r): r is number => r !== null);
+	const first = rates[0];
+	const last = rates.at(-1);
+	if (first === undefined || last === undefined || first === 0) return null;
+
+	return { low: Math.min(...rates), high: Math.max(...rates), change: (last - first) / first };
+}
+
+/* ───────────────────────────────────────── the offline mirror (doc 10 §3) */
+
+/**
+ * How many daily tables to keep on the device.
+ *
+ * `pruneApiCache` deliberately leaves `fxHistory` alone, and should: its
+ * contract is "cache", and this is not cache. It is the only copy of a history
+ * no API will sell back to us, so dropping a row is dropping data rather than
+ * dropping a derivable. But unbounded is roughly 1.8 MB a year on somebody's
+ * phone, so it is bounded at a year plus slack — one more than the largest
+ * range `/api/fx/history` will answer for.
+ */
+export const MIRROR_MAX_DAYS = 400;
+
+/**
+ * Mirrors today's rate table into Dexie, so the chart survives going offline.
+ *
+ * **Driven by `/api/fx`, not by the history response**, and that is the
+ * non-obvious half. `swr` already mirrors every payload into `apiCache`, so the
+ * history the reader has *looked at* is offline-available for free. What this
+ * adds is that one snapshot answers every pair and every range: a reader who
+ * viewed USD→VND over ninety days and then switches to USD→EUR gets an answer
+ * from the same rows, where `apiCache` holds two unrelated blobs and knows
+ * nothing about the second.
+ *
+ * One `put` per published day, on the tile's existing 12 h cadence. doc 10 §3's
+ * sentence honoured with one write path rather than two.
+ */
+export async function mirrorFxSnapshot(
+	payload: TpFxPayload,
+	target: TpDb | undefined = defaultDb
+): Promise<void> {
+	try {
+		await target.fxHistory.put({ dateKey: utcDate(payload.asOf), rates: payload.rates });
+
+		const total = await target.fxHistory.count();
+		if (total <= MIRROR_MAX_DAYS) return;
+
+		const oldest = await target.fxHistory
+			.orderBy('dateKey')
+			.limit(total - MIRROR_MAX_DAYS)
+			.primaryKeys();
+		await target.fxHistory.bulkDelete(oldest);
+	} catch (error) {
+		// A failed mirror is not worth taking the tile down for: the rates on
+		// screen are already correct, and the only thing lost is a day of history
+		// nobody has asked for yet. Same discipline `swr`'s own Dexie writes keep.
+		logEntry('warn', 'could not mirror the fx snapshot', { src: 'widget', error });
+	}
+}
+
+/**
+ * The same window as `historyPoints`, assembled from the device instead.
+ *
+ * The fallback for a panel opened with no connection: `swr` has nothing cached
+ * for *this* pair and range, but the daily tables are here and a cross rate is
+ * arithmetic. Returns an empty array rather than throwing, because a chart that
+ * cannot be drawn is a state the panel already renders.
+ */
+export async function readMirroredHistory(
+	base: string,
+	quote: string,
+	days: number,
+	now: number,
+	target: TpDb | undefined = defaultDb
+): Promise<TpHistoryPoint[]> {
+	try {
+		const rows = await target.fxHistory.toArray();
+		const byDate = new Map(rows.map((row) => [row.dateKey, row.rates]));
+		const points: TpHistoryPoint[] = [];
+
+		for (let back = days - 1; back >= 0; back--) {
+			const date = utcDate(now - back * DAY_MS);
+			const table = byDate.get(date) ?? null;
+			points.push({ at: Date.parse(date), rate: crossRate(table, base, quote) });
+		}
+
+		return points;
+	} catch (error) {
+		logEntry('warn', 'could not read the mirrored fx history', { src: 'widget', error });
+		return [];
+	}
+}
