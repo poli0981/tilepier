@@ -5,15 +5,18 @@ import { m } from '$lib/paraglide/messages';
 import { online } from '$lib/stores/online.svelte';
 import { settings } from '$lib/stores/settings.svelte';
 import TpWeatherPlacePicker from './TpWeatherPlacePicker.svelte';
+import { SEARCH_DEBOUNCE_MS } from './geocode';
 import type { TpPositionSource } from './geolocate';
 
 /**
  * doc 08 §1's place picker — the tile's `empty` state, and the fallback from a
  * refused geolocation permission.
  *
- * Real timers rather than fake ones: the debounce is the behaviour under test
- * in half these cases, and a fake clock would let a passing test coexist with a
- * component that never debounced at all.
+ * Real timers by default: the debounce is the behaviour under test in half
+ * these cases, and a clock that is only ever jumped forward would let a passing
+ * test coexist with a component that never debounced at all. The one exception
+ * is `debounces a run of keystrokes into one request`, which stops the clock on
+ * purpose and says why on the spot.
  */
 
 function serve(body: unknown, init: ResponseInit = {}): ReturnType<typeof vi.fn> {
@@ -49,6 +52,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	// Insurance only — the one case that fakes the clock restores it in its own
+	// `finally`. A file that leaked a stopped clock would hang the next one.
+	vi.useRealTimers();
 	cleanup();
 	online.reset();
 	settings.dispose();
@@ -92,13 +98,51 @@ describe('search', () => {
 	});
 
 	it('debounces a run of keystrokes into one request', async () => {
+		// The one case in this file that stops the clock, because it is the one
+		// whose premise is a *gap*: three keystrokes have to land inside a single
+		// 400 ms window for "one request" to be the right answer. Real time makes
+		// that premise depend on machine load — on 2026-08-31 a full `pnpm
+		// test:cov` stretched the interval between two `fill()`s past 400 ms while
+		// the browser project's other files ran beside it, two requests genuinely
+		// fired, and `expected 1, got 2` was an accurate report about a test that
+		// had asked the wrong question. Alone the same file passed every time,
+		// which is the signature of a premise the test does not control.
+		//
+		// So the fills take zero *fake* time however long they really take. Note
+		// what is deliberately absent: `shouldAdvanceTime`, the flag the rest of
+		// the repo uses. That one keeps the clock running and only lets a test set
+		// where it starts — useful when a component wants a plausible `now`, and
+		// exactly the wrong tool here, where the whole point is that the clock
+		// must not move on its own. `toFake` is narrowed to the debounce's own
+		// timer for the same reason: nothing else in this file's path should
+		// notice.
+		//
+		// The window is then crossed in two steps, which asserts *more* than the
+		// real-timer version did rather than less. Debouncing is still the
+		// behaviour under test — a picker that dropped it fails at 399 ms, and one
+		// that kept a token 1 ms debounce (enough to survive a "one request"
+		// count) fails there too. That guard is the reason it is worth the
+		// ceremony: `geocode.ts` explains at length why search does not go through
+		// `swr()`, and this is the only test standing behind that decision.
 		const spy = serve(GEOCODE_OK);
 		const screen = render(TpWeatherPlacePicker, { onPick: vi.fn() });
 		const box = screen.getByTestId('weather-search');
 
-		await box.fill('hà');
-		await box.fill('hà n');
-		await box.fill('hà nộ');
+		vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+		try {
+			await box.fill('hà');
+			await box.fill('hà n');
+			await box.fill('hà nộ');
+
+			vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS - 1);
+			expect(spy).not.toHaveBeenCalled();
+
+			vi.advanceTimersByTime(1);
+		} finally {
+			// Back to real time before anything waits on the DOM: `expect.element`
+			// and `vi.waitFor` retry on a timer, and a stopped one never retries.
+			vi.useRealTimers();
+		}
 
 		await expect.element(screen.getByTestId('weather-results')).toBeInTheDocument();
 		expect(spy).toHaveBeenCalledTimes(1);
