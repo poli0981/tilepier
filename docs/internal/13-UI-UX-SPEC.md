@@ -51,14 +51,34 @@ short and left-aligned. Keyed on `h`, not on the tier — tier S is
 said "hidden entirely" and the code hid only the title, which cost an h=1 tile
 28 of its 48 px.)
 
-**The stale badge is in the widget's body, not this header** (2026-08-30, and
-§7 still describes the header). `TpWidgetHost` owns the header, hosts are
-mounted imperatively by `TpGrid` and cannot take a reactive prop (doc 06 §5
-rule 11), so a header badge needs a keyed status channel in `src/lib/core/**` -
-a change at the 90/80 coverage threshold that Week 4 cut. The cost of leaving
-it is five copies by Week 6 (weather, currency, markets, rss, map); the cost of
-moving it is one core module. Written down so the choice gets made rather than
-inherited.
+**The stale badge is in the host header, and §7 describes what the code does**
+(2026-08-31). It lived in the widget's body from 2026-08-30, because
+`TpWidgetHost` is mounted imperatively by `TpGrid` and a new reactive prop
+would have to be owned by `TpGrid` — which has no access to a widget's `swr`
+handle. That note asked for the choice to be made rather than inherited, on the
+arithmetic that leaving it costs five copies by Week 6 and moving it costs one
+core module. **The module was cheaper than the note assumed.**
+
+`src/lib/core/tile-status.ts` is a `SvelteMap` keyed by `instanceId`, and the
+host reads it with one `$derived`. A prop has to cross `mount()`'s one-shot
+props object; a module import crosses nothing, so the constraint that made this
+look expensive was never in the way. It carries no rune of its own — a
+`SvelteMap`'s reactivity is compiled inside the `svelte` package — which is why
+the filename has no `.svelte.` infix, and it is the first module in this repo
+to rely on that. `grid/TpWidgetHost.svelte.test.ts` exists to check exactly
+that, rather than leave it to a badge that never appears.
+
+Two things the move settled that the body badge had wrong:
+
+- **`rate-limited` now raises a badge.** doc 04 §2's table maps it to
+  `stale-error`, but the weather body only rendered its error card when there
+  was *nothing* underneath — so a tile holding cached data through a 429 showed
+  no badge at all.
+- **At h=1 the badge is a lamp and nothing else.** The header is a floating
+  strip there (above), so words would sit on the tile's own content; the
+  sentence moves into `title` and the accessible name, and the body's
+  right-hand reserve grows with the cluster the badge joined. `currency` is the
+  first widget that can reach h=1 with data, which is what forced the question.
 
 Density tiers from grid size (host computes, passes in `size`):
 - **S** (≤2×1): single hero value, no header text (icon only).

@@ -2,6 +2,7 @@
 	import type { Component } from 'svelte';
 	import { logEntry } from '$lib/core/log-buffer';
 	import { getManifest } from '$lib/core/registry';
+	import { tileStatus } from '$lib/core/tile-status';
 	import type { TpTileSize, TpWidgetProps } from '$lib/core/types';
 	import { widgetLabels } from '$lib/i18n/widget-labels';
 	import { m } from '$lib/paraglide/messages';
@@ -54,6 +55,25 @@
 	const tier = $derived(tile.w <= 2 && tile.h <= 1 ? 'S' : tile.w >= 4 || tile.h >= 4 ? 'L' : 'M');
 	const size = $derived<TpTileSize>({ w: tile.w, h: tile.h, pxW: px.w, pxH: px.h, tier });
 
+	/**
+	 * doc 13 §7’s stale badge, read straight off `core/tile-status`.
+	 *
+	 * No prop, and that is the whole design: this component is mounted
+	 * imperatively by `TpGrid` from an event handler, so a reactive prop would
+	 * have to be owned by `TpGrid` — which has no access to a widget’s `swr`
+	 * handle. A module import crosses the `mount()` boundary a prop cannot.
+	 */
+	const status = $derived(tileStatus(tile.instanceId));
+	const badgeText = $derived(
+		status === undefined
+			? ''
+			: status.kind === 'offline'
+				? m['common.tile.offline_short']()
+				: status.age === ''
+					? ''
+					: m['common.tile.stale']({ age: status.age })
+	);
+
 	// Reports the tile's pixel box to the widget. Batched by the browser, and
 	// torn down with the host — a leaked observer here is exactly the kind of
 	// thing spike S1 exists to catch.
@@ -72,12 +92,50 @@
 	});
 </script>
 
-<div class="tp-host" bind:this={contentEl} data-tier={tier} data-flat={tile.h <= 1}>
+<div
+	class="tp-host"
+	bind:this={contentEl}
+	data-tier={tier}
+	data-flat={tile.h <= 1}
+	data-badged={status !== undefined}
+>
 	<header class="tp-drag">
 		{#if manifest !== undefined}
 			<TpIcon name={manifest.icon} size={14} />
 		{/if}
 		<span class="tp-host__title">{title}</span>
+		{#if status !== undefined}
+			<!--
+				doc 12 §4.2: never colour alone. The badge carries its own words, so
+				the lamp is reinforcement — except at h=1, where the header is a
+				floating strip over the body and there is no room for the words. The
+				dot is the only channel there, which is why the title carries the
+				sentence and the badge carries an accessible name either way.
+			-->
+			<span
+				class="tp-host__badge"
+				data-kind={status.kind}
+				data-testid="tile-badge"
+				title={status.kind === 'offline'
+					? m['common.tile.offline_hint']()
+					: m['common.tile.stale_hint']()}
+				aria-label={badgeText}
+			>
+				<span class="tp-host__dot" aria-hidden="true"></span>
+				<span class="tp-host__badge-text" aria-hidden="true">{badgeText}</span>
+			</span>
+			{#if status.retry !== null}
+				<button
+					type="button"
+					class="tp-host__retry"
+					aria-label={m['common.retry']()}
+					data-testid="tile-retry"
+					onclick={status.retry}
+				>
+					<TpIcon name="refresh" size={12} />
+				</button>
+			{/if}
+		{/if}
 		<button
 			type="button"
 			class="tp-host__open"
@@ -212,6 +270,54 @@
 		color: var(--color-danger);
 	}
 
+	.tp-host__badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		flex: none;
+		border-radius: var(--radius-ctl);
+		padding: 0 0.25rem;
+	}
+
+	.tp-host__dot {
+		width: 6px;
+		height: 6px;
+		flex: none;
+		border-radius: 50%;
+		background: currentcolor;
+	}
+
+	.tp-host__badge[data-kind='stale'],
+	.tp-host__badge[data-kind='stale-error'] {
+		color: var(--color-warn);
+		background: color-mix(in oklch, var(--color-warn) 12%, transparent);
+	}
+
+	.tp-host__badge[data-kind='offline'] {
+		color: var(--color-fg-dim);
+		background: var(--color-ink-850);
+	}
+
+	.tp-host__retry {
+		display: flex;
+		flex: none;
+		border: 0;
+		background: none;
+		color: var(--color-warn);
+		cursor: pointer;
+		line-height: 1;
+		padding: 0.25rem;
+	}
+
+	/*
+	 * At h=1 the header is a strip floating over the body (below), so the words
+	 * would sit on top of the tile’s own content. The lamp survives and the
+	 * sentence moves into `title` and the accessible name.
+	 */
+	.tp-host[data-flat='true'] .tp-host__badge-text {
+		display: none;
+	}
+
 	.tp-host__body {
 		flex: 1 1 auto;
 		min-height: 0;
@@ -251,7 +357,9 @@
 	}
 
 	.tp-host[data-flat='true'] .tp-host__open,
-	.tp-host[data-flat='true'] .tp-host__remove {
+	.tp-host[data-flat='true'] .tp-host__remove,
+	.tp-host[data-flat='true'] .tp-host__badge,
+	.tp-host[data-flat='true'] .tp-host__retry {
 		pointer-events: auto;
 	}
 
@@ -277,6 +385,20 @@
 
 	:global(.tp-edit) .tp-host[data-flat='true'] .tp-host__body {
 		padding-right: 4rem;
+	}
+
+	/*
+	 * A badge joins that floating cluster, so the reserve has to grow with it or
+	 * the tile’s last characters run underneath it — the same bug the comment
+	 * above records being measured on a 4×1 quote tile. Dot-only at h=1 keeps
+	 * the extra to about ten pixels rather than fifty.
+	 */
+	.tp-host[data-flat='true'][data-badged='true'] .tp-host__body {
+		padding-right: 3.25rem;
+	}
+
+	:global(.tp-edit) .tp-host[data-flat='true'][data-badged='true'] .tp-host__body {
+		padding-right: 5rem;
 	}
 
 	.tp-host__crash {

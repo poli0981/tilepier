@@ -22,7 +22,9 @@
 	</a>
 
 	{#if !online.isOnline}
-		<span class="tp-bar__chip" role="status">{m['common.offline.title']()}</span>
+		<span class="tp-bar__chip" role="status" data-testid="offline-chip"
+			>{m['common.offline.title']()}</span
+		>
 	{/if}
 
 	<div class="tp-bar__spacer"></div>

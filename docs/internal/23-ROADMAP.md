@@ -273,7 +273,9 @@ move this doc's slip policy made for quote's share-as-image in Week 3: the
 currency history chart and `/api/fx/history` (−2.0), the AQI gauge and
 astronomy card (−0.8), seven WMO glyphs instead of sixteen (−0.5), and the
 stale badge in the widget body rather than a new `core/tile-status` channel
-(−0.5). That leaves ≈17.5, split as:
+(−0.5, **restored in 4b** — the channel turned out to cost one file and a
+`$derived`, because a module import crosses the `mount()` boundary a prop
+cannot). That leaves ≈17.5, split as:
 
 - **Week 4a — weather.** Gap fix, tile, place picker, ECharts bridge, detail.
 - **Week 4b — currency.** `/api/fx` + snapshots, currency widget and detail,

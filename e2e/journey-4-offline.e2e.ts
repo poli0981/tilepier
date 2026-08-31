@@ -42,9 +42,21 @@ async function acceptGate(page: Page): Promise<void> {
 	await expect(page.getByTestId('coach')).toBeHidden();
 }
 
-/** doc 13 §7: a quiet amber chip in the top bar, `role="status"`. */
+/**
+ * doc 13 §7: a quiet amber chip in the top bar, `role="status"`.
+ *
+ * Located by testid rather than by its words, since 2026-08-31. It used to be
+ * `getByRole('status').filter({ hasText: 'ngoại tuyến' })`, which was
+ * unambiguous only by accident: `widget.weather.offline_short` was the same
+ * Vietnamese string, and stayed invisible to this locator purely because the
+ * weather badge was a `<span>` with no role. The badge has since moved to the
+ * host header (doc 13 §7), where it would have matched — so the chip and the
+ * tile badge now say different things (`mất mạng` for a tile's data, this for
+ * the app's connection) *and* this is located structurally. Either fix alone
+ * would have been one refactor away from breaking six tests at once.
+ */
 function offlineChip(page: Page) {
-	return page.getByRole('status').filter({ hasText: 'ngoại tuyến' });
+	return page.getByTestId('offline-chip');
 }
 
 /** The calendar tile is on the seeded deck (doc 13 §9); its header's expand

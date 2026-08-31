@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { scheduler } from '$lib/core/scheduler';
 import { swrCache } from '$lib/core/swr.svelte';
+import { tileStatus, tileStatusChannel } from '$lib/core/tile-status';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import type { TpTileSize } from '$lib/core/types';
 import type { TpApiMeta } from '$lib/api-types';
@@ -87,6 +88,7 @@ beforeEach(() => {
 	scheduler.reset();
 	swrCache.reset();
 	online.reset();
+	tileStatusChannel.clear();
 	db = createDb(`tilepier-wx-${crypto.randomUUID()}`);
 });
 
@@ -95,6 +97,7 @@ afterEach(async () => {
 	scheduler.reset();
 	swrCache.reset();
 	online.reset();
+	tileStatusChannel.clear();
 	settings.dispose();
 	vi.unstubAllGlobals();
 	vi.useRealTimers();
@@ -187,7 +190,7 @@ describe('states (doc 06 §3)', () => {
 		const screen = render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-offline')).toBeInTheDocument();
-		await expect.element(screen.getByTestId('weather-badge-stale')).not.toBeInTheDocument();
+		expect(tileStatus('wgt_wx')).toBeUndefined();
 	});
 
 	it('error: one sentence and a retry, and the tile never blanks', async () => {
@@ -214,7 +217,7 @@ describe('states (doc 06 §3)', () => {
 		const screen = render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
-		await expect.element(screen.getByTestId('weather-badge-stale')).toBeInTheDocument();
+		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale'));
 	});
 
 	it('ready: a fresh serve carries no badge', async () => {
@@ -222,7 +225,23 @@ describe('states (doc 06 §3)', () => {
 		const screen = render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
-		await expect.element(screen.getByTestId('weather-badge-stale')).not.toBeInTheDocument();
+		expect(tileStatus('wgt_wx')).toBeUndefined();
+	});
+
+	it('takes its badge with it when the tile is removed', async () => {
+		// The leak assertion. `core/tile-status` is a module-level map, so a tile
+		// that published and never cleared would sit in it for the life of the
+		// page — invisible, because nothing else reads the channel. Same
+		// discipline `swr`’s `release()` and the scheduler’s `unregister()` keep,
+		// and the same one spike S1 exists to check.
+		serve(WEATHER_STALE);
+		const screen = render(TpWeatherWidget, props());
+		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
+		await vi.waitFor(() => expect(tileStatusChannel.size).toBe(1));
+
+		cleanup();
+
+		expect(tileStatusChannel.size).toBe(0);
 	});
 
 	it('permission-needed: only when the reader asked and the browser refused', async () => {
@@ -407,6 +426,6 @@ describe('the cache (doc 04 §2)', () => {
 
 		const screen = render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
-		await expect.element(screen.getByTestId('weather-badge-offline')).toBeInTheDocument();
+		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('offline'));
 	});
 });
