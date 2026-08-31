@@ -1,4 +1,4 @@
-import type { TpFxPayload } from '$lib/api-types';
+import type { TpApiResponse, TpFxPayload } from '$lib/api-types';
 
 /**
  * A recorded, trimmed `/api/fx` envelope (doc 19 §1).
@@ -56,6 +56,33 @@ export const FX_PAYLOAD: TpFxPayload = {
 	},
 	prevDate: '2026-08-30',
 	attribution: 'Rates By Exchange Rate API'
+};
+
+/**
+ * Day one, and the only shape the app can produce on the day it deploys.
+ *
+ * The snapshot pile starts empty, so there is no yesterday to compare against
+ * and doc 08 §2’s 24 h change is **absent** rather than zero. Worth a fixture
+ * of its own because it is the state every first reviewer sees and no other
+ * test would otherwise reach.
+ */
+export const FX_PAYLOAD_DAY_ONE: TpFxPayload = {
+	...FX_PAYLOAD,
+	prevRates: null,
+	prevDate: null
+};
+
+export const FX_OK: TpApiResponse<TpFxPayload> = {
+	ok: true,
+	data: FX_PAYLOAD,
+	meta: { cachedAt: 1_788_134_551, source: 'er-api', stale: false }
+};
+
+/** doc 11 §4: served past the TTL because upstream failed. */
+export const FX_STALE: TpApiResponse<TpFxPayload> = {
+	ok: true,
+	data: FX_PAYLOAD,
+	meta: { cachedAt: 1_788_040_000, source: 'er-api', stale: true }
 };
 
 /**

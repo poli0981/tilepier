@@ -108,6 +108,12 @@ unambiguous insertion point.
 | Be Vietnam Pro, JetBrains Mono | OFL 1.1 | OFL text shipped with fonts; fonts not sold separately |
 | Hồ Ngọc Đức lunar algorithm | published algorithm w/ permission notice | credit line in licenses + `lib/lunar/README` (carry the same notice used in QuoteAtlas) |
 
+**One deviation, recorded 2026-08-31.** The currency tile can be dragged to
+2×1, which leaves about 34 px of body — one line, and no room for a link. The
+credit is a real `<a>` at every other density and in the detail; at h=1 it moves
+into the tile’s `title` and its accessible name. doc 08 §2 carries the reasoning
+and the escalation if that is ever judged insufficient.
+
 ## 6. Trademark / naming
 
 "TilePier" — quick collision check at repo init (GitHub, npm, domains,

@@ -33,6 +33,7 @@ export type TpIconName =
 	| 'search'
 	| 'locate'
 	| 'refresh'
+	| 'swap'
 	| 'edit';
 
 /** `d` attributes only; stroke, size and caps come from the component. */
@@ -41,6 +42,8 @@ export const ICON_PATHS: Record<TpIconName, readonly string[]> = {
 	// Retry, on the tile-status badge. The expand glyph stood in for it while the
 	// badge lived in the weather body, which read as “open” rather than “try again”.
 	refresh: ['M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8', 'M21 3v5h-5'],
+	// Swap the pair, on the currency tile: two lanes running opposite ways.
+	swap: ['M8 3 4 7l4 4', 'M4 7h16', 'M16 21l4-4-4-4', 'M20 17H4'],
 	timer: ['M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'M12 10v4', 'M9 2h6'],
 	calculator: ['M5 3h14v18H5z', 'M8 7h8', 'M8 12h.01', 'M12 12h.01', 'M16 12h.01', 'M8 16h8'],
 	note: ['M5 3h9l5 5v13H5z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],

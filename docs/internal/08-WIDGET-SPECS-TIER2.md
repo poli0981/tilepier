@@ -121,6 +121,33 @@ every test, because the geocode fixture was tidier than the real answer:
 - **Rounding:** display rounding per currency minor units; VND has 0 decimals.
 - **Edge cases:** unknown currency code in stored settings (upstream dropped
   it) → keep row, mark unavailable.
+- **Density (added 2026-08-31, when the tile was built):** `min` is 2×1, so
+  **tier S is reachable** — the first networked widget for which that is true,
+  and doc 13 §3's floating-header rule applies in full. At h=1 the tile is one
+  line and no controls: it renders `{amount} {base} = {converted}` rather than
+  a bare number, because a quantity with no unit attached to it is not an
+  answer. The pickers, the amount input and the attribution link are all
+  absent, and the loading skeleton is one bar rather than two (doc 08 §3's
+  quote post-mortem is the arithmetic). Keyed off `size.h <= 1`, **not** off
+  the tier: a 3×1 tile is tier M with the same 34 px.
+- **Attribution at h=1 is a documented deviation from doc 16 §5.** That section
+  asks for a visible link wherever rates are shown, and there is no room for
+  one. The link is present at every other tier and in the detail; at h=1 the
+  credit moves into the tile's `title` and its accessible name. If that is ever
+  judged insufficient, the escalation is to raise `min` to 2×2 in doc 06 §7's
+  table **and** the manifest together — `core/registry.test.ts` parses that
+  table, so they cannot move apart.
+- **The cross rate is computed on the client**, `rates[to] / rates[from]`.
+  doc 11 §3 gives `/api/fx` no parameters, so one cached USD table answers every
+  pair; sending a pair up would multiply one cache entry by 160². This is also
+  why the tile needs no `{#key}` remount around its subscription the way
+  `weather` does: nothing a reader can change moves the data key.
+- **The rounding rule is ICU's, not ours.** `Intl.NumberFormat` with
+  `style: 'currency'` already knows VND has no minor units; a hand-written table
+  would be a staler second copy of data the platform ships (doc 14 §3). A
+  *rate* is formatted by significant digits instead — VND per USD is ~26,000
+  and JPY per VND is ~0.006, and two decimals renders the first as noise and
+  the second as zero.
 
 ## 3. `quote` — Quote of the Day
 
