@@ -1,5 +1,6 @@
 import type {
 	TpAirQuality,
+	TpFxPayload,
 	TpGeocodeResult,
 	TpWeatherDay,
 	TpWeatherHour,
@@ -249,4 +250,96 @@ export function normalizeNominatim(body: unknown): TpGeocodeResult[] {
 		});
 	}
 	return out;
+}
+
+/* ─────────────────────────────────────────────────────────── fx (doc 10 §3) */
+
+/**
+ * doc 10 §1 and doc 16 §5: ExchangeRate-API's terms ask for this link text
+ * wherever rates appear. It rides inside the payload so a surface cannot render
+ * a rate without also having been handed the credit for it.
+ */
+const FX_ATTRIBUTION = 'Rates By Exchange Rate API';
+
+/** ISO 4217 is three uppercase letters, and anything else in that object is
+ *  either a new upstream field or a mistake. Neither belongs in a rate table. */
+const CURRENCY_CODE = /^[A-Z]{3}$/;
+
+/**
+ * A rate table with every row we are not willing to divide by removed.
+ *
+ * Zero and negative rates go as well as non-numbers: the client's cross rate is
+ * `rates[to] / rates[from]`, so a zero here is an `Infinity` on somebody's tile
+ * rather than an obviously-wrong number.
+ */
+function rateTable(value: unknown): Record<string, number> {
+	if (value === null || typeof value !== 'object') return {};
+
+	const table: Record<string, number> = {};
+	for (const [code, rate] of Object.entries(value as Record<string, unknown>)) {
+		if (!CURRENCY_CODE.test(code)) continue;
+		if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) continue;
+		table[code] = rate;
+	}
+	return table;
+}
+
+/** Upstream stamps are unix *seconds*; everything inside the app is ms. */
+function unixMs(value: unknown): number | null {
+	if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
+	return value * 1000;
+}
+
+/**
+ * open.er-api.com's daily table, plus yesterday's if we kept one.
+ *
+ * `nextUpdateAt` is returned rather than applied: the cap it feeds is cache
+ * policy, and this module has no business importing `CACHE_POLICY` (doc 11
+ * §1.4). The endpoint decides what to do with it.
+ *
+ * `previous` is re-validated even though we wrote it ourselves. A KV value with
+ * no expiry outlives the build that wrote it, so by the time it is read back it
+ * is somebody else's JSON like any other.
+ */
+/**
+ * Upstream’s own publication stamp, read on its own.
+ *
+ * The endpoint needs it *before* it can normalize: the permanent snapshot is
+ * keyed on the date upstream published, not the date our clock says. Those
+ * differ for the ten minutes between UTC midnight and ER-API’s daily push, and
+ * a snapshot written in that window under tomorrow’s date is a wrong number in
+ * a store that has no expiry and never gets rewritten (doc 10 §3).
+ */
+export function fxAsOf(body: unknown, now: number): number {
+	const source = (body ?? {}) as Record<string, unknown>;
+	return unixMs(source['time_last_update_unix']) ?? now;
+}
+
+export function normalizeFx(
+	body: unknown,
+	previous: { date: string; rates: Record<string, number> } | null,
+	now: number
+): TpFxPayload {
+	const source = (body ?? {}) as Record<string, unknown>;
+	const rates = rateTable(source['rates']);
+
+	// The base is its own unit. Upstream has always sent `USD: 1`, but every
+	// conversion the client makes divides by `rates[from]`, so a table missing
+	// its own base turns every USD row into `undefined` rather than into a
+	// visibly wrong number. Only when there is a table at all — an empty one is
+	// how the endpoint recognises an upstream that answered without answering.
+	if (rates['USD'] === undefined && Object.keys(rates).length > 0) rates['USD'] = 1;
+
+	const prevRates = previous === null ? {} : rateTable(previous.rates);
+	const hasPrev = Object.keys(prevRates).length > 0;
+
+	return {
+		base: 'USD',
+		rates,
+		asOf: fxAsOf(body, now),
+		nextUpdateAt: unixMs(source['time_next_update_unix']),
+		prevRates: hasPrev ? prevRates : null,
+		prevDate: hasPrev && previous !== null ? previous.date : null,
+		attribution: FX_ATTRIBUTION
+	};
 }

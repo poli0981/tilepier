@@ -141,3 +141,52 @@ export interface TpGeocodePayload {
 	results: TpGeocodeResult[];
 	attribution: string;
 }
+
+/* ─────────────────────────────────────────────────────────── fx (doc 10 §3) */
+
+/**
+ * The daily rate table, and yesterday's beside it.
+ *
+ * One base, always USD. open.er-api.com's open endpoint is one-base-per-call,
+ * so doc 11 §3 gives `/api/fx` no parameters at all and one cached call covers
+ * every pair — **the cross-rate arithmetic is the client's**, `rates[to] /
+ * rates[from]`. Sending a pair up would multiply the cache by 160².
+ */
+export interface TpFxPayload {
+	/** Always `USD`. Carried anyway so a reader never has to assume it. */
+	base: string;
+	/** Currency code → units per 1 USD. Always contains `USD: 1`. */
+	rates: Record<string, number>;
+	/** Unix ms when upstream last published this table. */
+	asOf: number;
+	/**
+	 * Unix ms of upstream's next publication, or `null` when it did not say.
+	 * doc 10 §3 caps the KV TTL with it; the client does not read it.
+	 */
+	nextUpdateAt: number | null;
+	/**
+	 * Yesterday's table, for doc 08 §2's 24 h change column.
+	 *
+	 * `null` until a second UTC day's snapshot exists — on the day this ships
+	 * there is nothing to compare against, and the detail renders **no change
+	 * column** rather than a column of zeros. A 0.00 % is a claim; an absent
+	 * column is the truth.
+	 */
+	prevRates: Record<string, number> | null;
+	/** `YYYY-MM-DD` of `prevRates`, and `null` with it. */
+	prevDate: string | null;
+	/** Carried in the payload so the UI cannot forget it (doc 10 §3, doc 16 §5). */
+	attribution: string;
+}
+
+/**
+ * The permanent daily snapshot (doc 10 §3) — this *is* the currency history,
+ * because no keyless API sells VND history back to us.
+ *
+ * An object rather than a bare rate map so a `base` can be added later without
+ * a `v2` key, which for a value with no expiry would mean two eras of history
+ * that cannot be read together.
+ */
+export interface TpFxSnapshotPayload {
+	rates: Record<string, number>;
+}
