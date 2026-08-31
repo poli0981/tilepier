@@ -480,6 +480,35 @@ new ones: `fg-dim` at 3.51:1 and the 40 px tile-control target remain Week 8, an
 history chart both need a second calendar day of snapshots before they show
 anything, which is the one thing no test in this repo can bring forward.
 
+
+Merged as `2fcb5d8` (PR #5, squash — the `main` ruleset allows no other method)
+and deployed by Cloudflare Workers Builds the same day.
+
+**Verified on production**, both new endpoints by request:
+
+- `/api/fx` returns 166 currencies with VND among them, the attribution string,
+  and `prevRates`/`prevDate` **null** — which is the day-one shape the design
+  predicts and the reason the Δ24h column is absent rather than zero.
+- `cache-control: public, max-age=21600`, half the 12 h family TTL. Upstream's
+  next publication is ~18 h out, so doc 10 §3's cap correctly does not bite.
+- `/api/fx/history?pair=USD-VND&days=90` returns **exactly one point, today's**.
+  That is the snapshot side-effect proving itself: the pile was empty before the
+  deploy, and the first `/api/fx` request filled the first day of it.
+- `days=91` is a `BAD_REQUEST`, so the allowlist is enforced at the edge and not
+  only in the tests.
+
+One thing worth writing down because it looks like a bug and is not. Repeated
+`/api/fx` requests to the same URL all report `x-tp-cache: MISS`, which reads as
+a cache that never fills. It is the CF CDN replaying the first response verbatim
+— header included — which is exactly what §2's `cache-control` asks it to do.
+Cache-busting the URL shows `HIT` every time, and `/api/weather` behaves
+identically. **`x-tp-cache` describes the Worker's KV state at the moment a
+response was generated, not at the moment it was served**, and a reader
+debugging from `curl` will meet this before they meet anything real.
+
+The day-two check — the Δ24h column and the history chart, both of which need a
+second calendar day of snapshots — is **2026-09-02**.
+
 ## Week 5 — Markets
 crypto ticker/klines endpoints · stock quote/series/search endpoints
 (budget guard + breaker + Stooq fallback) · markets tile + detail
