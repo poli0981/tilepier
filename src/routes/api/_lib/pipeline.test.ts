@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BREAKER, CACHE_POLICY, RATE_LIMIT, STOCK_BUDGET } from '$lib/shared-constants';
+import { BREAKER, CACHE_POLICY, KV_PREFIX, RATE_LIMIT, STOCK_BUDGET } from '$lib/shared-constants';
 import {
 	breakerVerdict,
 	msUntilUtcMidnight,
@@ -21,17 +21,26 @@ import { parseCoords } from './geohash';
  * against `wrangler dev`. A fake keeps these tests fast and lets them control
  * the clock, which the breaker and budget tiers both need.
  */
-function fakeKv(): KVNamespace & { store: Map<string, string> } {
+function fakeKv(): KVNamespace & {
+	store: Map<string, string>;
+	putOptions: Map<string, KVNamespacePutOptions | undefined>;
+} {
 	const store = new Map<string, string>();
+	// Recorded so the expiration arithmetic can be asserted directly. Reading it
+	// back out of the fake is the only way to see `expirationTtl`, which never
+	// appears in the value.
+	const putOptions = new Map<string, KVNamespacePutOptions | undefined>();
 	return {
 		store,
+		putOptions,
 		get: (async (key: string, type?: string) => {
 			const raw = store.get(key);
 			if (raw == null) return null;
 			return type === 'json' ? JSON.parse(raw) : raw;
 		}) as KVNamespace['get'],
-		put: (async (key: string, value: string) => {
+		put: (async (key: string, value: string, options?: KVNamespacePutOptions) => {
 			store.set(key, String(value));
+			putOptions.set(key, options);
 		}) as KVNamespace['put'],
 		delete: (async (key: string) => void store.delete(key)) as KVNamespace['delete'],
 		list: (async () => ({ keys: [], list_complete: true })) as unknown as KVNamespace['list'],
@@ -40,7 +49,10 @@ function fakeKv(): KVNamespace & { store: Map<string, string> } {
 			metadata: null,
 			cacheStatus: null
 		})) as unknown as KVNamespace['getWithMetadata']
-	} as KVNamespace & { store: Map<string, string> };
+	} as KVNamespace & {
+		store: Map<string, string>;
+		putOptions: Map<string, KVNamespacePutOptions | undefined>;
+	};
 }
 
 describe('kv cache freshness (doc 11 §4)', () => {
@@ -70,6 +82,78 @@ describe('kv cache freshness (doc 11 §4)', () => {
 		expect(ttlSeconds('wx')).toBe(CACHE_POLICY.wx.ttlMs / 1000);
 		// fxSnap is permanent, so there is no sensible max-age.
 		expect(ttlSeconds('fxSnap')).toBe(0);
+	});
+
+	it('narrows cache-control to what is left of a capped window', () => {
+		const now = Date.parse('2026-08-10T00:00:00Z');
+		// Two hours left of a 12 h family TTL.
+		expect(ttlSeconds('fx', now + 2 * 60 * 60 * 1000, now)).toBe(7200);
+		// A cap past the family TTL cannot advertise more than the table allows.
+		expect(ttlSeconds('fx', now + 99 * 60 * 60 * 1000, now)).toBe(CACHE_POLICY.fx.ttlMs / 1000);
+		// An elapsed window advertises nothing rather than a negative max-age.
+		expect(ttlSeconds('fx', now - 1, now)).toBe(0);
+	});
+
+	it('honours an upstream cap shorter than the family TTL', async () => {
+		// doc 10 §3: /api/fx learns from `time_next_update_unix` that the table it
+		// just fetched is superseded before the 12 h in doc 11 §4’s row.
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		const cap = t0 + 2 * 60 * 60 * 1000;
+		await writeCache(kv, 'fx', 'fx:v1:USD', { n: 1 }, 'er-api', t0, { freshUntil: cap });
+
+		expect((await readCache(kv, 'fx', 'fx:v1:USD', cap - 1)).status).toBe('HIT');
+		expect((await readCache(kv, 'fx', 'fx:v1:USD', cap + 1)).status).toBe('STALE');
+	});
+
+	it('never lets an upstream cap lengthen the window', async () => {
+		// The assertion that catches a `Math.max` where a `Math.min` belongs. An
+		// upstream claiming its next update is nine days out must not stretch a
+		// 12 h TTL to nine days — doc 11 §4’s table stays the ceiling.
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		await writeCache(kv, 'fx', 'fx:v1:USD', { n: 1 }, 'er-api', t0, {
+			freshUntil: t0 + 9 * 24 * 60 * 60 * 1000
+		});
+
+		const justPast = t0 + CACHE_POLICY.fx.ttlMs + 1;
+		expect((await readCache(kv, 'fx', 'fx:v1:USD', justPast)).status).toBe('STALE');
+	});
+
+	it('ignores a cap already in the past rather than storing one born stale', async () => {
+		// A wrong or long-past `time_next_update_unix` would otherwise turn one
+		// bad field upstream into a refetch on every single request.
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		await writeCache(kv, 'fx', 'fx:v1:USD', { n: 1 }, 'er-api', t0, { freshUntil: t0 - 1 });
+
+		expect((await readCache(kv, 'fx', 'fx:v1:USD', t0)).status).toBe('HIT');
+		const nearlyTtl = t0 + CACHE_POLICY.fx.ttlMs - 1;
+		expect((await readCache(kv, 'fx', 'fx:v1:USD', nearlyTtl)).status).toBe('HIT');
+	});
+
+	it('keeps the whole stale window past a shortened freshness window', async () => {
+		// The cap moves when the value stops being *fresh*; it must not also eat
+		// the stale-serve grace doc 11 §4 grants for when upstream is down.
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		const cap = t0 + 2 * 60 * 60 * 1000;
+		await writeCache(kv, 'fx', 'fx:v1:USD', { n: 1 }, 'er-api', t0, { freshUntil: cap });
+
+		const written = kv.putOptions.get(`${KV_PREFIX}fx:v1:USD`);
+		expect(written?.expirationTtl).toBe((cap - t0 + (CACHE_POLICY.fx.staleMs ?? 0)) / 1000);
+	});
+
+	it('writes exactly what it wrote before when no cap is given', async () => {
+		// The regression guard for `wx` and `geo`, which never pass options.
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		await writeCache(kv, 'wx', 'wx:v1:test', { n: 1 }, 'open-meteo', t0);
+
+		const stored = JSON.parse(kv.store.get(`${KV_PREFIX}wx:v1:test`) as string) as Record<
+			string,
+			unknown
+		>;
+		expect(stored).toEqual({ cachedAt: t0, source: 'open-meteo', payload: { n: 1 } });
+		expect(stored).not.toHaveProperty('freshUntil');
+		expect(kv.putOptions.get(`${KV_PREFIX}wx:v1:test`)?.expirationTtl).toBe(
+			(CACHE_POLICY.wx.ttlMs + (CACHE_POLICY.wx.staleMs ?? 0)) / 1000
+		);
 	});
 });
 

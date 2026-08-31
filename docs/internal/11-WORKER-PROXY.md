@@ -60,6 +60,19 @@ with `cachedAt` inside the value; freshness = `now - cachedAt <= ttl`;
 between ttl and staleWindow the value is served **only** when upstream
 fails (`stale: true` in meta) or the breaker is open.
 
+A value may carry its own `freshUntil`, and then that instant wins over the
+row above. It exists for the one row whose TTL is not ours to set — `fx:v1:USD`
+is capped by `time_next_update_unix` (doc 10 §3), and a table upstream has
+already replaced is not fresh however recently we fetched it. Two rules make it
+safe: **the cap may only ever shorten** (this table stays the ceiling, so an
+upstream claiming a nine-day gap does not get one), and **a cap already in the
+past is ignored** rather than honoured, because an entry born stale refetches on
+the very next request and one bad field upstream would become a fetch per
+request. Written into the value rather than passed to the write, because the
+read that has to respect it happens on a later request that never saw the cap.
+Absent on every entry written before 2026-08-31 and on every family with no
+upstream opinion, which is what makes it a non-event for `wx` and `geo`.
+
 KV consistency note: KV is eventually consistent (~60 s cross-PoP). For
 cache purposes that's fine — worst case a few PoPs refetch. Never use KV
 for anything requiring strict counters (see §6 for how the soft limiter
