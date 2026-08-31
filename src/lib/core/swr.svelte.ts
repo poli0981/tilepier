@@ -1,6 +1,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { BACKOFF, HARD_MAX_AGE_MS } from '$lib/shared-constants';
 import { online } from '$lib/stores/online.svelte';
+import { toasts } from '$lib/stores/toast.svelte';
 import { isRetryable, TpApiError, type TpApiErrorCode } from './api';
 import { logEntry } from './log-buffer';
 import { db, type TpDb } from './storage/db';
@@ -138,8 +139,8 @@ const entries = new SvelteMap<string, Entry<unknown>>();
 /**
  * doc 17 §5: at most one rate-limit toast per window however many widgets trip
  * at once. The coordinator lives here because this is the only module that sees
- * every 429; the toast component itself arrives with its first real trigger in
- * Week 4, since nothing on the deck can produce one yet (doc 20 §5).
+ * every 429. The component it drives arrived in Week 4b with `currency`, which
+ * is the first widget on the deck that can produce a 429 at all.
  */
 let lastRateLimitNoticeAt = 0;
 
@@ -211,7 +212,10 @@ async function run<T>(entry: Entry<T>, target: TpDb): Promise<void> {
 
 			online.noteFetchResult(code === 'NETWORK' ? 'network-error' : 'ok');
 
-			if (code === 'RATE_LIMITED') noteRateLimited(entry.key, Date.now());
+			// doc 17 §5: the coordinator decides *whether*, the store decides *how long*.
+			if (code === 'RATE_LIMITED' && noteRateLimited(entry.key, Date.now())) {
+				toasts.show('rate-limited');
+			}
 			if (!isRetryable(code)) {
 				// doc 17 §4: a `BAD_REQUEST` is this build asking wrongly. Loud,
 				// because nothing else will ever surface it.

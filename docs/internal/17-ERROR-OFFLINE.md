@@ -93,7 +93,10 @@ rather than to the raw `online` event, so one module owns the definition
 Per data key: on 429/`retryAfterS` respect server value; else exponential
 1→2→4→8… capped 300 s with ±20 % jitter; reset on success. One global
 toast per 60 s max for rate-limit events regardless of widget count
-(coordinator in `swr.ts`). Scheduler entries in backoff are skipped, not
+(coordinator in `swr.ts`, and since
+2026-08-31 its one consumer, `stores/toast.svelte.ts` — the boolean it returns
+had been discarded at the call site since Week 3, so the rule was true and
+unobservable). Scheduler entries in backoff are skipped, not
 removed.
 
 ## 6. Crash containment

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TpApiError, type TpApiErrorCode } from './api';
 import { createDb, type TpDb } from './storage/db';
 import { online } from '$lib/stores/online.svelte';
+import { toasts } from '$lib/stores/toast.svelte';
+import { BACKOFF } from '$lib/shared-constants';
 import { swr, swrCache, type TpSwrStatus } from './swr.svelte';
 
 /**
@@ -37,11 +39,13 @@ beforeEach(() => {
 	swrCache.reset();
 	online.reset();
 	online.init();
+	toasts.reset();
 });
 
 afterEach(async () => {
 	swrCache.reset();
 	online.reset();
+	toasts.reset();
 	while (created.length > 0) {
 		const db = created.pop();
 		await db?.delete();
@@ -496,5 +500,73 @@ describe('inspect (doc 13 §10 §8)', () => {
 		handle.release();
 		expect(before).toHaveLength(1);
 		expect(swrCache.inspect()).toHaveLength(0);
+	});
+});
+
+describe('the rate-limit coordinator (doc 17 §5)', () => {
+	/**
+	 * The claim doc 17 §5 has always made and nothing has ever checked: *one*
+	 * global toast per 60 s, however many widgets trip at once. The coordinator
+	 * has been here since Week 3 with its answer discarded at the call site, so
+	 * until `currency` landed there was no way to observe it and no component to
+	 * observe it with.
+	 *
+	 * The clock is faked rather than waited out — the window is a minute.
+	 */
+	beforeEach(() => {
+		vi.useFakeTimers({ shouldAdvanceTime: true });
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	async function trip(key: string, db: TpDb): Promise<void> {
+		const handle = swr(key, failing('RATE_LIMITED'), { ttlMs: 60_000 }, db);
+		await vi.waitFor(() => {
+			expect(handle.status).toBe('rate-limited');
+		});
+		handle.release();
+	}
+
+	it('raises a toast on a 429', async () => {
+		const db = freshDb();
+		await trip('rl:1', db);
+
+		expect(toasts.current).toBe('rate-limited');
+	});
+
+	it('stays silent for a second widget tripping inside the window', async () => {
+		// A different key on purpose: the throttle is global, not per-entry, which
+		// is the whole point of it living in the module rather than in an entry.
+		const db = freshDb();
+		await trip('rl:2', db);
+		toasts.dismiss();
+
+		await trip('rl:3', db);
+
+		expect(toasts.current).toBeNull();
+	});
+
+	it('speaks again once the window has passed', async () => {
+		const db = freshDb();
+		await trip('rl:4', db);
+		toasts.dismiss();
+
+		vi.setSystemTime(Date.now() + BACKOFF.toastThrottleMs + 1);
+		await trip('rl:5', db);
+
+		expect(toasts.current).toBe('rate-limited');
+	});
+
+	it('says nothing at all for a failure that is not a 429', async () => {
+		const db = freshDb();
+		const handle = swr('rl:6', failing('UPSTREAM_DOWN'), { ttlMs: 60_000 }, db);
+		await vi.waitFor(() => {
+			expect(handle.status).toBe('error');
+		});
+		handle.release();
+
+		expect(toasts.current).toBeNull();
 	});
 });

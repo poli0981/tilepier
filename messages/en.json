@@ -38,6 +38,7 @@
 	"common.tile.stale_hint": "the last reading that arrived — a newer one is on the way",
 	"common.tile.offline_short": "no network",
 	"common.tile.offline_hint": "showing what was saved — this tile needs the network to update",
+	"common.toast.rate_limited": "too many requests just now — the deck will catch up shortly",
 	"legal.gate.summary": "A local dashboard. No accounts, no tracking, no cookies. Your data stays on your device.",
 	"legal.gate.accept": "I agree",
 	"legal.terms.title": "Terms",

@@ -130,7 +130,13 @@ show "on deck" disabled state. Search filters by name.
 - **Error (inline):** icon + one sentence + retry; tile never blanks.
 - **Toasts:** bottom-center, max 1 visible, 4 s, only for global events
   (429 backoff, import done, copy confirmations use micro-feedback
-  instead).
+  instead). Built in Week 4b as `ui/TpRateLimitToast.svelte`
+  over `stores/toast.svelte.ts`, once `currency` gave the 429 path a widget
+  that could reach it. **No queue** — the doc 17 §5 throttle already allows one
+  notice a minute, so “max 1 visible” is a replace rather than a policy about
+  what to drop, and the four seconds are asserted to be shorter than that
+  window so two can never overlap. `TpUpdateToast` keeps the root layout and
+  its own slot: a service-worker update is not transient and has no timer.
 
 ## 8. Keyboard & a11y
 
