@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { FX_PAYLOAD, FX_PAYLOAD_DAY_ONE } from '$lib/core/__fixtures__/fx';
 import { cacheKey } from '$lib/shared-constants';
-import { change24h, convert, currencyCodes, fxKey, fxUrl, rateFor, readSettings } from './service';
+import {
+	change24h,
+	convert,
+	currencyCodes,
+	fxKey,
+	fxUrl,
+	historyDepth,
+	historyKey,
+	historyPoints,
+	historySummary,
+	historyUrl,
+	rateFor,
+	readSettings
+} from './service';
 import { CURRENCY_DEFAULTS, MAX_AMOUNT } from './types';
 
 /**
@@ -134,5 +147,59 @@ describe('the code list for the pickers', () => {
 	it('is empty before anything has loaded, rather than throwing', () => {
 		expect(currencyCodes(undefined)).toEqual([]);
 		expect(currencyCodes(undefined, 'USD', 'not-a-code')).toEqual(['USD']);
+	});
+});
+
+describe('the history window', () => {
+	const NOW = Date.parse('2026-08-31T10:00:00Z');
+	const payload = {
+		base: 'USD',
+		quote: 'VND',
+		attribution: 'Rates By Exchange Rate API',
+		points: [
+			{ date: '2026-08-29', rate: 25_900 },
+			{ date: '2026-08-31', rate: 26_006 }
+		]
+	};
+
+	it('spells the client key itself, because there is no Worker key to match', () => {
+		// doc 04 §5's convention is one string on both sides. `/api/fx/history`
+		// caches nothing of its own (doc 11 §3), so this key has no counterpart —
+		// which is why it is not in `shared-constants.ts`.
+		expect(historyKey('USD', 'VND', 90)).toBe('fx:hist:v1:USD-VND:90');
+		expect(historyUrl('USD', 'VND', 90)).toBe('/api/fx/history?pair=USD-VND&days=90');
+	});
+
+	it('emits one entry per calendar day, ascending, with the silence spelled out', () => {
+		// On a time axis ECharts joins consecutive points however far apart they
+		// are, so an absent day has to arrive as an explicit `null` or a fortnight
+		// of outage is drawn as one confident straight line.
+		const points = historyPoints(payload, 4, NOW);
+
+		expect(points).toHaveLength(4);
+		expect(points.map((p) => new Date(p.at).toISOString().slice(0, 10))).toEqual([
+			'2026-08-28',
+			'2026-08-29',
+			'2026-08-30',
+			'2026-08-31'
+		]);
+		expect(points.map((p) => p.rate)).toEqual([null, 25_900, null, 26_006]);
+	});
+
+	it('counts only the days that are real', () => {
+		// doc 08 §2's threshold is about recorded history, not window width: 365
+		// mostly-empty days is not a year of it.
+		expect(historyDepth(historyPoints(payload, 365, NOW))).toBe(2);
+	});
+
+	it('summarises the range for doc 13 §8, and declines when there is nothing to say', () => {
+		const summary = historySummary(historyPoints(payload, 4, NOW));
+
+		expect(summary?.low).toBe(25_900);
+		expect(summary?.high).toBe(26_006);
+		expect(summary?.change).toBeCloseTo((26_006 - 25_900) / 25_900, 12);
+
+		expect(historySummary([])).toBeNull();
+		expect(historySummary([{ at: NOW, rate: null }])).toBeNull();
 	});
 });

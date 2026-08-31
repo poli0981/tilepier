@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { FX_HISTORY_DAYS, FX_HISTORY_DEFAULT_DAYS } from '$lib/api-types';
+	import TpChart from '$lib/charts/TpChart.svelte';
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import type { TpDetailProps } from '$lib/core/types';
@@ -12,10 +14,17 @@
 		convert,
 		currencyCodes,
 		fxSource,
+		historyDepth,
+		historyPoints,
+		historySource,
+		historySummary,
+		HISTORY_MIN_POINTS,
 		rateFor,
 		readSettings,
-		type TpFxReading
+		type TpFxReading,
+		type TpHistoryReading
 	} from './service';
+	import { historyOption } from './chart';
 	import { MAX_TARGETS } from './types';
 
 	/**
@@ -121,6 +130,69 @@
 	}
 
 	let pending = $state('');
+
+	/* ───────────────────────────────────────────────────── doc 08 §2's history */
+
+	/**
+	 * The window, in days. A viewing choice rather than a setting, so it lives
+	 * here and not in `tp.layout.v1` — reopening the panel starts at doc 10 §3's
+	 * ninety again, which is the range the reader most often wants.
+	 */
+	let days = $state<number>(FX_HISTORY_DEFAULT_DAYS);
+
+	let history = $state.raw<TpSwrHandle<TpHistoryReading> | null>(null);
+
+	/**
+	 * Re-subscribes when the pair or the window changes.
+	 *
+	 * Tracked reads first, then `untrack` around `historySource` — `swr()` reads
+	 * its dedupe map and writes to it, so a tracked call self-invalidates. This
+	 * needs no `{#key}` wrapper the way weather's tile does, and the reason is
+	 * worth keeping: that dance exists because `useRefresh` snapshots its id, and
+	 * there is no `useRefresh` here. **If one is ever added, the subscription and
+	 * the registration have to be rebuilt in one motion** — which means moving
+	 * both into a child component under `{#key}`.
+	 */
+	$effect(() => {
+		const base = prefs.base;
+		const quote = prefs.quote;
+		const range = days;
+
+		const source = untrack(() => historySource(base, quote, range, db));
+		history = source;
+		return () => {
+			source.release();
+			history = null;
+		};
+	});
+
+	/**
+	 * Fixed at mount. The window is a run of calendar days and the panel is open
+	 * for seconds, so a heartbeat would redraw the chart to say the same thing.
+	 */
+	const openedAt = Date.now();
+
+	const historyPayload = $derived(history?.data?.payload);
+	const points = $derived(
+		historyPayload === undefined ? [] : historyPoints(historyPayload, days, openedAt)
+	);
+	const depth = $derived(historyDepth(points));
+	const option = $derived(historyOption(points));
+
+	/** doc 13 §8: every chart is paired with an accessible summary line. */
+	const chartSummary = $derived.by(() => {
+		const summary = historySummary(points);
+		if (summary === null) return '';
+
+		return m['widget.currency.chart_summary']({
+			base: prefs.base,
+			quote: prefs.quote,
+			days: String(days),
+			change: fmtPercentChange(summary.change, settings.locale),
+			low: fmtRate(summary.low, settings.locale),
+			high: fmtRate(summary.high, settings.locale)
+		});
+	});
 </script>
 
 <section class="tp-curd" data-testid="currency-detail" data-status={status}>
@@ -277,6 +349,47 @@
 			{/if}
 		</div>
 
+		<section class="tp-curd__history" data-testid="currency-history">
+			<div class="tp-curd__ranges" role="group" aria-label={m['widget.currency.range_label']()}>
+				{#each FX_HISTORY_DAYS as range (range)}
+					<button
+						type="button"
+						class="tp-curd__range"
+						aria-pressed={range === days}
+						data-testid="currency-range-{range}"
+						onclick={() => (days = range)}
+					>
+						{m['widget.currency.range_days']({ days: String(range) })}
+					</button>
+				{/each}
+			</div>
+
+			{#if depth < HISTORY_MIN_POINTS}
+				<!--
+					doc 08 §2's honest empty state. Not an empty canvas: a chart drawn
+					over three points implies the other eighty-seven were flat, which is
+					a claim about the market rather than about what has been recorded.
+				-->
+				<p class="tp-curd__hint" data-testid="currency-history-building">
+					{m['widget.currency.history_building']({
+						have: String(depth),
+						need: String(HISTORY_MIN_POINTS)
+					})}
+				</p>
+			{:else}
+				<h3 class="tp-curd__subhead">
+					{m['widget.currency.history_heading']({ base: prefs.base, quote: prefs.quote })}
+				</h3>
+				<TpChart
+					{option}
+					summary={chartSummary}
+					loadingLabel={m['widget.currency.chart_loading']()}
+					failedLabel={m['widget.currency.chart_failed']()}
+					height={200}
+				/>
+			{/if}
+		</section>
+
 		<a
 			class="tp-curd__credit"
 			href="https://www.exchangerate-api.com"
@@ -423,6 +536,42 @@
 		margin: 0;
 		color: var(--color-fg-mute);
 		font-size: var(--text-2xs);
+	}
+
+	.tp-curd__history {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.tp-curd__ranges {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.tp-curd__range {
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		background: none;
+		color: var(--color-fg-dim);
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--text-2xs);
+		padding: 0.125rem 0.5rem;
+	}
+
+	/* The selected range is already announced by `aria-pressed`; the tint is
+	   reinforcement rather than the only channel (doc 12 §4.2). */
+	.tp-curd__range[aria-pressed='true'] {
+		border-color: var(--color-beacon);
+		color: var(--color-beacon);
+	}
+
+	.tp-curd__subhead {
+		margin: 0;
+		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
+		font-weight: 400;
 	}
 
 	.tp-curd__credit {

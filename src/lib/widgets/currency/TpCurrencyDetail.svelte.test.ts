@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
+import { FX_HISTORY_DAYS } from '$lib/api-types';
 import { FX_OK, FX_PAYLOAD } from '$lib/core/__fixtures__/fx';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import { swrCache } from '$lib/core/swr.svelte';
@@ -25,16 +26,38 @@ function props(over: Record<string, unknown> = {}) {
 	};
 }
 
-function serve(body: unknown, init: ResponseInit = {}): ReturnType<typeof vi.fn> {
-	const spy = vi.fn(
-		async () =>
-			new Response(JSON.stringify(body), {
+/**
+ * Two endpoints now, so one blanket answer will not do: `/api/fx/history`
+ * returns a different shape, and a URL glob for the rates would match it too.
+ */
+function serve(body: unknown, init: ResponseInit = {}, history = HISTORY_EMPTY): void {
+	vi.stubGlobal(
+		'fetch',
+		vi.fn(async (input: RequestInfo | URL) => {
+			const payload = String(input).includes('/history') ? history : body;
+			return new Response(JSON.stringify(payload), {
 				...init,
 				headers: { 'content-type': 'application/json' }
-			})
+			});
+		})
 	);
-	vi.stubGlobal('fetch', spy);
-	return spy;
+}
+
+/** A window with nothing recorded in it — the day the app deploys. */
+const HISTORY_EMPTY = {
+	ok: true,
+	data: { base: 'USD', quote: 'VND', points: [], attribution: FX_PAYLOAD.attribution },
+	meta: { cachedAt: 1_788_134_551, source: 'er-api', stale: false }
+};
+
+/** Enough recorded days to clear doc 08 §2’s threshold. */
+function historyWith(count: number) {
+	const day = 24 * 60 * 60 * 1000;
+	const points = Array.from({ length: count }, (_, i) => ({
+		date: new Date(NOW.getTime() - (count - 1 - i) * day).toISOString().slice(0, 10),
+		rate: 25_900 + i * 8
+	}));
+	return { ...HISTORY_EMPTY, data: { ...HISTORY_EMPTY.data, points } };
 }
 
 /** Yesterday stripped out — the shape the app produces on the day it deploys. */
@@ -254,5 +277,74 @@ describe('the panel’s own states', () => {
 
 		await expect.element(screen.getByTestId('currency-row-VND')).toBeInTheDocument();
 		expect(scheduler.size).toBe(0);
+	});
+});
+
+describe('the history chart (doc 08 §2)', () => {
+	it('says how far the record has got rather than drawing three points', async () => {
+		// The honest empty state. A chart over three days implies the other
+		// eighty-seven were flat, which is a claim about the market rather than
+		// about what has been recorded.
+		serve(FX_OK, {}, historyWith(3));
+		const screen = render(TpCurrencyDetail, props());
+
+		await expect
+			.element(screen.getByTestId('currency-history-building'))
+			.toHaveTextContent(m['widget.currency.history_building']({ have: '3', need: '14' }));
+		await expect.element(screen.getByTestId('chart-canvas')).not.toBeInTheDocument();
+	});
+
+	it('draws once enough days have been recorded', async () => {
+		serve(FX_OK, {}, historyWith(20));
+		const screen = render(TpCurrencyDetail, props());
+
+		await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('currency-history-building')).not.toBeInTheDocument();
+	});
+
+	it('pairs the chart with doc 13 §8’s summary line', async () => {
+		serve(FX_OK, {}, historyWith(20));
+		const screen = render(TpCurrencyDetail, props());
+
+		await expect.element(screen.getByTestId('chart-summary')).toBeInTheDocument();
+		const caption = screen.container.querySelector('[data-testid="chart-summary"]') as HTMLElement;
+		// The pair, the range and the move — doc 13 §8 wants a sentence a reader can
+		// act on, not the word “chart”.
+		expect(caption.textContent).toContain('USD');
+		expect(caption.textContent).toContain('VND');
+		expect(caption.textContent?.trim().length).toBeGreaterThan(20);
+	});
+
+	it('offers every range the endpoint will answer for, and no others', async () => {
+		// The allowlist lives in `api-types.ts` precisely so the picker and the
+		// Worker cannot drift: a button asking for a range the endpoint refuses
+		// would be a 400 the reader has no way to understand.
+		serve(FX_OK, {}, historyWith(20));
+		const screen = render(TpCurrencyDetail, props());
+
+		await expect.element(screen.getByTestId('currency-history')).toBeInTheDocument();
+		for (const range of FX_HISTORY_DAYS) {
+			await expect.element(screen.getByTestId(`currency-range-${range}`)).toBeInTheDocument();
+		}
+	});
+
+	it('opens on ninety days, and re-fetches when the range changes', async () => {
+		serve(FX_OK, {}, historyWith(20));
+		const screen = render(TpCurrencyDetail, props());
+
+		await expect.element(screen.getByTestId('currency-range-90')).toBeInTheDocument();
+		const opened = screen.container.querySelector(
+			'[data-testid="currency-range-90"]'
+		) as HTMLElement;
+		expect(opened.getAttribute('aria-pressed')).toBe('true');
+
+		await screen.getByTestId('currency-range-30').click();
+
+		await vi.waitFor(() => {
+			const asked = (fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls
+				.map((call) => String(call[0]))
+				.filter((url) => url.includes('/history'));
+			expect(asked.some((url) => url.includes('days=30'))).toBe(true);
+		});
 	});
 });

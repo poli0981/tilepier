@@ -191,6 +191,23 @@ export interface TpFxSnapshotPayload {
 	rates: Record<string, number>;
 }
 
+/**
+ * The ranges `/api/fx/history` will answer for (doc 11 §3).
+ *
+ * Here rather than in either half, because this is the one module both sides
+ * import and the allowlist is a contract between them: the Worker refuses
+ * anything else, and the detail's range picker must not be able to ask for it.
+ * Two copies would drift the first time a range was added.
+ *
+ * An allowlist rather than a bound because the response is CDN-cacheable by
+ * URL, and a free integer gives 365 edge entries per pair that one client can
+ * walk with a loop. doc 11 §3 carries the rest of the reasoning.
+ */
+export const FX_HISTORY_DAYS = [7, 30, 90, 365] as const;
+
+/** doc 10 §3's worked example, and what the detail opens on. */
+export const FX_HISTORY_DEFAULT_DAYS = 90;
+
 /** doc 08 §2's history chart. A day upstream published nothing is a gap, and
  *  gaps are legal — the chart plots against a time axis, never an index. */
 export interface TpFxHistoryPoint {
