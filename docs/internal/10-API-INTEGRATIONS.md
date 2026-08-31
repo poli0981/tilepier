@@ -80,7 +80,12 @@ the client; grep-guard in CI, doc 21 §5).
   snapshot filed under tomorrow's date in that window would be a wrong number
   in a store that has no expiry and is never rewritten. `/api/fx/history
   ?pair=USD-VND&days=90` assembles the series from snapshots. Client mirrors
-  into Dexie `fxHistory` so the chart works offline. Storage cost:
+  into Dexie `fxHistory` so the chart works offline — **driven by `/api/fx`'s
+  own daily table rather than by the history response** (2026-08-31). `swr`
+  already caches the history the reader has looked at; what the mirror adds is
+  that one snapshot answers every pair and every range, so a reader who viewed
+  USD→VND and then switches to USD→EUR offline still gets a chart. One `put` per
+  published day on the tile's existing cadence, bounded at 400 rows (doc 05 §3). Storage cost:
   ~5 KB/day → trivial. Gaps (zero traffic that day) are legal; chart uses
   time axis, not index axis.
 - **Yesterday travels with today.** `/api/fx` reads the previous publication's

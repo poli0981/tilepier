@@ -14,6 +14,7 @@
 		currencyCodes,
 		fxKey,
 		fxSource,
+		mirrorFxSnapshot,
 		rateFor,
 		readSettings,
 		type TpFxReading
@@ -145,6 +146,18 @@
 
 	const flat = $derived(size.h <= 1);
 	const attribution = $derived(payload?.attribution ?? '');
+
+	/**
+	 * doc 10 §3's client mirror. Keyed on the payload's own stamp so it writes
+	 * once per published day rather than once per render, and driven from the
+	 * tile because the tile is what runs on a cadence — the detail is open for
+	 * seconds at a time.
+	 */
+	$effect(() => {
+		const current = payload;
+		if (current === undefined) return;
+		untrack(() => void mirrorFxSnapshot(current, db));
+	});
 
 	function retry(): void {
 		void handle?.revalidate('retry');

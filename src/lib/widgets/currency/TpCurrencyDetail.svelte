@@ -18,10 +18,12 @@
 		historyPoints,
 		historySource,
 		historySummary,
+		readMirroredHistory,
 		HISTORY_MIN_POINTS,
 		rateFor,
 		readSettings,
 		type TpFxReading,
+		type TpHistoryPoint,
 		type TpHistoryReading
 	} from './service';
 	import { historyOption } from './chart';
@@ -173,8 +175,34 @@
 	const openedAt = Date.now();
 
 	const historyPayload = $derived(history?.data?.payload);
+
+	/**
+	 * doc 10 §3’s offline path, and the reason the tile mirrors at all.
+	 *
+	 * `swr` already caches the history the reader has *looked at*, so this only
+	 * matters for a pair or a range they have not opened before — which offline
+	 * is most of them. One daily table answers every pair, so the mirror can
+	 * assemble a window `apiCache` knows nothing about.
+	 */
+	let mirrored = $state.raw<TpHistoryPoint[]>([]);
+
+	$effect(() => {
+		const base = prefs.base;
+		const quote = prefs.quote;
+		const range = days;
+		if (history?.data !== undefined) return;
+
+		let cancelled = false;
+		void untrack(() => readMirroredHistory(base, quote, range, openedAt, db)).then((rows) => {
+			if (!cancelled) mirrored = rows;
+		});
+		return () => {
+			cancelled = true;
+		};
+	});
+
 	const points = $derived(
-		historyPayload === undefined ? [] : historyPoints(historyPayload, days, openedAt)
+		historyPayload === undefined ? mirrored : historyPoints(historyPayload, days, openedAt)
 	);
 	const depth = $derived(historyDepth(points));
 	const option = $derived(historyOption(points));

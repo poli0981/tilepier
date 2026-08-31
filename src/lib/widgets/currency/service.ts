@@ -1,7 +1,8 @@
 import type { TpApiMeta, TpFxHistoryPayload, TpFxPayload } from '$lib/api-types';
 import { fetchEnvelope } from '$lib/core/api';
 import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
-import type { TpDb } from '$lib/core/storage/db';
+import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
+import { logEntry } from '$lib/core/log-buffer';
 import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
 import { CURRENCY_DEFAULTS, MAX_AMOUNT, MAX_TARGETS, type TpCurrencySettings } from './types';
 
@@ -272,6 +273,13 @@ export function historySource(
  * consecutive points however far apart they are, so without an explicit `null`
  * a fortnight-long outage would be drawn as one confident straight line.
  */
+/** `YYYY-MM-DD` in UTC, the way the Worker keys a snapshot (doc 10 §3). Kept
+ *  local rather than imported from `routes/api/_lib`: a widget reaching into
+ *  the Worker's own modules is the boundary doc 03 draws. */
+function utcDate(ms: number): string {
+	return new Date(ms).toISOString().slice(0, 10);
+}
+
 export function historyPoints(
 	payload: TpFxHistoryPayload,
 	days: number,
@@ -284,8 +292,8 @@ export function historyPoints(
 	const points: TpHistoryPoint[] = [];
 
 	for (let back = days - 1; back >= 0; back--) {
-		const at = Date.parse(new Date(now - back * DAY_MS).toISOString().slice(0, 10));
-		const date = new Date(at).toISOString().slice(0, 10);
+		const date = utcDate(now - back * DAY_MS);
+		const at = Date.parse(date);
 		points.push({ at, rate: byDate.get(date) ?? null });
 	}
 
@@ -313,4 +321,88 @@ export function historySummary(
 	if (first === undefined || last === undefined || first === 0) return null;
 
 	return { low: Math.min(...rates), high: Math.max(...rates), change: (last - first) / first };
+}
+
+/* ───────────────────────────────────────── the offline mirror (doc 10 §3) */
+
+/**
+ * How many daily tables to keep on the device.
+ *
+ * `pruneApiCache` deliberately leaves `fxHistory` alone, and should: its
+ * contract is "cache", and this is not cache. It is the only copy of a history
+ * no API will sell back to us, so dropping a row is dropping data rather than
+ * dropping a derivable. But unbounded is roughly 1.8 MB a year on somebody's
+ * phone, so it is bounded at a year plus slack — one more than the largest
+ * range `/api/fx/history` will answer for.
+ */
+export const MIRROR_MAX_DAYS = 400;
+
+/**
+ * Mirrors today's rate table into Dexie, so the chart survives going offline.
+ *
+ * **Driven by `/api/fx`, not by the history response**, and that is the
+ * non-obvious half. `swr` already mirrors every payload into `apiCache`, so the
+ * history the reader has *looked at* is offline-available for free. What this
+ * adds is that one snapshot answers every pair and every range: a reader who
+ * viewed USD→VND over ninety days and then switches to USD→EUR gets an answer
+ * from the same rows, where `apiCache` holds two unrelated blobs and knows
+ * nothing about the second.
+ *
+ * One `put` per published day, on the tile's existing 12 h cadence. doc 10 §3's
+ * sentence honoured with one write path rather than two.
+ */
+export async function mirrorFxSnapshot(
+	payload: TpFxPayload,
+	target: TpDb | undefined = defaultDb
+): Promise<void> {
+	try {
+		await target.fxHistory.put({ dateKey: utcDate(payload.asOf), rates: payload.rates });
+
+		const total = await target.fxHistory.count();
+		if (total <= MIRROR_MAX_DAYS) return;
+
+		const oldest = await target.fxHistory
+			.orderBy('dateKey')
+			.limit(total - MIRROR_MAX_DAYS)
+			.primaryKeys();
+		await target.fxHistory.bulkDelete(oldest);
+	} catch (error) {
+		// A failed mirror is not worth taking the tile down for: the rates on
+		// screen are already correct, and the only thing lost is a day of history
+		// nobody has asked for yet. Same discipline `swr`'s own Dexie writes keep.
+		logEntry('warn', 'could not mirror the fx snapshot', { src: 'widget', error });
+	}
+}
+
+/**
+ * The same window as `historyPoints`, assembled from the device instead.
+ *
+ * The fallback for a panel opened with no connection: `swr` has nothing cached
+ * for *this* pair and range, but the daily tables are here and a cross rate is
+ * arithmetic. Returns an empty array rather than throwing, because a chart that
+ * cannot be drawn is a state the panel already renders.
+ */
+export async function readMirroredHistory(
+	base: string,
+	quote: string,
+	days: number,
+	now: number,
+	target: TpDb | undefined = defaultDb
+): Promise<TpHistoryPoint[]> {
+	try {
+		const rows = await target.fxHistory.toArray();
+		const byDate = new Map(rows.map((row) => [row.dateKey, row.rates]));
+		const points: TpHistoryPoint[] = [];
+
+		for (let back = days - 1; back >= 0; back--) {
+			const date = utcDate(now - back * DAY_MS);
+			const table = byDate.get(date) ?? null;
+			points.push({ at: Date.parse(date), rate: crossRate(table, base, quote) });
+		}
+
+		return points;
+	} catch (error) {
+		logEntry('warn', 'could not read the mirrored fx history', { src: 'widget', error });
+		return [];
+	}
 }

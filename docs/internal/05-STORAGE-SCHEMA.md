@@ -89,6 +89,14 @@ Notes:
 - `FileSystemDirectoryHandle` is structured-cloneable → storable in IndexedDB.
   Re-access requires `queryPermission`/`requestPermission` per session (doc 09 §2).
 - `apiCache` is pruned on startup: delete entries older than 7 days, cap 500 rows.
+- **`fxHistory` is not pruned with it, and is bounded on its own** (2026-08-31).
+  The prune’s contract is “cache” — everything it drops can be fetched again —
+  and these snapshots cannot: no keyless API sells VND history back to us, which
+  is why doc 10 §3 has the client keeping them. So dropping a row there would be
+  dropping data. The bound lives with the code that writes it instead:
+  `MIRROR_MAX_DAYS` in `widgets/currency/service.ts` keeps 400 daily tables, a
+  year plus slack and one more than the longest range `/api/fx/history` answers
+  for. At roughly 5 KB a day that is about 2 MB at the ceiling.
 - `trackBlobs` only exists on the fallback path (Firefox/Safari or user chose
   file-import). FSA path stores no audio bytes — files stay on disk.
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { FX_HISTORY_DAYS } from '$lib/api-types';
+import { FX_HISTORY_DAYS, type TpApiResponse, type TpFxHistoryPayload } from '$lib/api-types';
 import { FX_OK, FX_PAYLOAD } from '$lib/core/__fixtures__/fx';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import { swrCache } from '$lib/core/swr.svelte';
@@ -30,7 +30,11 @@ function props(over: Record<string, unknown> = {}) {
  * Two endpoints now, so one blanket answer will not do: `/api/fx/history`
  * returns a different shape, and a URL glob for the rates would match it too.
  */
-function serve(body: unknown, init: ResponseInit = {}, history = HISTORY_EMPTY): void {
+function serve(
+	body: unknown,
+	init: ResponseInit = {},
+	history: TpApiResponse<TpFxHistoryPayload> = HISTORY_EMPTY
+): void {
 	vi.stubGlobal(
 		'fetch',
 		vi.fn(async (input: RequestInfo | URL) => {
@@ -44,20 +48,24 @@ function serve(body: unknown, init: ResponseInit = {}, history = HISTORY_EMPTY):
 }
 
 /** A window with nothing recorded in it — the day the app deploys. */
-const HISTORY_EMPTY = {
+const HISTORY_EMPTY: TpApiResponse<TpFxHistoryPayload> = {
 	ok: true,
 	data: { base: 'USD', quote: 'VND', points: [], attribution: FX_PAYLOAD.attribution },
 	meta: { cachedAt: 1_788_134_551, source: 'er-api', stale: false }
 };
 
 /** Enough recorded days to clear doc 08 §2’s threshold. */
-function historyWith(count: number) {
+function historyWith(count: number): TpApiResponse<TpFxHistoryPayload> {
 	const day = 24 * 60 * 60 * 1000;
 	const points = Array.from({ length: count }, (_, i) => ({
 		date: new Date(NOW.getTime() - (count - 1 - i) * day).toISOString().slice(0, 10),
 		rate: 25_900 + i * 8
 	}));
-	return { ...HISTORY_EMPTY, data: { ...HISTORY_EMPTY.data, points } };
+	return {
+		ok: true,
+		data: { base: 'USD', quote: 'VND', points, attribution: FX_PAYLOAD.attribution },
+		meta: { cachedAt: 1_788_134_551, source: 'er-api', stale: false }
+	};
 }
 
 /** Yesterday stripped out — the shape the app produces on the day it deploys. */
