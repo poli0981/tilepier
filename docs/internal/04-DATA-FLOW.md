@@ -149,14 +149,24 @@ than in doc 08 §1.
 - **`handle.backoff(...)` for a server-named `retryAfterS` is not reachable,
   and this section describes it as though it were.** `useRefresh` returns
   `void`, so no widget holds a `TpTaskHandle`; `TpApiError.retryAfterS` is
-  captured in `core/api.ts` and read nowhere. Left as-is rather than reshaping
-  `useRefresh` mid-week - but note that wiring it alone would buy nothing
+  captured in `core/api.ts` and read nowhere.
+
+  **Decided 2026-08-31, and the decision is to leave the signature alone.**
+  doc 23 asked for it to be settled before a second networked widget was built
+  around the current shape, and `currency` was that widget — so this is a
+  choice rather than another deferral. Wiring the handle alone buys nothing
   observable: `scheduler.execute`'s `finally` always recomputes `nextDueAt`
-  from the cadence and `effectiveDue` is `max(nextDueAt, backoffUntil)`, so for
-  weather's 600 s cadence every backoff shorter than `BACKOFF.maxMs` (300 s) is
-  unreachable. Doc 11 §7.3 and doc 17 §5 describe the same behaviour and are
-  equally ahead of the code. Week 5, with the markets tile, is where this has
-  to be settled.
+  from the cadence and `effectiveDue` is `max(nextDueAt, backoffUntil)`, so
+  every backoff shorter than `BACKOFF.maxMs` (300 s) is unreachable at
+  weather's 600 s and *entirely* unreachable at currency's 12 h. A widget
+  holding a `TpTaskHandle` there could do nothing with it that the scheduler
+  would honour, and a returned handle nobody can use is worse than none: it
+  reads as a capability.
+
+  So the signature change and the `finally` fix are **one item, not two**, and
+  it belongs to the first cadence short enough to see it — markets, at 60 s,
+  in Week 5. doc 11 §7.3 and doc 17 §5 describe the same behaviour and are
+  equally ahead of the code; all three lines move together or none of them do.
 
 - **A gap reaches the client as `null`, not `NaN`.** `normalize.ts` marks a
   missing column with `NaN` deliberately (doc 10 §2 - 0 °C is a temperature and

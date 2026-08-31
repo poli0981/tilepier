@@ -294,3 +294,26 @@ run.
       remove (S1 discipline)
 - [ ] Unit tests for its `service.ts`/logic; component test for states
 - [ ] Spec doc cross-checked; deviations noted back into docs 07–09
+
+**`currency`, 2026-08-31 — all nine met.** Recorded here because two of the
+boxes need naming rather than ticking.
+
+- **Density.** `min` is 2×1, so tier S is reachable and all three tiers are
+  exercised. At h=1 the tile is one line carrying `{amount} {base} =
+  {converted}` — a bare number there is a quantity with no unit attached to it
+  — and no controls at all. The loading skeleton is one bar rather than two,
+  which is doc 08 §3's quote post-mortem applied instead of rediscovered.
+- **States.** doc 17 §3 puts `currency` in the cached-data class, so all seven
+  are required and implemented. `permission-needed` is **forbidden rather than
+  absent**: the manifest declares no `permissions`, and doc 06 §3 makes the
+  state required exactly when it does. Named here per that section's rule, and
+  asserted against the manifest in the component tests so it stays true if
+  someone adds a permission without reading this.
+- **A11y.** The chart's summary line carries the pair, the range, the move and
+  the band it moved in. The 24 h change is signed by `Intl` before it is
+  tinted, so colour is reinforcement rather than the channel (doc 12 §4.2).
+- **Deviations noted back.** Three, all in doc 08 §2: the attribution link is
+  not visible at h=1 (doc 16 §5 carries the same note and the escalation), the
+  change column is absent rather than zero before a second day is recorded, and
+  the cross rate is computed client-side because doc 11 §3 gives `/api/fx` no
+  parameters.
