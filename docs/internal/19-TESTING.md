@@ -139,7 +139,21 @@ pointer can lose a resize the same way is open and worth answering on its own**:
 if it can, a user's resize silently fails to persist, and no test arrangement
 would fix that.
 
-**#4 is half written, and the written half is the half that exists.** Its stale
+**#4 is complete since 2026-08-31**, and the clause that looked unreachable
+turned out not to be. “online → refresh clears badges” has no trigger at
+`currency`’s 12 h cadence — `scheduler.execute`’s `finally` recomputes
+`nextDueAt` from the cadence and `wake('online')` skips anything not yet due, so
+neither a reconnect nor a reload revalidates a young entry. The honest trigger
+is the entry genuinely ageing past the client TTL, and `page.clock.setFixedTime`
+arranges that without faking a timer the app depends on: thirteen hours on, the
+tile revalidates, meets a refusal, and raises the `stale-error` badge doc 13 §7
+gives a retry button. The alternative considered and **not** taken was to call
+the retry button “refresh” and move on — an unexplained substitution is how a
+journey quietly stops testing the thing it is named after.
+
+What follows is the note as it stood while the second half was outstanding.
+
+**#4 was half written, and the written half was the half that existed.** Its stale
 badges need a widget with cached network data, and the first of those is weather
 in Week 4. What Week 3 could assert is the rest of that sentence — the offline
 chip appearing and clearing, and a deck made entirely of local widgets being
