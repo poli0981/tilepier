@@ -259,7 +259,7 @@ export function normalizeNominatim(body: unknown): TpGeocodeResult[] {
  * wherever rates appear. It rides inside the payload so a surface cannot render
  * a rate without also having been handed the credit for it.
  */
-const FX_ATTRIBUTION = 'Rates By Exchange Rate API';
+export const FX_ATTRIBUTION = 'Rates By Exchange Rate API';
 
 /** ISO 4217 is three uppercase letters, and anything else in that object is
  *  either a new upstream field or a mistake. Neither belongs in a rate table. */

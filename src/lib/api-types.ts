@@ -190,3 +190,20 @@ export interface TpFxPayload {
 export interface TpFxSnapshotPayload {
 	rates: Record<string, number>;
 }
+
+/** doc 08 §2's history chart. A day upstream published nothing is a gap, and
+ *  gaps are legal — the chart plots against a time axis, never an index. */
+export interface TpFxHistoryPoint {
+	/** `YYYY-MM-DD`, UTC. */
+	date: string;
+	/** Units of `quote` per 1 `base`. */
+	rate: number;
+}
+
+export interface TpFxHistoryPayload {
+	base: string;
+	quote: string;
+	/** Ascending by date, with days that have no snapshot simply absent. */
+	points: TpFxHistoryPoint[];
+	attribution: string;
+}

@@ -28,7 +28,7 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/weather` | lat, lon (2 dp) | Open-Meteo forecast + AQI (parallel) |
 | `GET /api/geocode` | q, lang | Photon → Nominatim |
 | `GET /api/fx` | — (full USD table) | ER-API + snapshot side-effect |
-| `GET /api/fx/history` | pair, days≤365 | KV snapshots only |
+| `GET /api/fx/history` | pair, days ∈ {7,30,90,365} | KV snapshots only |
 | `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
 | `GET /api/crypto/klines` | symbol, interval, limit≤500 | Binance klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
@@ -38,6 +38,23 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 
 All GET, all side-effect-free from the client's perspective (fx snapshot is
 an idempotent internal write). Non-GET → 405.
+
+**`days` is an allowlist, not a bound** (settled 2026-08-31; this row said
+`days≤365` while doc 23 called it an allowlist, and they cannot both be right).
+The response is CDN-cacheable by URL, so a free integer gives 365 distinct edge
+entries *per pair* that one client can walk with a loop; four values give four.
+It costs the reader nothing, because doc 08 §2’s detail offers ranges rather
+than a number field — a range picker is an allowlist with a nicer name. A value
+outside the list is `BAD_REQUEST` and never a silent clamp, which would file one
+range’s answer under another range’s key.
+
+**`/api/fx/history` has no KV entry of its own**, and that is a decision rather
+than an omission. Its inputs are the `fx:snap:` pile, which is permanent, so a
+cache over them would save only fan-out — while costing four coupled edits (§4’s
+table, `CACHE_POLICY`, `cacheKey`, and the drift test that parses this file).
+It reads KV, cross-rates, and answers `HIT` with the `fx` family’s `max-age`;
+there is no `MISS` it can produce. The edge absorbs the repeat-hit shape, which
+here is every reader asking for the same pair and range.
 
 ## 4. KV cache TTLs (authoritative)
 
