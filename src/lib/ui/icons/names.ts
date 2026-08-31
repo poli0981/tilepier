@@ -34,6 +34,7 @@ export type TpIconName =
 	| 'locate'
 	| 'refresh'
 	| 'swap'
+	| 'chevron'
 	| 'edit';
 
 /** `d` attributes only; stroke, size and caps come from the component. */
@@ -44,6 +45,9 @@ export const ICON_PATHS: Record<TpIconName, readonly string[]> = {
 	refresh: ['M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8', 'M21 3v5h-5'],
 	// Swap the pair, on the currency tile: two lanes running opposite ways.
 	swap: ['M8 3 4 7l4 4', 'M4 7h16', 'M16 21l4-4-4-4', 'M20 17H4'],
+	// Points down; the currency detail rotates it for "move up". One glyph for one
+	// idea, because two would drift apart the first time either is touched.
+	chevron: ['M6 9l6 6 6-6'],
 	timer: ['M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'M12 10v4', 'M9 2h6'],
 	calculator: ['M5 3h14v18H5z', 'M8 7h8', 'M8 12h.01', 'M12 12h.01', 'M16 12h.01', 'M8 16h8'],
 	note: ['M5 3h9l5 5v13H5z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],

@@ -8,13 +8,19 @@ export interface TpCurrencySettings {
 	/** ISO 4217, uppercase. The hero number is denominated in this. */
 	quote: string;
 	amount: number;
+	/**
+	 * The detail's rate table, beyond the pair the tile shows (doc 08 §2).
+	 * Ordered, because the reader can reorder it.
+	 */
+	targets: string[];
 }
 
 /** doc 08 §2: "default USD→VND", which is also doc 01's second target reader. */
 export const CURRENCY_DEFAULTS: TpCurrencySettings = {
 	base: 'USD',
 	quote: 'VND',
-	amount: 1
+	amount: 1,
+	targets: ['VND', 'EUR', 'JPY', 'GBP', 'CNY']
 };
 
 /**
@@ -25,3 +31,12 @@ export const CURRENCY_DEFAULTS: TpCurrencySettings = {
  * formatted hero runs to twenty digits and the tile has no honest layout.
  */
 export const MAX_AMOUNT = 1e12;
+
+/**
+ * How many rows the detail will render.
+ *
+ * Not a limit on what anyone could want to watch — it bounds what a hand-edited
+ * `tp.layout.v1` can make the panel draw. Without it a bag carrying five hundred
+ * codes renders five hundred rows and a scroll bar where a converter used to be.
+ */
+export const MAX_TARGETS = 12;

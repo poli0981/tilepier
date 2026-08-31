@@ -3,7 +3,7 @@ import { fetchEnvelope } from '$lib/core/api';
 import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
 import type { TpDb } from '$lib/core/storage/db';
 import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
-import { CURRENCY_DEFAULTS, MAX_AMOUNT, type TpCurrencySettings } from './types';
+import { CURRENCY_DEFAULTS, MAX_AMOUNT, MAX_TARGETS, type TpCurrencySettings } from './types';
 
 /**
  * The currency tile's data layer — the tier-2 pattern's second proof, and the
@@ -105,8 +105,29 @@ export function readSettings(bag: Record<string, unknown>): TpCurrencySettings {
 		amount:
 			typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 && amount <= MAX_AMOUNT
 				? amount
-				: CURRENCY_DEFAULTS.amount
+				: CURRENCY_DEFAULTS.amount,
+		targets: readTargets(bag['targets'])
 	};
+}
+
+/**
+ * The detail's rows, deduped and bounded.
+ *
+ * An empty list is a legitimate answer — a reader can remove every row — so a
+ * bag carrying `[]` keeps it, and only a bag carrying something that is not a
+ * list at all falls back to the defaults.
+ */
+function readTargets(value: unknown): string[] {
+	if (!Array.isArray(value)) return [...CURRENCY_DEFAULTS.targets];
+
+	const seen = new Set<string>();
+	for (const entry of value) {
+		if (typeof entry !== 'string') continue;
+		const code = entry.trim().toUpperCase();
+		if (CURRENCY_CODE.test(code)) seen.add(code);
+		if (seen.size >= MAX_TARGETS) break;
+	}
+	return [...seen];
 }
 
 /* ──────────────────────────────────────────────────────────────── the maths */
@@ -149,7 +170,11 @@ export function convert(
 }
 
 /**
- * doc 08 §2's 24 h change, as a percentage.
+ * doc 08 §2's 24 h change, as a *fraction* — 0.0021, not 0.21.
+ *
+ * A fraction because `Intl.NumberFormat`'s `style: 'percent'` wants one, and
+ * letting it place the sign and the symbol is the difference between "+0,21 %"
+ * in Vietnamese and a hand-built string that is right in exactly one locale.
  *
  * `null` whenever there is nothing honest to say: on the day this ships there
  * is no previous snapshot at all, and a pair can be missing from yesterday's
@@ -157,12 +182,12 @@ export function convert(
  * case rather than a zero — a 0.00 % is a claim about the market, and an absent
  * figure is the truth about what we know.
  */
-export function changePct(payload: TpFxPayload, from: string, to: string): number | null {
+export function change24h(payload: TpFxPayload, from: string, to: string): number | null {
 	const now = crossRate(payload.rates, from, to);
 	const before = crossRate(payload.prevRates, from, to);
 	if (now === null || before === null || before === 0) return null;
 
-	return ((now - before) / before) * 100;
+	return (now - before) / before;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FX_PAYLOAD, FX_PAYLOAD_DAY_ONE } from '$lib/core/__fixtures__/fx';
 import { cacheKey } from '$lib/shared-constants';
-import { changePct, convert, currencyCodes, fxKey, fxUrl, rateFor, readSettings } from './service';
+import { change24h, convert, currencyCodes, fxKey, fxUrl, rateFor, readSettings } from './service';
 import { CURRENCY_DEFAULTS, MAX_AMOUNT } from './types';
 
 /**
@@ -96,24 +96,24 @@ describe('the 24 h change (doc 08 §2)', () => {
 		const now = FX_PAYLOAD.rates['VND'] as number;
 		const before = (FX_PAYLOAD.prevRates as Record<string, number>)['VND'] as number;
 
-		expect(changePct(FX_PAYLOAD, 'USD', 'VND')).toBeCloseTo(((now - before) / before) * 100, 9);
+		expect(change24h(FX_PAYLOAD, 'USD', 'VND')).toBeCloseTo((now - before) / before, 12);
 	});
 
 	it('reports nothing on the day the app deploys', () => {
 		// Not zero. A 0.00 % is a claim about the market; an absent figure is the
 		// truth about what we know, and the tile renders no change at all.
-		expect(changePct(FX_PAYLOAD_DAY_ONE, 'USD', 'VND')).toBeNull();
+		expect(change24h(FX_PAYLOAD_DAY_ONE, 'USD', 'VND')).toBeNull();
 	});
 
 	it('reports nothing for a pair yesterday did not quote', () => {
 		// Today's table dropped ZWL; yesterday's still has it. Neither direction
 		// can produce a change, and neither may produce a NaN.
-		expect(changePct(FX_PAYLOAD, 'USD', 'ZWL')).toBeNull();
-		expect(changePct(FX_PAYLOAD, 'ZWL', 'USD')).toBeNull();
+		expect(change24h(FX_PAYLOAD, 'USD', 'ZWL')).toBeNull();
+		expect(change24h(FX_PAYLOAD, 'ZWL', 'USD')).toBeNull();
 	});
 
 	it('is zero only when the rate genuinely did not move', () => {
-		expect(changePct(FX_PAYLOAD, 'USD', 'USD')).toBe(0);
+		expect(change24h(FX_PAYLOAD, 'USD', 'USD')).toBe(0);
 	});
 });
 

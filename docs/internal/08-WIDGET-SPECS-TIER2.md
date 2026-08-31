@@ -142,6 +142,13 @@ every test, because the geocode fixture was tidier than the real answer:
   pair; sending a pair up would multiply one cache entry by 160². This is also
   why the tile needs no `{#key}` remount around its subscription the way
   `weather` does: nothing a reader can change moves the data key.
+- **The change column is absent on day one, not zero** (2026-08-31). “Once ≥2
+  snapshots exist” is the spec; what it means in the panel is that the whole
+  column disappears and a line says why, because a table of “+0,00 %” is a claim
+  about the market rather than a statement about what has been recorded.
+  Reordering is a swap with the neighbour rather than a drag surface — for a
+  list bounded at twelve it is the same result, and it works from the keyboard
+  with nothing extra.
 - **The rounding rule is ICU's, not ours.** `Intl.NumberFormat` with
   `style: 'currency'` already knows VND has no minor units; a hand-written table
   would be a staler second copy of data the platform ships (doc 14 §3). A

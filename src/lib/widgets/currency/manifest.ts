@@ -13,9 +13,9 @@ import type { TpWidgetManifest } from '$lib/core/registry';
  * **No `permissions`**, which is what makes `permission-needed` forbidden
  * rather than merely absent (doc 06 §3).
  *
- * No `loadDetail` yet. knip is CI-blocking on a thunk pointing at a file that
- * does not exist, so it arrives with the detail rather than one commit ahead of
- * it — the same commit weather's manifest lived through.
+ * `loadDetail` arrived one commit after `loadWidget`, because knip is
+ * CI-blocking on a thunk pointing at a file that does not exist — the same
+ * commit weather's manifest lived through.
  */
 const manifest: TpWidgetManifest = {
 	id: 'currency',
@@ -27,7 +27,8 @@ const manifest: TpWidgetManifest = {
 	// 12 h, the same number as doc 11 §4's KV TTL. Upstream publishes once a
 	// day, so anything shorter is a request that can only produce a HIT.
 	refresh: { kind: 'interval', everyMs: 43_200_000 },
-	loadWidget: () => import('./TpCurrencyWidget.svelte')
+	loadWidget: () => import('./TpCurrencyWidget.svelte'),
+	loadDetail: () => import('./TpCurrencyDetail.svelte')
 };
 
 export default manifest;

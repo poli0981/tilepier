@@ -238,3 +238,25 @@ export function fmtRate(rate: number, locale: string): string {
 		() => new Intl.NumberFormat(locale, { maximumSignificantDigits: 6 })
 	).format(rate);
 }
+
+/**
+ * A move, as a signed percentage.
+ *
+ * Takes a fraction, because that is what `style: 'percent'` wants and letting
+ * Intl place the sign and the symbol is the difference between "+0,21 %" in
+ * Vietnamese and a hand-built string that is right in exactly one locale.
+ *
+ * `signDisplay: 'exceptZero'` because "+0.00 %" claims a rise that did not
+ * happen, and a bare "0 %" is the honest way to say a rate held.
+ */
+export function fmtPercentChange(fraction: number, locale: string): string {
+	return numberFormatter(
+		`p:${locale}`,
+		() =>
+			new Intl.NumberFormat(locale, {
+				style: 'percent',
+				signDisplay: 'exceptZero',
+				maximumFractionDigits: 2
+			})
+	).format(fraction);
+}
