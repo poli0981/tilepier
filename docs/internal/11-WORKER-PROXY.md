@@ -155,3 +155,21 @@ No third-party telemetry. Rely on Cloudflare's built-in Workers metrics
 (requests, errors, CPU) + `wrangler tail` during incidents. A dev-only
 `GET /api/_health` returns breaker states and today's stock-budget counter
 — gated by `env.DEV_DASH_TOKEN` query secret; absent in docs/UI.
+
+**The three secrets are typed by hand in `src/worker-env.d.ts`** (2026-09-01),
+and that file exists because `wrangler types` cannot produce them. Secrets are
+not declared in `wrangler.jsonc` — they are set with `wrangler secret put` — so
+the generator learns their names from `.dev.vars`, which is gitignored. The
+committed `worker-configuration.d.ts` would then differ between a checkout that
+has one and CI, which does not, and `wrangler types --check` inside `pnpm lint`
+would fail on whichever side it ran. Doc 13 §10 recorded that as the reason the
+diagnostics breaker rows were deferred out of Week 3; it blocked `/api/stock/*`
+just as hard, which is why Week 5 settles it first.
+
+The mechanism is declaration merging, not a second generator: `interface Env` is
+global in the generated file, so a global `.d.ts` adds members to it and leaves
+the generated file byte-identical. `src/fsa.d.ts` does the same thing to
+`FileSystemHandle`. Typed `string` rather than `string | undefined` — the
+optional chain on `platform?` already makes each read `string | undefined` at
+the call site, so the "deployed without `wrangler secret put`" branch stays
+reachable and is guarded the way a missing KV binding is.

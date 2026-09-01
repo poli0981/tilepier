@@ -129,7 +129,11 @@ eval — Rolldown output complies).
   consequence). CI grep forbids `https://cdn`, `unpkg`, `jsdelivr`,
   `googleapis` in `src/` and build output.
 - Secrets only in Wrangler secrets / GitHub Actions secrets; CI grep for
-  key patterns in the client bundle (doc 21 §5).
+  key patterns in the client bundle (doc 21 §5). Three of them:
+  `FINNHUB_KEY`, `TWELVEDATA_KEY`, `DEV_DASH_TOKEN`. A local run needs them in
+  `.dev.vars`, which is gitignored; `.dev.vars.example` is committed, carries
+  every name and **no value**, and is the one file that may mention them
+  outside `src/worker-env.d.ts` (doc 11 §9).
 
 ## 7. Privacy engineering (enforcement of doc 16 §3)
 

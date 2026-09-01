@@ -241,15 +241,32 @@ ring buffer and `scheduler.inspect()` (doc 04 §3).
 networked until Week 4, so the table normally reads "nothing cached"; that is
 the honest thing for it to say rather than being left out until it can be full.
 
-**The breaker rows did not, and that is a deliberate deferral to Week 5.** They
+**The breaker rows did not, and that was a deliberate deferral to Week 5.** They
 need `GET /api/_health`, which doc 11 §9 gates behind `env.DEV_DASH_TOKEN` — a
 secret, and secrets are not declared in `wrangler.jsonc`. Typing one means
 `wrangler types` reading a gitignored `.dev.vars`, so the committed
 `worker-configuration.d.ts` would differ between a developer's checkout and CI
 and `wrangler types --check` would fail on one of them. That is a real problem
-with a real answer and it is not a Week 3 problem: doc 23 puts the quota
+with a real answer and it was not a Week 3 problem: doc 23 puts the quota
 telemetry watch at Week 5, which is when a breaker table first has anything to
 say. Recorded here rather than left as a gap in a numbered list.
+
+**The typing half is resolved, 2026-09-01**, and the answer turned out not to
+need a generator at all: `src/worker-env.d.ts` declares the three secrets by
+hand and merges into the global `Env`, leaving the generated file untouched so
+`--check` stays green on both sides. doc 11 §9 carries the mechanism. What the
+deferral got right is that this was never only the health endpoint's problem —
+it blocked every `/api/stock/*` route the same way, so Week 5 could not have
+started anywhere else.
+
+**The token is the half still to decide**, and it is a UI question rather than a
+typing one: this section asks the panel to render breaker state while doc 11 §9
+says the endpoint is "absent in docs/UI", and a client that fetches it has to
+hold a secret from somewhere. The proposal on the table is that the panel reads
+it from the query string (`?debug=1&health=<token>`), stores it **nowhere** —
+not in `tp.settings.v1`, which is the three-key rule and also just the wrong
+place for a secret — and renders the section as unavailable without one. Settle
+it before the rows are written, not after.
 
 Section 7 ships in Week 1 deliberately, out of order of apparent usefulness: it
 is what makes the ring buffer worth having, and M1's stated QA strategy is

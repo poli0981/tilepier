@@ -1,0 +1,21 @@
+# Worker secrets, for `pnpm dev` and `pnpm preview` (doc 15 §6, doc 21 §4).
+#
+# Copy to `.dev.vars` and fill in. That file is gitignored; this one is not,
+# and must never carry a real value.
+#
+# In production these are set with `wrangler secret put <NAME>` and appear
+# nowhere in `wrangler.jsonc`, in CI logs, or in any client bundle — doc 21 §5
+# greps the built output for them on every run.
+#
+# Their *types* are declared by hand in `src/worker-env.d.ts`, because
+# `wrangler types` would read this file's real counterpart and produce a
+# `worker-configuration.d.ts` that differs between a checkout and CI.
+
+# https://finnhub.io — free tier, 60 calls/min.
+FINNHUB_KEY=
+
+# https://twelvedata.com — free "Basic", 800 credits/day, resets 00:00 UTC.
+TWELVEDATA_KEY=
+
+# Any long random string. Gates GET /api/_health (doc 11 §9).
+DEV_DASH_TOKEN=
