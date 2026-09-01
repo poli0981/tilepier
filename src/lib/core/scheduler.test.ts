@@ -376,3 +376,55 @@ describe('backoff actually governs the next run', () => {
 		expect(scheduler.inspect()[0]?.nextDueAt).toBeNull();
 	});
 });
+
+/**
+ * doc 06 §7's `visibleOnly` column, which `markets` is the first widget to set.
+ *
+ * Both cases were run against the pre-2026-09-01 scheduler: the first passed
+ * for the wrong reason (the flag was checked inside `tick`, which has already
+ * returned when the tab is hidden, so the condition was unreachable) and the
+ * second failed.
+ */
+describe('visibleOnly (doc 06 §7)', () => {
+	const marketsCadence = { kind: 'interval', everyMs: 60_000, visibleOnly: true } as const;
+
+	it('does not tick a visible-only entry while the tab is hidden', async () => {
+		const run = vi.fn();
+		scheduler.register('a', { cadence: marketsCadence, run, runOnRegister: false });
+
+		hidden = true;
+		scheduler.tick(Date.now() + 120_000);
+
+		expect(run).not.toHaveBeenCalled();
+	});
+
+	it('does not wake a visible-only entry when connectivity returns to a hidden tab', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		const background = vi.fn();
+		const foreground = vi.fn();
+
+		scheduler.register('markets', {
+			cadence: marketsCadence,
+			run: background,
+			runOnRegister: false
+		});
+		scheduler.register('weather', {
+			cadence: { kind: 'interval', everyMs: 60_000 },
+			run: foreground,
+			runOnRegister: false
+		});
+
+		// Both are due; the tab is in the background and the network comes back.
+		vi.spyOn(Date, 'now').mockReturnValue(120_000);
+		hidden = true;
+		online.noteFetchResult('network-error');
+		online.noteFetchResult('network-error');
+		online.noteFetchResult('ok');
+
+		// The ticker stops on `visibilitychange`, but the `online` subscription
+		// does not — so this path is the one that could reach a hidden tab, and
+		// it ran everything due regardless of the flag until 2026-09-01.
+		await vi.waitFor(() => expect(foreground).toHaveBeenCalledTimes(1));
+		expect(background).not.toHaveBeenCalled();
+	});
+});

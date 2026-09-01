@@ -18,10 +18,22 @@ mandatory, not an optimization.
 - **Watchlist:** ordered list in widget settings, default
   `[BTCUSDT, ETHUSDT, AAPL, MSFT]`, max 12 in v1 (quota model, doc 11 §7).
   Each entry `{ kind: 'crypto'|'stock', symbol, display }`.
+
+  **Week 5a seeds the crypto half of that default and 5b restores the rest**,
+  which is a deviation worth naming rather than hiding: `/api/stock/quote`
+  lands in 5b, so seeding `AAPL` and `MSFT` now would put two permanently
+  unanswerable rows on a tile whose whole job is to say what it knows. A stock
+  row is rendered exactly like a delisted coin until then — the row model is
+  already written for both kinds.
+- **Tier S is unreachable**, because `min` is 2×2 and doc 13 §3's tier S is
+  `w <= 2 && h <= 1`. Named here per doc 06 §3's single-widget N/A rule rather
+  than left as a gap in the DoD: a watchlist is a list, and a list has no honest
+  one-line rendering.
 - **Tile:** watchlist rows — symbol, last price, 24 h (crypto) / day (stock)
-  change % chip colored by sign (colors from tokens, color-blind-checked
-  pair, doc 12 §4), micro-sparkline at w≥3 from cached series (no extra
-  fetch: reuse the series cache, downsampled).
+  change % chip colored by sign (colors from tokens, color-blind-checked pair,
+  doc 12 §4 — and the sign is placed by `Intl` *before* the colour is applied,
+  so colour reinforces rather than carries), micro-sparkline at w≥3 from cached
+  series (no extra fetch: reuse the series cache, downsampled).
 - **Refresh:** 60 s while the tab is visible (scheduler pauses hidden);
   quotes only — series refresh on-demand in detail.
 - **Detail:** symbol header (price, change, day range), **candlestick +
@@ -35,7 +47,13 @@ mandatory, not an optimization.
   ranges 1D collapses to 1W) → if none, quote-only view with explanatory
   empty chart state. Never a spinner that hangs.
 - **Formatting:** `Intl.NumberFormat` with per-asset precision (BTC 2 dp,
-  sub-$1 alts 4–6 dp, stocks 2 dp); percent always signed.
+  sub-$1 alts 4–6 dp, stocks 2 dp); percent always signed. The precision is
+  keyed off the **price** rather than off the symbol (`priceDigits`): the rule
+  is about magnitude, and a hard-coded list of coins would be wrong the first
+  week a new one is listed and wrong again for a stock trading under a dollar.
+  `i18n/fmt.ts`'s `fmtPrice` is separate from `fmtRate` for the same reason —
+  `fmtRate` is significant-digit based, which is right for a rate spanning
+  0.000043 to 25 951 and renders a 62 910.53 price as "62,910.5".
 - **Edge cases:** market closed (stock) → "as of close" timestamp; delisted
   symbol → row error chip with remove shortcut; symbol valid on Finnhub but
   missing on Twelve Data → quote-only mode for that symbol.

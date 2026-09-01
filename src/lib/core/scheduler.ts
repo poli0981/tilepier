@@ -210,15 +210,18 @@ async function execute(entry: Entry, reason: TpRunReason): Promise<void> {
 	}
 }
 
+/** doc 06 §7's `visibleOnly` column. `markets` is the only widget that sets it. */
+function isVisibleOnly(entry: Entry): boolean {
+	return entry.cadence.kind === 'interval' && entry.cadence.visibleOnly === true;
+}
+
 function tick(now: number = Date.now()): void {
+	// The ticker itself stops on `hidden` (doc 04 §3), so `visibleOnly` needs no
+	// second check here — it is `wake()` that can reach a hidden tab.
 	if (isHidden()) return;
 
 	for (const entry of entries.values()) {
 		if (entry.running) continue;
-		// doc 06 §7: markets refreshes on a 60 s interval, visible only.
-		if (entry.cadence.kind === 'interval' && entry.cadence.visibleOnly === true && isHidden()) {
-			continue;
-		}
 		const due = effectiveDue(entry);
 		if (due === null || due > now) continue;
 		void execute(entry, 'tick');
@@ -231,6 +234,15 @@ function wake(reason: TpRunReason): void {
 	for (const entry of entries.values()) {
 		if (entry.running) continue;
 		if (reason === 'visible' && !entry.runOnFocus) continue;
+		/*
+		 * `wake` is the one path that can reach a hidden tab: the ticker stops on
+		 * `visibilitychange`, but the `online` subscription does not, so a
+		 * reconnect while the tab is in the background ran every due entry
+		 * regardless of the flag. `markets` at 60 s is the first widget to set it
+		 * and the first that must not — a background tab that reconnects should
+		 * not start polling a market nobody is looking at.
+		 */
+		if (isHidden() && isVisibleOnly(entry)) continue;
 		const due = effectiveDue(entry);
 		if (due === null || due > now) continue;
 		void execute(entry, reason);

@@ -497,5 +497,19 @@
 	"widget.weather.humidity": "humidity",
 	"widget.weather.uv": "UV",
 	"widget.weather.pressure": "pressure",
-	"widget.weather.week": "the next seven days"
+	"widget.weather.week": "the next seven days",
+	"widget.markets.title": "Markets",
+	"widget.markets.blurb": "A watchlist of coins and stocks, at a glance",
+	"widget.markets.loading": "reading the market",
+	"widget.markets.error": "the market could not be read",
+	"widget.markets.rate_limited": "too many requests — waiting a moment",
+	"widget.markets.offline": "no network, and nothing saved yet",
+	"widget.markets.no_rows": "nothing on the watchlist yet",
+	"widget.markets.no_rows_hint": "open the detail to add a symbol",
+	"widget.markets.unavailable": "no quote",
+	"widget.markets.unavailable_hint": "{symbol} is not being quoted — it may have been delisted",
+	"widget.markets.no_change": "no change figure yet",
+	"widget.markets.as_of": "prices {age}",
+	"widget.markets.list_label": "watchlist",
+	"widget.markets.change_label": "{change} over 24 hours"
 }

@@ -240,6 +240,30 @@ export function fmtRate(rate: number, locale: string): string {
 }
 
 /**
+ * A price, at a precision chosen by the caller (doc 09 §1).
+ *
+ * Separate from `fmtRate` rather than an option on it, because the two answer
+ * different questions. `fmtRate` is `maximumSignificantDigits: 6`, which is
+ * right for an exchange rate spanning 0.000043 to 25 951 — and wrong for a
+ * price, where it renders 62 910.53 as "62,910.5" and drops the cents. Here the
+ * caller knows the asset and passes the places: doc 09 §1's "BTC 2 dp, sub-$1
+ * alts 4-6 dp, stocks 2 dp".
+ *
+ * `minimumFractionDigits` matches the maximum so a column of prices lines up —
+ * "3,241.00" under "62,910.53" rather than "3,241".
+ */
+export function fmtPrice(value: number, locale: string, digits: number): string {
+	return numberFormatter(
+		`p:${locale}:${String(digits)}`,
+		() =>
+			new Intl.NumberFormat(locale, {
+				minimumFractionDigits: digits,
+				maximumFractionDigits: digits
+			})
+	).format(value);
+}
+
+/**
  * A move, as a signed percentage.
  *
  * Takes a fraction, because that is what `style: 'percent'` wants and letting

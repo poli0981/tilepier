@@ -223,6 +223,22 @@ was no `toHaveScreenshot` anywhere. `s1-grid` now asserts the item's four insets
 directly — one item, not the distance between two, so it holds at every column
 breakpoint.
 
+And a seventh, for the browser project, found 2026-09-01 building the markets
+tile: **`scheduler.tick()` does nothing in a component test, because the
+headless browser can report `document.visibilityState: 'hidden'`.** The
+scheduler stops the ticker entirely on `hidden` (doc 04 §3), which is correct
+and is also why driving a widget's cadence from a browser test silently runs
+nothing — the assertion then fails on the state that never changed rather than
+on the tick that never happened.
+
+The case in question was "a refusal lands on cached prices, so the badge is
+`stale-error`". It is written through the **hydrate** path instead: seed
+`apiCache` with a payload aged past the client TTL, stub the refusal, and
+render. That is a reload while rate-limited, which is more faithful to what a
+reader meets than a synthetic tick, and it needs no timer at all. The scheduler
+tests that *do* drive `tick` live in the node project, where `document` is a
+stub whose visibility the test owns.
+
 And a sixth, which is about a helper rather than a test: **`expect.poll`
 retries a mismatched value, but lets a thrown error through.** `journey-6`'s
 `awaitStoredTiles` polls `page.evaluate` while waiting for the backup restore to

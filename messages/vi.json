@@ -497,5 +497,19 @@
 	"widget.weather.humidity": "độ ẩm",
 	"widget.weather.uv": "UV",
 	"widget.weather.pressure": "áp suất",
-	"widget.weather.week": "bảy ngày tới"
+	"widget.weather.week": "bảy ngày tới",
+	"widget.markets.title": "Thị trường",
+	"widget.markets.blurb": "Danh sách theo dõi tiền mã hoá và cổ phiếu, nhìn là thấy",
+	"widget.markets.loading": "đang đọc thị trường",
+	"widget.markets.error": "không đọc được thị trường",
+	"widget.markets.rate_limited": "quá nhiều yêu cầu — chờ một lát",
+	"widget.markets.offline": "không có mạng, và chưa lưu gì",
+	"widget.markets.no_rows": "chưa có gì trong danh sách theo dõi",
+	"widget.markets.no_rows_hint": "mở chi tiết để thêm một mã",
+	"widget.markets.unavailable": "không có giá",
+	"widget.markets.unavailable_hint": "{symbol} không được niêm yết — có thể đã bị gỡ",
+	"widget.markets.no_change": "chưa có số liệu thay đổi",
+	"widget.markets.as_of": "giá {age}",
+	"widget.markets.list_label": "danh sách theo dõi",
+	"widget.markets.change_label": "{change} trong 24 giờ"
 }
