@@ -72,6 +72,39 @@ describe('kv cache freshness (doc 11 §4)', () => {
 		expect(stale.value?.payload).toEqual({ n: 1 });
 	});
 
+	it('reports MISS past the stale window, rather than trusting KV to have gone', async () => {
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		await writeCache(kv, 'crTick', 'cr:tick:v1:BTCUSDT', { n: 1 }, 'binance', t0);
+
+		const window = CACHE_POLICY.crTick.ttlMs + (CACHE_POLICY.crTick.staleMs ?? 0);
+		const inside = await readCache(kv, 'crTick', 'cr:tick:v1:BTCUSDT', t0 + window - 1);
+		expect(inside.status).toBe('STALE');
+
+		/*
+		 * `writeCache` gives KV an `expirationTtl` of ttl + stale, so in production
+		 * the entry is usually gone before this matters — which is what makes it
+		 * the wrong thing to rely on. KV expiry is best-effort and not instant, an
+		 * entry written by an older build with a longer window is not covered by
+		 * it at all, and doc 11 §4 states the window as a promise about how old a
+		 * reading may be before it stops being one. (Added 2026-09-01, found by the
+		 * crypto ladder asking a 30 s/10 min family for an hour-old entry and
+		 * being handed it.)
+		 */
+		const past = await readCache(kv, 'crTick', 'cr:tick:v1:BTCUSDT', t0 + window + 1);
+		expect(past.status).toBe('MISS');
+		expect(past.value).toBeNull();
+	});
+
+	it('never expires a family that has no stale window', async () => {
+		const t0 = Date.parse('2026-08-10T00:00:00Z');
+		await writeCache(kv, 'fxSnap', 'fx:snap:2026-08-10', { rates: {} }, 'er-api', t0);
+
+		// `fx:snap:` *is* the currency history (doc 10 §3). Dropping one would be
+		// dropping data rather than dropping a derivable.
+		const years = await readCache(kv, 'fxSnap', 'fx:snap:2026-08-10', t0 + 3 * 365 * 86_400_000);
+		expect(years.value).not.toBeNull();
+	});
+
 	it('reports MISS for an absent key', async () => {
 		const read = await readCache(kv, 'wx', 'nope');
 		expect(read.status).toBe('MISS');

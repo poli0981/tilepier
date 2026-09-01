@@ -99,6 +99,20 @@ with `cachedAt` inside the value; freshness = `now - cachedAt <= ttl`;
 between ttl and staleWindow the value is served **only** when upstream
 fails (`stale: true` in meta) or the breaker is open.
 
+**The stale window is enforced on the read, not only by KV's expiry** (added
+2026-09-01). `writeCache` does set `expirationTtl` to ttl + stale, so in
+practice KV had usually removed the entry first — which is what made relying on
+it the wrong call: KV expiry is best-effort and not instant, an entry written by
+an older build with a longer window is not covered by it at all, and the window
+above is a promise about how old a reading may be before it stops being one.
+`readCache` now answers `MISS` past it. Families with `staleMs: null` are
+exempt, because `fx:snap:` *is* the currency history and dropping one would be
+dropping data rather than dropping a derivable.
+
+Found by the crypto degradation-ladder suite asking a 30 s/10 min family for an
+hour-old entry and being handed it — a case no endpoint suite had, because each
+of those seeds an entry inside the window it means to test.
+
 A value may carry its own `freshUntil`, and then that instant wins over the
 row above. It exists for the one row whose TTL is not ours to set — `fx:v1:USD`
 is capped by `time_next_update_unix` (doc 10 §3), and a table upstream has
