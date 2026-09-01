@@ -527,5 +527,15 @@
 	"widget.markets.detail_offline": "no network, and no candles saved yet",
 	"widget.markets.detail_error": "the candles could not be read",
 	"widget.markets.disclaimer": "Data may be delayed and is for reference only — not investment advice.",
-	"widget.markets.nothing_selected": "nothing on the watchlist to show"
+	"widget.markets.nothing_selected": "nothing on the watchlist to show",
+	"widget.markets.manage_heading": "Watchlist",
+	"widget.markets.add_label": "symbol to add",
+	"widget.markets.add_row": "add",
+	"widget.markets.remove_row": "remove {symbol}",
+	"widget.markets.move_up": "move {symbol} up",
+	"widget.markets.move_down": "move {symbol} down",
+	"widget.markets.all_added": "every symbol on the list is already here",
+	"widget.markets.refused_invalid": "that is not a symbol this can ask for",
+	"widget.markets.refused_duplicate": "{symbol} is already on the watchlist",
+	"widget.markets.refused_full": "the watchlist holds {max} symbols — remove one first"
 }

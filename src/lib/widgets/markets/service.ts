@@ -20,6 +20,7 @@ import {
 	symbolSetKey
 } from '$lib/shared-constants';
 import {
+	CRYPTO_TOP_LIST,
 	MARKETS_DEFAULTS,
 	MAX_DISPLAY,
 	MAX_WATCHLIST,
@@ -420,4 +421,92 @@ export function sparklinePoints(values: readonly number[], width: number, height
 			return `${x.toFixed(2)},${y.toFixed(2)}`;
 		})
 		.join(' ');
+}
+
+/* ────────────────────────────────────── the watchlist manager (doc 09 §1) */
+
+/**
+ * Why an edit was refused, or `null` when it was not.
+ *
+ * A discriminated reason rather than a bare `null` list, because the panel has
+ * something different to say about each: a full watchlist is a limit the reader
+ * can act on by removing a row, a duplicate is already on screen, and a
+ * malformed symbol is a typo. One "could not add that" for all three would send
+ * a reader looking for the wrong problem.
+ */
+export type TpWatchlistRefusal = 'invalid' | 'duplicate' | 'full';
+
+export interface TpWatchlistEdit {
+	watchlist: TpWatchEntry[];
+	refused: TpWatchlistRefusal | null;
+}
+
+/** Unchanged, with a reason. Keeps every caller on one shape. */
+function refuse(watchlist: readonly TpWatchEntry[], reason: TpWatchlistRefusal): TpWatchlistEdit {
+	return { watchlist: [...watchlist], refused: reason };
+}
+
+/**
+ * Appends a symbol, or explains why it could not.
+ *
+ * Validation is `isMarketSymbol` — doc 10 §5's allowlist, the same one the
+ * endpoints refuse against — rather than a check of whether the coin exists.
+ * Nothing on the client can know that, and doc 09 §1 already has a rendering
+ * for a symbol upstream will not quote: the row appears and is marked. Guessing
+ * here would refuse a coin listed this morning.
+ */
+export function addToWatchlist(
+	watchlist: readonly TpWatchEntry[],
+	kind: TpMarketKind,
+	raw: string
+): TpWatchlistEdit {
+	const symbol = raw.trim().toUpperCase();
+	if (!isMarketSymbol(symbol)) return refuse(watchlist, 'invalid');
+	if (watchlist.some((entry) => entry.kind === kind && entry.symbol === symbol)) {
+		return refuse(watchlist, 'duplicate');
+	}
+	if (watchlist.length >= MAX_WATCHLIST) return refuse(watchlist, 'full');
+
+	return { watchlist: [...watchlist, { kind, symbol, display: '' }], refused: null };
+}
+
+export function removeFromWatchlist(
+	watchlist: readonly TpWatchEntry[],
+	kind: TpMarketKind,
+	symbol: string
+): TpWatchEntry[] {
+	return watchlist.filter((entry) => !(entry.kind === kind && entry.symbol === symbol));
+}
+
+/**
+ * Moves one row by `delta`, or returns the list unchanged at either end.
+ *
+ * Unchanged rather than wrapped: a reader pressing "up" on the first row means
+ * "nothing above this", and jumping it to the bottom is a different action than
+ * the one they asked for.
+ */
+export function moveInWatchlist(
+	watchlist: readonly TpWatchEntry[],
+	index: number,
+	delta: number
+): TpWatchEntry[] {
+	const target = index + delta;
+	if (index < 0 || index >= watchlist.length) return [...watchlist];
+	if (target < 0 || target >= watchlist.length) return [...watchlist];
+
+	const next = [...watchlist];
+	const moved = next[index] as TpWatchEntry;
+	next[index] = next[target] as TpWatchEntry;
+	next[target] = moved;
+	return next;
+}
+
+/** The top-list entries not already on the watchlist — what the picker offers.
+ *  Empty means the reader has taken all of them, which the panel says rather
+ *  than rendering an empty control. */
+export function suggestions(watchlist: readonly TpWatchEntry[]): string[] {
+	const held = new Set(
+		watchlist.filter((entry) => entry.kind === 'crypto').map((entry) => entry.symbol)
+	);
+	return CRYPTO_TOP_LIST.filter((symbol) => !held.has(symbol));
 }

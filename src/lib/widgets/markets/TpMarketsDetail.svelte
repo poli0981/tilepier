@@ -8,18 +8,25 @@
 	import { fmtPercentChange, fmtPrice } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
+	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import { candleSummary, candlestickOption } from './chart';
 	import {
+		addToWatchlist,
 		cryptoLookup,
 		cryptoSource,
 		klinesSource,
 		labelOf,
+		moveInWatchlist,
 		priceDigits,
 		readSettings,
+		removeFromWatchlist,
+		suggestions,
 		symbolsOf,
 		type TpKlinesReading,
-		type TpTickerReading
+		type TpTickerReading,
+		type TpWatchlistRefusal
 	} from './service';
+	import { MAX_WATCHLIST } from './types';
 
 	/**
 	 * doc 09 §1's detail: a symbol header, candles with a volume band, and the
@@ -42,7 +49,7 @@
 		db?: TpDb | undefined;
 	}
 
-	let { settings: tileSettings, db = undefined }: Props = $props();
+	let { settings: tileSettings, onUpdateSettings, db = undefined }: Props = $props();
 
 	const prefs = $derived(readSettings(tileSettings));
 	const cryptoSymbols = $derived(symbolsOf(prefs.watchlist, 'crypto'));
@@ -141,6 +148,48 @@
 				})
 	);
 
+	/* ────────────────────────────────────── the watchlist manager (doc 09 §1) */
+
+	let draft = $state('');
+	let refused = $state<TpWatchlistRefusal | null>(null);
+
+	const offered = $derived(suggestions(prefs.watchlist));
+
+	function persist(watchlist: readonly { kind: string; symbol: string; display: string }[]): void {
+		onUpdateSettings?.({ watchlist: [...watchlist] });
+	}
+
+	function add(): void {
+		// `kind` is `crypto` throughout 5a. 5b adds the selector beside this and
+		// `addToWatchlist` already takes the parameter, so the only change there
+		// is a control rather than a rewrite.
+		const edit = addToWatchlist(prefs.watchlist, 'crypto', draft);
+		refused = edit.refused;
+		if (edit.refused !== null) return;
+
+		draft = '';
+		persist(edit.watchlist);
+	}
+
+	function drop(symbol: string): void {
+		refused = null;
+		persist(removeFromWatchlist(prefs.watchlist, 'crypto', symbol));
+	}
+
+	function move(index: number, delta: number): void {
+		refused = null;
+		persist(moveInWatchlist(prefs.watchlist, index, delta));
+	}
+
+	const refusalText = $derived.by(() => {
+		if (refused === null) return '';
+		if (refused === 'invalid') return m['widget.markets.refused_invalid']();
+		if (refused === 'duplicate') {
+			return m['widget.markets.refused_duplicate']({ symbol: draft.trim().toUpperCase() });
+		}
+		return m['widget.markets.refused_full']({ max: String(MAX_WATCHLIST) });
+	});
+
 	const attribution = $derived(
 		candlesHandle?.data?.payload.attribution ?? ticker?.data?.payload.attribution ?? ''
 	);
@@ -221,6 +270,73 @@
 		{:else}
 			<p class="tp-mkd__note">{m['widget.markets.chart_empty']()}</p>
 		{/if}
+
+		<section class="tp-mkd__manage">
+			<h4 class="tp-mkd__manage-heading">{m['widget.markets.manage_heading']()}</h4>
+
+			<ul class="tp-mkd__rows">
+				{#each prefs.watchlist as row, index (row.kind + row.symbol)}
+					<li class="tp-mkd__row">
+						<span class="tp-mkd__row-label">{labelOf(row)}</span>
+						<button
+							type="button"
+							class="tp-mkd__row-btn tp-mkd__row-btn--up"
+							aria-label={m['widget.markets.move_up']({ symbol: row.symbol })}
+							disabled={index === 0}
+							onclick={() => move(index, -1)}
+						>
+							<TpIcon name="chevron" size={16} />
+						</button>
+						<button
+							type="button"
+							class="tp-mkd__row-btn"
+							aria-label={m['widget.markets.move_down']({ symbol: row.symbol })}
+							disabled={index === prefs.watchlist.length - 1}
+							onclick={() => move(index, 1)}
+						>
+							<TpIcon name="chevron" size={16} />
+						</button>
+						<button
+							type="button"
+							class="tp-mkd__row-btn"
+							aria-label={m['widget.markets.remove_row']({ symbol: row.symbol })}
+							onclick={() => drop(row.symbol)}
+						>
+							<TpIcon name="trash" size={16} />
+						</button>
+					</li>
+				{/each}
+			</ul>
+
+			<div class="tp-mkd__add">
+				<label class="tp-mkd__add-label" for="tp-mkd-add">
+					{m['widget.markets.add_label']()}
+				</label>
+				<input
+					id="tp-mkd-add"
+					list="tp-mkd-suggestions"
+					class="tp-mkd__add-input"
+					bind:value={draft}
+					onkeydown={(event) => {
+						if (event.key === 'Enter') add();
+					}}
+				/>
+				<datalist id="tp-mkd-suggestions">
+					{#each offered as symbol (symbol)}
+						<option value={symbol}></option>
+					{/each}
+				</datalist>
+				<button type="button" class="tp-mkd__add-btn" onclick={add}>
+					{m['widget.markets.add_row']()}
+				</button>
+			</div>
+
+			{#if refusalText !== ''}
+				<p class="tp-mkd__refusal" role="status">{refusalText}</p>
+			{:else if offered.length === 0}
+				<p class="tp-mkd__hint">{m['widget.markets.all_added']()}</p>
+			{/if}
+		</section>
 
 		<footer class="tp-mkd__foot">
 			<!-- doc 16 §4: permanent, not conditional on anything. -->
@@ -338,6 +454,116 @@
 		margin: 0;
 		color: var(--color-fg-mute);
 		font-size: var(--text-xs);
+	}
+
+	.tp-mkd__manage {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+
+	.tp-mkd__manage-heading {
+		margin: 0;
+		color: var(--color-fg-mute);
+		font-size: var(--text-2xs);
+		font-weight: 500;
+		text-transform: uppercase;
+	}
+
+	.tp-mkd__rows {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.tp-mkd__row {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: var(--text-xs);
+	}
+
+	.tp-mkd__row-label {
+		flex: 1;
+		color: var(--color-fg);
+	}
+
+	.tp-mkd__row-btn {
+		display: inline-flex;
+		width: 1.75rem;
+		height: 1.75rem;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: var(--radius-ctl);
+		background: transparent;
+		color: var(--color-fg-mute);
+		cursor: pointer;
+	}
+
+	/* One glyph for one idea: the set has a single chevron and the button that
+	   means "up" turns it, the way `TpCurrencyDetail` does. Two glyphs would
+	   drift apart the first time either was touched (`ui/icons/names.ts`). */
+	.tp-mkd__row-btn--up {
+		rotate: 180deg;
+	}
+
+	.tp-mkd__row-btn:disabled {
+		color: var(--color-fg-dim);
+		cursor: default;
+		opacity: 0.4;
+	}
+
+	.tp-mkd__row-btn:focus-visible,
+	.tp-mkd__add-btn:focus-visible,
+	.tp-mkd__add-input:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	.tp-mkd__add {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.tp-mkd__add-label {
+		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
+	}
+
+	.tp-mkd__add-input {
+		width: 9rem;
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		background: transparent;
+		color: var(--color-fg);
+		font: inherit;
+		font-size: var(--text-xs);
+		padding-block: 0.25rem;
+		padding-inline: 0.5rem;
+	}
+
+	.tp-mkd__add-btn {
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		background: transparent;
+		color: var(--color-fg-mute);
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--text-2xs);
+		padding-block: 0.25rem;
+		padding-inline: 0.5rem;
+	}
+
+	.tp-mkd__refusal,
+	.tp-mkd__hint {
+		margin: 0;
+		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
 	}
 
 	.tp-mkd__foot {

@@ -52,3 +52,30 @@ export const MAX_WATCHLIST = MARKETS_MAX_SYMBOLS;
 
 /** A rename long enough to be useful and short enough to render in a tile row. */
 export const MAX_DISPLAY = 12;
+
+/**
+ * doc 09 §1's "static top-list (crypto)".
+ *
+ * A bundled list rather than a search, and that is the spec's own split:
+ * `/api/stock/search` covers stocks, and Binance has no keyless search endpoint
+ * worth the round trip for a set that changes about once a year. Twelve entries
+ * because that is also the watchlist cap — a reader can take the whole list and
+ * nothing more.
+ *
+ * USDT pairs throughout: they are what `/ticker/24hr` quotes, and mixing in a
+ * USD or BUSD pair would put two prices for one coin in the same picker.
+ */
+export const CRYPTO_TOP_LIST: readonly string[] = [
+	'BTCUSDT',
+	'ETHUSDT',
+	'BNBUSDT',
+	'SOLUSDT',
+	'XRPUSDT',
+	'ADAUSDT',
+	'DOGEUSDT',
+	'TRXUSDT',
+	'AVAXUSDT',
+	'LINKUSDT',
+	'DOTUSDT',
+	'LTCUSDT'
+];

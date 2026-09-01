@@ -15,9 +15,13 @@ import {
 	klinesUrl,
 	downsample,
 	sparklinePoints,
-	SPARK_POINTS
+	SPARK_POINTS,
+	addToWatchlist,
+	removeFromWatchlist,
+	moveInWatchlist,
+	suggestions
 } from './service';
-import { MARKETS_DEFAULTS, MAX_DISPLAY, MAX_WATCHLIST } from './types';
+import { CRYPTO_TOP_LIST, MARKETS_DEFAULTS, MAX_DISPLAY, MAX_WATCHLIST } from './types';
 
 /**
  * doc 09 §1's tile logic, tested without a DOM — everything the tile decides is
@@ -266,5 +270,85 @@ describe('the sparkline shape', () => {
 	it('has nothing to draw from fewer than two points', () => {
 		expect(sparklinePoints([1], 40, 12)).toBe('');
 		expect(sparklinePoints([], 40, 12)).toBe('');
+	});
+});
+
+describe('the watchlist manager (doc 09 §1)', () => {
+	const one = [{ kind: 'crypto' as const, symbol: 'BTCUSDT', display: 'BTC' }];
+
+	it('appends a symbol it has never seen', () => {
+		const edit = addToWatchlist(one, 'crypto', ' ethusdt ');
+
+		expect(edit.refused).toBeNull();
+		expect(edit.watchlist.map((e) => e.symbol)).toEqual(['BTCUSDT', 'ETHUSDT']);
+	});
+
+	it('accepts a coin listed this morning, because nothing here can know', () => {
+		// Validation is doc 10 §5's allowlist, not a guess at whether the coin
+		// exists. doc 09 §1 already has a rendering for a symbol upstream will not
+		// quote: the row appears and is marked.
+		expect(addToWatchlist(one, 'crypto', 'BRANDNEW1').refused).toBeNull();
+	});
+
+	it('says which of the three refusals it was', () => {
+		// One "could not add that" for all three would send a reader looking for
+		// the wrong problem: a full list is acted on by removing a row, a
+		// duplicate is already on screen, a bad symbol is a typo.
+		expect(addToWatchlist(one, 'crypto', 'BTC/USDT').refused).toBe('invalid');
+		expect(addToWatchlist(one, 'crypto', 'btcusdt').refused).toBe('duplicate');
+
+		const full = Array.from({ length: MAX_WATCHLIST }, (_, i) => ({
+			kind: 'crypto' as const,
+			symbol: `SYM${String(i)}`,
+			display: ''
+		}));
+		expect(addToWatchlist(full, 'crypto', 'ETHUSDT').refused).toBe('full');
+	});
+
+	it('leaves the list untouched on every refusal', () => {
+		for (const raw of ['BTC/USDT', 'btcusdt']) {
+			expect(addToWatchlist(one, 'crypto', raw).watchlist).toEqual(one);
+		}
+	});
+
+	it('treats the same symbol under two kinds as two entries', () => {
+		const edit = addToWatchlist([{ kind: 'stock', symbol: 'AAPL', display: '' }], 'crypto', 'AAPL');
+
+		expect(edit.refused).toBeNull();
+		expect(edit.watchlist).toHaveLength(2);
+	});
+
+	it('removes by kind and symbol together', () => {
+		const both = [
+			{ kind: 'crypto' as const, symbol: 'AAPL', display: '' },
+			{ kind: 'stock' as const, symbol: 'AAPL', display: '' }
+		];
+
+		expect(removeFromWatchlist(both, 'stock', 'AAPL')).toEqual([both[0]]);
+	});
+
+	it('moves a row, and stops rather than wrapping at either end', () => {
+		const three = ['A', 'B', 'C'].map((symbol) => ({
+			kind: 'crypto' as const,
+			symbol,
+			display: ''
+		}));
+
+		expect(moveInWatchlist(three, 1, -1).map((e) => e.symbol)).toEqual(['B', 'A', 'C']);
+		// A reader pressing "up" on the first row means "nothing above this";
+		// jumping it to the bottom is a different action than the one they asked
+		// for.
+		expect(moveInWatchlist(three, 0, -1).map((e) => e.symbol)).toEqual(['A', 'B', 'C']);
+		expect(moveInWatchlist(three, 2, 1).map((e) => e.symbol)).toEqual(['A', 'B', 'C']);
+		expect(moveInWatchlist(three, 9, 1).map((e) => e.symbol)).toEqual(['A', 'B', 'C']);
+	});
+
+	it('offers only what the reader has not already taken', () => {
+		expect(suggestions([])).toEqual([...CRYPTO_TOP_LIST]);
+		expect(suggestions(one)).not.toContain('BTCUSDT');
+		// The list is exactly the watchlist cap, so taking all of it is reachable
+		// and the panel has to have something to say about it.
+		const all = CRYPTO_TOP_LIST.map((symbol) => ({ kind: 'crypto' as const, symbol, display: '' }));
+		expect(suggestions(all)).toEqual([]);
 	});
 });

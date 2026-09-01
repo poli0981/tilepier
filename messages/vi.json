@@ -527,5 +527,15 @@
 	"widget.markets.detail_offline": "không có mạng, và chưa lưu nến nào",
 	"widget.markets.detail_error": "không đọc được dữ liệu nến",
 	"widget.markets.disclaimer": "Dữ liệu có thể trễ và chỉ mang tính tham khảo — không phải khuyến nghị đầu tư.",
-	"widget.markets.nothing_selected": "chưa có mã nào trong danh sách để hiển thị"
+	"widget.markets.nothing_selected": "chưa có mã nào trong danh sách để hiển thị",
+	"widget.markets.manage_heading": "Danh sách theo dõi",
+	"widget.markets.add_label": "mã cần thêm",
+	"widget.markets.add_row": "thêm",
+	"widget.markets.remove_row": "bỏ {symbol}",
+	"widget.markets.move_up": "đưa {symbol} lên",
+	"widget.markets.move_down": "đưa {symbol} xuống",
+	"widget.markets.all_added": "mọi mã trong danh sách đều đã có ở đây",
+	"widget.markets.refused_invalid": "đây không phải mã có thể hỏi",
+	"widget.markets.refused_duplicate": "{symbol} đã có trong danh sách theo dõi",
+	"widget.markets.refused_full": "danh sách chứa tối đa {max} mã — bỏ bớt một mã trước"
 }

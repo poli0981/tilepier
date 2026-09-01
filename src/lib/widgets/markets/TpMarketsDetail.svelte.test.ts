@@ -229,3 +229,97 @@ describe('the footer', () => {
 		await expect.element(screen.getByText('Crypto data by Binance')).toBeInTheDocument();
 	});
 });
+
+describe('the watchlist manager (doc 09 §1)', () => {
+	function withSpy() {
+		const onUpdateSettings = vi.fn();
+		const screen = render(TpMarketsDetail, props({ onUpdateSettings }));
+		return { screen, onUpdateSettings };
+	}
+
+	it('adds a symbol the reader types, uppercased', async () => {
+		serveBoth(klinesEnvelope(40));
+		const { screen, onUpdateSettings } = withSpy();
+
+		await screen.getByLabelText(m['widget.markets.add_label']()).fill('solusdt');
+		await screen.getByRole('button', { name: m['widget.markets.add_row']() }).click();
+
+		await vi.waitFor(() => expect(onUpdateSettings).toHaveBeenCalledTimes(1));
+		expect(onUpdateSettings.mock.calls[0]?.[0]).toEqual({
+			watchlist: [...WATCHLIST, { kind: 'crypto', symbol: 'SOLUSDT', display: '' }]
+		});
+	});
+
+	it('says which refusal it was, and writes nothing', async () => {
+		serveBoth(klinesEnvelope(40));
+		const { screen, onUpdateSettings } = withSpy();
+
+		await screen.getByLabelText(m['widget.markets.add_label']()).fill('BTC/USDT');
+		await screen.getByRole('button', { name: m['widget.markets.add_row']() }).click();
+
+		await expect
+			.element(screen.getByText(m['widget.markets.refused_invalid']()))
+			.toBeInTheDocument();
+		expect(onUpdateSettings).not.toHaveBeenCalled();
+	});
+
+	it('names the duplicate rather than refusing in general', async () => {
+		serveBoth(klinesEnvelope(40));
+		const { screen } = withSpy();
+
+		await screen.getByLabelText(m['widget.markets.add_label']()).fill('BTCUSDT');
+		await screen.getByRole('button', { name: m['widget.markets.add_row']() }).click();
+
+		await expect
+			.element(screen.getByText(m['widget.markets.refused_duplicate']({ symbol: 'BTCUSDT' })))
+			.toBeInTheDocument();
+	});
+
+	it('removes a row by its own name', async () => {
+		serveBoth(klinesEnvelope(40));
+		const { screen, onUpdateSettings } = withSpy();
+
+		await screen
+			.getByRole('button', { name: m['widget.markets.remove_row']({ symbol: 'DOGEUSDT' }) })
+			.click();
+
+		await vi.waitFor(() => expect(onUpdateSettings).toHaveBeenCalledTimes(1));
+		expect(onUpdateSettings.mock.calls[0]?.[0]).toEqual({ watchlist: [WATCHLIST[0]] });
+	});
+
+	it('reorders, and disables the control that would do nothing', async () => {
+		serveBoth(klinesEnvelope(40));
+		const { screen, onUpdateSettings } = withSpy();
+
+		// "Up" on the first row has nothing above it, so the control is disabled
+		// rather than silently doing nothing when pressed.
+		await expect
+			.element(
+				screen.getByRole('button', { name: m['widget.markets.move_up']({ symbol: 'BTCUSDT' }) })
+			)
+			.toBeDisabled();
+
+		await screen
+			.getByRole('button', { name: m['widget.markets.move_down']({ symbol: 'BTCUSDT' }) })
+			.click();
+
+		await vi.waitFor(() => expect(onUpdateSettings).toHaveBeenCalledTimes(1));
+		expect(onUpdateSettings.mock.calls[0]?.[0]).toEqual({
+			watchlist: [WATCHLIST[1], WATCHLIST[0]]
+		});
+	});
+
+	it('offers the static top-list minus what is already held (doc 09 §1)', async () => {
+		serveBoth(klinesEnvelope(40));
+		const { screen } = withSpy();
+
+		const options = [...screen.container.querySelectorAll('datalist option')].map(
+			(node) => (node as HTMLOptionElement).value
+		);
+
+		expect(options).toContain('SOLUSDT');
+		// Both already on the watchlist.
+		expect(options).not.toContain('BTCUSDT');
+		expect(options).not.toContain('DOGEUSDT');
+	});
+});
