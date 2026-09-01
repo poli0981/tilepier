@@ -1,6 +1,7 @@
 import {
 	CRYPTO_RANGES,
 	type TpApiMeta,
+	type TpCryptoCandle,
 	type TpCryptoInterval,
 	type TpCryptoKlinesPayload,
 	type TpCryptoQuote,
@@ -8,8 +9,9 @@ import {
 	type TpCryptoTickerPayload
 } from '$lib/api-types';
 import { fetchEnvelope } from '$lib/core/api';
+import { logEntry } from '$lib/core/log-buffer';
 import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
-import type { TpDb } from '$lib/core/storage/db';
+import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
 import {
 	CACHE_POLICY,
 	cacheKey,
@@ -293,4 +295,129 @@ export function klinesSource(
 	return target === undefined
 		? swr<TpKlinesReading>(key, fetcher, { ttlMs })
 		: swr<TpKlinesReading>(key, fetcher, { ttlMs }, target);
+}
+
+/* ──────────────────────────────────────────── the tile sparkline (doc 09 §1) */
+
+/**
+ * How many points a micro-sparkline is worth drawing.
+ *
+ * Twenty-four across roughly forty pixels: past that the polyline is drawing
+ * segments narrower than a stroke, and the shape stops being readable before
+ * the data runs out.
+ */
+export const SPARK_POINTS = 24;
+
+/**
+ * How old a cached series may be and still be drawn beside a live price.
+ *
+ * `swr`'s own ceiling is seven days (`HARD_MAX_AGE_MS`), which is right for a
+ * payload that *is* the reading and wrong for one sitting next to a fresher
+ * one: a week-old shape under a current price reads as this morning. Six hours
+ * is the klines stale window from doc 11 §4 — past it the endpoint would not
+ * serve these candles either.
+ */
+export const SPARK_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
+/** Finest first. Whichever the reader last opened a detail on is what is
+ *  cached, and a sparkline is about the *shape* of recent trading rather than
+ *  about a particular bucket size — so requiring one interval would make the
+ *  feature depend on which range somebody happened to click. */
+const SPARK_INTERVALS: readonly TpCryptoInterval[] = ['5m', '15m', '1h', '1d'];
+
+/**
+ * Closing prices, thinned to at most `points`.
+ *
+ * The **last** point is always kept: a sparkline whose right-hand end is not
+ * the latest close would disagree with the price rendered beside it, which is
+ * the one inconsistency a reader would actually notice.
+ */
+export function downsample(candles: readonly TpCryptoCandle[], points = SPARK_POINTS): number[] {
+	if (candles.length === 0) return [];
+	if (candles.length <= points) return candles.map((candle) => candle[4]);
+
+	const step = (candles.length - 1) / (points - 1);
+	const out: number[] = [];
+	for (let i = 0; i < points; i++) {
+		const candle = candles[Math.round(i * step)];
+		if (candle !== undefined) out.push(candle[4]);
+	}
+	return out;
+}
+
+/**
+ * The sparkline's data, read straight out of `apiCache` — **never fetched**.
+ *
+ * doc 09 §1 asks for "no extra fetch: reuse the series cache", and doc 11 §5
+ * makes that load bearing rather than tidy: "series fetched only when a detail
+ * view opens (not for tiles)" is what keeps the Twelve Data quota model true in
+ * 5b, and a tile that subscribed through `swr()` would revalidate on its own
+ * 60 s cadence for every symbol on the watchlist.
+ *
+ * So this is a **peek**: one Dexie read, no subscription, no entry in the
+ * dedupe map, nothing for the scheduler to wake. The consequence is that a
+ * sparkline is *absent until the reader has opened that symbol's detail at
+ * least once*, and absent is a normal state rather than a fault — the tile
+ * simply renders the row without one.
+ *
+ * Returns `[]` rather than throwing: a sparkline that cannot be drawn is a
+ * state the tile already has, and doc 05 §5's readers all fail closed.
+ */
+export async function peekSparkline(
+	symbol: string,
+	now: number,
+	target: TpDb | undefined = defaultDb
+): Promise<number[]> {
+	try {
+		for (const interval of SPARK_INTERVALS) {
+			const row = await target.apiCache.get(klinesKey(symbol, interval));
+			if (row === undefined) continue;
+			if (now - row.cachedAt > SPARK_MAX_AGE_MS) continue;
+
+			const reading = row.payload as TpKlinesReading | undefined;
+			const candles = reading?.payload.candles;
+			if (!Array.isArray(candles) || candles.length === 0) continue;
+
+			return downsample(candles);
+		}
+		return [];
+	} catch (error) {
+		logEntry('warn', `could not read cached candles for ${symbol}`, { src: 'widget', error });
+		return [];
+	}
+}
+
+/**
+ * A polyline's `points` attribute for a `width` x `height` box, or `''` when
+ * there is nothing to draw.
+ *
+ * Scaled to the series' own min and max rather than to zero, for the reason the
+ * detail's y axis sets `scale: true`: a market that moved 0.4 % in a day is a
+ * flat line against an axis anchored at zero, and a flat line is exactly the
+ * thing a sparkline is supposed to disprove.
+ *
+ * A series with no spread at all draws down the middle, which is honest — it
+ * really did not move.
+ */
+export function sparklinePoints(values: readonly number[], width: number, height: number): string {
+	if (values.length < 2) return '';
+
+	let low = values[0] as number;
+	let high = low;
+	for (const value of values) {
+		if (value < low) low = value;
+		if (value > high) high = value;
+	}
+
+	const spread = high - low;
+	const stepX = width / (values.length - 1);
+
+	return values
+		.map((value, i) => {
+			const x = i * stepX;
+			// SVG's y grows downward, so the highest price is the smallest y.
+			const y = spread === 0 ? height / 2 : height - ((value - low) / spread) * height;
+			return `${x.toFixed(2)},${y.toFixed(2)}`;
+		})
+		.join(' ');
 }

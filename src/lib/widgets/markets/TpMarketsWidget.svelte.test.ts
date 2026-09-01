@@ -10,7 +10,7 @@ import type { TpTileSize } from '$lib/core/types';
 import { m } from '$lib/paraglide/messages';
 import { online } from '$lib/stores/online.svelte';
 import { settings } from '$lib/stores/settings.svelte';
-import { tickerKey } from './service';
+import { klinesKey, SPARK_MAX_AGE_MS, tickerKey } from './service';
 import TpMarketsWidget from './TpMarketsWidget.svelte';
 
 /**
@@ -26,6 +26,8 @@ import TpMarketsWidget from './TpMarketsWidget.svelte';
 const NOW = new Date(Date.UTC(2026, 8, 1, 0, 0));
 
 const M: TpTileSize = { w: 3, h: 3, pxW: 320, pxH: 220, tier: 'M' };
+/** Two columns, which is below doc 09 §1's `w >= 3` sparkline threshold. */
+const NARROW: TpTileSize = { w: 2, h: 3, pxW: 200, pxH: 220, tier: 'M' };
 const L: TpTileSize = { w: 4, h: 4, pxW: 440, pxH: 300, tier: 'L' };
 
 const WATCHLIST = [
@@ -273,5 +275,88 @@ describe('the manifest contract', () => {
 		// the cadence outlive a watchlist edit — the data key moves with the set.
 		await vi.waitFor(() => expect(scheduler.size).toBe(1));
 		expect(scheduler.inspect()[0]?.id).toBe('wgt_mk');
+	});
+});
+
+/**
+ * doc 09 §1's micro-sparkline.
+ *
+ * The case that matters is the one about *not* fetching: doc 11 §5 keeps series
+ * out of the tile's request path entirely, and that is what makes the Twelve
+ * Data quota model hold in 5b. A tile that subscribed through `swr()` would
+ * revalidate on its own 60 s cadence, once per watched symbol.
+ */
+describe('the sparkline (doc 09 §1)', () => {
+	/** Puts candles where the tile can peek at them, without ever having asked
+	 *  for them — which is what opening the detail once would have done. */
+	async function cacheCandles(symbol: string, ageMs = 0): Promise<void> {
+		await db.apiCache.put({
+			key: klinesKey(symbol, '5m'),
+			cachedAt: NOW.getTime() - ageMs,
+			payload: {
+				payload: {
+					symbol,
+					interval: '5m',
+					candles: Array.from({ length: 60 }, (_, i) => [i, 100, 110 + i, 90, 100 + i, 1]),
+					attribution: 'Crypto data by Binance'
+				},
+				meta: { cachedAt: 1, source: 'binance', stale: false }
+			}
+		});
+	}
+
+	it('draws one for a symbol whose candles are already on the device', async () => {
+		serve(CRYPTO_OK);
+		await cacheCandles('BTCUSDT');
+
+		const screen = render(TpMarketsWidget, props());
+
+		await vi.waitFor(() => expect(screen.container.querySelectorAll('polyline')).toHaveLength(1));
+	});
+
+	it('never asks the network for candles', async () => {
+		const spy = serve(CRYPTO_OK);
+		await cacheCandles('BTCUSDT');
+
+		const screen = render(TpMarketsWidget, props());
+		await vi.waitFor(() => expect(screen.container.querySelector('polyline')).not.toBeNull());
+
+		// The whole quota model rests on this: the tile reads the series cache and
+		// never fills it (doc 11 §5).
+		const asked = spy.mock.calls.map((call) => String(call[0]));
+		expect(asked.every((url) => url.includes('/api/crypto/ticker'))).toBe(true);
+		expect(asked.some((url) => url.includes('/api/crypto/klines'))).toBe(false);
+	});
+
+	it('renders the row without one when nothing is cached', async () => {
+		serve(CRYPTO_OK);
+		const screen = render(TpMarketsWidget, props());
+
+		// Absent is an ordinary state, not a fault: a reader who has never opened
+		// this symbol's detail has no candles on the device.
+		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
+		expect(screen.container.querySelector('polyline')).toBeNull();
+	});
+
+	it('refuses a shape older than the price it sits beside', async () => {
+		serve(CRYPTO_OK);
+		await cacheCandles('BTCUSDT', SPARK_MAX_AGE_MS + 60_000);
+
+		const screen = render(TpMarketsWidget, props());
+
+		// `swr`'s own ceiling is seven days, which is right for a payload that
+		// *is* the reading and wrong for one sitting under a live price.
+		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
+		expect(screen.container.querySelector('polyline')).toBeNull();
+	});
+
+	it('leaves it out below the documented width', async () => {
+		serve(CRYPTO_OK);
+		await cacheCandles('BTCUSDT');
+
+		const screen = render(TpMarketsWidget, props({ size: NARROW }));
+
+		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
+		expect(screen.container.querySelector('polyline')).toBeNull();
 	});
 });

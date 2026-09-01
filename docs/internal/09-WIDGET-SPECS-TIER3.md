@@ -58,6 +58,35 @@ mandatory, not an optimization.
   symbol → row error chip with remove shortcut; symbol valid on Finnhub but
   missing on Twelve Data → quote-only mode for that symbol.
 
+### The sparkline is a read, and absent is normal (2026-09-01)
+
+"No extra fetch: reuse the series cache" is load-bearing rather than tidy. doc
+11 §5's quota model says "series fetched only when a detail view opens (not for
+tiles)", and a tile that subscribed to a series through `swr()` would revalidate
+on its own 60 s cadence, once per watched symbol — which is the model's whole
+long-tail risk arriving by the front door.
+
+So the tile **peeks** `apiCache`: one Dexie read, no subscription, nothing in
+the dedupe map, nothing for the scheduler to wake. Two consequences follow and
+both are deliberate:
+
+- **A sparkline is absent until the reader has opened that symbol's detail at
+  least once.** That is an ordinary state and the row simply renders without
+  one, the way it renders without a change figure upstream did not send.
+- **A cached series older than six hours is not drawn**, even though `swr`'s own
+  ceiling is seven days. Seven days is right for a payload that *is* the
+  reading; it is wrong for one sitting beside a live price, where a week-old
+  shape reads as this morning. Six hours is doc 11 §4's klines stale window —
+  past it the endpoint would not serve those candles either.
+
+The peek prefers the finest interval it finds and falls back through the
+coarser ones, because the sparkline is about the shape of recent trading rather
+than about a bucket size — requiring `5m` would make the feature depend on
+which range the reader happened to click last.
+
+It is drawn as an inline SVG polyline, not through ECharts: the chart module is
+183 KB gz, and a tile is not a place to spend it.
+
 ### How a single row is allowed to fail (2026-09-01)
 
 All three edge cases above degrade **per symbol**, and the doc 11 §2 envelope is

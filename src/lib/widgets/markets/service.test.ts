@@ -12,7 +12,10 @@ import {
 	tickerKey,
 	tickerUrl,
 	klinesKey,
-	klinesUrl
+	klinesUrl,
+	downsample,
+	sparklinePoints,
+	SPARK_POINTS
 } from './service';
 import { MARKETS_DEFAULTS, MAX_DISPLAY, MAX_WATCHLIST } from './types';
 
@@ -215,5 +218,53 @@ describe('the candle key and request', () => {
 
 		expect(new Set(limits).size).toBe(limits.length);
 		expect(limits.every((limit) => limit > 0 && limit <= 500)).toBe(true);
+	});
+});
+
+/**
+ * doc 09 §1's micro-sparkline, minus the Dexie read.
+ *
+ * `peekSparkline` itself is exercised in the browser project, where there is a
+ * real IndexedDB to peek into; what is worth asserting here is the arithmetic
+ * it hands to the polyline, because that is where a shape can be quietly wrong.
+ */
+describe('the sparkline shape', () => {
+	/** `[t, open, high, low, close, volume]` — only the close is read. */
+	const series = (closes: readonly number[]) =>
+		closes.map((close, i) => [i, close, close, close, close, 1] as const);
+
+	it('keeps the last point, whatever the thinning', () => {
+		const values = downsample(series(Array.from({ length: 500 }, (_, i) => i)));
+
+		// A sparkline whose right-hand end is not the latest close disagrees with
+		// the price rendered beside it, which is the one inconsistency a reader
+		// would actually notice.
+		expect(values).toHaveLength(SPARK_POINTS);
+		expect(values.at(-1)).toBe(499);
+		expect(values[0]).toBe(0);
+	});
+
+	it('leaves a short series alone rather than padding it', () => {
+		expect(downsample(series([1, 2, 3]))).toEqual([1, 2, 3]);
+		expect(downsample(series([]))).toEqual([]);
+	});
+
+	it('scales to the series own band, not to zero', () => {
+		// A market that moved 0.4 % is a flat line against an axis anchored at
+		// zero, and a flat line is what a sparkline exists to disprove. The
+		// detail's y axis sets `scale: true` for the same reason.
+		const points = sparklinePoints([100, 100.2, 100.4], 40, 12);
+
+		// Lowest value at the bottom, highest at the top — SVG y grows downward.
+		expect(points).toBe('0.00,12.00 20.00,6.00 40.00,0.00');
+	});
+
+	it('draws a market that did not move down the middle', () => {
+		expect(sparklinePoints([5, 5, 5], 40, 12)).toBe('0.00,6.00 20.00,6.00 40.00,6.00');
+	});
+
+	it('has nothing to draw from fewer than two points', () => {
+		expect(sparklinePoints([1], 40, 12)).toBe('');
+		expect(sparklinePoints([], 40, 12)).toBe('');
 	});
 });

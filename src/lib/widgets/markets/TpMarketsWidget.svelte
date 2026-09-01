@@ -12,9 +12,11 @@
 	import {
 		cryptoLookup,
 		cryptoSource,
+		peekSparkline,
 		priceDigits,
 		readSettings,
 		rowsFor,
+		sparklinePoints,
 		symbolsOf,
 		tickerKey,
 		type TpTickerReading
@@ -160,6 +162,51 @@
 	/** doc 13 §3's tier L adds a secondary line; below it the footer would eat a
 	 *  row the list needs more. */
 	const roomy = $derived(size.tier === 'L');
+
+	/* ────────────────────────────────────────── the sparkline (doc 09 §1) */
+
+	/** doc 09 §1 puts it at `w >= 3`; below that the row is label, price and
+	 *  chip, and a 40 px picture would push one of the three off the end. */
+	const showSpark = $derived(size.w >= 3);
+
+	const SPARK_W = 40;
+	const SPARK_H = 12;
+
+	let sparks = $state.raw<Record<string, number[]>>({});
+
+	/**
+	 * **A read, never a fetch.** doc 11 §5 keeps series out of the tile's request
+	 * path entirely — that is what makes the Twelve Data quota model hold in 5b —
+	 * so this peeks `apiCache` and subscribes to nothing. The consequence is that
+	 * a sparkline is absent until the reader has opened that symbol's detail
+	 * once, and absent is an ordinary state rather than a fault.
+	 *
+	 * Keyed on the symbols and on `cachedAt`, so it re-reads when new candles
+	 * could have landed and not on every render.
+	 */
+	$effect(() => {
+		if (!showSpark) {
+			sparks = {};
+			return;
+		}
+
+		const symbols = cryptoSymbols;
+		const stamp = handle?.cachedAt ?? 0;
+		void stamp;
+
+		let live = true;
+		void untrack(async () => {
+			const next: Record<string, number[]> = {};
+			for (const symbol of symbols) {
+				next[symbol] = await peekSparkline(symbol, Date.now(), db);
+			}
+			if (live) sparks = next;
+		});
+
+		return () => {
+			live = false;
+		};
+	});
 </script>
 
 {#if isEmpty}
@@ -216,6 +263,25 @@
 					</span>
 				{:else}
 					<span class="tp-mk-row__price tp-num">{priceText(row.quote.price)}</span>
+					{#if showSpark && (sparks[row.entry.symbol]?.length ?? 0) > 1}
+						<svg
+							class="tp-mk-row__spark"
+							viewBox="0 0 {SPARK_W} {SPARK_H}"
+							width={SPARK_W}
+							height={SPARK_H}
+							aria-hidden="true"
+							focusable="false"
+						>
+							<polyline
+								points={sparklinePoints(sparks[row.entry.symbol] ?? [], SPARK_W, SPARK_H)}
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+					{/if}
 					{#if row.quote.change24h === null}
 						<span class="tp-mk-row__flat" title={m['widget.markets.no_change']()}>—</span>
 					{:else}
@@ -275,6 +341,13 @@
 
 	.tp-mk-row__price {
 		color: var(--color-fg);
+	}
+
+	/* `aria-hidden`: the price and the signed change beside it already say
+	   everything this shape does, and a screen reader has no use for a polyline. */
+	.tp-mk-row__spark {
+		overflow: visible;
+		color: var(--color-fg-dim);
 	}
 
 	.tp-mk-row__change {
