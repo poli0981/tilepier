@@ -40,6 +40,29 @@ mandatory, not an optimization.
   symbol → row error chip with remove shortcut; symbol valid on Finnhub but
   missing on Twelve Data → quote-only mode for that symbol.
 
+### How a single row is allowed to fail (2026-09-01)
+
+All three edge cases above degrade **per symbol**, and the doc 11 §2 envelope is
+all-or-nothing. So a failed row has to be expressible *inside* `data`, or one
+delisted coin fails the whole tile — which is what the payloads do:
+`TpCryptoTickerPayload.quotes` is keyed by every **requested** symbol, with
+`null` where upstream had no answer.
+
+Keyed by *requested* rather than built from the response, and that is the part
+worth stating: upstream simply omits a symbol it has nothing for, so an object
+built from the response omits it too — leaving the tile unable to tell "no
+answer" from "never asked". The row error chip is made of exactly that
+distinction. `/api/crypto/ticker` additionally has to split a refused batch to
+produce the case at all (doc 10 §4).
+
+Inside a row that *does* exist, `change24h`, the day range and the volume are
+`number | null` individually rather than defaulted. doc 08 §2 settled the same
+question for the currency table and the sentence transfers whole: a 0.00 % is a
+claim about the market, and a high equal to the low is a claim about the day.
+A row with no usable **price**, though, is `null` outright — a quote without a
+price is not a quote, and the tile has something to say about an absent row and
+nothing to say about a price that is missing.
+
 ## 2. `music` — Local Music Player
 
 ### Library ingestion (Spike S2 governs)

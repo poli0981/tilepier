@@ -224,3 +224,69 @@ export interface TpFxHistoryPayload {
 	points: TpFxHistoryPoint[];
 	attribution: string;
 }
+
+/* ─────────────────────────────────────────────────────── crypto (doc 10 §4) */
+
+/**
+ * One Binance 24-hour ticker row, normalised.
+ *
+ * **A row exists only if it has a price**, and the fields around the price are
+ * nullable individually. Both halves of that are deliberate.
+ *
+ * The whole row goes `null` without a usable `price` because a quote without a
+ * price is not a quote — where the weather payload keeps an hour and marks the
+ * missing column, since a forecast hour without a UV index is still an hour
+ * worth drawing. doc 09 §1's tile has something to *say* about an absent row
+ * ("delisted → row error chip with a remove shortcut") and nothing to say about
+ * a price that is `null`.
+ *
+ * The rest are `number | null` rather than defaulted, for the reason doc 08 §2
+ * gives about the currency table's change column: a substituted zero is a claim
+ * about the market, and a high equal to the low is a claim about the day.
+ */
+export interface TpCryptoQuote {
+	/** As Binance spells it, uppercase: `BTCUSDT`. */
+	symbol: string;
+	/** Last traded price, in the quote asset — USDT for `BTCUSDT`. */
+	price: number;
+	/**
+	 * The 24 h move as a **fraction**: 0.021, not 2.1.
+	 *
+	 * The same choice `currency`'s `change24h` made and for the same reason —
+	 * `Intl.NumberFormat`'s `style: 'percent'` wants a fraction, and letting it
+	 * place the sign and the symbol is the difference between "+2,10 %" in
+	 * Vietnamese and a hand-built string that is right in exactly one locale.
+	 *
+	 * `null` when upstream did not send it, never `0`. doc 08 §2 settled the
+	 * same question for the currency table and the sentence transfers whole: a
+	 * 0.00 % is a claim about the market, and an absent figure is the truth
+	 * about what we know.
+	 */
+	change24h: number | null;
+	high24h: number | null;
+	low24h: number | null;
+	/** Base-asset volume over the same window. */
+	volume24h: number | null;
+	/**
+	 * Unix ms of the window's close, as upstream stamped it — falling back to
+	 * when we asked, which is the only other instant we can honestly name. Not
+	 * nullable, because a row with a price and no timestamp is still a quote,
+	 * and `meta.cachedAt` carries the fetch time either way.
+	 */
+	at: number;
+}
+
+export interface TpCryptoTickerPayload {
+	/**
+	 * Keyed by symbol, one entry per **requested** symbol, so a caller can index
+	 * it in its own watchlist order rather than in the canonical order the cache
+	 * key is built from.
+	 *
+	 * `null` is doc 09 §1's per-symbol degradation: upstream answered for the
+	 * others and not for this one. The doc 11 §2 envelope is all-or-nothing, so
+	 * a row that failed has to be expressible *inside* `data` or the whole tile
+	 * fails for one delisted coin.
+	 */
+	quotes: Record<string, TpCryptoQuote | null>;
+	attribution: string;
+}

@@ -87,7 +87,7 @@ export const cacheKey = {
 	geocode: (lang: string, queryNorm: string) => `geo:v1:${lang}:${queryNorm}`,
 	fx: () => `fx:v1:USD`,
 	fxSnapshot: (isoDate: string) => `fx:snap:${isoDate}`,
-	cryptoTicker: (setHash: string) => `cr:tick:v1:${setHash}`,
+	cryptoTicker: (set: string) => `cr:tick:v1:${set}`,
 	cryptoKlines: (symbol: string, interval: string) => `cr:kl:v1:${symbol}:${interval}`,
 	stockQuote: (symbol: string) => `st:q:v1:${symbol}`,
 	stockSeries: (symbol: string, interval: '15min' | '1day') => `st:se:v1:${symbol}:${interval}`,
@@ -162,6 +162,67 @@ export function geohash(lat: number, lon: number, precision = 5): string {
 /** doc 11 §8 / doc 15 §7: the 2 dp rounding, enforced on both sides. */
 export function roundCoord(value: number): number {
 	return Math.round(value * 100) / 100;
+}
+
+/* ───────────────────────────────────────────────────────── market symbols */
+
+/**
+ * doc 10 §5's allowlist, applied on both sides.
+ *
+ * Beside `cacheKey` for the same reason `geohash` is: doc 04 §5 guarantees the
+ * client `apiCache` key and the Worker KV key are the same string, and a symbol
+ * set only has one spelling if both halves normalise it the same way.
+ */
+/* doc 10 §5 writes this as `^[A-Z0-9.\-]{1,12}$`; the escape before the hyphen
+ * is redundant at the end of a character class and eslint's `no-useless-escape`
+ * says so. Same language, one character shorter. */
+const MARKET_SYMBOL = /^[A-Z0-9.-]{1,12}$/;
+
+/** doc 09 §1's watchlist cap and doc 11 §3's `symbols (≤12)`, which are the
+ *  same number for the same reason — the quota model in doc 11 §5. */
+export const MARKETS_MAX_SYMBOLS = 12;
+
+export function isMarketSymbol(value: string): boolean {
+	return MARKET_SYMBOL.test(value);
+}
+
+/**
+ * Uppercased, de-duplicated, sorted — and anything outside the allowlist
+ * dropped rather than passed on to an upstream that would reject the batch.
+ */
+export function canonicalSymbols(symbols: readonly string[]): string[] {
+	const seen = new Set<string>();
+	for (const raw of symbols) {
+		const symbol = raw.trim().toUpperCase();
+		if (isMarketSymbol(symbol)) seen.add(symbol);
+	}
+	return [...seen].sort();
+}
+
+/**
+ * The `<set>` segment of `cr:tick:v1:<set>` — **the canonical list itself, not
+ * a hash of it**, and that is a deviation from doc 11 §4's original wording
+ * worth stating rather than burying.
+ *
+ * The canonicalisation is the load-bearing half either way: without sorting and
+ * de-duplicating first, `[BTCUSDT, ETHUSDT]` and `[ETHUSDT, BTCUSDT]` are two
+ * cache entries for one question, so the hit rate halves and upstream is called
+ * twice for the same answer, silently. The test beside this file asserts
+ * canonicalise-then-key the way it already asserts round-then-hash.
+ *
+ * What a hash would add is brevity, and what it would cost is correctness of a
+ * kind that does not announce itself: a 32-bit collision serves one watchlist's
+ * prices under another watchlist's key, which is wrong data rather than a miss.
+ * A cryptographic digest would avoid that and is `async` in both runtimes,
+ * which would make every `cacheKey` call site async for a cache key. The list
+ * is bounded at 12 symbols of 12 characters by `MARKETS_MAX_SYMBOLS` and the
+ * allowlist above — 155 bytes against KV's 512 — so there is nothing to buy.
+ *
+ * It also reads: `wrangler kv key list` shows what an entry *is*, which is the
+ * one thing a hash can never give back.
+ */
+export function symbolSetKey(symbols: readonly string[]): string {
+	return canonicalSymbols(symbols).join(',');
 }
 
 /* ────────────────────────────────────────────────────── Twelve Data quota */

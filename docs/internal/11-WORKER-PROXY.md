@@ -65,7 +65,7 @@ here is every reader asking for the same pair and range.
 | `geo:v1:<lang>:<q-norm>` | 24 h | 7 d |
 | `fx:v1:USD` | 12 h (capped by upstream next-update) | 48 h |
 | `fx:snap:<date>` | none (permanent) | — |
-| `cr:tick:v1:<set-hash>` | 30 s | 10 min |
+| `cr:tick:v1:<set>` | 30 s | 10 min |
 | `cr:kl:v1:<sym>:<int>` | 300 s (5m int) / 900 s (1h+) | 6 h |
 | `st:q:v1:<sym>` | 90 s | 12 h |
 | `st:se:v1:<sym>:15min` | 900 s | 24 h |
@@ -89,6 +89,22 @@ request. Written into the value rather than passed to the write, because the
 read that has to respect it happens on a later request that never saw the cap.
 Absent on every entry written before 2026-08-31 and on every family with no
 upstream opinion, which is what makes it a non-event for `wx` and `geo`.
+
+**`<set>` is the canonical symbol list, not a hash of it** (settled 2026-09-01;
+this row said `<set-hash>`). `shared-constants.ts` exports `symbolSetKey`, which
+uppercases, de-duplicates and **sorts** before joining — and that part is
+load-bearing whichever spelling wins, because two watchlists holding the same
+coins in a different order are the same question and would otherwise occupy two
+entries, halving the hit rate and doubling the calls upstream with nothing to
+say so.
+
+What a hash would add is brevity; what it would cost is a collision serving one
+watchlist's prices under another watchlist's key, which is wrong data rather
+than a miss. A cryptographic digest avoids that and is `async` in both runtimes,
+which would make every `cacheKey` call site async for a cache key. doc 09 §1
+caps a watchlist at twelve and doc 10 §5 caps a symbol at twelve characters, so
+the literal set is at most 155 bytes against KV's 512 — there is nothing to buy.
+It also means `wrangler kv key list` shows what an entry *is*.
 
 KV consistency note: KV is eventually consistent (~60 s cross-PoP). For
 cache purposes that's fine — worst case a few PoPs refetch. Never use KV
