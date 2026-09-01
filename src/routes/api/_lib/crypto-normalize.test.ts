@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { CRYPTO_ATTRIBUTION, normalizeCryptoQuote, normalizeCryptoTicker } from './normalize';
+import {
+	CRYPTO_ATTRIBUTION,
+	normalizeCryptoKlines,
+	normalizeCryptoQuote,
+	normalizeCryptoTicker
+} from './normalize';
 
 /**
  * doc 10 §4's ticker, normalised — the crypto half of `normalize.test.ts`, in
@@ -146,5 +151,64 @@ describe('normalizeCryptoTicker', () => {
 		const payload = normalizeCryptoTicker({ code: -1121, msg: 'Invalid symbol.' }, ['A', 'B'], NOW);
 
 		expect(payload.quotes).toEqual({ A: null, B: null });
+	});
+});
+
+/**
+ * The klines half. Reached through `normalizeCryptoKlines` rather than through
+ * the per-row parser, which is deliberately not exported — its only caller is
+ * this function, and knip is CI-blocking on an export nothing imports.
+ */
+describe('normalizeCryptoKlines', () => {
+	/** Binance's twelve-element row: numeric timestamps, string OHLCV, five
+	 *  fields nothing here reads. */
+	const KLINE = [
+		1_788_000_000_000,
+		'100.5',
+		'103.25',
+		'99.75',
+		'102.0',
+		'18.4',
+		1_788_000_299_999,
+		'1875.2',
+		42,
+		'6',
+		'600',
+		'0'
+	];
+
+	it('maps a row to the doc 10 §4 tuple, parsing the string prices', () => {
+		const payload = normalizeCryptoKlines([KLINE], 'BTCUSDT', '5m');
+
+		expect(payload.candles).toEqual([[1_788_000_000_000, 100.5, 103.25, 99.75, 102, 18.4]]);
+		expect(payload.symbol).toBe('BTCUSDT');
+		expect(payload.interval).toBe('5m');
+		expect(payload.attribution).toBe(CRYPTO_ATTRIBUTION);
+	});
+
+	it('drops a row it cannot read rather than zero-filling it', () => {
+		// A candle at zero is a crash that never happened. The chart plots against
+		// a time axis, so an absent row is a gap and draws as one.
+		const payload = normalizeCryptoKlines(
+			[KLINE, [1, 'x', '2', '3', '4', '5'], [2, '0', '2', '3', '4', '5'], 'not a row', null],
+			'BTCUSDT',
+			'5m'
+		);
+
+		expect(payload.candles).toHaveLength(1);
+	});
+
+	it('returns an empty series rather than throwing on a body that is not a list', () => {
+		expect(normalizeCryptoKlines({ code: -1121 }, 'X', '1d').candles).toEqual([]);
+		expect(normalizeCryptoKlines(null, 'X', '1d').candles).toEqual([]);
+	});
+
+	it('orders by open time, because the chart and the window both assume it', () => {
+		const later = [...KLINE];
+		later[0] = 1_788_000_600_000;
+
+		const payload = normalizeCryptoKlines([later, KLINE], 'BTCUSDT', '5m');
+
+		expect(payload.candles.map((c) => c[0])).toEqual([1_788_000_000_000, 1_788_000_600_000]);
 	});
 });

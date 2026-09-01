@@ -1,5 +1,8 @@
 import type {
 	TpAirQuality,
+	TpCryptoCandle,
+	TpCryptoInterval,
+	TpCryptoKlinesPayload,
 	TpCryptoQuote,
 	TpCryptoTickerPayload,
 	TpFxPayload,
@@ -426,4 +429,57 @@ export function normalizeCryptoTicker(
 	for (const symbol of requested) quotes[symbol] = bySymbol.get(symbol) ?? null;
 
 	return { quotes, attribution: CRYPTO_ATTRIBUTION };
+}
+
+/**
+ * `[openTime, open, high, low, close, volume]` from a Binance klines row.
+ *
+ * Upstream sends a twelve-element array whose OHLCV members are **strings** and
+ * whose timestamps are numbers, plus five fields nothing here reads. A row that
+ * cannot produce six finite numbers is dropped rather than zero-filled: the
+ * chart plots against a time axis, so a gap is a gap, and a candle at zero is a
+ * crash that never happened.
+ *
+ * Not exported: `normalizeCryptoKlines` is its only caller, and knip is
+ * CI-blocking on an export nothing imports. The cases below reach it through
+ * that one.
+ */
+function normalizeCryptoCandle(row: unknown): TpCryptoCandle | null {
+	if (!Array.isArray(row)) return null;
+
+	const openTime = decimal(row[0]);
+	const open = decimal(row[1]);
+	const high = decimal(row[2]);
+	const low = decimal(row[3]);
+	const close = decimal(row[4]);
+	const volume = decimal(row[5]);
+
+	if (openTime === null || open === null || high === null || low === null) return null;
+	if (close === null || volume === null) return null;
+	// A non-positive price is refused here for the same reason `normalizeFx`
+	// refuses a non-positive rate: it is not something a chart can draw.
+	if (open <= 0 || high <= 0 || low <= 0 || close <= 0) return null;
+
+	return [openTime, open, high, low, close, volume];
+}
+
+export function normalizeCryptoKlines(
+	body: unknown,
+	symbol: string,
+	interval: TpCryptoInterval
+): TpCryptoKlinesPayload {
+	const rows = Array.isArray(body) ? body : [];
+	const candles: TpCryptoCandle[] = [];
+
+	for (const row of rows) {
+		const candle = normalizeCryptoCandle(row);
+		if (candle !== null) candles.push(candle);
+	}
+
+	// Upstream returns them ascending already; sorted anyway because the chart
+	// and the client-side window both assume it, and an assumption that costs one
+	// comparison per candle is not worth leaving to upstream.
+	candles.sort((a, b) => a[0] - b[0]);
+
+	return { symbol, interval, candles, attribution: CRYPTO_ATTRIBUTION };
 }

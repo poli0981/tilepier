@@ -30,7 +30,7 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/fx` | — (full USD table) | ER-API + snapshot side-effect |
 | `GET /api/fx/history` | pair, days ∈ {7,30,90,365} | KV snapshots only |
 | `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
-| `GET /api/crypto/klines` | symbol, interval, limit≤500 | Binance klines |
+| `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
 | `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data → Stooq |
 | `GET /api/stock/search` | q | Finnhub search |
@@ -47,6 +47,28 @@ It costs the reader nothing, because doc 08 §2’s detail offers ranges rather
 than a number field — a range picker is an allowlist with a nicer name. A value
 outside the list is `BAD_REQUEST` and never a silent clamp, which would file one
 range’s answer under another range’s key.
+
+**`limit` on the klines route is the same kind of allowlist**, and its values
+are not written out anywhere: they are derived from `CRYPTO_RANGES` in
+`api-types.ts`, the one module both halves import, so the endpoint refuses any
+depth the range picker cannot ask for and the two cannot drift. Four arbitrary
+integers would be a rule with no reason behind it (settled 2026-09-01; this row
+said `limit≤500`).
+
+**The klines cache holds one deep series and the response is a window onto it.**
+§4 keys the payload `cr:kl:v1:<sym>:<int>` with **no depth in the key**, so two
+ranges over the same symbol and interval would otherwise overwrite each other —
+and because the payload shapes are identical, a reader who looked at 1W and then
+1M would get 1W's candles under 1M's label with nothing to notice. The endpoint
+therefore always fetches Binance's 500-candle maximum and slices. That depth
+covers every range at every interval (500 × 5 min is 41 hours against 1D's 24;
+500 hours is 20 days against 1W's 7; 500 days is sixteen months against 1Y's
+twelve), and it costs one upstream call rather than one per range.
+
+**`/api/stock/series` needs the same answer for the same reason**, and it is
+recorded here rather than there because this is where it was first built: that
+row's params include a `range` while §4's key is `st:se:v1:<sym>:<int>`, which
+is the identical collision one endpoint later.
 
 **`/api/fx/history` has no KV entry of its own**, and that is a decision rather
 than an omission. Its inputs are the `fx:snap:` pile, which is permanent, so a
@@ -66,7 +88,7 @@ here is every reader asking for the same pair and range.
 | `fx:v1:USD` | 12 h (capped by upstream next-update) | 48 h |
 | `fx:snap:<date>` | none (permanent) | — |
 | `cr:tick:v1:<set>` | 30 s | 10 min |
-| `cr:kl:v1:<sym>:<int>` | 300 s (5m int) / 900 s (1h+) | 6 h |
+| `cr:kl:v1:<sym>:<int>` | 300 s (sub-hourly) / 900 s (1h and coarser) | 6 h |
 | `st:q:v1:<sym>` | 90 s | 12 h |
 | `st:se:v1:<sym>:15min` | 900 s | 24 h |
 | `st:se:v1:<sym>:1day` | 21600 s (6 h) | 7 d |
@@ -89,6 +111,13 @@ request. Written into the value rather than passed to the write, because the
 read that has to respect it happens on a later request that never saw the cap.
 Absent on every entry written before 2026-08-31 and on every family with no
 upstream opinion, which is what makes it a non-event for `wx` and `geo`.
+
+**The klines row's two TTLs are split at the hour** (clarified 2026-09-01).
+It read "300 s (5m int) / 900 s (1h+)", which leaves `15m` — an interval doc
+10 §4 lists — in the gap between the two. `shared-constants.ts` had resolved it
+in a comment ("sub-hourly" / "1h and coarser") and this table had not, and the
+drift test cannot see the difference: it strips parentheticals as commentary,
+so both spellings parse to the same two durations.
 
 **`<set>` is the canonical symbol list, not a hash of it** (settled 2026-09-01;
 this row said `<set-hash>`). `shared-constants.ts` exports `symbolSetKey`, which

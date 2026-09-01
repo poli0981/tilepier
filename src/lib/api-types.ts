@@ -290,3 +290,63 @@ export interface TpCryptoTickerPayload {
 	quotes: Record<string, TpCryptoQuote | null>;
 	attribution: string;
 }
+
+/**
+ * One candle, as doc 10 §4 asks for it: `[openTime, open, high, low, close,
+ * volume]`.
+ *
+ * A tuple rather than an object, and the reason is the wire. A 500-candle
+ * series is 3000 numbers; as objects with six keys each it is roughly three
+ * times the bytes for the same information, on a payload the detail fetches
+ * per range. A fixed-length tuple type also survives `noUncheckedIndexedAccess`
+ * — `candle[4]` is a `number`, where an array of numbers would give
+ * `number | undefined` at every read.
+ *
+ * `openTime` rather than close: it is what ECharts plots against and what
+ * Binance orders the series by.
+ */
+export type TpCryptoCandle = readonly [number, number, number, number, number, number];
+
+export interface TpCryptoKlinesPayload {
+	symbol: string;
+	interval: TpCryptoInterval;
+	/** Ascending by `openTime`. Rows upstream sent that could not be read are
+	 *  absent rather than zero-filled — the chart plots against a time axis. */
+	candles: TpCryptoCandle[];
+	attribution: string;
+}
+
+/** doc 10 §4's four. Not every one is reachable from a range picker today; the
+ *  list is upstream's contract rather than the UI's. */
+export const CRYPTO_INTERVALS = ['5m', '15m', '1h', '1d'] as const;
+export type TpCryptoInterval = (typeof CRYPTO_INTERVALS)[number];
+
+/**
+ * doc 09 §1's range presets, and the interval and depth each one asks for.
+ *
+ * Here rather than in either half, because it is the contract between them: the
+ * endpoint refuses a `limit` that is not one of these, and the detail's range
+ * picker must not be able to ask for one. Two copies would drift the first time
+ * a range was added — the same reasoning `FX_HISTORY_DAYS` carries.
+ *
+ * **`limit` is an allowlist, not a bound**, for the reason doc 11 §3 gives
+ * about `days`: the response is CDN-cacheable by URL, so a free integer gives
+ * 500 distinct edge entries per symbol-and-interval that one client can walk
+ * with a loop. Four values give four. It costs the reader nothing, because the
+ * detail offers ranges rather than a number field — and a range picker is an
+ * allowlist with a nicer name.
+ *
+ * `MAX` is absent deliberately: it is Week 5's one approved depth cut (doc 23
+ * §Week 5).
+ */
+export const CRYPTO_RANGES = {
+	'1D': { interval: '5m', limit: 288 },
+	'1W': { interval: '1h', limit: 168 },
+	'1M': { interval: '1d', limit: 30 },
+	'1Y': { interval: '1d', limit: 365 }
+} as const satisfies Record<string, { interval: TpCryptoInterval; limit: number }>;
+
+/* `TpCryptoRange` and the default range land with the detail that picks one.
+ * knip is CI-blocking on an export nothing imports, and doc 20 §5 asks for a
+ * primitive and its first consumer in one commit rather than a layer at a
+ * time. */
