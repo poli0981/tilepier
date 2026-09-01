@@ -583,6 +583,99 @@ sparkline must read `apiCache` directly, because subscribing through `swr()`
 would make tiles fetch series and doc 11 §5's whole quota model rests on their
 not doing that.
 
+### Week 5a — complete 2026-09-01
+
+Nine commits. `markets` is the eleventh registered widget and the first to read
+from two endpoints; both of 5a's are keyless, so everything below runs on a
+clean checkout and in CI.
+
+**Two carried items closed before any markets code was written**, because both
+turned out to block it rather than merely to be owed. The secret typing (doc 11
+§9) was recorded in doc 13 §10 as `/api/_health`'s problem and is equally
+`/api/stock/*`'s; and the scheduler backoff closed **without** the
+`TpTaskHandle` doc 04 §2 asked for — once `execute` stopped recomputing
+`nextDueAt` from the cadence on the failure path, the server-named delay could
+be read straight off the `TpApiError` that `swr` already throws.
+
+**Numbers at the end of 5a:** eleven of fifteen widgets registered, 1413
+unit/component tests (from 1252 at the end of Week 4), 538 message keys (from
+498), budgets 7/7 with the shared echarts chunk **unchanged at 183.0 KB gz** —
+`CandlestickChart` and `DataZoomComponent` have been in the `use()` set since
+Week 0, so the hardest chart in the app cost no bytes at all.
+
+**Seven faults found by the work rather than by review.** Four were latent, two
+were the specification being ahead of the code, and one was a test that had been
+true about the wrong quantity for four weeks:
+
+1. **The scheduler's retry curve was unreachable at every cadence.**
+   `execute`'s `finally` recomputed `nextDueAt` from the cadence on the failure
+   path too, and `effectiveDue` takes the later of the two — so the whole
+   1→2→4→8 s curve was dead below whatever the widget's cadence was. Three
+   documents described it (docs 04 §2, 11 §7.3, 17 §5).
+2. **The two backoff cases written in Week 1 both used a 1 s cadence**, so
+   `max(nextDueAt, backoffUntil)` happened to land inside the jitter band they
+   assert. They passed for four weeks without measuring the thing they name,
+   which is why nothing caught fault 1 until a week needed 60 s.
+3. **`visibleOnly` was honoured by accident.** `tick()` checked the flag after
+   already returning for a hidden tab — dead code — while `wake('online')`
+   ignored it entirely and the `online` subscription outlives the ticker. A
+   background tab that reconnected started polling a market nobody was looking
+   at. `markets` is the registry's only row that sets it.
+4. **Binance's batched ticker is all-or-nothing.** One unknown symbol 400s the
+   *whole* request, so the morning a coin is delisted the entire tile goes down
+   — and doc 09 §1's "delisted symbol → row error chip" is unreachable without
+   splitting the batch. `/api/crypto/ticker` falls back to one call per symbol
+   on a 400 and only on a 400.
+5. **The Week 4 ECharts bridge could not reach a candlestick.** ECharts takes a
+   candle's four colours from `itemStyle` rather than from the series palette
+   `chartTheme` fills, so the candles would have drawn in ECharts' own red and
+   green — a pair nobody has measured against doc 12 §4.2.
+6. **The KV stale window was enforced only by expiry, never by the read.**
+   doc 11 §4 states it as a promise about how old a reading may be; `readCache`
+   returned anything KV still happened to hold. Found by the ladder suite asking
+   a 30 s/10 min family for an hour-old entry, which no endpoint suite could
+   have done because each seeds an entry inside the window it means to test.
+7. **The interval-to-TTL-family split existed twice**, in the endpoint and in
+   the client, and the typechecker noticed only because `CRYPTO_RANGES` happens
+   not to use `15m`. Two copies would have drifted into a client polling faster
+   than the edge refreshes.
+
+**Five decisions taken rather than inherited**, each written into the doc it
+contradicts:
+
+- **`cr:tick:v1:<set>` is the canonical symbol list, not a hash.** The
+  canonicalisation is load-bearing either way — two watchlists holding the same
+  coins in a different order are one question — and a 32-bit collision would
+  serve one watchlist's prices under another's key, which is wrong data rather
+  than a miss (doc 11 §4).
+- **The klines cache holds one deep series and the response is a window onto
+  it.** Its key carries no depth, so two ranges would otherwise overwrite each
+  other under identical payload shapes. `/api/stock/series` needs the same
+  answer in 5b, and doc 11 §3 records it there too.
+- **Per-row failure lives inside `data`.** The doc 11 §2 envelope is
+  all-or-nothing and doc 09 §1's three edge cases all degrade per symbol
+  (doc 09 §1).
+- **The scheduler id is the `instanceId`**, which doc 04 §3's rule for
+  networked widgets does not anticipate — this is the first widget with two data
+  keys. `multiInstance: false` makes it safe, and it removes weather's `{#key}`
+  remount dance.
+- **The tile sparkline is a peek, never a subscription.** doc 11 §5's quota
+  model rests on tiles not fetching series, so absent-until-the-detail-was-opened
+  is an ordinary state and a series older than six hours is not drawn beside a
+  live price.
+
+**One depth cut taken, two priced and not taken.** `MAX` is gone from the range
+set. The volume band and `/api/stock/search` stand.
+
+**What 5a leaves for 5b.** The stock half of everything: three endpoints, the
+stock rows of the tile and the manager's `kind` selector (`addToWatchlist`
+already takes the parameter), `/api/_health` with the doc 13 §10 token question
+still open, the stock half of the ladder, and S3's keyed run. doc 09 §1's
+default watchlist is seeded with its crypto half until `/api/stock/quote`
+exists. **5b cannot start without `FINNHUB_KEY` and `TWELVEDATA_KEY`** — the
+types are declared and `.dev.vars.example` names them; the values are not on
+this machine.
+
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF
 guards + parser fixtures) + reader UI + OPML. **M6:** all networked
