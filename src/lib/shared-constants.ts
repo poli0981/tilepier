@@ -1,3 +1,5 @@
+import type { TpCryptoInterval } from './api-types';
+
 /**
  * Constants shared by client and Worker.
  *
@@ -72,6 +74,20 @@ export const CACHE_POLICY = {
 } as const satisfies Record<string, TpCachePolicy>;
 
 export type TpCacheFamily = keyof typeof CACHE_POLICY;
+
+/**
+ * Which of the two klines families an interval belongs to.
+ *
+ * doc 11 §4 gives `cr:kl:v1:<sym>:<int>` two TTLs and, until 2026-09-01, wrote
+ * the split as "(5m int) / (1h+)" — which left `15m` in the gap. The split is
+ * at the hour, and it lives here rather than in the endpoint because the client
+ * needs the same answer: doc 04 §2 makes the client's freshness window the
+ * Worker's KV TTL, so two copies of this would drift into a client polling
+ * faster than the edge refreshes.
+ */
+export function cryptoKlinesFamily(interval: TpCryptoInterval): TpCacheFamily {
+	return interval === '5m' || interval === '15m' ? 'crKlinesIntraday' : 'crKlinesDaily';
+}
 
 /* ──────────────────────────────────────────────────────────── cache keys */
 

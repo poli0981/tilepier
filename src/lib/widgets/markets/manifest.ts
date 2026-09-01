@@ -27,7 +27,8 @@ const manifest: TpWidgetManifest = {
 	sizes: { min: { w: 2, h: 2 }, max: { w: 6, h: 6 }, default: { w: 3, h: 3 } },
 	multiInstance: false,
 	refresh: { kind: 'interval', everyMs: 60_000, visibleOnly: true },
-	loadWidget: () => import('./TpMarketsWidget.svelte')
+	loadWidget: () => import('./TpMarketsWidget.svelte'),
+	loadDetail: () => import('./TpMarketsDetail.svelte')
 };
 
 export default manifest;

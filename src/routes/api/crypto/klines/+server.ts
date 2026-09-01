@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { cacheKey, type TpCacheFamily } from '$lib/shared-constants';
+import { cacheKey, cryptoKlinesFamily, type TpCacheFamily } from '$lib/shared-constants';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
 import { checkRateLimit } from '../../_lib/ratelimit';
@@ -40,16 +40,6 @@ const UPSTREAM = 'binance';
  */
 const FETCH_LIMIT = 500;
 
-/**
- * doc 11 §4 gives this key prefix two TTLs — 300 s for sub-hourly intervals and
- * 900 s for hourly and coarser — and until 2026-09-01 it said "(5m int)" and
- * "(1h+)", which leaves `15m` in the gap between them. `shared-constants.ts`
- * resolved it in a comment and the doc did not; the doc says so now.
- */
-function familyFor(interval: TpCryptoInterval): TpCacheFamily {
-	return interval === '5m' || interval === '15m' ? 'crKlinesIntraday' : 'crKlinesDaily';
-}
-
 export const GET: RequestHandler = async ({ request, url, platform }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
@@ -62,7 +52,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 	const limit = await checkRateLimit(kv, request);
 	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
-	const family = familyFor(query.interval);
+	const family = cryptoKlinesFamily(query.interval);
 	const key = cacheKey.cryptoKlines(query.symbol, query.interval);
 	const cached = await readCache<TpCryptoKlinesPayload>(kv, family, key);
 

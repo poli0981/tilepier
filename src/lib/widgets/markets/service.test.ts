@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TpCryptoQuote, TpCryptoTickerPayload } from '$lib/api-types';
+import { CRYPTO_RANGES } from '$lib/api-types';
 import { cacheKey, symbolSetKey } from '$lib/shared-constants';
 import {
 	cryptoLookup,
@@ -9,7 +10,9 @@ import {
 	rowsFor,
 	symbolsOf,
 	tickerKey,
-	tickerUrl
+	tickerUrl,
+	klinesKey,
+	klinesUrl
 } from './service';
 import { MARKETS_DEFAULTS, MAX_DISPLAY, MAX_WATCHLIST } from './types';
 
@@ -183,5 +186,34 @@ describe('priceDigits (doc 09 §1)', () => {
 		// wrong again for a stock that trades under a dollar.
 		expect(priceDigits(0.009)).toBe(6);
 		expect(priceDigits(0.011)).toBe(4);
+	});
+});
+
+describe('the candle key and request', () => {
+	it('spells the key the way the Worker spells it, with no range in it', () => {
+		// doc 11 §4 keys this payload by symbol and interval only. The depth is a
+		// property of the *response*, so two ranges over one interval share an
+		// entry — 1M and 1Y are one subscription, and switching is free.
+		expect(klinesKey('BTCUSDT', '1d')).toBe(cacheKey.cryptoKlines('BTCUSDT', '1d'));
+		expect(klinesKey('BTCUSDT', '1d')).not.toContain('365');
+	});
+
+	it('sends the interval and depth the range set names', () => {
+		for (const [name, range] of Object.entries(CRYPTO_RANGES)) {
+			const url = klinesUrl('BTCUSDT', range.interval, range.limit);
+
+			expect(url, name).toContain(`interval=${range.interval}`);
+			expect(url, name).toContain(`limit=${String(range.limit)}`);
+		}
+	});
+
+	it('asks only for depths the endpoint will answer for', () => {
+		// The endpoint refuses anything outside the range set — a `BAD_REQUEST`
+		// rather than a clamp — so the picker and the validator have to agree, and
+		// they agree by both reading `CRYPTO_RANGES`.
+		const limits = Object.values(CRYPTO_RANGES).map((r) => r.limit);
+
+		expect(new Set(limits).size).toBe(limits.length);
+		expect(limits.every((limit) => limit > 0 && limit <= 500)).toBe(true);
 	});
 });

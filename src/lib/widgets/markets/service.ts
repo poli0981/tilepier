@@ -1,8 +1,22 @@
-import type { TpApiMeta, TpCryptoQuote, TpCryptoTickerPayload } from '$lib/api-types';
+import {
+	CRYPTO_RANGES,
+	type TpApiMeta,
+	type TpCryptoInterval,
+	type TpCryptoKlinesPayload,
+	type TpCryptoQuote,
+	type TpCryptoRange,
+	type TpCryptoTickerPayload
+} from '$lib/api-types';
 import { fetchEnvelope } from '$lib/core/api';
 import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
 import type { TpDb } from '$lib/core/storage/db';
-import { CACHE_POLICY, cacheKey, isMarketSymbol, symbolSetKey } from '$lib/shared-constants';
+import {
+	CACHE_POLICY,
+	cacheKey,
+	cryptoKlinesFamily,
+	isMarketSymbol,
+	symbolSetKey
+} from '$lib/shared-constants';
 import {
 	MARKETS_DEFAULTS,
 	MAX_DISPLAY,
@@ -218,4 +232,65 @@ export function priceDigits(price: number): number {
 	if (price < 0.01) return 6;
 	if (price < 1) return 4;
 	return 2;
+}
+
+/* ────────────────────────────────────────────────────────── the candle source */
+
+export interface TpKlinesReading {
+	payload: TpCryptoKlinesPayload;
+	meta: TpApiMeta;
+}
+
+/**
+ * The candle data key.
+ *
+ * **Keyed by symbol and interval, with no range in it** — the same string the
+ * Worker uses (doc 11 §4), which is what makes doc 04 §5's 1:1 guarantee hold
+ * for this payload too. Two ranges sharing an interval therefore share a client
+ * cache entry as well as a KV one, and both hold the deep series the endpoint
+ * windows: 1M and 1Y are one subscription, and switching between them is free
+ * and offline-capable.
+ */
+export function klinesKey(symbol: string, interval: TpCryptoInterval): string {
+	return cacheKey.cryptoKlines(symbol, interval);
+}
+
+export function klinesUrl(symbol: string, interval: TpCryptoInterval, limit: number): string {
+	const params = new URLSearchParams({ symbol, interval, limit: String(limit) });
+	return `/api/crypto/klines?${params.toString()}`;
+}
+
+/**
+ * Subscribe to one symbol's candles for one range.
+ *
+ * **The key omits the range and the request does not**, which is the one place
+ * the two spellings legitimately differ. The endpoint answers a window onto a
+ * deep entry, so the *response* differs by range while the *entry* does not —
+ * and `swr` caches what it was handed. Two ranges over one interval therefore
+ * share a key and the later one overwrites the earlier's window, which is
+ * correct: they are the same candles, and the wider request is a superset.
+ */
+export function klinesSource(
+	symbol: string,
+	range: TpCryptoRange,
+	target?: TpDb
+): TpSwrHandle<TpKlinesReading> {
+	const { interval, limit } = CRYPTO_RANGES[range];
+	const key = klinesKey(symbol, interval);
+
+	const fetcher: TpSwrFetcher<TpKlinesReading> = async (signal) => {
+		const result = await fetchEnvelope<TpCryptoKlinesPayload>(
+			klinesUrl(symbol, interval, limit),
+			signal
+		);
+		return { payload: result.data, meta: result.meta };
+	};
+
+	// The client window is the Worker's KV TTL for this interval's family, which
+	// doc 04 §2 makes the floor.
+	const ttlMs = CACHE_POLICY[cryptoKlinesFamily(interval)].ttlMs;
+
+	return target === undefined
+		? swr<TpKlinesReading>(key, fetcher, { ttlMs })
+		: swr<TpKlinesReading>(key, fetcher, { ttlMs }, target);
 }

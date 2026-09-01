@@ -511,5 +511,21 @@
 	"widget.markets.no_change": "chưa có số liệu thay đổi",
 	"widget.markets.as_of": "giá {age}",
 	"widget.markets.list_label": "danh sách theo dõi",
-	"widget.markets.change_label": "{change} trong 24 giờ"
+	"widget.markets.change_label": "{change} trong 24 giờ",
+	"widget.markets.symbol_label": "mã",
+	"widget.markets.range_label": "khoảng thời gian",
+	"widget.markets.range_1d": "1 ngày",
+	"widget.markets.range_1w": "1 tuần",
+	"widget.markets.range_1m": "1 tháng",
+	"widget.markets.range_1y": "1 năm",
+	"widget.markets.day_range": "{low} – {high} trong 24 giờ",
+	"widget.markets.volume": "khối lượng",
+	"widget.markets.chart_loading": "đang vẽ biểu đồ nến",
+	"widget.markets.chart_failed": "không vẽ được biểu đồ",
+	"widget.markets.chart_empty": "chưa có nến nào cho khoảng này",
+	"widget.markets.chart_summary": "{symbol} trong {range}: {change}, mở {open}, đóng {close}, dao động {low}–{high}",
+	"widget.markets.detail_offline": "không có mạng, và chưa lưu nến nào",
+	"widget.markets.detail_error": "không đọc được dữ liệu nến",
+	"widget.markets.disclaimer": "Dữ liệu có thể trễ và chỉ mang tính tham khảo — không phải khuyến nghị đầu tư.",
+	"widget.markets.nothing_selected": "chưa có mã nào trong danh sách để hiển thị"
 }

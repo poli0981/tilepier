@@ -14,7 +14,9 @@ const TOKENS: TpChartTokens = {
 	series2: '#7B8FF2',
 	series3: '#8798A8',
 	series4: '#D9A441',
-	series5: '#C084D6'
+	series5: '#C084D6',
+	up: '#57C785',
+	down: '#E8705F'
 };
 
 /** Every string anywhere in the theme, however deeply nested. */
@@ -84,5 +86,32 @@ describe('chartTheme', () => {
 			'#D9A441',
 			'#C084D6'
 		]);
+	});
+});
+
+/**
+ * The candle colours, added 2026-09-01 with the markets detail.
+ *
+ * A candlestick does not read the `color` ramp — ECharts takes its four
+ * colours from `itemStyle.color`/`color0`/`borderColor`/`borderColor0` — so the
+ * bridge the weather and currency charts were built on covered every chart in
+ * the app except the one Week 5 is about.
+ */
+describe('candlestick colours (doc 12 §4.2)', () => {
+	it('draws candles from the up/down tokens rather than from the palette', () => {
+		const theme = chartTheme({ ...TOKENS, up: '#111111', down: '#222222' });
+		const candlestick = theme['candlestick'] as { itemStyle: Record<string, string> };
+
+		expect(candlestick.itemStyle['color']).toBe('#111111');
+		expect(candlestick.itemStyle['borderColor']).toBe('#111111');
+		expect(candlestick.itemStyle['color0']).toBe('#222222');
+		expect(candlestick.itemStyle['borderColor0']).toBe('#222222');
+	});
+
+	it('keeps the pair out of the series ramp, where it would become a series', () => {
+		const theme = chartTheme(TOKENS);
+
+		expect(theme['color']).not.toContain(TOKENS.up);
+		expect(theme['color']).not.toContain(TOKENS.down);
 	});
 });

@@ -346,7 +346,8 @@ export const CRYPTO_RANGES = {
 	'1Y': { interval: '1d', limit: 365 }
 } as const satisfies Record<string, { interval: TpCryptoInterval; limit: number }>;
 
-/* `TpCryptoRange` and the default range land with the detail that picks one.
- * knip is CI-blocking on an export nothing imports, and doc 20 §5 asks for a
- * primitive and its first consumer in one commit rather than a layer at a
- * time. */
+export type TpCryptoRange = keyof typeof CRYPTO_RANGES;
+
+/** What the detail opens on: the tightest window, because a reader opening a
+ *  market wants today before they want the year. */
+export const CRYPTO_RANGE_DEFAULT: TpCryptoRange = '1D';

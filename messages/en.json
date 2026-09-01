@@ -511,5 +511,21 @@
 	"widget.markets.no_change": "no change figure yet",
 	"widget.markets.as_of": "prices {age}",
 	"widget.markets.list_label": "watchlist",
-	"widget.markets.change_label": "{change} over 24 hours"
+	"widget.markets.change_label": "{change} over 24 hours",
+	"widget.markets.symbol_label": "symbol",
+	"widget.markets.range_label": "range",
+	"widget.markets.range_1d": "1D",
+	"widget.markets.range_1w": "1W",
+	"widget.markets.range_1m": "1M",
+	"widget.markets.range_1y": "1Y",
+	"widget.markets.day_range": "{low} – {high} over 24 hours",
+	"widget.markets.volume": "volume",
+	"widget.markets.chart_loading": "drawing the candles",
+	"widget.markets.chart_failed": "the chart could not be drawn",
+	"widget.markets.chart_empty": "no candles for this range yet",
+	"widget.markets.chart_summary": "{symbol} over {range}: {change}, opened {open}, closed {close}, between {low} and {high}",
+	"widget.markets.detail_offline": "no network, and no candles saved yet",
+	"widget.markets.detail_error": "the candles could not be read",
+	"widget.markets.disclaimer": "Data may be delayed and is for reference only — not investment advice.",
+	"widget.markets.nothing_selected": "nothing on the watchlist to show"
 }
