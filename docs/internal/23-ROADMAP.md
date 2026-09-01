@@ -375,6 +375,18 @@ rather than tasks, and two are about code that is already live:
    nobody can act on is not worth returning, and a backoff nothing honours is
    not worth wiring. Both land with markets at 60 s — doc 04 §2 carries the
    reasoning.
+
+   **Closed 2026-09-01, first thing in Week 5a**, and it closed without the
+   handle. `execute` sets `nextDueAt` from the cadence on success and from the
+   backoff on failure — which is what doc 04 §3 had specified since Week 1 and
+   the `finally` had been overwriting — and a server-named `retryAfterS` is read
+   off the `TpApiError` `swr` already throws, so `useRefresh` keeps the `void`
+   signature item 4 chose. Six cases in `scheduler.test.ts`; five were watched
+   failing against the unfixed code first. The sixth is the one that could not
+   fail, and it found something on its own: the two backoff assertions written
+   in Week 1 both used a 1 s cadence, so `max(nextDueAt, backoffUntil)` landed
+   inside the jitter band they assert and they had been true about the wrong
+   quantity for four weeks.
 3. **An injected resize does not reliably produce a gridstack `change`** — two
    runs in eight ended with the clamped size on screen and no `onLayoutChange`
    beyond the mount emit. If a real pointer can lose one the same way, a
@@ -509,12 +521,67 @@ debugging from `curl` will meet this before they meet anything real.
 The day-two check — the Δ24h column and the history chart, both of which need a
 second calendar day of snapshots — is **2026-09-02**.
 
-## Week 5 — Markets
+## Week 5 — Markets · **in progress from 2026-09-01**
 crypto ticker/klines endpoints · stock quote/series/search endpoints
 (budget guard + breaker + Stooq fallback) · markets tile + detail
 (candles, ranges, watchlist) · degradation ladder verified by fault
 injection. **M5:** the hardest widget done; quota telemetry watched for a
 full week from here.
+
+### Measured before it was started, and split for the same reason Week 4 was
+
+Fourteen items scored the way Week 4's nine were: **≈21.5 focused days against
+a five-day solo week — 4.3×**, which is Week 4's 4.25× again. So the same move:
+cut depth, not widgets, and split the week.
+
+| | item | complexity | difficulty | days |
+|---|---|:--:|:--:|--:|
+| P | typing the three Worker secrets | 2 | 4 | 0.5 |
+| H | `useRefresh` + the scheduler's `finally` | 3 | 4 | 1.0 |
+| A | `/api/crypto/ticker` + the shared set-hash | 3 | 3 | 1.5 |
+| B | `/api/crypto/klines` | 3 | 3 | 1.25 |
+| C | `/api/stock/quote` | 4 | 4 | 2.0 |
+| D | `/api/stock/series` + Stooq | 4 | 5 | 3.0 |
+| E | `/api/stock/search` | 2 | 3 | 1.0 |
+| F | markets tile + service | 5 | 4 | 2.5 |
+| G | markets detail | 5 | 5 | 3.5 |
+| I | `/api/_health` + breaker rows | 3 | 4 | 1.5 |
+| J | the degradation ladder under injection | 4 | 4 | 2.0 |
+| K | S3's stock half, with keys | 2 | 3 | 0.5 |
+| L | i18n, a11y, DoD, docs | 3 | 3 | 1.5 |
+| M | the fx day-two check | 1 | 1 | 0.25 |
+
+**One depth cut taken up front:** the `MAX` range (−0.4). 1Y tells an honest
+story and `MAX` only reaches for Twelve Data's EOD depth, which is the most
+expensive thing in the quota. Two more are priced and **not** taken — the
+volume band under the candles (−0.8) and `/api/stock/search` with its
+search-add UI (−1.5, replaced by a validated free-text add) — in that order if
+the week runs hot. That leaves ≈17.1, split as:
+
+- **Week 5a — crypto.** Secret typing, the scheduler fix, both Binance
+  endpoints, the tile, the detail with its candles, the crypto half of the
+  ladder. **No key needed**, so 5a runs end-to-end on a clean checkout and in
+  CI — the same property Week 4a had with Open-Meteo.
+- **Week 5b — stocks.** The three Finnhub/Twelve Data endpoints, the watchlist
+  manager, `/api/_health`, the stock half of the ladder, and S3's keyed run.
+
+**M5 is met by 5b, not by 5a**, and that is what the milestone sentence asks:
+"the hardest widget done" needs the stock half. 5a proves the shape; 5b is its
+second proof, the way currency was the tier-2 pattern's.
+
+**Nine specification gaps were found by the measurement rather than by the
+work**, which is the point of doing it first. Three are recorded already —
+doc 11 §9 (secret typing, closed), doc 13 §10 (the `/api/_health` token, open),
+doc 21 §5 (the gate's target path, corrected). The rest are due with the code
+that meets them: `cacheKey.stockSeries` carries no `range` while doc 11 §3 gives
+the route one; `cr:tick:v1:<set-hash>` has no hash function and needs one
+spelling on both sides; doc 11 §4 does not say which TTL family a 15m kline
+belongs to; the envelope is all-or-nothing while doc 09 §1's three edge cases
+all degrade per symbol; ECharts takes candlestick colours from `itemStyle`
+rather than from the palette the Week 4 theme bridge feeds; and doc 09 §1's tile
+sparkline must read `apiCache` directly, because subscribing through `swr()`
+would make tiles fetch series and doc 11 §5's whole quota model rests on their
+not doing that.
 
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF

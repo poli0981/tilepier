@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BACKOFF } from '$lib/shared-constants';
 import { online } from '$lib/stores/online.svelte';
+import { TpApiError } from './api';
 import { nextMidnight, scheduler } from './scheduler';
 
 /**
@@ -266,5 +267,112 @@ describe('online recovery', () => {
 
 		await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2));
 		expect(run.mock.calls[1]?.[0]).toMatchObject({ reason: 'online' });
+	});
+});
+
+/**
+ * doc 04 §2, doc 11 §7.3 and doc 17 §5 all describe a retry curve, and until
+ * 2026-09-01 none of them described this module: `execute`'s `finally`
+ * recomputed `nextDueAt` from the cadence on the failure path too, and
+ * `effectiveDue` takes the later of the two — so every delay shorter than the
+ * cadence was invisible. The cases below were each run against the unfixed
+ * scheduler first and each failed there; the two in `describe('backoff')`
+ * above did not, because a 1 s cadence happens to sit inside the band they
+ * assert.
+ */
+describe('backoff actually governs the next run', () => {
+	/** Longer than `BACKOFF.maxMs`, so *no* point on the curve could reach it. */
+	const LONG_CADENCE = { kind: 'interval', everyMs: 600_000 } as const;
+
+	it('retries on the curve rather than waiting out a long cadence', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		const run = vi.fn(() => Promise.reject(new Error('upstream down')));
+
+		scheduler.register('a', { cadence: LONG_CADENCE, run });
+		await vi.waitFor(() => expect(scheduler.inspect()[0]?.consecutiveFailures).toBe(1));
+
+		const due = scheduler.inspect()[0]?.nextDueAt ?? 0;
+		expect(due).toBeGreaterThanOrEqual(BACKOFF.baseMs * (1 - BACKOFF.jitterRatio));
+		expect(due).toBeLessThanOrEqual(BACKOFF.baseMs * (1 + BACKOFF.jitterRatio));
+	});
+
+	it('respects a delay the server named, over the curve', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		const run = vi.fn(() =>
+			Promise.reject(new TpApiError('RATE_LIMITED', 'RATE_LIMITED (HTTP 429)', { retryAfterS: 90 }))
+		);
+
+		scheduler.register('a', { cadence: LONG_CADENCE, run });
+		await vi.waitFor(() => expect(scheduler.inspect()[0]?.consecutiveFailures).toBe(1));
+
+		expect(scheduler.inspect()[0]?.nextDueAt).toBe(90_000);
+	});
+
+	it('does not cap a named delay at the curve ceiling', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		// doc 11 §6's quota trip holds to UTC midnight, which is hours rather
+		// than the 300 s the exponential curve tops out at.
+		const run = vi.fn(() =>
+			Promise.reject(
+				new TpApiError('QUOTA_EXHAUSTED', 'QUOTA_EXHAUSTED (HTTP 503)', { retryAfterS: 3600 })
+			)
+		);
+
+		scheduler.register('a', { cadence: LONG_CADENCE, run });
+		await vi.waitFor(() => expect(scheduler.inspect()[0]?.consecutiveFailures).toBe(1));
+
+		expect(scheduler.inspect()[0]?.nextDueAt).toBe(3_600_000);
+		expect(3_600_000).toBeGreaterThan(BACKOFF.maxMs);
+	});
+
+	it('falls back to the curve when the named delay is not a usable number', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		const run = vi.fn(() =>
+			Promise.reject(new TpApiError('UPSTREAM_DOWN', 'nonsense', { retryAfterS: -5 }))
+		);
+
+		scheduler.register('a', { cadence: LONG_CADENCE, run });
+		await vi.waitFor(() => expect(scheduler.inspect()[0]?.consecutiveFailures).toBe(1));
+
+		const due = scheduler.inspect()[0]?.nextDueAt ?? 0;
+		expect(due).toBeGreaterThanOrEqual(BACKOFF.baseMs * (1 - BACKOFF.jitterRatio));
+		expect(due).toBeLessThanOrEqual(BACKOFF.baseMs * (1 + BACKOFF.jitterRatio));
+	});
+
+	it('returns to the cadence once a run succeeds', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		let fail = true;
+		const handle = scheduler.register('a', {
+			cadence: LONG_CADENCE,
+			runOnRegister: false,
+			run: () => (fail ? Promise.reject(new Error('boom')) : Promise.resolve())
+		});
+
+		await handle.runNow();
+		expect(scheduler.inspect()[0]?.state).toBe('backoff');
+
+		fail = false;
+		await handle.runNow();
+
+		// Back on the cadence, not left on whatever the backoff had set.
+		expect(scheduler.inspect()[0]?.nextDueAt).toBe(600_000);
+		expect(scheduler.inspect()[0]?.state).toBe('idle');
+	});
+
+	it('leaves a manual cadence unscheduled after a failure', async () => {
+		vi.spyOn(Date, 'now').mockReturnValue(0);
+		const handle = scheduler.register('a', {
+			cadence: { kind: 'manual' },
+			runOnRegister: false,
+			run: () => Promise.reject(new Error('boom'))
+		});
+
+		await handle.runNow();
+
+		// `effectiveDue` falls through to `backoffUntil` when `nextDueAt` is null,
+		// so a backoff written here would be the one thing that could make a
+		// manual entry come due on a tick (doc 04 §3).
+		expect(scheduler.inspect()[0]?.consecutiveFailures).toBe(1);
+		expect(scheduler.inspect()[0]?.nextDueAt).toBeNull();
 	});
 });

@@ -140,6 +140,14 @@ back-off, not perfection.
 3. **Client behavior:** on 429 respect `retry-after`, exponential backoff
    (max 5 min), single global toast not per-widget spam (doc 17 §5).
 
+   **Wired 2026-09-01.** The toast half landed in Week 4b; the other two were
+   description without code until `core/scheduler.ts` learned to take its next
+   due time from the backoff rather than from the cadence, and to read a
+   server-named `retryAfterS` off the rejection `swr` already throws. doc 04 §2
+   carries the reasoning and doc 17 §5 the policy. The 5 min here is the
+   *curve's* ceiling — a delay the server names is honoured in full, which is
+   what lets §6's quota trip hold to UTC midnight.
+
 ## 8. Validation & limits
 
 - Query params validated first (hand validators, shared with client types).
