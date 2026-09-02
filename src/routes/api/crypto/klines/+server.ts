@@ -7,7 +7,8 @@ import { parseCryptoKlinesQuery } from '../../_lib/crypto-query';
 import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { normalizeCryptoKlines } from '../../_lib/normalize';
-import type { TpCryptoInterval, TpCryptoKlinesPayload } from '$lib/api-types';
+import { klinesUrl } from '../../_lib/binance';
+import type { TpCryptoKlinesPayload } from '$lib/api-types';
 
 /**
  * `GET /api/crypto/klines?symbol=BTCUSDT&interval=5m&limit=288` — doc 11 §3,
@@ -26,10 +27,6 @@ import type { TpCryptoInterval, TpCryptoKlinesPayload } from '$lib/api-types';
  * rather than one per range. That is the same answer `/api/stock/series` needs
  * in Week 5b for the same reason, arriving one endpoint early.
  */
-
-/** doc 10 §4's config constant, not an inline host. */
-const HOSTS = ['https://api.binance.com'] as const;
-const HOST = HOSTS[0];
 
 const UPSTREAM = 'binance';
 
@@ -67,7 +64,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 
 	try {
 		const now = Date.now();
-		const body = await fetchUpstream<unknown>(seriesUrl(query.symbol, query.interval));
+		const body = await fetchUpstream<unknown>(klinesUrl(query.symbol, query.interval, FETCH_LIMIT));
 		const payload = normalizeCryptoKlines(body.data, query.symbol, query.interval);
 
 		// An empty series is not an answer. Binance replies 200 with `[]` for a
@@ -106,15 +103,6 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		return serveStaleOr(cached, family, query.limit);
 	}
 };
-
-function seriesUrl(symbol: string, interval: TpCryptoInterval): string {
-	const params = new URLSearchParams({
-		symbol,
-		interval,
-		limit: String(FETCH_LIMIT)
-	});
-	return `${HOST}/api/v3/klines?${params.toString()}`;
-}
 
 /** The last `limit` candles — the newest ones, which is what a range means. */
 function window(payload: TpCryptoKlinesPayload, limit: number): TpCryptoKlinesPayload {
