@@ -49,6 +49,27 @@ export async function readCache<T>(
 	const policy = CACHE_POLICY[family];
 	const freshUntil = value.freshUntil ?? value.cachedAt + policy.ttlMs;
 
+	/*
+	 * **The stale window is enforced here, not only by KV's expiry** (added
+	 * 2026-09-01, found by the crypto ladder suite asking for an hour-old entry
+	 * from a 30 s/10 min family and being handed it).
+	 *
+	 * `writeCache` sets `expirationTtl` to ttl + stale, so in production KV had
+	 * usually removed the entry before this could matter — which is exactly what
+	 * makes it the wrong thing to rely on. KV expiry is best-effort and not
+	 * instant; an entry written by an older build with a longer window is not
+	 * covered by it at all; and doc 11 §4 states the window as a promise about
+	 * how old a reading may be before it stops being one, which belongs to the
+	 * read rather than to a hope about eviction.
+	 *
+	 * `staleMs: null` means permanent — `fx:snap:` *is* the currency history
+	 * (doc 10 §3), and dropping one would be dropping data rather than dropping
+	 * a derivable.
+	 */
+	if (policy.staleMs !== null && now > freshUntil + policy.staleMs) {
+		return { value: null, status: 'MISS' };
+	}
+
 	return { value, status: now <= freshUntil ? 'HIT' : 'STALE' };
 }
 

@@ -29,7 +29,9 @@ describe('readChartTokens', () => {
 			'--color-fg': '#112233',
 			'--color-fg-dim': '#445566',
 			'--color-ink-500': '#778899',
-			'--color-beacon': '#aabbcc'
+			'--color-beacon': '#aabbcc',
+			'--color-up': '#00ff00',
+			'--color-down': '#ff0000'
 		});
 
 		expect(readChartTokens(el)).toEqual({
@@ -40,7 +42,11 @@ describe('readChartTokens', () => {
 			series2: '#7B8FF2',
 			series3: '#8798A8',
 			series4: '#D9A441',
-			series5: '#C084D6'
+			series5: '#C084D6',
+			// Read rather than fixed: unlike steps 2-5 these are real UI tokens,
+			// and a light theme mirrors them (doc 12 §2).
+			up: '#00ff00',
+			down: '#ff0000'
 		});
 	});
 

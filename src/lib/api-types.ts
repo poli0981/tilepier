@@ -224,3 +224,130 @@ export interface TpFxHistoryPayload {
 	points: TpFxHistoryPoint[];
 	attribution: string;
 }
+
+/* ─────────────────────────────────────────────────────── crypto (doc 10 §4) */
+
+/**
+ * One Binance 24-hour ticker row, normalised.
+ *
+ * **A row exists only if it has a price**, and the fields around the price are
+ * nullable individually. Both halves of that are deliberate.
+ *
+ * The whole row goes `null` without a usable `price` because a quote without a
+ * price is not a quote — where the weather payload keeps an hour and marks the
+ * missing column, since a forecast hour without a UV index is still an hour
+ * worth drawing. doc 09 §1's tile has something to *say* about an absent row
+ * ("delisted → row error chip with a remove shortcut") and nothing to say about
+ * a price that is `null`.
+ *
+ * The rest are `number | null` rather than defaulted, for the reason doc 08 §2
+ * gives about the currency table's change column: a substituted zero is a claim
+ * about the market, and a high equal to the low is a claim about the day.
+ */
+export interface TpCryptoQuote {
+	/** As Binance spells it, uppercase: `BTCUSDT`. */
+	symbol: string;
+	/** Last traded price, in the quote asset — USDT for `BTCUSDT`. */
+	price: number;
+	/**
+	 * The 24 h move as a **fraction**: 0.021, not 2.1.
+	 *
+	 * The same choice `currency`'s `change24h` made and for the same reason —
+	 * `Intl.NumberFormat`'s `style: 'percent'` wants a fraction, and letting it
+	 * place the sign and the symbol is the difference between "+2,10 %" in
+	 * Vietnamese and a hand-built string that is right in exactly one locale.
+	 *
+	 * `null` when upstream did not send it, never `0`. doc 08 §2 settled the
+	 * same question for the currency table and the sentence transfers whole: a
+	 * 0.00 % is a claim about the market, and an absent figure is the truth
+	 * about what we know.
+	 */
+	change24h: number | null;
+	high24h: number | null;
+	low24h: number | null;
+	/** Base-asset volume over the same window. */
+	volume24h: number | null;
+	/**
+	 * Unix ms of the window's close, as upstream stamped it — falling back to
+	 * when we asked, which is the only other instant we can honestly name. Not
+	 * nullable, because a row with a price and no timestamp is still a quote,
+	 * and `meta.cachedAt` carries the fetch time either way.
+	 */
+	at: number;
+}
+
+export interface TpCryptoTickerPayload {
+	/**
+	 * Keyed by symbol, one entry per **requested** symbol, so a caller can index
+	 * it in its own watchlist order rather than in the canonical order the cache
+	 * key is built from.
+	 *
+	 * `null` is doc 09 §1's per-symbol degradation: upstream answered for the
+	 * others and not for this one. The doc 11 §2 envelope is all-or-nothing, so
+	 * a row that failed has to be expressible *inside* `data` or the whole tile
+	 * fails for one delisted coin.
+	 */
+	quotes: Record<string, TpCryptoQuote | null>;
+	attribution: string;
+}
+
+/**
+ * One candle, as doc 10 §4 asks for it: `[openTime, open, high, low, close,
+ * volume]`.
+ *
+ * A tuple rather than an object, and the reason is the wire. A 500-candle
+ * series is 3000 numbers; as objects with six keys each it is roughly three
+ * times the bytes for the same information, on a payload the detail fetches
+ * per range. A fixed-length tuple type also survives `noUncheckedIndexedAccess`
+ * — `candle[4]` is a `number`, where an array of numbers would give
+ * `number | undefined` at every read.
+ *
+ * `openTime` rather than close: it is what ECharts plots against and what
+ * Binance orders the series by.
+ */
+export type TpCryptoCandle = readonly [number, number, number, number, number, number];
+
+export interface TpCryptoKlinesPayload {
+	symbol: string;
+	interval: TpCryptoInterval;
+	/** Ascending by `openTime`. Rows upstream sent that could not be read are
+	 *  absent rather than zero-filled — the chart plots against a time axis. */
+	candles: TpCryptoCandle[];
+	attribution: string;
+}
+
+/** doc 10 §4's four. Not every one is reachable from a range picker today; the
+ *  list is upstream's contract rather than the UI's. */
+export const CRYPTO_INTERVALS = ['5m', '15m', '1h', '1d'] as const;
+export type TpCryptoInterval = (typeof CRYPTO_INTERVALS)[number];
+
+/**
+ * doc 09 §1's range presets, and the interval and depth each one asks for.
+ *
+ * Here rather than in either half, because it is the contract between them: the
+ * endpoint refuses a `limit` that is not one of these, and the detail's range
+ * picker must not be able to ask for one. Two copies would drift the first time
+ * a range was added — the same reasoning `FX_HISTORY_DAYS` carries.
+ *
+ * **`limit` is an allowlist, not a bound**, for the reason doc 11 §3 gives
+ * about `days`: the response is CDN-cacheable by URL, so a free integer gives
+ * 500 distinct edge entries per symbol-and-interval that one client can walk
+ * with a loop. Four values give four. It costs the reader nothing, because the
+ * detail offers ranges rather than a number field — and a range picker is an
+ * allowlist with a nicer name.
+ *
+ * `MAX` is absent deliberately: it is Week 5's one approved depth cut (doc 23
+ * §Week 5).
+ */
+export const CRYPTO_RANGES = {
+	'1D': { interval: '5m', limit: 288 },
+	'1W': { interval: '1h', limit: 168 },
+	'1M': { interval: '1d', limit: 30 },
+	'1Y': { interval: '1d', limit: 365 }
+} as const satisfies Record<string, { interval: TpCryptoInterval; limit: number }>;
+
+export type TpCryptoRange = keyof typeof CRYPTO_RANGES;
+
+/** What the detail opens on: the tightest window, because a reader opening a
+ *  market wants today before they want the year. */
+export const CRYPTO_RANGE_DEFAULT: TpCryptoRange = '1D';

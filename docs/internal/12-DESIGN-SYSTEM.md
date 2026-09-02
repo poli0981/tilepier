@@ -131,6 +131,15 @@ watches change, it's mono + tnum. No exceptions.**
    user-overridable, so series-1 follows it. **None of steps 3–5 is one of the
    six selectable accents**, which a test asserts: a reader who picks harbor
    blue would otherwise get two series in one colour.
+   **The candle pair is not in that ramp, and could not be** (added
+   2026-09-01, with the markets detail). ECharts takes a candlestick's four
+   colours from `itemStyle.color`/`color0`/`borderColor`/`borderColor0` rather
+   than from the series palette, so the token bridge built in Week 4 covered
+   every chart in the app except the one Week 5 is about — the candles would
+   have drawn in ECharts' own red and green, a pair nobody has measured. They
+   are supplied as *theme* defaults in `charts/theme.ts` from `--color-up` and
+   `--color-down`, which keeps the option colourless like every other one here.
+
 4. Backgrounds never pure black; hairlines (`ink-700`) over shadows for
    separation. Shadows exist only at the tile level.
 

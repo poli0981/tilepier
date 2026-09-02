@@ -30,7 +30,7 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/fx` | — (full USD table) | ER-API + snapshot side-effect |
 | `GET /api/fx/history` | pair, days ∈ {7,30,90,365} | KV snapshots only |
 | `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
-| `GET /api/crypto/klines` | symbol, interval, limit≤500 | Binance klines |
+| `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
 | `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data → Stooq |
 | `GET /api/stock/search` | q | Finnhub search |
@@ -47,6 +47,28 @@ It costs the reader nothing, because doc 08 §2’s detail offers ranges rather
 than a number field — a range picker is an allowlist with a nicer name. A value
 outside the list is `BAD_REQUEST` and never a silent clamp, which would file one
 range’s answer under another range’s key.
+
+**`limit` on the klines route is the same kind of allowlist**, and its values
+are not written out anywhere: they are derived from `CRYPTO_RANGES` in
+`api-types.ts`, the one module both halves import, so the endpoint refuses any
+depth the range picker cannot ask for and the two cannot drift. Four arbitrary
+integers would be a rule with no reason behind it (settled 2026-09-01; this row
+said `limit≤500`).
+
+**The klines cache holds one deep series and the response is a window onto it.**
+§4 keys the payload `cr:kl:v1:<sym>:<int>` with **no depth in the key**, so two
+ranges over the same symbol and interval would otherwise overwrite each other —
+and because the payload shapes are identical, a reader who looked at 1W and then
+1M would get 1W's candles under 1M's label with nothing to notice. The endpoint
+therefore always fetches Binance's 500-candle maximum and slices. That depth
+covers every range at every interval (500 × 5 min is 41 hours against 1D's 24;
+500 hours is 20 days against 1W's 7; 500 days is sixteen months against 1Y's
+twelve), and it costs one upstream call rather than one per range.
+
+**`/api/stock/series` needs the same answer for the same reason**, and it is
+recorded here rather than there because this is where it was first built: that
+row's params include a `range` while §4's key is `st:se:v1:<sym>:<int>`, which
+is the identical collision one endpoint later.
 
 **`/api/fx/history` has no KV entry of its own**, and that is a decision rather
 than an omission. Its inputs are the `fx:snap:` pile, which is permanent, so a
@@ -65,8 +87,8 @@ here is every reader asking for the same pair and range.
 | `geo:v1:<lang>:<q-norm>` | 24 h | 7 d |
 | `fx:v1:USD` | 12 h (capped by upstream next-update) | 48 h |
 | `fx:snap:<date>` | none (permanent) | — |
-| `cr:tick:v1:<set-hash>` | 30 s | 10 min |
-| `cr:kl:v1:<sym>:<int>` | 300 s (5m int) / 900 s (1h+) | 6 h |
+| `cr:tick:v1:<set>` | 30 s | 10 min |
+| `cr:kl:v1:<sym>:<int>` | 300 s (sub-hourly) / 900 s (1h and coarser) | 6 h |
 | `st:q:v1:<sym>` | 90 s | 12 h |
 | `st:se:v1:<sym>:15min` | 900 s | 24 h |
 | `st:se:v1:<sym>:1day` | 21600 s (6 h) | 7 d |
@@ -76,6 +98,20 @@ Implementation: KV `put(key, body, { expirationTtl: ttl + staleWindow })`
 with `cachedAt` inside the value; freshness = `now - cachedAt <= ttl`;
 between ttl and staleWindow the value is served **only** when upstream
 fails (`stale: true` in meta) or the breaker is open.
+
+**The stale window is enforced on the read, not only by KV's expiry** (added
+2026-09-01). `writeCache` does set `expirationTtl` to ttl + stale, so in
+practice KV had usually removed the entry first — which is what made relying on
+it the wrong call: KV expiry is best-effort and not instant, an entry written by
+an older build with a longer window is not covered by it at all, and the window
+above is a promise about how old a reading may be before it stops being one.
+`readCache` now answers `MISS` past it. Families with `staleMs: null` are
+exempt, because `fx:snap:` *is* the currency history and dropping one would be
+dropping data rather than dropping a derivable.
+
+Found by the crypto degradation-ladder suite asking a 30 s/10 min family for an
+hour-old entry and being handed it — a case no endpoint suite had, because each
+of those seeds an entry inside the window it means to test.
 
 A value may carry its own `freshUntil`, and then that instant wins over the
 row above. It exists for the one row whose TTL is not ours to set — `fx:v1:USD`
@@ -89,6 +125,29 @@ request. Written into the value rather than passed to the write, because the
 read that has to respect it happens on a later request that never saw the cap.
 Absent on every entry written before 2026-08-31 and on every family with no
 upstream opinion, which is what makes it a non-event for `wx` and `geo`.
+
+**The klines row's two TTLs are split at the hour** (clarified 2026-09-01).
+It read "300 s (5m int) / 900 s (1h+)", which leaves `15m` — an interval doc
+10 §4 lists — in the gap between the two. `shared-constants.ts` had resolved it
+in a comment ("sub-hourly" / "1h and coarser") and this table had not, and the
+drift test cannot see the difference: it strips parentheticals as commentary,
+so both spellings parse to the same two durations.
+
+**`<set>` is the canonical symbol list, not a hash of it** (settled 2026-09-01;
+this row said `<set-hash>`). `shared-constants.ts` exports `symbolSetKey`, which
+uppercases, de-duplicates and **sorts** before joining — and that part is
+load-bearing whichever spelling wins, because two watchlists holding the same
+coins in a different order are the same question and would otherwise occupy two
+entries, halving the hit rate and doubling the calls upstream with nothing to
+say so.
+
+What a hash would add is brevity; what it would cost is a collision serving one
+watchlist's prices under another watchlist's key, which is wrong data rather
+than a miss. A cryptographic digest avoids that and is `async` in both runtimes,
+which would make every `cacheKey` call site async for a cache key. doc 09 §1
+caps a watchlist at twelve and doc 10 §5 caps a symbol at twelve characters, so
+the literal set is at most 155 bytes against KV's 512 — there is nothing to buy.
+It also means `wrangler kv key list` shows what an entry *is*.
 
 KV consistency note: KV is eventually consistent (~60 s cross-PoP). For
 cache purposes that's fine — worst case a few PoPs refetch. Never use KV
@@ -140,6 +199,14 @@ back-off, not perfection.
 3. **Client behavior:** on 429 respect `retry-after`, exponential backoff
    (max 5 min), single global toast not per-widget spam (doc 17 §5).
 
+   **Wired 2026-09-01.** The toast half landed in Week 4b; the other two were
+   description without code until `core/scheduler.ts` learned to take its next
+   due time from the backoff rather than from the cadence, and to read a
+   server-named `retryAfterS` off the rejection `swr` already throws. doc 04 §2
+   carries the reasoning and doc 17 §5 the policy. The 5 min here is the
+   *curve's* ceiling — a delay the server names is honoured in full, which is
+   what lets §6's quota trip hold to UTC midnight.
+
 ## 8. Validation & limits
 
 - Query params validated first (hand validators, shared with client types).
@@ -155,3 +222,21 @@ No third-party telemetry. Rely on Cloudflare's built-in Workers metrics
 (requests, errors, CPU) + `wrangler tail` during incidents. A dev-only
 `GET /api/_health` returns breaker states and today's stock-budget counter
 — gated by `env.DEV_DASH_TOKEN` query secret; absent in docs/UI.
+
+**The three secrets are typed by hand in `src/worker-env.d.ts`** (2026-09-01),
+and that file exists because `wrangler types` cannot produce them. Secrets are
+not declared in `wrangler.jsonc` — they are set with `wrangler secret put` — so
+the generator learns their names from `.dev.vars`, which is gitignored. The
+committed `worker-configuration.d.ts` would then differ between a checkout that
+has one and CI, which does not, and `wrangler types --check` inside `pnpm lint`
+would fail on whichever side it ran. Doc 13 §10 recorded that as the reason the
+diagnostics breaker rows were deferred out of Week 3; it blocked `/api/stock/*`
+just as hard, which is why Week 5 settles it first.
+
+The mechanism is declaration merging, not a second generator: `interface Env` is
+global in the generated file, so a global `.d.ts` adds members to it and leaves
+the generated file byte-identical. `src/fsa.d.ts` does the same thing to
+`FileSystemHandle`. Typed `string` rather than `string | undefined` — the
+optional chain on `platform?` already makes each read `string | undefined` at
+the call site, so the "deployed without `wrangler secret put`" branch stays
+reachable and is guarded the way a missing KV binding is.

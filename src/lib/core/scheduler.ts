@@ -1,5 +1,6 @@
 import { BACKOFF, SCHEDULER_TICK_MS } from '$lib/shared-constants';
 import { online } from '$lib/stores/online.svelte';
+import { TpApiError } from './api';
 import type { TpRefresh } from './registry';
 
 /**
@@ -91,6 +92,35 @@ function backoffDelay(failures: number): number {
 	return Math.max(0, Math.round(raw + jitter));
 }
 
+/**
+ * How long to wait after a failure — doc 17 §5's "on 429/`retryAfterS` respect
+ * the server value; else exponential".
+ *
+ * **This is where doc 04 §2's `handle.backoff(...)` went, and it is why
+ * `useRefresh` still returns `void`.** That section described swr overriding the
+ * curve "by calling `handle.backoff(...)` on the scheduler handle the widget
+ * already holds", which needed a handle no widget could hold and a `$effect`
+ * that creates it after the `run` closure is written. But swr already *does*
+ * name the delay: `revalidate()` rejects with the `TpApiError` that carries
+ * `retryAfterS`, straight from the envelope or the `retry-after` header
+ * (`core/api.ts`). Reading it off the rejection puts the override in the one
+ * place that owns retry timing, with nothing to wire and nothing to leak.
+ *
+ * **Uncapped on purpose.** The 300 s ceiling belongs to the exponential curve;
+ * a named delay is upstream saying how long it will be unavailable, and doc 11
+ * §6 has one that legitimately runs to UTC midnight (a quota trip). Only two
+ * things can name one here — our own Worker's `fail(code, retryAfterS)` and the
+ * zone rule's 60 s — so there is no hostile third party to defend against. A
+ * value that is not a finite, non-negative number falls back to the curve.
+ */
+function retryDelay(error: unknown, failures: number): number {
+	if (error instanceof TpApiError && error.retryAfterS !== undefined) {
+		const named = error.retryAfterS * 1000;
+		if (Number.isFinite(named) && named >= 0) return named;
+	}
+	return backoffDelay(failures);
+}
+
 function computeNextDue(entry: Entry, from: number): number | null {
 	switch (entry.cadence.kind) {
 		case 'interval':
@@ -139,28 +169,59 @@ async function execute(entry: Entry, reason: TpRunReason): Promise<void> {
 		entry.consecutiveFailures = 0;
 		entry.backoffUntil = null;
 		entry.lastError = undefined;
+		entry.nextDueAt = computeNextDue(entry, startedAt);
 	} catch (error) {
 		// swr rejects rather than swallowing precisely so this branch owns the
 		// retry curve (doc 04 §2).
 		entry.consecutiveFailures += 1;
 		entry.lastError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-		entry.backoffUntil = Date.now() + backoffDelay(entry.consecutiveFailures);
+
+		if (entry.cadence.kind === 'manual') {
+			// doc 04 §3: `manual` never self-schedules, and a failure is not an
+			// exception to that. Without this guard the backoff below would be the
+			// entry's only due time, so `effectiveDue` — which falls through to
+			// `backoffUntil` when `nextDueAt` is null — would start ticking a task
+			// that is only ever supposed to run when asked.
+			entry.backoffUntil = null;
+			entry.nextDueAt = null;
+		} else {
+			/*
+			 * **The next due time comes from the backoff, not from the cadence.**
+			 *
+			 * doc 04 §3 has said "a rejected `run` … sets `nextDueAt` from the
+			 * `BACKOFF` constants" since Week 1, and until now this recomputed it
+			 * from the cadence in a `finally` that ran on both paths. With
+			 * `effectiveDue` taking `max(nextDueAt, backoffUntil)`, that made every
+			 * delay shorter than the cadence invisible: the whole 1→2→4→8 s curve
+			 * was unreachable at weather's 600 s, and unreachable below the 300 s
+			 * cap at any cadence longer than it. Three documents described a
+			 * behaviour no code had (docs 04 §2, 11 §7.3, 17 §5).
+			 *
+			 * Both fields are set to the same instant so `effectiveDue` and
+			 * `stateOf` agree without either having to know which one won.
+			 */
+			const due = Date.now() + retryDelay(error, entry.consecutiveFailures);
+			entry.backoffUntil = due;
+			entry.nextDueAt = due;
+		}
 	} finally {
-		entry.nextDueAt = computeNextDue(entry, startedAt);
 		entry.running = false;
 		if (entry.controller === controller) entry.controller = null;
 	}
 }
 
+/** doc 06 §7's `visibleOnly` column. `markets` is the only widget that sets it. */
+function isVisibleOnly(entry: Entry): boolean {
+	return entry.cadence.kind === 'interval' && entry.cadence.visibleOnly === true;
+}
+
 function tick(now: number = Date.now()): void {
+	// The ticker itself stops on `hidden` (doc 04 §3), so `visibleOnly` needs no
+	// second check here — it is `wake()` that can reach a hidden tab.
 	if (isHidden()) return;
 
 	for (const entry of entries.values()) {
 		if (entry.running) continue;
-		// doc 06 §7: markets refreshes on a 60 s interval, visible only.
-		if (entry.cadence.kind === 'interval' && entry.cadence.visibleOnly === true && isHidden()) {
-			continue;
-		}
 		const due = effectiveDue(entry);
 		if (due === null || due > now) continue;
 		void execute(entry, 'tick');
@@ -173,6 +234,15 @@ function wake(reason: TpRunReason): void {
 	for (const entry of entries.values()) {
 		if (entry.running) continue;
 		if (reason === 'visible' && !entry.runOnFocus) continue;
+		/*
+		 * `wake` is the one path that can reach a hidden tab: the ticker stops on
+		 * `visibilitychange`, but the `online` subscription does not, so a
+		 * reconnect while the tab is in the background ran every due entry
+		 * regardless of the flag. `markets` at 60 s is the first widget to set it
+		 * and the first that must not — a background tab that reconnects should
+		 * not start polling a market nobody is looking at.
+		 */
+		if (isHidden() && isVisibleOnly(entry)) continue;
 		const due = effectiveDue(entry);
 		if (due === null || due > now) continue;
 		void execute(entry, reason);

@@ -1,5 +1,10 @@
 import type {
 	TpAirQuality,
+	TpCryptoCandle,
+	TpCryptoInterval,
+	TpCryptoKlinesPayload,
+	TpCryptoQuote,
+	TpCryptoTickerPayload,
 	TpFxPayload,
 	TpGeocodeResult,
 	TpWeatherDay,
@@ -342,4 +347,139 @@ export function normalizeFx(
 		prevDate: hasPrev && previous !== null ? previous.date : null,
 		attribution: FX_ATTRIBUTION
 	};
+}
+
+/* ──────────────────────────────────────────────────────── crypto (doc 10 §4) */
+
+/** doc 10 §1: display use is fine under Binance's ToS, and doc 16 §5 wants the
+ *  credit line in the markets detail. Carried in the payload so the UI cannot
+ *  forget it, the way the weather and fx payloads carry theirs. */
+export const CRYPTO_ATTRIBUTION = 'Crypto data by Binance';
+
+/**
+ * Binance sends every price, size and percentage as a **string** — `"63120.41"`,
+ * not `63120.41` — so nothing here can read a field and trust it. The two
+ * timestamps are the exception and arrive as numbers, which is why this accepts
+ * both spellings rather than parsing one.
+ */
+function decimal(value: unknown): number | null {
+	if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+	if (typeof value !== 'string' || value.trim() === '') return null;
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * One `/ticker/24hr` row, or `null` when it does not carry a usable price.
+ *
+ * A non-positive price is refused alongside a missing one, for the reason
+ * `normalizeFx` refuses a non-positive rate: it is not a number the UI can
+ * divide by or draw, and letting it through turns a bad field upstream into an
+ * `Infinity` on screen rather than into a row the tile knows how to explain.
+ */
+export function normalizeCryptoQuote(row: unknown, now: number): TpCryptoQuote | null {
+	const source = (row ?? {}) as Record<string, unknown>;
+
+	const rawSymbol = source['symbol'];
+	const symbol = typeof rawSymbol === 'string' ? rawSymbol.trim().toUpperCase() : '';
+	const price = decimal(source['lastPrice']);
+	if (symbol === '' || price === null || price <= 0) return null;
+
+	// A fraction, not a percentage (doc 09 §1's chip lets `Intl` place the sign).
+	const percent = decimal(source['priceChangePercent']);
+
+	return {
+		symbol,
+		price,
+		change24h: percent === null ? null : percent / 100,
+		high24h: decimal(source['highPrice']),
+		low24h: decimal(source['lowPrice']),
+		volume24h: decimal(source['volume']),
+		at: decimal(source['closeTime']) ?? now
+	};
+}
+
+/**
+ * The batched ticker, keyed by every symbol the caller asked for.
+ *
+ * **Driven by `requested` rather than by the response**, which is what makes a
+ * missing row expressible at all: upstream simply omits a symbol it has nothing
+ * for, and an object built from the response would omit it too — leaving the
+ * tile unable to tell "no answer" from "never asked". doc 09 §1 needs those
+ * apart to render its row error chip.
+ *
+ * Accepts a single object as well as an array, because the endpoint's
+ * per-symbol fallback re-uses this with one row at a time and Binance answers
+ * `?symbol=` and `?symbols=` with different shapes.
+ */
+export function normalizeCryptoTicker(
+	body: unknown,
+	requested: readonly string[],
+	now: number
+): TpCryptoTickerPayload {
+	const rows = Array.isArray(body) ? body : [body];
+	const bySymbol = new Map<string, TpCryptoQuote>();
+
+	for (const row of rows) {
+		const quote = normalizeCryptoQuote(row, now);
+		if (quote !== null) bySymbol.set(quote.symbol, quote);
+	}
+
+	const quotes: Record<string, TpCryptoQuote | null> = {};
+	for (const symbol of requested) quotes[symbol] = bySymbol.get(symbol) ?? null;
+
+	return { quotes, attribution: CRYPTO_ATTRIBUTION };
+}
+
+/**
+ * `[openTime, open, high, low, close, volume]` from a Binance klines row.
+ *
+ * Upstream sends a twelve-element array whose OHLCV members are **strings** and
+ * whose timestamps are numbers, plus five fields nothing here reads. A row that
+ * cannot produce six finite numbers is dropped rather than zero-filled: the
+ * chart plots against a time axis, so a gap is a gap, and a candle at zero is a
+ * crash that never happened.
+ *
+ * Not exported: `normalizeCryptoKlines` is its only caller, and knip is
+ * CI-blocking on an export nothing imports. The cases below reach it through
+ * that one.
+ */
+function normalizeCryptoCandle(row: unknown): TpCryptoCandle | null {
+	if (!Array.isArray(row)) return null;
+
+	const openTime = decimal(row[0]);
+	const open = decimal(row[1]);
+	const high = decimal(row[2]);
+	const low = decimal(row[3]);
+	const close = decimal(row[4]);
+	const volume = decimal(row[5]);
+
+	if (openTime === null || open === null || high === null || low === null) return null;
+	if (close === null || volume === null) return null;
+	// A non-positive price is refused here for the same reason `normalizeFx`
+	// refuses a non-positive rate: it is not something a chart can draw.
+	if (open <= 0 || high <= 0 || low <= 0 || close <= 0) return null;
+
+	return [openTime, open, high, low, close, volume];
+}
+
+export function normalizeCryptoKlines(
+	body: unknown,
+	symbol: string,
+	interval: TpCryptoInterval
+): TpCryptoKlinesPayload {
+	const rows = Array.isArray(body) ? body : [];
+	const candles: TpCryptoCandle[] = [];
+
+	for (const row of rows) {
+		const candle = normalizeCryptoCandle(row);
+		if (candle !== null) candles.push(candle);
+	}
+
+	// Upstream returns them ascending already; sorted anyway because the chart
+	// and the client-side window both assume it, and an assumption that costs one
+	// comparison per candle is not worth leaving to upstream.
+	candles.sort((a, b) => a[0] - b[0]);
+
+	return { symbol, interval, candles, attribution: CRYPTO_ATTRIBUTION };
 }

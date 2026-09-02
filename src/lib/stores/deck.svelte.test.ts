@@ -104,7 +104,9 @@ describe('hydrate', () => {
 	});
 
 	it('rewrites immediately after dropping, so the warning does not repeat', () => {
-		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: 'markets' }]);
+		// `markets` held this role until it was registered in Week 5a — the same
+		// hand-off the case above describes, arriving one widget later.
+		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: 'rss' }]);
 
 		deck.hydrate();
 
@@ -147,7 +149,9 @@ describe('add', () => {
 	it('refuses an unknown widget', () => {
 		deck.hydrate();
 
-		expect(deck.add('markets')).toBeNull();
+		// Whichever id is still ahead of the registry; `markets` was it until
+		// Week 5a.
+		expect(deck.add('rss')).toBeNull();
 		expect(deck.tiles).toHaveLength(SEED_SIZE);
 	});
 

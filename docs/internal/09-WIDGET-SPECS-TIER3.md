@@ -18,10 +18,22 @@ mandatory, not an optimization.
 - **Watchlist:** ordered list in widget settings, default
   `[BTCUSDT, ETHUSDT, AAPL, MSFT]`, max 12 in v1 (quota model, doc 11 §7).
   Each entry `{ kind: 'crypto'|'stock', symbol, display }`.
+
+  **Week 5a seeds the crypto half of that default and 5b restores the rest**,
+  which is a deviation worth naming rather than hiding: `/api/stock/quote`
+  lands in 5b, so seeding `AAPL` and `MSFT` now would put two permanently
+  unanswerable rows on a tile whose whole job is to say what it knows. A stock
+  row is rendered exactly like a delisted coin until then — the row model is
+  already written for both kinds.
+- **Tier S is unreachable**, because `min` is 2×2 and doc 13 §3's tier S is
+  `w <= 2 && h <= 1`. Named here per doc 06 §3's single-widget N/A rule rather
+  than left as a gap in the DoD: a watchlist is a list, and a list has no honest
+  one-line rendering.
 - **Tile:** watchlist rows — symbol, last price, 24 h (crypto) / day (stock)
-  change % chip colored by sign (colors from tokens, color-blind-checked
-  pair, doc 12 §4), micro-sparkline at w≥3 from cached series (no extra
-  fetch: reuse the series cache, downsampled).
+  change % chip colored by sign (colors from tokens, color-blind-checked pair,
+  doc 12 §4 — and the sign is placed by `Intl` *before* the colour is applied,
+  so colour reinforces rather than carries), micro-sparkline at w≥3 from cached
+  series (no extra fetch: reuse the series cache, downsampled).
 - **Refresh:** 60 s while the tab is visible (scheduler pauses hidden);
   quotes only — series refresh on-demand in detail.
 - **Detail:** symbol header (price, change, day range), **candlestick +
@@ -35,10 +47,68 @@ mandatory, not an optimization.
   ranges 1D collapses to 1W) → if none, quote-only view with explanatory
   empty chart state. Never a spinner that hangs.
 - **Formatting:** `Intl.NumberFormat` with per-asset precision (BTC 2 dp,
-  sub-$1 alts 4–6 dp, stocks 2 dp); percent always signed.
+  sub-$1 alts 4–6 dp, stocks 2 dp); percent always signed. The precision is
+  keyed off the **price** rather than off the symbol (`priceDigits`): the rule
+  is about magnitude, and a hard-coded list of coins would be wrong the first
+  week a new one is listed and wrong again for a stock trading under a dollar.
+  `i18n/fmt.ts`'s `fmtPrice` is separate from `fmtRate` for the same reason —
+  `fmtRate` is significant-digit based, which is right for a rate spanning
+  0.000043 to 25 951 and renders a 62 910.53 price as "62,910.5".
 - **Edge cases:** market closed (stock) → "as of close" timestamp; delisted
   symbol → row error chip with remove shortcut; symbol valid on Finnhub but
   missing on Twelve Data → quote-only mode for that symbol.
+
+### The sparkline is a read, and absent is normal (2026-09-01)
+
+"No extra fetch: reuse the series cache" is load-bearing rather than tidy. doc
+11 §5's quota model says "series fetched only when a detail view opens (not for
+tiles)", and a tile that subscribed to a series through `swr()` would revalidate
+on its own 60 s cadence, once per watched symbol — which is the model's whole
+long-tail risk arriving by the front door.
+
+So the tile **peeks** `apiCache`: one Dexie read, no subscription, nothing in
+the dedupe map, nothing for the scheduler to wake. Two consequences follow and
+both are deliberate:
+
+- **A sparkline is absent until the reader has opened that symbol's detail at
+  least once.** That is an ordinary state and the row simply renders without
+  one, the way it renders without a change figure upstream did not send.
+- **A cached series older than six hours is not drawn**, even though `swr`'s own
+  ceiling is seven days. Seven days is right for a payload that *is* the
+  reading; it is wrong for one sitting beside a live price, where a week-old
+  shape reads as this morning. Six hours is doc 11 §4's klines stale window —
+  past it the endpoint would not serve those candles either.
+
+The peek prefers the finest interval it finds and falls back through the
+coarser ones, because the sparkline is about the shape of recent trading rather
+than about a bucket size — requiring `5m` would make the feature depend on
+which range the reader happened to click last.
+
+It is drawn as an inline SVG polyline, not through ECharts: the chart module is
+183 KB gz, and a tile is not a place to spend it.
+
+### How a single row is allowed to fail (2026-09-01)
+
+All three edge cases above degrade **per symbol**, and the doc 11 §2 envelope is
+all-or-nothing. So a failed row has to be expressible *inside* `data`, or one
+delisted coin fails the whole tile — which is what the payloads do:
+`TpCryptoTickerPayload.quotes` is keyed by every **requested** symbol, with
+`null` where upstream had no answer.
+
+Keyed by *requested* rather than built from the response, and that is the part
+worth stating: upstream simply omits a symbol it has nothing for, so an object
+built from the response omits it too — leaving the tile unable to tell "no
+answer" from "never asked". The row error chip is made of exactly that
+distinction. `/api/crypto/ticker` additionally has to split a refused batch to
+produce the case at all (doc 10 §4).
+
+Inside a row that *does* exist, `change24h`, the day range and the volume are
+`number | null` individually rather than defaulted. doc 08 §2 settled the same
+question for the currency table and the sentence transfers whole: a 0.00 % is a
+claim about the market, and a high equal to the low is a claim about the day.
+A row with no usable **price**, though, is `null` outright — a quote without a
+price is not a quote, and the tile has something to say about an absent row and
+nothing to say about a price that is missing.
 
 ## 2. `music` — Local Music Player
 

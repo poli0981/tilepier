@@ -117,18 +117,42 @@ Consequences worth keeping straight:
 `wrangler.jsonc` carries: worker name `tilepier`, KV binding `TILEPIER_CACHE`
 (+ `preview_id` so branch builds cannot pollute the production cache), and the
 `compatibility_date` pinned to what the installed workerd supports. Secrets
-`FINNHUB_KEY` / `TWELVEDATA_KEY` are set with `wrangler secret put` and never
-appear in the repo.
+`FINNHUB_KEY` / `TWELVEDATA_KEY` / `DEV_DASH_TOKEN` are set with `wrangler
+secret put` and never appear in the repo. Their *types* do — by hand, in
+`src/worker-env.d.ts`, for the reason doc 11 §9 records.
 
 Rollback: previous versions are retained — roll back from the dashboard, or
 `wrangler rollback` locally.
 
 ## 5. Client-bundle secret gate
 
-CI step after build (part of `wf-node-ci` via input flag):
-`grep -RInE '(FINNHUB|TWELVEDATA)_?KEY|sk-[A-Za-z0-9]{20}' .svelte-kit/cloudflare/assets/`
-must return empty; also scan for `https://cdn|unpkg|jsdelivr` (doc 15 §6).
-Fails the build on any hit.
+CI step after build: grep the built client output for the three secret names
+and for CDN hosts (doc 15 §6). Empty or the build fails.
+
+```
+grep -RInE '((FINNHUB|TWELVEDATA)_?KEY|DEV_DASH_TOKEN)' .svelte-kit/cloudflare
+grep -RInE 'https://(cdn|unpkg|jsdelivr|fonts\.googleapis)'  .svelte-kit/cloudflare
+```
+
+**The target is `.svelte-kit/cloudflare`, not an `assets/` subdirectory** — this
+section named one until 2026-09-01 and that path has never existed. The adapter
+writes the client bundle to the root of that directory (`_app/`, the prerendered
+HTML, fonts, `service-worker.js`) beside a **4 KB `_worker.js` shim**, and the
+shim is the whole reason the parent is the right target rather than a too-wide
+one: it imports `../output/server/index.js`, so the server code — the only code
+that may legitimately name a key — lives *outside* the tree being grepped and
+`wrangler deploy` follows the relative import at deploy time.
+
+That distinction is worth stating because it looks fragile and is not. Verified
+2026-09-01 by building and grepping both trees: `TILEPIER_CACHE` appears in four
+files under `.svelte-kit/output/server/entries/endpoints/api/**` and in **zero**
+files under `.svelte-kit/cloudflare`. So `/api/stock/*` reading
+`platform?.env.FINNHUB_KEY` in Week 5 cannot trip this gate, and a gate that
+would have to be relaxed for correct code is not a gate.
+
+`DEV_DASH_TOKEN` joined the pattern on 2026-09-01 with `src/worker-env.d.ts`:
+it is the third Worker secret (doc 11 §9) and had no reason to be the one left
+out.
 
 ## 6. Renovate
 

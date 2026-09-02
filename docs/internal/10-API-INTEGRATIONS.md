@@ -104,6 +104,26 @@ the client; grep-guard in CI, doc 21 §5).
 
 - `GET /api/v3/ticker/24hr?symbols=[...]` for tile quotes (one batched call
   for the whole watchlist crypto subset).
+
+  **The batch is all-or-nothing, and doc 09 §1's edge cases are unreachable
+  without knowing that** (found 2026-09-01, building the endpoint). One symbol
+  Binance does not have makes the *whole* request a 400 — `-1121 Invalid
+  symbol.` — so the morning a coin is delisted the entire tile goes down, every
+  other row with it, and "delisted symbol → row error chip with a remove
+  shortcut" cannot happen.
+
+  `/api/crypto/ticker` therefore falls back to one call per symbol **on a 400
+  and only on a 400**, filling the row that still fails with `null`. Bounded at
+  twelve keyless requests, on the error path only, and the assembled answer
+  caches under the same set key — so the split costs three requests per TTL
+  rather than three per reader. A 429, a 418 or a 5xx is upstream refusing us or
+  being down, and answering that by multiplying one request into twelve is the
+  exact shape doc 11 §6's breaker exists to prevent.
+
+  **Every number in a Binance row is a string.** `"62910.53"`, not `62910.53`;
+  only `openTime` and `closeTime` arrive as numbers. A reader who assumes
+  otherwise gets `NaN` through the whole payload and a tile of em dashes, with
+  nothing thrown to say so.
 - `GET /api/v3/klines?symbol=BTCUSDT&interval=5m|15m|1h|1d&limit=500` for
   candles. Map to `[t,o,h,l,c,v]` tuples.
 - Keyless; per-IP weight limits are far above our cached usage. Handle 429

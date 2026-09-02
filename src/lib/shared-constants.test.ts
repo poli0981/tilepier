@@ -7,6 +7,10 @@ import {
 	cacheKey,
 	geohash,
 	roundCoord,
+	symbolSetKey,
+	canonicalSymbols,
+	isMarketSymbol,
+	MARKETS_MAX_SYMBOLS,
 	type TpCacheFamily
 } from './shared-constants';
 import { parseCoords } from '../routes/api/_lib/geohash';
@@ -31,7 +35,7 @@ const ROW_TO_FAMILY: Record<string, TpCacheFamily | [TpCacheFamily, TpCacheFamil
 	'geo:v1:<lang>:<q-norm>': 'geo',
 	'fx:v1:USD': 'fx',
 	'fx:snap:<date>': 'fxSnap',
-	'cr:tick:v1:<set-hash>': 'crTick',
+	'cr:tick:v1:<set>': 'crTick',
 	// One doc row, two policies: "300 s (5m int) / 900 s (1h+)".
 	'cr:kl:v1:<sym>:<int>': ['crKlinesIntraday', 'crKlinesDaily'],
 	'st:q:v1:<sym>': 'stQuote',
@@ -255,5 +259,57 @@ describe('doc 11 §5 stock budget tiers', () => {
 	it('tiers are ordered and inside the daily ceiling', () => {
 		expect(STOCK_BUDGET.intradayStopAt).toBeLessThan(STOCK_BUDGET.dailySeriesStopAt);
 		expect(STOCK_BUDGET.dailySeriesStopAt).toBeLessThan(STOCK_BUDGET.dailyCredits);
+	});
+});
+
+/**
+ * doc 04 §5's 1:1 guarantee, applied to a *set* rather than to a point.
+ *
+ * `geohash` has the "round, then hash" ordering assertion below because getting
+ * the order wrong breaks the guarantee only at cell edges. This is the same
+ * hazard with a different shape: two watchlists holding the same coins in a
+ * different order are the same question, and a key builder that did not sort
+ * would file one question's answer under two entries — halving the hit rate and
+ * doubling the calls to upstream, with nothing anywhere to say so.
+ */
+describe('symbol sets (doc 10 §5, doc 11 §4)', () => {
+	it('is order-independent, which is the whole reason it sorts', () => {
+		expect(symbolSetKey(['ETHUSDT', 'BTCUSDT'])).toBe(symbolSetKey(['BTCUSDT', 'ETHUSDT']));
+		expect(symbolSetKey(['ETHUSDT', 'BTCUSDT'])).toBe('BTCUSDT,ETHUSDT');
+	});
+
+	it('folds case and surrounding space, because a watchlist is hand-edited', () => {
+		expect(symbolSetKey([' btcusdt '])).toBe(symbolSetKey(['BTCUSDT']));
+	});
+
+	it('de-duplicates, so one coin listed twice is still one cache entry', () => {
+		expect(symbolSetKey(['BTCUSDT', 'BTCUSDT'])).toBe('BTCUSDT');
+	});
+
+	it('drops anything outside doc 10 §5 rather than sending it upstream', () => {
+		// `canonicalSymbols` also builds keys from watchlists read out of
+		// storage, where a hand-edited entry can be anything at all — so it fails
+		// closed. The endpoint's validator refuses those before they reach here,
+		// which is what keeps a typo reportable instead of silent.
+		expect(canonicalSymbols(['BTC USDT', 'BTC/USDT', '', 'TOOLONGSYMBOL1'])).toEqual([]);
+		expect(canonicalSymbols(['BTC-USD', 'BRK.B'])).toEqual(['BRK.B', 'BTC-USD']);
+	});
+
+	it('agrees with the allowlist the endpoints validate against', () => {
+		expect(isMarketSymbol('BTCUSDT')).toBe(true);
+		expect(isMarketSymbol('BRK.B')).toBe(true);
+		expect(isMarketSymbol('btcusdt')).toBe(false);
+		expect(isMarketSymbol('TOOLONGSYMBOL')).toBe(false);
+		expect(isMarketSymbol('')).toBe(false);
+	});
+
+	it('stays inside the KV key limit at the documented cap', () => {
+		// doc 09 §1 caps a watchlist at twelve and the allowlist caps a symbol at
+		// twelve characters, which is what makes the literal set safe to use as a
+		// key instead of a hash. KV allows 512 bytes.
+		const widest = Array.from({ length: MARKETS_MAX_SYMBOLS }, (_, i) =>
+			`${String(i).padStart(2, '0')}ABCDEFGHIJ`.slice(0, 12)
+		);
+		expect(cacheKey.cryptoTicker(symbolSetKey(widest)).length).toBeLessThan(512);
 	});
 });

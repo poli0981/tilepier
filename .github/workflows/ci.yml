@@ -85,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           target=.svelte-kit/cloudflare
-          if grep -RInE '(FINNHUB|TWELVEDATA)_?KEY' "$target"; then
+          if grep -RInE '((FINNHUB|TWELVEDATA)_?KEY|DEV_DASH_TOKEN)' "$target"; then
             echo "::error::API key name found in client bundle"
             exit 1
           fi

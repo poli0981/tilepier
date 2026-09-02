@@ -99,6 +99,29 @@ had been discarded at the call site since Week 3, so the rule was true and
 unobservable). Scheduler entries in backoff are skipped, not
 removed.
 
+**Both halves of the first sentence became true on 2026-09-01**, and neither
+was before. `scheduler.execute` recomputed the next due time from the *cadence*
+after a failure, and `effectiveDue` takes the later of cadence and backoff — so
+the curve was dead below whatever the widget's cadence was, which at weather's
+600 s is the whole of it. And "respect server value" had no reader at all:
+`TpApiError.retryAfterS` was captured in `core/api.ts` and used nowhere.
+
+The fix is in doc 04 §2. Two things about it belong here, because this is the
+section that states the policy:
+
+- **A server-named delay is not capped at 300 s.** The cap is the *curve's*.
+  Upstream naming a longer wait is upstream telling us how long it will be
+  unavailable, and doc 11 §6's quota trip legitimately holds to UTC midnight.
+  Only our own Worker and the zone rule can name one, so there is no hostile
+  value to defend against; a non-finite or negative one falls back to the curve.
+- **The curve now retries sooner than the cadence, not later.** That is what an
+  exponential backoff starting at 1 s means, and it is the point: a widget that
+  fails once should try again in a second rather than in ten minutes. Offline,
+  it means roughly twenty doomed `fetch` rejections an hour instead of six —
+  accepted deliberately, because each costs no network traffic and each feeds
+  `online.noteFetchResult`, which is how a captive portal is noticed at all when
+  the `online` event never fires.
+
 ## 6. Crash containment
 
 Each `TpWidgetHost` wraps its widget with `<svelte:boundary>` (Svelte 5

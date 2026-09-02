@@ -27,6 +27,18 @@ export interface TpChartTokens {
 	series3: string;
 	series4: string;
 	series5: string;
+	/**
+	 * doc 12 §4.2's up/down pair, verified for deuteranopia.
+	 *
+	 * Here rather than in the `color` ramp because **a candlestick does not read
+	 * the palette.** ECharts takes a candle's four colours from
+	 * `itemStyle.color` / `color0` / `borderColor` / `borderColor0`, so the
+	 * bridge built for the weather and currency charts in Week 4 would have left
+	 * the markets detail drawing ECharts' own red and green — a pair nobody has
+	 * checked, and one that ignores a reader's accent entirely.
+	 */
+	up: string;
+	down: string;
 }
 
 /**
@@ -57,7 +69,9 @@ const FALLBACK: TpChartTokens = {
 	// in Settings, so a reader's own colour cannot collide with a later series.
 	series3: '#8798A8',
 	series4: '#D9A441',
-	series5: '#C084D6'
+	series5: '#C084D6',
+	up: '#57C785',
+	down: '#E8705F'
 };
 
 /** Anything that is not a literal hex is refused rather than passed on, so a
@@ -81,7 +95,9 @@ export function readChartTokens(root: HTMLElement = document.documentElement): T
 		series2: FALLBACK.series2,
 		series3: FALLBACK.series3,
 		series4: FALLBACK.series4,
-		series5: FALLBACK.series5
+		series5: FALLBACK.series5,
+		up: read('--color-up', FALLBACK.up),
+		down: read('--color-down', FALLBACK.down)
 	};
 }
 
@@ -115,6 +131,25 @@ export function chartTheme(tokens: TpChartTokens): Record<string, unknown> {
 			backgroundColor: tokens.grid,
 			borderColor: tokens.grid,
 			textStyle: { color: tokens.fg }
+		},
+		/*
+		 * A candlestick ignores `color` above — its four colours come from its own
+		 * `itemStyle`, and ECharts' built-in defaults for them are a red/green
+		 * pair nobody in this repo has checked against doc 12 §4.2. Supplying them
+		 * as *theme* defaults rather than in the option keeps the option
+		 * colourless, which is the whole reason this file exists.
+		 *
+		 * `color`/`borderColor` are the rising candle, `color0`/`borderColor0` the
+		 * falling one. Body and border share a colour: a hollow body at tile
+		 * scale is a one-pixel outline around nothing.
+		 */
+		candlestick: {
+			itemStyle: {
+				color: tokens.up,
+				color0: tokens.down,
+				borderColor: tokens.up,
+				borderColor0: tokens.down
+			}
 		}
 	};
 }

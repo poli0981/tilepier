@@ -168,6 +168,36 @@ than in doc 08 §1.
   in Week 5. doc 11 §7.3 and doc 17 §5 describe the same behaviour and are
   equally ahead of the code; all three lines move together or none of them do.
 
+  **Closed 2026-09-01, and `useRefresh` still returns `void`** — so the Week 4b
+  decision stands rather than being reversed. What changed is the `finally`, and
+  once it changed the handle turned out to be unnecessary.
+
+  `execute` now sets `nextDueAt` **per branch**: from the cadence on success,
+  from the backoff on failure. That is what doc 04 §3 below has said since Week
+  1 ("a rejected `run` … sets `nextDueAt` from the `BACKOFF` constants"), and it
+  is what the `finally` had been overwriting on both paths. With it, the
+  1→2→4→8 s curve is reachable at every cadence rather than only above 300 s.
+
+  And a server-named delay is read **off the rejection** rather than through a
+  handle. `swr.revalidate()` rejects with the `TpApiError` that already carries
+  `retryAfterS` — from the envelope or the `retry-after` header — so swr does
+  name the delay, by propagating it, and this section's "swr only overrides the
+  delay when the server named one" holds with nothing wired. A named delay is
+  honoured **uncapped**: the 300 s ceiling is the curve's, and doc 11 §6 has a
+  quota trip that legitimately runs to UTC midnight. Non-finite or negative
+  falls back to the curve.
+
+  The one guard worth naming: a `manual` cadence is left unscheduled after a
+  failure. `effectiveDue` falls through to `backoffUntil` when `nextDueAt` is
+  null, so writing a backoff there would have been the single thing capable of
+  making a manual entry come due on a tick.
+
+  All six cases were run against the unfixed scheduler first and five of them
+  failed there. The two backoff assertions that predate this change did **not**
+  fail, and that is the finding underneath the finding: both registered a 1 s
+  cadence, so `max(nextDueAt, backoffUntil)` happened to land inside the band
+  they assert. They were true about the wrong quantity for four weeks.
+
 - **A gap reaches the client as `null`, not `NaN`.** `normalize.ts` marks a
   missing column with `NaN` deliberately (doc 10 §2 - 0 °C is a temperature and
   a gap is not), but the payload crosses `JSON.stringify` in `_lib/respond.ts`
@@ -235,6 +265,13 @@ sharing an id are refcounted — one entry, and `unregister()` decrements.
 `consecutiveFailures` and sets `nextDueAt` from the `BACKOFF` constants
 (doc 17 §5); a successful run resets both. Entries in backoff are skipped, not
 removed. swr only overrides the delay when the server named one.
+
+> **True as of 2026-09-01, and describing nothing before that.** `execute`
+> recomputed `nextDueAt` from the *cadence* in a `finally` that ran on the
+> failure path too, so the sentence above named the one thing the code did not
+> do. §2's "What the first consumer settled" carries the fix and how each half
+> was proved. A `manual` cadence is the one exception and stays unscheduled
+> after a failure, because it never self-schedules.
 
 Cadence kinds come from `TpRefresh` (doc 06 §1): `interval` schedules from
 `lastRunAt + everyMs`; `visibleOnly: true` suppresses running while
