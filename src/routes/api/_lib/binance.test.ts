@@ -4,11 +4,10 @@ import { klinesUrl, tickerBatchUrl, tickerSymbolUrl } from './binance';
 /**
  * doc 10 §4's URLs, and the host they point at.
  *
- * The host assertion is the reason this file exists: `api.binance.com` is
- * unreachable from Cloudflare's edge (measured 2026-09-02, see `binance.ts`),
- * and a well-meaning revert to the "official" host would restore a production
- * outage that every unit test would happily go on passing through — nothing
- * else in the suite makes a real request.
+ * The host assertion pins which endpoint this proxy talks to, so a change of
+ * mind about it has to be deliberate. It does **not** assert reachability and
+ * cannot: nothing in this suite makes a real request, and the production
+ * failure `binance.ts` records is not fixed by either host.
  */
 describe('binance urls', () => {
 	it('points at the reachable market-data mirror, not the primary', () => {

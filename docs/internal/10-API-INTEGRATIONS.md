@@ -147,11 +147,30 @@ the client; grep-guard in CI, doc 21 §5).
   §1's ToS line or doc 16 §5's credit changes. `api1..4.binance.com` are
   aliases of the same service and would inherit the same restriction.
 
-  **What could not be measured from outside**, and is worth saying rather than
-  implying: the Worker's own view of the failure. `wrangler tail` and a KV read
-  both need an interactive login, and `/api/_health` — which prints the
-  breaker's `reason` verbatim — is Week 5b. The diagnosis is an inference from
-  the outside, and the host switch is the experiment that confirms it.
+  **The host switch did not fix it, and the failure pattern is the finding.**
+  Probes 30 s apart returned 400 at attempts 1, 5 and 9 and 503 in between —
+  **exactly every 120 s**, which is `BREAKER.cooldownMs`. The 503s are the open
+  breaker declining to call upstream; the 400s are the half-open probes reaching
+  it and meeting a 4xx that is neither 429 nor 418. Consistently, not
+  intermittently.
+
+  The remaining explanation that fits everything is **jurisdiction**. The PoP
+  serving these requests is `SIN`, Binance does not serve Singapore, and the
+  mirror inherits that because it is Binance's own host. A developer machine on
+  a Vietnamese ISP is not in that jurisdiction, which is why the same URLs
+  answer 200 from there.
+
+  **If that is right the failure is per-PoP and therefore per-reader**, which is
+  worse than a clean outage: `markets` would work for a reader served from Hanoi
+  and fail for one served from Singapore, with nothing on either screen
+  explaining the difference. No mirror of the same operator fixes that; the
+  options are a different upstream for crypto, or accepting a documented
+  regional limitation.
+
+  It remains an **inference**. `/api/_health` prints the breaker's `reason`,
+  which carries the upstream status verbatim, and that is the one measurement
+  that settles it — Week 5b, gated on `DEV_DASH_TOKEN`. Nothing here should be
+  changed again on a guess.
 
 ## 5. Stocks — Finnhub + Twelve Data + Stooq
 

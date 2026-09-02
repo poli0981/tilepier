@@ -676,6 +676,52 @@ exists. **5b cannot start without `FINNHUB_KEY` and `TWELVEDATA_KEY`** — the
 types are declared and `.dev.vars.example` names them; the values are not on
 this machine.
 
+### Week 5a on production — **merged, and not verified** (2026-09-02)
+
+Merged as `9051475` (PR #7, squash) and deployed by Cloudflare Workers Builds
+the same day, with `ci`, `e2e` and the build all green. **The production spot
+check doc 19 §5 asks for did not pass**, and that is recorded here rather than
+smoothed over: `/api/crypto/ticker` and `/api/crypto/klines` both fail from the
+deployed Worker.
+
+What is measured, and what is not:
+
+- `/api/fx` answers 200 from the same deploy, so the pipeline, the KV binding
+  and the build are fine. The two new routes are not.
+- `api.binance.com` answers 200 for the identical URLs from a developer machine,
+  **with and without a `User-Agent`** — the obvious suspect, ruled out.
+- The failures alternate 400 and 503 on **exactly a 120 s period**, which is
+  `BREAKER.cooldownMs`: the 503s are the open breaker declining to call
+  upstream, the 400s are the half-open probes meeting a 4xx that is neither 429
+  nor 418. Consistent, not intermittent.
+- A second deploy (`94ea852`, PR #8) moved both routes to
+  `data-api.binance.vision` behind the config constant doc 10 §4 has asked for
+  since Week 0. **It changed nothing**, which is itself informative: a mirror
+  operated by the same company inherits whatever the restriction is.
+
+The explanation that now fits every observation is **jurisdiction**: the PoP
+serving these requests is `SIN` and Binance does not serve Singapore. If that
+is right the failure is **per-PoP and therefore per-reader**, which is worse
+than a clean outage — `markets` would work for a reader served from Hanoi and
+fail for one served from Singapore, with nothing on either screen explaining
+the difference.
+
+**It is still an inference, and the tool that would settle it is one week
+away.** `/api/_health` prints the breaker's `reason`, which carries the upstream
+status verbatim; `wrangler tail` and a KV read both need an interactive login
+this environment cannot do. Doc 13 §10 deferred that endpoint out of Week 3 for
+a reason that was good at the time; the cost of the deferral is now visible, and
+**pulling `/api/_health` to the front of 5b is the first thing 5b should do**.
+It needs `DEV_DASH_TOKEN` and nothing else.
+
+Two things follow for 5b beyond that. If the reading is 451, the crypto half
+needs either a different upstream or a documented regional limitation in doc 10
+§4 and `/about` — and doc 09 §1's degradation ladder already renders it
+honestly, because a tile that cannot reach upstream shows an inline error with
+a retry rather than a spinner. And nothing else about 5a is in question: the
+tile, the detail, the candles, the manager and the ladder are all exercised
+against fixtures and all green.
+
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF
 guards + parser fixtures) + reader UI + OPML. **M6:** all networked

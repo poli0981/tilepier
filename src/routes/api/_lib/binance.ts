@@ -29,7 +29,36 @@
  * inference from the outside, and switching the host is the experiment that
  * confirms it.
  *
- * ## Why this mirror
+ * ## The switch did not fix it, and that is the finding (2026-09-02)
+ *
+ * Both routes still fail on production after this change, in a pattern that
+ * pins the cause down harder than the failure itself did: probes 30 s apart
+ * returned 400 at attempts 1, 5 and 9 and 503 in between — **exactly every
+ * 120 s**, which is `BREAKER.cooldownMs`. So the 503s are the open breaker
+ * declining to call upstream at all, and the 400s are the half-open probes
+ * reaching it and getting a 4xx that is neither 429 nor 418. Consistently, not
+ * intermittently.
+ *
+ * The remaining explanation that fits every observation is **jurisdiction**.
+ * The PoP serving these requests is `SIN`, and Binance does not serve
+ * Singapore — a regulatory restriction, answered with 451, and one this mirror
+ * inherits because it is Binance's own host. A developer machine on a
+ * Vietnamese ISP is not in that jurisdiction, which is why the same URLs answer
+ * 200 from here.
+ *
+ * **If that is right, the failure is per-PoP and therefore per-reader**, which
+ * is worse than a clean outage: the widget would work for a reader served from
+ * Hanoi and fail for one served from Singapore, with nothing on either screen
+ * explaining the difference. It is not something a mirror of the same operator
+ * can fix.
+ *
+ * It is still an inference. `/api/_health` prints the breaker's `reason`, which
+ * carries the upstream status verbatim — that is the one measurement that would
+ * settle it, and it needs `DEV_DASH_TOKEN` (Week 5b). Until then nothing here
+ * should be changed again on a guess; two speculative fixes are one more than
+ * this file should carry.
+ *
+ * ## Why this mirror anyway
  *
  * `data-api.binance.vision` is Binance's own public market-data endpoint. It
  * serves `/api/v3/ticker/24hr` and `/api/v3/klines` with byte-identical shapes
