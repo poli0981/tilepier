@@ -7,6 +7,7 @@ import { parseCryptoTickerQuery } from '../../_lib/crypto-query';
 import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { normalizeCryptoTicker } from '../../_lib/normalize';
+import { tickerBatchUrl, tickerSymbolUrl } from '../../_lib/binance';
 import type { TpCryptoTickerPayload } from '$lib/api-types';
 
 /**
@@ -20,15 +21,6 @@ import type { TpCryptoTickerPayload } from '$lib/api-types';
  * tests and in a fork. The first `/api/*` route that needs a key is
  * `/api/stock/quote` in Week 5b.
  */
-
-/**
- * doc 10 §4: "Base host `api.binance.com`; if regionally blocked at the edge in
- * future, mirror hosts are a config constant — do not hardcode inline." The
- * numbered `api1..4` aliases serve the same API; adding one here is the whole
- * change if the primary ever becomes unreachable from a PoP.
- */
-const HOSTS = ['https://api.binance.com'] as const;
-const HOST = HOSTS[0];
 
 /** The breaker key, and the `source` every response carries. */
 const UPSTREAM = 'binance';
@@ -110,15 +102,6 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 	}
 };
 
-/** Binance wants a JSON array here, not a comma list. */
-function batchUrl(symbols: readonly string[]): string {
-	return `${HOST}/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(symbols))}`;
-}
-
-function symbolUrl(symbol: string): string {
-	return `${HOST}/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`;
-}
-
 /**
  * One batched call, falling back to one call per symbol **only** when the batch
  * was refused for naming a symbol Binance does not have.
@@ -141,7 +124,7 @@ function symbolUrl(symbol: string): string {
  */
 async function fetchSymbols(symbols: readonly string[]): Promise<unknown> {
 	try {
-		const batch = await fetchUpstream<unknown>(batchUrl(symbols));
+		const batch = await fetchUpstream<unknown>(tickerBatchUrl(symbols));
 		return batch.data;
 	} catch (error) {
 		const status = error instanceof UpstreamError ? error.status : undefined;
@@ -155,7 +138,7 @@ async function fetchSymbols(symbols: readonly string[]): Promise<unknown> {
 
 async function splitFetch(symbols: readonly string[]): Promise<unknown[]> {
 	const settled = await Promise.allSettled(
-		symbols.map((symbol) => fetchUpstream<unknown>(symbolUrl(symbol)))
+		symbols.map((symbol) => fetchUpstream<unknown>(tickerSymbolUrl(symbol)))
 	);
 
 	const rows: unknown[] = [];

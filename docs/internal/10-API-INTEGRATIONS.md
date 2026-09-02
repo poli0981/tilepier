@@ -131,6 +131,28 @@ the client; grep-guard in CI, doc 21 §5).
 - Base host `api.binance.com`; if regionally blocked at the edge in future,
   mirror hosts are a config constant — do not hardcode inline.
 
+  **That day was 2026-09-02**, the afternoon Week 5a reached production.
+  `/api/fx` answered 200 from the same deploy, so the pipeline, the KV binding
+  and the build were all fine; both crypto routes returned `UPSTREAM_DOWN`,
+  while `api.binance.com` answered 200 for the identical URLs from a developer
+  machine — **with and without a `User-Agent`**, which rules out the obvious
+  suspect. The failures were not one shape: some surfaced as a 4xx that was
+  neither 429 nor 418, and the half-open probe after the cool-down failed as a
+  timeout instead. Both fit the host refusing Cloudflare's egress ranges.
+
+  The constant this section asked for is now `routes/api/_lib/binance.ts`, and
+  it points at **`data-api.binance.vision`** — Binance's own public market-data
+  endpoint, serving `/api/v3/ticker/24hr` and `/api/v3/klines` with identical
+  shapes, no key, and no account or trading surface at all, so nothing about
+  §1's ToS line or doc 16 §5's credit changes. `api1..4.binance.com` are
+  aliases of the same service and would inherit the same restriction.
+
+  **What could not be measured from outside**, and is worth saying rather than
+  implying: the Worker's own view of the failure. `wrangler tail` and a KV read
+  both need an interactive login, and `/api/_health` — which prints the
+  breaker's `reason` verbatim — is Week 5b. The diagnosis is an inference from
+  the outside, and the host switch is the experiment that confirms it.
+
 ## 5. Stocks — Finnhub + Twelve Data + Stooq
 
 - Finnhub quote: `GET /api/v1/quote?symbol=AAPL` (fields c,d,dp,h,l,o,pc,t).
