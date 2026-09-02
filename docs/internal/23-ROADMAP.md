@@ -521,6 +521,18 @@ debugging from `curl` will meet this before they meet anything real.
 The day-two check — the Δ24h column and the history chart, both of which need a
 second calendar day of snapshots — is **2026-09-02**.
 
+**Run 2026-09-02, and it passes with a day to spare.** `/api/fx` returns
+`prevDate: 2026-09-01` with a full `prevRates` table, so doc 08 §2's Δ24h column
+renders for the whole table rather than being absent — USD→VND moved 26 010.618
+to 26 007.437, which is the first real figure that column has ever had.
+`/api/fx/history?pair=USD-VND&days=90` returns **three** points, not the two the
+design predicted: the snapshot side-effect started on 2026-08-31 rather than on
+the deploy date, so the pile is a day deeper than the arithmetic assumed. The
+chart still renders its building-history copy until fourteen (doc 08 §2's
+`HISTORY_MIN_POINTS`), which is the honest state and the one it was built for.
+
+That closes the last outstanding item of Week 4.
+
 ## Week 5 — Markets · **in progress from 2026-09-01**
 crypto ticker/klines endpoints · stock quote/series/search endpoints
 (budget guard + breaker + Stooq fallback) · markets tile + detail
