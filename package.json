@@ -38,7 +38,7 @@
 		"echarts": "^6.1.0",
 		"fast-xml-parser": "^5.10.1",
 		"gridstack": "^12.6.0",
-		"maplibre-gl": "^5.24.0",
+		"maplibre-gl": "^6.4.1",
 		"marked": "^18.0.9",
 		"music-metadata": "^11.14.0",
 		"qrcode-generator": "^2.0.4"
