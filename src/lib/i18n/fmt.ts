@@ -274,6 +274,10 @@ export function fmtPrice(value: number, locale: string, digits: number): string 
  * happen, and a bare "0 %" is the honest way to say a rate held.
  */
 export function fmtPercentChange(fraction: number, locale: string): string {
+	return percentFormatter(locale).format(fraction);
+}
+
+function percentFormatter(locale: string): Intl.NumberFormat {
 	return numberFormatter(
 		`p:${locale}`,
 		() =>
@@ -282,5 +286,23 @@ export function fmtPercentChange(fraction: number, locale: string): string {
 				signDisplay: 'exceptZero',
 				maximumFractionDigits: 2
 			})
-	).format(fraction);
+	);
+}
+
+/**
+ * Which way a move reads **as `fmtPercentChange` prints it**, for the colour
+ * beside it (doc 12 §4.2: colour reinforces the sign, never carries it).
+ *
+ * Taken from the formatted parts rather than from the fraction, because the
+ * two disagree exactly where it shows: −0.004 % rounds to "0%", which
+ * `exceptZero` prints without a sign, while `fraction < 0` still says down.
+ * Until 2026-09-23 the markets chips and the currency table coloured from the
+ * raw value, and production showed a red "0%" beside BTC — a colour claiming
+ * a fall the text had rounded away.
+ */
+export function changeDirection(fraction: number, locale: string): 'up' | 'down' | 'flat' {
+	const parts = percentFormatter(locale).formatToParts(fraction);
+	if (parts.some((part) => part.type === 'minusSign')) return 'down';
+	if (parts.some((part) => part.type === 'plusSign')) return 'up';
+	return 'flat';
 }
