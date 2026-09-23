@@ -16,71 +16,84 @@
 </script>
 
 <header class="tp-bar">
-	<a class="tp-bar__brand" href={resolve('/')}>
-		<TpTideGauge level={0.55} animated size={22} />
-		<span class="tp-bar__wordmark">TilePier</span>
-	</a>
-
-	{#if !online.isOnline}
-		<span class="tp-bar__chip" role="status" data-testid="offline-chip"
-			>{m['common.offline.title']()}</span
-		>
-	{/if}
-
-	<div class="tp-bar__spacer"></div>
-
-	<nav class="tp-bar__actions">
-		<button
-			type="button"
-			class="tp-bar__button"
-			data-testid="open-drawer"
-			aria-label={m['common.add_widget']()}
-			onclick={() => ui.openDrawer()}
-		>
-			<TpIcon name="plus" size={18} />
-		</button>
-
-		<button
-			type="button"
-			class="tp-bar__button"
-			data-testid="toggle-edit"
-			aria-label={m['common.edit_mode']()}
-			aria-pressed={ui.editMode}
-			onclick={() => ui.toggleEdit()}
-		>
-			<TpIcon name="edit" size={18} />
-		</button>
-
-		<a class="tp-bar__button" href={resolve('/settings')} aria-label={m['settings.title']()}>
-			<TpIcon name="settings" size={18} />
+	<div class="tp-bar__inner">
+		<a class="tp-bar__brand" href={resolve('/')}>
+			<TpTideGauge level={0.55} animated size={22} />
+			<span class="tp-bar__wordmark">TilePier</span>
 		</a>
 
-		<a class="tp-bar__button" href={resolve('/about')} aria-label={m['about.title']()}>
-			<TpIcon name="quote" size={18} />
-		</a>
-	</nav>
+		{#if !online.isOnline}
+			<span class="tp-bar__chip" role="status" data-testid="offline-chip"
+				>{m['common.offline.title']()}</span
+			>
+		{/if}
+
+		<div class="tp-bar__spacer"></div>
+
+		<nav class="tp-bar__actions">
+			<button
+				type="button"
+				class="tp-bar__button"
+				data-testid="open-drawer"
+				aria-label={m['common.add_widget']()}
+				onclick={() => ui.openDrawer()}
+			>
+				<TpIcon name="plus" size={18} />
+			</button>
+
+			<button
+				type="button"
+				class="tp-bar__button"
+				data-testid="toggle-edit"
+				aria-label={m['common.edit_mode']()}
+				aria-pressed={ui.editMode}
+				onclick={() => ui.toggleEdit()}
+			>
+				<TpIcon name="edit" size={18} />
+			</button>
+
+			<a class="tp-bar__button" href={resolve('/settings')} aria-label={m['settings.title']()}>
+				<TpIcon name="settings" size={18} />
+			</a>
+
+			<a class="tp-bar__button" href={resolve('/about')} aria-label={m['about.title']()}>
+				<TpIcon name="quote" size={18} />
+			</a>
+		</nav>
+	</div>
 </header>
 
 {#if ui.editMode}
 	<!-- doc 13 §2: a slim beacon strip under the bar names the mode. -->
 	<div class="tp-bar__mode" data-testid="edit-strip">
-		<span>{m['common.editing']()}</span>
-		<button type="button" onclick={() => ui.toggleEdit()}>{m['common.done']()}</button>
+		<div class="tp-bar__inner">
+			<span>{m['common.editing']()}</span>
+			<button type="button" onclick={() => ui.toggleEdit()}>{m['common.done']()}</button>
+		</div>
 	</div>
 {/if}
 
 <style>
+	/* The bar's surface runs edge to edge; its content sits on the deck's own
+	   rail — the same max-width and page padding as `main` — so the brand and
+	   the grid share a left edge at every width (doc 13 §1, `e2e/top-bar`). */
 	.tp-bar {
 		position: sticky;
 		top: 0;
 		z-index: 50;
+		height: var(--tp-bar-h);
+		border-bottom: 1px solid var(--color-ink-700);
+		background: var(--color-ink-950);
+	}
+
+	.tp-bar__inner {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
-		height: var(--tp-bar-h, 48px);
-		padding: 0 var(--tp-page-pad, 16px);
-		border-bottom: 1px solid var(--color-ink-700);
-		background: var(--color-ink-950);
+		height: 100%;
+		max-width: var(--tp-deck-max);
+		margin: 0 auto;
+		padding: 0 var(--tp-page-pad);
 	}
 
 	.tp-bar__brand {
@@ -142,16 +155,16 @@
 
 	.tp-bar__mode {
 		position: sticky;
-		top: var(--tp-bar-h, 48px);
+		top: var(--tp-bar-h);
 		z-index: 49;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		padding: 0.25rem var(--tp-page-pad, 16px);
 		background: var(--color-beacon-soft);
 		color: var(--color-beacon);
 		font-size: var(--text-2xs);
+	}
+
+	.tp-bar__mode .tp-bar__inner {
+		justify-content: space-between;
+		padding-block: 0.25rem;
 	}
 
 	.tp-bar__mode button {

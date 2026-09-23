@@ -133,14 +133,8 @@
 	.tp-w {
 		max-width: 1120px;
 		margin: 0 auto;
-		padding: var(--tp-page-pad, 16px);
-		min-height: calc(100dvh - var(--tp-bar-h, 48px));
-	}
-
-	@media (min-width: 768px) {
-		.tp-w {
-			padding: 24px;
-		}
+		padding: var(--tp-page-pad);
+		min-height: calc(100dvh - var(--tp-bar-h));
 	}
 
 	header {

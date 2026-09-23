@@ -97,9 +97,27 @@ these.
 
 Two grid constants cannot map, because they are gridstack's own geometry
 (doc 06 §5.4): `cellHeight: 72` and `margin: 12`. They are declared once in
-`TpGrid.svelte` and nowhere else. Two chrome constants that doc 13 §1 fixes get
-tokens rather than repetition: `--tp-bar-h: 48px` and `--tp-page-pad: 16px`
-(24 px at ≥ 768 px).
+`TpGrid.svelte` and nowhere else. Three chrome constants that doc 13 §1 fixes get
+tokens rather than repetition: `--tp-bar-h: 48px`, `--tp-page-pad: 16px`
+(24 px at ≥ 768 px) and `--tp-deck-max: 1680px`.
+
+**Where they actually live (corrected 2026-09-23).** Until then this section
+was wrong on both counts:
+
+- **`--spacing` was never declared.** It existed only as Tailwind's default.
+  It is now restated in `@theme`, so the scale this section names cannot
+  change with a Tailwind release.
+- **The chrome tokens did not exist at all.** Every use carried its own
+  fallback (`var(--tp-page-pad, 16px)`), so nothing failed. But the top bar
+  sat on the fallback 16 px while `main` hardcoded 24 px, and on anything
+  wider than a phone the bar and the grid never shared an edge.
+
+The three chrome tokens are plain custom properties on `:root` in `app.css`,
+not `@theme` entries. They are not a Tailwind namespace, and the padding
+changes at 768 px, which a `@theme` block cannot express. The fallbacks are
+gone, so a missing token now shows as a broken layout. `e2e/top-bar.e2e.ts`
+measures the brand's left edge against the grid container's at 375, 768, 1280
+and 1920 px.
 
 ## 3. Typography
 

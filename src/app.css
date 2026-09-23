@@ -151,6 +151,11 @@
 	--color-warn: #e8b750; /* stale, amber lamp */
 	--color-danger: #e45c5c;
 
+	/* Layout (doc 12 §2a). Restates Tailwind's default on purpose: the doc names
+	   it as the only spacing scale, and a scale that exists only by inheritance
+	   is one Tailwind release away from changing underneath the app. */
+	--spacing: 0.25rem;
+
 	/* Shape & depth */
 	--radius-tile: 14px;
 	--radius-ctl: 8px;
@@ -206,6 +211,27 @@
 }
 :root[data-theme='light'] {
 	color-scheme: light;
+}
+
+/* Chrome geometry (doc 12 §2a, doc 13 §1): the bar's height, the page padding
+   the bar, the deck and the coach all share, and the deck's width.
+
+   Plain custom properties rather than `@theme` entries — they are not a
+   Tailwind namespace, and the padding changes at 768 px, which a `@theme`
+   block cannot express. **Until Week 5b none of them existed**, although doc
+   12 §2a said they did. Every use carried its own fallback, so the bar sat on
+   the fallback 16 px while `main` hardcoded 24 px, and on anything wider than
+   a phone the bar and the grid never lined up — `e2e/top-bar` measures it. */
+:root {
+	--tp-bar-h: 48px;
+	--tp-page-pad: 16px;
+	--tp-deck-max: 1680px;
+}
+
+@media (min-width: 768px) {
+	:root {
+		--tp-page-pad: 24px;
+	}
 }
 
 html {

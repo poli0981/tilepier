@@ -235,17 +235,14 @@
 {/if}
 
 <style>
+	/* The deck's rail: the top bar's content shares this max-width and padding
+	   (doc 13 §1), which is why both come from app.css tokens rather than
+	   literals here. */
 	main {
-		max-width: 1680px;
+		max-width: var(--tp-deck-max);
 		margin: 0 auto;
-		padding: var(--tp-page-pad, 16px);
-		min-height: calc(100dvh - var(--tp-bar-h, 48px));
-	}
-
-	@media (min-width: 768px) {
-		main {
-			padding: 24px;
-		}
+		padding: var(--tp-page-pad);
+		min-height: calc(100dvh - var(--tp-bar-h));
 	}
 
 	/* doc 13 §2: edit mode shows a faint dot lattice behind the grid. */
