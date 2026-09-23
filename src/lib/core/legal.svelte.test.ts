@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LEGAL_VERSION, LOCAL_KEYS } from '$lib/shared-constants';
-import { acceptLegal, hasAcceptedLegal } from './legal';
+import { acceptLegal, hasAcceptedLegal, previousLegalVersion } from './legal';
 
 /**
  * The gate's own logic, which had no direct test until now — `legal.test.ts`
@@ -13,6 +13,7 @@ import { acceptLegal, hasAcceptedLegal } from './legal';
 beforeEach(() => {
 	localStorage.clear();
 	document.documentElement.removeAttribute('data-legal');
+	document.documentElement.removeAttribute('data-legal-prev');
 });
 
 afterEach(() => {
@@ -92,5 +93,36 @@ describe('acceptLegal', () => {
 		// Private mode: the session proceeds and the gate returns next visit,
 		// which is better than trapping the user behind a wall they agreed to.
 		expect(document.documentElement.dataset['legal']).toBe('ok');
+	});
+});
+
+// doc 16 §2's "what changed" line, which no code drew until LEGAL_VERSION 2.
+describe('previousLegalVersion', () => {
+	function stored(version: unknown): void {
+		localStorage.setItem(
+			LOCAL_KEYS.legal,
+			JSON.stringify({ acceptedVersion: version, acceptedAt: '2026-09-01T00:00:00Z' })
+		);
+	}
+
+	it('names the older version a returning reader agreed to', () => {
+		stored(LEGAL_VERSION - 1);
+		expect(previousLegalVersion()).toBe(LEGAL_VERSION - 1);
+	});
+
+	it('is null for a first visit, a current acceptance, and anything unreadable', () => {
+		expect(previousLegalVersion()).toBeNull();
+		stored(LEGAL_VERSION);
+		expect(previousLegalVersion()).toBeNull();
+		stored('1');
+		expect(previousLegalVersion()).toBeNull();
+		localStorage.setItem(LOCAL_KEYS.legal, '{not json');
+		expect(previousLegalVersion()).toBeNull();
+	});
+
+	it('is cleared from the page by accepting', () => {
+		document.documentElement.setAttribute('data-legal-prev', '1');
+		acceptLegal();
+		expect(document.documentElement.hasAttribute('data-legal-prev')).toBe(false);
 	});
 });

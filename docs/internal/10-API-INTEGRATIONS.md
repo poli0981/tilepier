@@ -4,6 +4,10 @@ Authoritative reference for every upstream. All accessed **server-side from
 the Worker** except OpenFreeMap tiles (§6). Attribution obligations roll up
 into doc 16 §5 and the in-app licenses page.
 
+(Two Cloudflare services also run in the browser since 2026-09-23, Web
+Analytics and Turnstile. Neither is a data source, so neither is here: doc 15
+§2–§3 and doc 16 §3 carry them.)
+
 ## 1. Summary table
 
 | Upstream | Auth | Free limits (verified 2026-07) | Used for | Attribution |
@@ -190,10 +194,11 @@ the client; grep-guard in CI, doc 21 §5).
 
 ## 6. Maps — OpenFreeMap + Photon/Nominatim
 
-- Tiles/styles/glyphs/sprites from `tiles.openfreemap.org` — the **only**
-  direct-from-browser third party; CSP `connect-src` allowlists exactly this
-  host (doc 15 §2). Style variants: Liberty (light) + dark; pin both style
-  JSON URLs as constants.
+- Tiles/styles/glyphs/sprites from `tiles.openfreemap.org` — the only
+  direct-from-browser *data* source; CSP `connect-src` names it beside
+  `cloudflareinsights.com`, the analytics beacon's report endpoint and the
+  only other entry (doc 15 §2). Style variants: Liberty (light) + dark; pin
+  both style JSON URLs as constants.
 - Geocode via Worker: Photon `https://photon.komoot.io/api/?q=&limit=5&lang=`
   primary; Nominatim `https://nominatim.openstreetmap.org/search?format=jsonv2`
   fallback with mandatory `User-Agent: TilePier/<ver> (tilepier.win)`

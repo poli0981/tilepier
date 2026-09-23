@@ -14,11 +14,12 @@
 │  Storage: localStorage │ Dexie/IndexedDB │ FSA handles      │
 │  Service Worker: precache shell, offline fallback           │
 └───────────────┬─────────────────────────────┬───────────────┘
-                │ /api/* (same origin)        │ tiles only
+                │ /api/* (same origin)        │ direct, and only these:
                 ▼                             ▼
 ┌── Cloudflare Worker (same deployment) ──┐  OpenFreeMap tiles
-│ SvelteKit server endpoints              │  (direct, cached by
-│  · normalize + hide API keys            │   browser + CF CDN)
+│ SvelteKit server endpoints              │  CF Web Analytics beacon
+│  · Turnstile pass gate (hooks)          │  CF Turnstile (after the
+│  · normalize + hide API keys            │   legal gate; doc 15 §3)
 │  · KV cache (TILEPIER_CACHE)            │
 │  · soft rate limit + circuit breaker    │
 └───────┬─────────────────────────────────┘

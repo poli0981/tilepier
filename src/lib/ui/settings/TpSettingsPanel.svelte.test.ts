@@ -146,7 +146,8 @@ describe('diagnostics', () => {
 				intradayStopAt: 720,
 				dailySeriesStopAt: 780
 			},
-			keys: { finnhub: true, twelvedata: false }
+			keys: { finnhub: true, twelvedata: false, turnstile: true },
+			gate: 'on'
 		};
 		const fetcher = vi.fn(async () => Response.json({ ok: true, data: report, meta: {} }));
 		vi.stubGlobal('fetch', fetcher);

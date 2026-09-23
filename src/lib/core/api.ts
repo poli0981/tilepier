@@ -1,4 +1,6 @@
 import type { TpApiMeta, TpApiResponse } from '$lib/api-types';
+import { PASS_HEADER } from '$lib/shared-constants';
+import { passGate } from './pass';
 
 /**
  * The client half of the doc 11 §2 envelope: one place that knows how to call
@@ -9,11 +11,21 @@ import type { TpApiMeta, TpApiResponse } from '$lib/api-types';
  * split is what lets this half be tested in the node project against MSW while
  * the other half is tested in the browser with plain stub fetchers, and neither
  * has to fake the thing the other one owns.
+ *
+ * It does carry the verification pass (doc 15 §3): a pass is part of how a
+ * request is made, not a policy about when to make one. `core/pass.ts` owns
+ * getting it; this only attaches it, and retries once when it was refused.
  */
 
-/** doc 04 §2. */
+/** doc 04 §2. `VERIFY_REQUIRED` is the Turnstile gate's refusal (doc 15 §3). */
 export type TpApiErrorCode =
-	'NETWORK' | 'RATE_LIMITED' | 'QUOTA_EXHAUSTED' | 'UPSTREAM_DOWN' | 'BAD_REQUEST' | 'MALFORMED';
+	| 'NETWORK'
+	| 'RATE_LIMITED'
+	| 'QUOTA_EXHAUSTED'
+	| 'UPSTREAM_DOWN'
+	| 'BAD_REQUEST'
+	| 'MALFORMED'
+	| 'VERIFY_REQUIRED';
 
 export class TpApiError extends Error {
 	readonly code: TpApiErrorCode;
@@ -64,18 +76,23 @@ export interface TpApiResult<T> {
 	meta: TpApiMeta;
 }
 
-/**
- * `GET` an `/api/*` endpoint and unwrap the envelope, or throw a `TpApiError`.
- *
- * Every failure mode of doc 17 §4 arrives here as one of six codes, so a caller
- * never has to look at a status number or parse a body twice.
- */
-export async function fetchEnvelope<T>(url: string, signal?: AbortSignal): Promise<TpApiResult<T>> {
+interface Sent<T> {
+	response: Response;
+	text: string;
+	body: TpApiResponse<T>;
+	/** The pass this request carried, if any — what a 401 invalidates. */
+	pass: string | undefined;
+}
+
+/** One request: pass header on, body read and parsed, or a thrown code. */
+async function send<T>(url: string, signal: AbortSignal | undefined): Promise<Sent<T>> {
+	const verification = await passGate.header();
+
 	let response: Response;
 	try {
 		response = await fetch(url, {
 			...(signal === undefined ? {} : { signal }),
-			headers: { accept: 'application/json' }
+			headers: { accept: 'application/json', ...verification }
 		});
 	} catch (error) {
 		// doc 17 §4: a `TypeError` from fetch is the offline path. An abort is
@@ -87,15 +104,37 @@ export async function fetchEnvelope<T>(url: string, signal?: AbortSignal): Promi
 
 	const text = await response.text();
 
-	let body: TpApiResponse<T>;
 	try {
-		body = JSON.parse(text) as TpApiResponse<T>;
+		const body = JSON.parse(text) as TpApiResponse<T>;
+		return { response, text, body, pass: verification[PASS_HEADER] };
 	} catch {
 		throw new TpApiError('MALFORMED', `not JSON (HTTP ${String(response.status)})`, {
 			snippet: text.slice(0, SNIPPET_MAX)
 		});
 	}
+}
 
+/**
+ * `GET` an `/api/*` endpoint and unwrap the envelope, or throw a `TpApiError`.
+ *
+ * Every failure mode of doc 17 §4 arrives here as one of seven codes, so a
+ * caller never has to look at a status number or parse a body twice.
+ *
+ * **`VERIFY_REQUIRED` gets exactly one retry** (doc 15 §3). The pass was
+ * missing, had expired, or the gate appeared after this page asked whether
+ * there was one; `passGate` drops what this request sent and fetches a new one,
+ * and every tile that raced into the same 401 waits on that one fetch. A second
+ * refusal is thrown like any other code — retryable, so the scheduler's backoff
+ * owns what happens next rather than a loop in here.
+ */
+export async function fetchEnvelope<T>(url: string, signal?: AbortSignal): Promise<TpApiResult<T>> {
+	let sent = await send<T>(url, signal);
+	if (sent.body.ok === false && sent.body.error?.code === 'VERIFY_REQUIRED') {
+		passGate.invalidate(sent.pass);
+		sent = await send<T>(url, signal);
+	}
+
+	const { response, text, body } = sent;
 	if (body.ok === true) return { data: body.data, meta: body.meta };
 
 	// An `ok: false` body carries the code; the header is the fallback for a

@@ -27,7 +27,17 @@ export default defineConfig({
 			// rejects. The browser flag is the only way to test a service worker
 			// against wrangler's self-signed local cert. Local test rig only;
 			// production serves a real certificate.
-			args: ['--ignore-certificate-errors']
+			//
+			// The host rules keep the suite hermetic (doc 19 §4). Every page now
+			// carries the Cloudflare Web Analytics beacon, and the bot check can
+			// load Turnstile; neither may reach the network from a test run —
+			// CI would report page views into production's analytics and depend
+			// on Cloudflare being up. Unresolvable hosts fail fast, and the CSP
+			// check still runs, because a violation is raised before any fetch.
+			args: [
+				'--ignore-certificate-errors',
+				'--host-resolver-rules=MAP static.cloudflareinsights.com ~NOTFOUND, MAP cloudflareinsights.com ~NOTFOUND, MAP challenges.cloudflare.com ~NOTFOUND'
+			]
 		}
 	},
 	webServer: {

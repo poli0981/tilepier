@@ -1,4 +1,5 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { guardApi } from './routes/api/_lib/gate';
 
 /**
  * Security headers for dynamically rendered responses, doc 15 §2.
@@ -28,6 +29,14 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// The verification gate (doc 15 §3): every /api/* route, before it runs,
+	// unless it is on the exemption list. Here rather than in each endpoint so a
+	// route nobody remembered to guard is guarded anyway.
+	if (event.url.pathname.startsWith('/api/')) {
+		const refusal = await guardApi(event.request, event.route.id, event.platform?.env);
+		if (refusal !== null) return refusal;
+	}
+
 	const response = await resolve(event);
 
 	// HTML only. Hashed immutable assets do not need these, and /api/* returns

@@ -87,6 +87,11 @@ rather than to the raw `online` event, so one module owns the definition
   `QUOTA_EXHAUSTED`→stale+quota badge tooltip, `UPSTREAM_DOWN`→stale-error,
   `BAD_REQUEST`→widget bug: log loudly, show inline error (don't retry).
 - Malformed JSON → treat as `UPSTREAM_DOWN`, log with body snippet (1 KB).
+- `VERIFY_REQUIRED` (401, doc 15 §3) → `core/api.ts` drops the pass it sent,
+  asks `passGate` for a fresh one and retries **once**. A second refusal
+  surfaces like `UPSTREAM_DOWN` (stale-error / error, retryable). The one
+  global notice is `TpBotCheck`'s ("this browser could not be verified…",
+  with a retry), in doc 13 §7's toast shape — not one per tile.
 
 ## 5. Backoff policy (client)
 

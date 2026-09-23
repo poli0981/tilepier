@@ -34,6 +34,27 @@ export function hasAcceptedLegal(): boolean {
 	}
 }
 
+/**
+ * The version a returning reader agreed to, when it is older than this build's
+ * — which is what puts the gate's "what changed" line up (doc 16 §2). `null`
+ * for a first visit, a current acceptance, or anything unreadable.
+ *
+ * boot.js sets `data-legal-prev` from the same rule before first paint; the
+ * layout re-derives it from here, as it does `data-legal`, in case boot.js was
+ * dropped.
+ */
+export function previousLegalVersion(): number | null {
+	if (typeof localStorage === 'undefined') return null;
+	try {
+		const raw = localStorage.getItem(LOCAL_KEYS.legal);
+		if (!raw) return null;
+		const version = (JSON.parse(raw) as { acceptedVersion?: unknown } | null)?.acceptedVersion;
+		return typeof version === 'number' && version < LEGAL_VERSION ? version : null;
+	} catch {
+		return null;
+	}
+}
+
 /** Records acceptance and lifts the gate for this document. */
 export function acceptLegal(): void {
 	const value: TpLegalAcceptance = {
@@ -46,5 +67,7 @@ export function acceptLegal(): void {
 		// Private mode or a full quota: the session still proceeds, the gate
 		// simply returns next visit. Better than trapping the user.
 	}
-	document.documentElement.setAttribute('data-legal', 'ok');
+	const root = document.documentElement;
+	root.setAttribute('data-legal', 'ok');
+	root.removeAttribute('data-legal-prev');
 }

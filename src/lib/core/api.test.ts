@@ -1,7 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { PASS_HEADER } from '$lib/shared-constants';
 import { fetchEnvelope, isRetryable, TpApiError } from './api';
+import { passGate } from './pass';
 import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from './__fixtures__/weather';
 
 /**
@@ -189,5 +191,75 @@ describe('isRetryable', () => {
 		// Resolved in doc 17 §4's favour: the realistic cause is an HTML error
 		// page from the edge, and that clears by itself. doc 04 §2 amended.
 		expect(isRetryable('MALFORMED')).toBe(true);
+	});
+});
+
+describe('the verification pass (doc 15 §3)', () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('carries the pass, and retries once with a fresh one after VERIFY_REQUIRED', async () => {
+		const passes = ['pass-old', 'pass-new'];
+		vi.spyOn(passGate, 'header').mockImplementation(async () => ({
+			[PASS_HEADER]: passes[0] ?? ''
+		}));
+		const invalidate = vi.spyOn(passGate, 'invalidate').mockImplementation(() => {
+			passes.shift();
+		});
+		const seen: (string | null)[] = [];
+		serve(
+			http.get(`${BASE}/api/weather`, ({ request }) => {
+				const pass = request.headers.get(PASS_HEADER);
+				seen.push(pass);
+				return pass === 'pass-new'
+					? HttpResponse.json(WEATHER_OK)
+					: HttpResponse.json({ ok: false, error: { code: 'VERIFY_REQUIRED' } }, { status: 401 });
+			})
+		);
+
+		const result = await fetchEnvelope<typeof WEATHER_PAYLOAD>(URL_WEATHER);
+
+		expect(result.meta.source).toBe('open-meteo');
+		expect(seen).toEqual(['pass-old', 'pass-new']);
+		// Only the pass that was refused is dropped — a newer one survives.
+		expect(invalidate).toHaveBeenCalledExactlyOnceWith('pass-old');
+	});
+
+	it('throws VERIFY_REQUIRED after a second refusal, rather than looping', async () => {
+		vi.spyOn(passGate, 'header').mockImplementation(async () => ({}));
+		vi.spyOn(passGate, 'invalidate').mockImplementation(() => undefined);
+		let requests = 0;
+		serve(
+			http.get(`${BASE}/api/weather`, () => {
+				requests++;
+				return HttpResponse.json(
+					{ ok: false, error: { code: 'VERIFY_REQUIRED' } },
+					{ status: 401 }
+				);
+			})
+		);
+
+		const error = await fetchEnvelope(URL_WEATHER).catch((e: unknown) => e);
+
+		expect(error).toBeInstanceOf(TpApiError);
+		expect((error as TpApiError).code).toBe('VERIFY_REQUIRED');
+		expect(requests).toBe(2);
+		// The scheduler's backoff owns what happens next, so it must be retryable.
+		expect(isRetryable('VERIFY_REQUIRED')).toBe(true);
+	});
+
+	it('sends no pass header at all while the gate is idle', async () => {
+		let header: string | null = 'unset';
+		serve(
+			http.get(`${BASE}/api/weather`, ({ request }) => {
+				header = request.headers.get(PASS_HEADER);
+				return HttpResponse.json(WEATHER_OK);
+			})
+		);
+
+		await fetchEnvelope(URL_WEATHER);
+
+		expect(header).toBeNull();
 	});
 });

@@ -109,6 +109,13 @@ not `optional` fail when they match nothing, so a module that moves cannot
 silently switch off its own budget. Bundle visualizer
 (`rolldown` stats → treemap) run on demand: `pnpm build:analyze`.
 
+**Outside these budgets, by construction:** the two Cloudflare scripts a page
+loads since 2026-09-23 — the Web Analytics beacon (about 30 KB, about 10 KB gz)
+and Turnstile's `api.js` plus its frame, requested only after the legal gate.
+Neither is in the Rolldown manifest, so `pnpm budgets` cannot see them, and
+`e2e/s4-budgets` counts same-origin scripts only. Their cost belongs to Week 8's
+Lighthouse pass (doc 01), which measures what a reader actually downloads.
+
 ## 7. Performance conventions
 
 - Lazy: detail components, echarts, maplibre, music-metadata worker —

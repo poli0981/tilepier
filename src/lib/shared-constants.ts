@@ -17,8 +17,14 @@ import type { TpCryptoInterval } from './api-types';
  * Bump only for material changes to the legal texts. A stored
  * `tp.legal.v1.acceptedVersion` below this re-gates the app with a
  * "what changed" line (doc 16 §2).
+ *
+ * **2 (2026-09-23):** Cloudflare Web Analytics and the Turnstile bot check. The
+ * privacy page a reader agreed to said "no analytics, no telemetry", and that
+ * stopped being true, so everyone who agreed to 1 is asked again — with a line
+ * saying why — rather than finding out from a page they have no reason to
+ * re-read.
  */
-export const LEGAL_VERSION = 1;
+export const LEGAL_VERSION = 2;
 
 /* ─────────────────────────────────────────────────────────────── durations */
 
@@ -277,6 +283,16 @@ export const BREAKER = {
 	/** Cool-down before a half-open probe. Quota trips instead hold to UTC midnight. */
 	cooldownMs: 120 * SECOND
 } as const;
+
+/**
+ * The Turnstile `action` the bot check renders with and the Worker insists on
+ * (doc 15 §3). Shared by both halves, so a token minted for anything else —
+ * another page's widget on the same sitekey, a future action — is refused.
+ */
+export const TURNSTILE_ACTION = 'app-open';
+
+/** The request header a verified browser carries on every `/api/*` call. */
+export const PASS_HEADER = 'x-tp-pass';
 
 /** Applied to every upstream fetch from the Worker (doc 11 §8, doc 15 §5). */
 export const UPSTREAM = {

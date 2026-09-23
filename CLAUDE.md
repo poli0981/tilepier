@@ -8,7 +8,9 @@ this file is the operational summary.
 
 TilePier — local-first widget dashboard web app. SvelteKit on Cloudflare
 Workers (single deployment: static assets + `/api/*` cache proxy).
-GPL-3.0-only. Bilingual EN/VI. No accounts, no telemetry, no cookies.
+GPL-3.0-only. Bilingual EN/VI. No accounts, no ads, no cookies. Two
+Cloudflare services see a visit — cookieless Web Analytics and the
+Turnstile bot check — and nothing else does (doc 16 §3).
 
 ## Stack (do not substitute)
 
@@ -84,13 +86,21 @@ fails the build. Slice commits vertically — a primitive plus its first consume
    Never render grid items with `{#each}`. Add/remove via `grid.addWidget`
    / `grid.removeWidget`; mount content with Svelte 5 `mount()`/`unmount()`
    (see `src/lib/core/grid/`). Docs 06 §5.
-2. **No direct external fetches from the browser** except
-   `tiles.openfreemap.org`. Everything else goes through `/api/*`
-   (keys, cache, normalization). CSP enforces this — don't fight it.
+2. **No direct external fetches from the browser** except exactly
+   these: `tiles.openfreemap.org` (map tiles), `cloudflareinsights.com`
+   (the analytics beacon's report) and `challenges.cloudflare.com` (the
+   Turnstile frame). Every data request goes through `/api/*` (keys, cache,
+   normalization). CSP enforces this with exact sets that an e2e test pins —
+   don't fight it, and add nothing to it without doc 15 §2.
 3. **No CDN anything.** No `<script src>` third parties, no Google Fonts,
-   no unpkg/jsdelivr. Self-host or bundle.
-4. **API keys** (`FINNHUB_KEY`, `TWELVEDATA_KEY`) exist only in the Worker
-   env. Never import them into client-reachable code paths.
+   no unpkg/jsdelivr. Self-host or bundle. The two named exceptions exist
+   because they cannot be self-hosted: Cloudflare's Web Analytics beacon
+   (in `app.html`) and Turnstile's `api.js` (loaded by `ui/turnstile.ts`
+   after the legal gate). There is no third.
+4. **Secrets** (`FINNHUB_KEY`, `TWELVEDATA_KEY`, `DEV_DASH_TOKEN`,
+   `TURNSTILE_SECRET_KEY`) exist only in the Worker env, as Secret-type
+   variables. Never import them into client-reachable code paths. Name a new
+   one in `.dev.vars.example` and run `pnpm gen`; add it to the CI grep.
 5. **Finnhub free tier has no stock candles** (403). Series come from
    Twelve Data (budgeted, 800/day) with Stooq EOD fallback. Don't
    "simplify" this split.

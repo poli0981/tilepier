@@ -65,6 +65,46 @@ test('nothing mounts and nothing is fetched until the gate is accepted', async (
 	await expect.poll(() => api).toContain('/api/fx');
 });
 
+// doc 16 §2: bumping LEGAL_VERSION re-gates everyone "with a 'what changed'
+// line". The line existed in the doc since Week 1 and in no code until
+// LEGAL_VERSION 2 made it matter — and a reader who agreed to "no analytics"
+// has to be told, before paint, not left to find it on a page they already read.
+test('a reader who agreed to an older version sees the gate again, with what changed', async ({
+	page
+}) => {
+	await page.addInitScript(() => {
+		if (sessionStorage.getItem('tp.e2e.legal-v1') !== null) return;
+		sessionStorage.setItem('tp.e2e.legal-v1', '1');
+		localStorage.setItem(
+			'tp.legal.v1',
+			JSON.stringify({ acceptedVersion: 1, acceptedAt: '2026-09-01T00:00:00Z' })
+		);
+	});
+
+	await page.goto('/');
+	await expect(page.getByRole('dialog')).toBeVisible();
+	await expect(page.locator("[data-locale='vi'] [data-testid='gate-changed']")).toBeVisible();
+
+	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
+	await expect(accept).toBeEnabled();
+	await accept.click();
+	await expect(page.getByRole('dialog')).toBeHidden();
+
+	await page.reload();
+	await expect(page.getByRole('dialog')).toBeHidden();
+	expect(
+		await page.evaluate(() => JSON.parse(localStorage.getItem('tp.legal.v1') ?? '{}'))
+	).toMatchObject({ acceptedVersion: 2 });
+});
+
+test('a first visit sees no "what changed" line — there is nothing it changed from', async ({
+	page
+}) => {
+	await page.goto('/');
+	await expect(page.getByRole('dialog')).toBeVisible();
+	await expect(page.locator("[data-locale='vi'] [data-testid='gate-changed']")).toBeHidden();
+});
+
 test('accepting reveals the deck and survives a reload', async ({ page }) => {
 	await page.goto('/');
 	// Enabled only once hydration has attached the handler — see the gate's
@@ -179,10 +219,27 @@ test('the CSP carries the hash for SvelteKit inline script', async ({ request })
 	const meta = /<meta http-equiv="content-security-policy" content="([^"]+)"/.exec(html);
 
 	expect(meta, 'no CSP meta tag emitted').not.toBeNull();
-	const policy = meta?.[1] ?? '';
-	expect(policy).toContain("default-src 'self'");
-	expect(policy).toContain('https://tiles.openfreemap.org');
-	expect(policy).toMatch(/script-src 'self' 'sha256-[A-Za-z0-9+/=]+'/);
+	const directives = new Map(
+		(meta?.[1] ?? '')
+			.split(';')
+			.map((part) => part.trim().split(/\s+/))
+			.filter((words) => words[0] !== undefined && words[0] !== '')
+			.map(([name, ...values]) => [name, values.sort()] as const)
+	);
+
+	// Exact sets, not "contains": the point of doc 15 §2 is that nothing else
+	// gets in. SvelteKit appends its hashes after the configured sources, so the
+	// order is not the contract — the membership is.
+	expect(directives.get('default-src')).toEqual(["'self'"]);
+	const script = directives.get('script-src') ?? [];
+	expect(script.filter((v) => !v.startsWith("'sha256-"))).toEqual(
+		["'self'", 'https://challenges.cloudflare.com', 'https://static.cloudflareinsights.com'].sort()
+	);
+	expect(script.some((v) => /^'sha256-[A-Za-z0-9+/=]+'$/.test(v))).toBe(true);
+	expect(directives.get('connect-src')).toEqual(
+		["'self'", 'https://cloudflareinsights.com', 'https://tiles.openfreemap.org'].sort()
+	);
+	expect(directives.get('frame-src')).toEqual(['https://challenges.cloudflare.com']);
 });
 
 test('no page raises a CSP violation', async ({ page }) => {

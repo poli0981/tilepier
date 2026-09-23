@@ -2,8 +2,14 @@
 
 ## 1. Principles
 
-1. Stateless, anonymous, boring. No auth, no cookies, no user IDs, no
-   persisted logs (doc 16 §3).
+1. Stateless, anonymous, boring. No user auth, no cookies, no user IDs, and
+   no logs the Worker keeps itself (doc 16 §3). Two amendments, 2026-09-23:
+   - `/api/*` sits behind a Turnstile **pass** (doc 15 §3). It is anonymous
+     and stateless, an HMAC checked in `hooks.server.ts`, and it proves only
+     that a real browser asked within the hour, not who.
+   - Cloudflare's own invocation logs are on (`wrangler.jsonc`
+     `observability`) and keep request metadata for 7 days. doc 16 §3 now
+     says so, instead of "no persisted logs".
 2. Every endpoint: validate → rate-gate → KV read → upstream (maybe) →
    normalize → KV write → respond. One shared pipeline in `routes/api/_lib`.
 3. The Worker is the **only** holder of API keys.
@@ -16,8 +22,12 @@
 // 200
 { "ok": true, "data": { ... }, "meta": { "cachedAt": 1756500000, "source": "open-meteo", "stale": false } }
 // error
-{ "ok": false, "error": { "code": "UPSTREAM_DOWN" | "RATE_LIMITED" | "BAD_REQUEST" | "QUOTA_EXHAUSTED", "retryAfterS": 30 } }
+{ "ok": false, "error": { "code": "UPSTREAM_DOWN" | "RATE_LIMITED" | "BAD_REQUEST" | "QUOTA_EXHAUSTED" | "VERIFY_REQUIRED", "retryAfterS": 30 } }
 ```
+`VERIFY_REQUIRED` (401, `no-store`, 2026-09-23) comes from the Turnstile gate in
+`hooks.server.ts`, never from an endpoint: the request carried no pass, or one
+that has expired or was not minted by this Worker (doc 15 §3). The client
+retries once with a fresh pass (doc 17 §4).
 Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 (lets the CF CDN + browser absorb repeat hits too), `retry-after` on 429/503.
 
@@ -218,7 +228,9 @@ back-off, not perfection.
 
 ## 9. Observability (privacy-respecting)
 
-No third-party telemetry. Rely on Cloudflare's built-in Workers metrics
+No third-party telemetry in the Worker. (The browser loads one Cloudflare
+analytics beacon since 2026-09-23 — page views, not app telemetry; doc 16 §3.)
+Rely on Cloudflare's built-in Workers metrics
 (requests, errors, CPU) + `wrangler tail` during incidents. A dev-only
 `GET /api/_health` returns breaker states and today's stock-budget counter.
 
@@ -249,8 +261,15 @@ What it reports:
   does not compile until the report can see it;
 - today's Twelve Data spend against §5's tiers;
 - whether each upstream key is set (never its value);
+- the Turnstile gate's state (`on`, `off`, or `misconfigured` for a secret
+  with no sitekey) and the `turnstile` breaker, which is where siteverify
+  outages are recorded (doc 15 §3);
 - the build;
 - `cf.colo`, the Cloudflare location that answered.
+
+`/api/_health` and `/api/verify` are the gate's two exemptions. The operator's
+bearer also passes the gate on every other route, so curl spot checks and the
+S3 harness do not need a challenge.
 
 A reason is masked before it leaves: `name=value` pairs that sound secret and
 any 32-plus-character key-shaped run. It is also cut to 200 characters. Since

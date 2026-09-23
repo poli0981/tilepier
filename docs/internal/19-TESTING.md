@@ -259,6 +259,19 @@ Chrome. Music FSA path: Chromium only + fallback verified on Firefox.
 Reduced-motion, 200 % zoom, keyboard-only pass, screen-reader spot check
 (NVDA) on dashboard + one detail.
 
+Added 2026-09-23, because the suite cannot reach these (its browser maps the
+Cloudflare hosts to nowhere, and CI has no Turnstile secret):
+
+- **Turnstile on production:** a fresh profile passes silently. A
+  `3x…FF` testing sitekey locally (`.dev.vars`) opens the interactive dialog,
+  which takes focus. A `2x…` pair shows the failure notice, and its retry
+  works.
+- **Beacon:** loads with no CSP console error, and a POST to
+  `cloudflareinsights.com/cdn-cgi/rum` answers.
+- **localStorage** still holds exactly the three keys after both have run.
+- **curl** without a pass and with a cache-busting parameter gets `401`; with
+  the operator's bearer it gets `200`.
+
 This is the **Week 8 release gate** and is not run per week. What *is* worth
 doing at each milestone is a spot check of the surfaces that week added, on the
 deployed build — the charter's QA strategy is dogfooding in production, and a

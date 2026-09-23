@@ -756,7 +756,7 @@ tag `v1.0.0` → release workflow → notify.
 - [ ] All widget DoDs checked (doc 19 §6) · zero P0/P1 bugs
 - [ ] Budgets green in CI · Lighthouse targets met (doc 01)
 - [ ] doc 10 §8 attribution/compliance all checked
-- [ ] Legal texts final (vi+en) · LEGAL_VERSION=1 · gate verified pre-JS
+- [ ] Legal texts final (vi+en) · LEGAL_VERSION=2 (bumped 2026-09-23 for Web Analytics + Turnstile) · gate verified pre-JS
 - [ ] Secrets grep clean (doc 21 §5) · headers verified in prod
 - [ ] Backup export/import round-trip on prod build
 - [ ] Rollback runbook tested once (deploy previous version)
@@ -767,7 +767,7 @@ tag `v1.0.0` → release workflow → notify.
 per-breakpoint saved layouts · music visualizer + Safari FSA-adjacent
 improvements · VN equities (behind flag, source TBD) · quote-as-image ·
 calendar year view (worker-calc) · widget instances export as shareable
-preset · Turnstile if abuse appears · BroadcastChannel tab sync.
+preset · BroadcastChannel tab sync. (Turnstile left this list on 2026-09-23 — it's in front of `/api/*` now, doc 15 §3.)
 
 ## Slip policy
 

@@ -625,6 +625,9 @@
 						sha: report.build.sha
 					})}
 				</p>
+				<p class="tp-note" data-testid="health-gate">
+					{m['settings.diagnostics.health_gate']({ state: report.gate })}
+				</p>
 				<div class="tp-scroll">
 					<table data-testid="health-breakers">
 						<tbody>

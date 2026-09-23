@@ -19,7 +19,8 @@ const REPORT: TpHealthReport = {
 		intradayStopAt: 720,
 		dailySeriesStopAt: 780
 	},
-	keys: { finnhub: false, twelvedata: false }
+	keys: { finnhub: false, twelvedata: false, turnstile: false },
+	gate: 'off'
 };
 
 function stub(response: Response | Error) {
