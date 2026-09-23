@@ -44,6 +44,12 @@ export function msUntilUtcMidnight(now: number): number {
  *
  * Returns `half-open` for the first request after the cool-down: that request
  * probes upstream, and its outcome closes the breaker or re-opens it.
+ *
+ * A quota trip's cool-down is the time from `openedAt` to the *next* UTC
+ * midnight, measured once from the trip. It used to add `openedAt - now` on
+ * top, which moved the target as the clock moved and released the breaker at
+ * the midpoint instead — six hours early from a noon trip. Latent from Week 0
+ * until `/api/stock/series` became the branch's first caller (doc 11 §6).
  */
 export function breakerVerdict(
 	record: BreakerRecord,
@@ -52,7 +58,7 @@ export function breakerVerdict(
 	if (record.state === 'closed') return 'closed';
 
 	const cooldown = record.untilUtcMidnight
-		? msUntilUtcMidnight(record.openedAt) + (record.openedAt - now)
+		? msUntilUtcMidnight(record.openedAt)
 		: BREAKER.cooldownMs;
 
 	return now - record.openedAt >= cooldown ? 'half-open' : 'open';

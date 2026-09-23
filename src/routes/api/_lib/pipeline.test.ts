@@ -239,6 +239,30 @@ describe('circuit breaker (doc 11 §6)', () => {
 		expect(breakerVerdict(record, Date.parse('2026-08-11T00:00:00Z'))).toBe('half-open');
 	});
 
+	// The case above samples +20 min and midnight, and both sides of it passed
+	// for the whole of Week 0–5a while the verdict actually released at the
+	// *midpoint* — six hours early from a noon trip. Nothing called the quota
+	// branch until /api/stock/series, so the samples that matter are the ones
+	// between those two.
+	it('a quota trip is still open one second before midnight, however late it tripped', () => {
+		const trip = (at: string) => ({
+			state: 'open' as const,
+			openedAt: Date.parse(at),
+			reason: 'quota',
+			failures: 1,
+			untilUtcMidnight: true
+		});
+
+		const noon = trip('2026-08-10T12:00:00Z');
+		expect(breakerVerdict(noon, Date.parse('2026-08-10T18:00:00Z'))).toBe('open');
+		expect(breakerVerdict(noon, Date.parse('2026-08-10T23:59:59Z'))).toBe('open');
+		expect(breakerVerdict(noon, Date.parse('2026-08-11T00:00:00Z'))).toBe('half-open');
+
+		const late = trip('2026-08-10T23:00:00Z');
+		expect(breakerVerdict(late, Date.parse('2026-08-10T23:30:00Z'))).toBe('open');
+		expect(breakerVerdict(late, Date.parse('2026-08-11T00:00:00Z'))).toBe('half-open');
+	});
+
 	it('computes the time to UTC midnight', () => {
 		const noon = Date.parse('2026-08-10T12:00:00Z');
 		expect(msUntilUtcMidnight(noon)).toBe(12 * 60 * 60 * 1000);
