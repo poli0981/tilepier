@@ -155,6 +155,9 @@ test('security headers are set on HTML responses', async ({ request }) => {
 	const headers = response.headers();
 
 	expect(headers['strict-transport-security']).toContain('max-age=31536000');
+	// Matches the zone's own HSTS in production, which replaces this header at
+	// the edge (doc 15 §2) — so what this suite sees is what readers get.
+	expect(headers['strict-transport-security']).toContain('preload');
 	expect(headers['x-content-type-options']).toBe('nosniff');
 	expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
 	expect(headers['cross-origin-opener-policy']).toBe('same-origin');

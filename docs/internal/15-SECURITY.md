@@ -25,7 +25,7 @@ Content-Security-Policy:
   form-action 'self';
   object-src 'none';
   upgrade-insecure-requests
-Strict-Transport-Security: max-age=31536000; includeSubDomains
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: geolocation=(self), microphone=(), camera=(), payment=()
@@ -56,6 +56,25 @@ said "set in `hooks.server.ts` for all HTML responses". Both halves were wrong:
    One exception is required: `frame-ancestors` is ignored in a `<meta>` CSP by
    specification, so SvelteKit drops it from the tag. `_headers` sends a
    header containing only `frame-ancestors 'none'`, which stacks safely.
+
+**What production actually sends (measured 2026-09-23).** The e2e suite
+asserts these headers against local `wrangler dev`, which is the only place a
+test can reach — and production is not identical, because the zone sits in
+front of the Worker:
+
+- **HSTS comes from the zone.** Its SSL/TLS HSTS setting replaces the Worker's
+  `Strict-Transport-Security` at the edge, and it sends
+  `max-age=31536000; includeSubDomains; preload`. This doc, `_headers` and
+  `hooks.server.ts` said the same value without `preload`. All three now
+  match what the zone sends, so local and production agree and the e2e
+  assertion on `preload` pins it. `preload` is a commitment: it asks
+  browsers to hard-code HTTPS for the domain and every subdomain, and leaving
+  the preload list takes months. If the zone setting was not deliberate, turn
+  it off there and remove `preload` from all three together.
+- **Cloudflare adds `Nel` and `Report-To`** (Network Error Logging). A browser
+  that fails to load the site reports the failure to Cloudflare. It is the
+  infrastructure provider's feature rather than TilePier's, and doc 16 §3
+  covers it under Cloudflare's own processing.
 
 `upgrade-insecure-requests` has a local-development consequence worth knowing:
 over plain HTTP it rewrites every subresource request to HTTPS, so the e2e

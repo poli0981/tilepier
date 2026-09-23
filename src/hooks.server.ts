@@ -18,7 +18,9 @@ import type { Handle, HandleServerError } from '@sveltejs/kit';
  *    carries the same set for them. Change both together.
  */
 const SECURITY_HEADERS: Record<string, string> = {
-	'strict-transport-security': 'max-age=31536000; includeSubDomains',
+	// What the zone sends in production, where its HSTS setting replaces this
+	// header at the edge (doc 15 §2). Stated here so local and production agree.
+	'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
 	'x-content-type-options': 'nosniff',
 	'referrer-policy': 'strict-origin-when-cross-origin',
 	'permissions-policy': 'geolocation=(self), microphone=(), camera=(), payment=()',
