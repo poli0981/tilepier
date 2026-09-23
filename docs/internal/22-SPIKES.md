@@ -285,7 +285,28 @@ curl -s -o /dev/null -w "%{http_code}\n" -H "X-Finnhub-Token: $FINNHUB_KEY" \
 The key goes in a header, never the query string, for the reason doc 10 §5
 gives about every key: a URL is what ends up in a log.
 
-**Results:** _not yet recorded._
+**Results, 2026-09-23.**
+
+- **Finnhub's 403 on `/stock/candle`: confirmed**, on the operator's machine
+  with the production key:
+
+  ```
+  {"error":"You don't have access to this resource."}403
+  ```
+
+  The split in doc 10 §5 is mandatory, as this spike said it would be.
+- **`api-credits-left` parsing, checked against real responses — and the
+  finding is that it counts the minute.** No test could have found it, because
+  every fixture had been written from the same misreading. Production's
+  `/api/_health` showed `budget: 793 of 800` after the first series call of
+  the day: 800 − 7, where 7 is what is left of Basic's eight credits a minute.
+  The guard had stopped every series until UTC midnight. doc 11 §5 has the rule
+  that replaced it (#16), and this is the pass criterion above met by being
+  proved wrong.
+- **The keyed run itself: not yet run.** It needs #16 deployed, and a day
+  whose counter was not inflated by the misreading — the next UTC date, or the
+  two KV keys cleared by the operator (`kv:st:budget:2026-09-23`,
+  `kv:brk:twelvedata`).
 
 Nothing found so far argues for the fallback (raising TTLs). The arithmetic
 model is asserted in the suite so a TTL edit cannot silently break it: 50 users

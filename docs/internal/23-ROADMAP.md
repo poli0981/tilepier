@@ -820,15 +820,53 @@ widget done; quota telemetry watched for a full week from here" — met in code 
 #15, and on production only after these:
 
 - **The stock half on production** — doc 19 §5's Week 5b list, after #15 is
-  deployed.
+  deployed. *Done the same day; see the next section for what it found.*
 - **S3's keyed run and Finnhub's `/stock/candle` 403** — both written into doc
   22 §S3 as operator runs, because the keys and the bearer are the operator's.
+  *The 403 is confirmed; the run waits on #16.*
 - **5a's Binance failure is still undiagnosed.** `/api/_health` has been live
   since #12, and its `binance.reason` and `colo` are what settle it; they have
   not been read into this document yet. Until they are, `markets` may be
-  answering coins for some readers and not others.
+  answering coins for some readers and not others. *Read the same day: a WAF
+  403 from every PoP, so no reader gets coins (next section).*
 
 The week of quota watching starts at #15's deploy.
+
+### Week 5b on production — the owner's check, and what it found (2026-09-23)
+
+#15 deployed within two minutes of the merge; the owner exercised it in a
+browser and read `/api/_health`. **The interface held:** the AAPL detail drew,
+1Y drew a year and 1M a month (fault 10 fixed where readers see it), "at the
+close" marked a stock after hours, and the footer carried the stock footnote
+and both credits. **Finnhub's `/stock/candle` answered 403** on the owner's
+machine, which closes that half of S3 (doc 22).
+
+**Three things were wrong, and the check is what found them:**
+
+1. **Twelve Data's credit headers count the minute, and the guard read them as
+   the day.** After the first series call `/api/_health` showed
+   `budget: 793 of 800` — 800 − 7, where 7 is what is left of Basic's eight a
+   minute. The guard then stopped every series until UTC midnight. The 1D → 1W
+   collapse the owner saw was that guard, not real spend. Every fixture had
+   been written from the same misreading, so no test could have found it; S3's
+   keyed run existed to, and had not run. And **every Twelve Data 429 was a
+   quota trip**, so a ninth call inside one minute would have done the same.
+   Fixed in #16: the day is our own counter alone, a per-minute 429 or a
+   minute with no credits left marks the minute and trips nothing, and only a
+   429 that says "for the day" holds until midnight (doc 11 §5–§6).
+2. **Three retry buttons dropped a rejected promise** (weather, currency tile,
+   currency detail), so each failed retry was an `unhandledrejection` in the
+   ring buffer — the first line of the owner's log. Fixed in #16 with a test
+   that fails on the old code.
+3. **Binance's refusal is its WAF, not a jurisdiction.** The reason reads
+   `upstream 403` with a bare HTML "403 Forbidden" page, from **SJC**. Binance
+   documents 403 as a WAF rule and 451 as a restricted location, and a US PoP
+   is refused like the Singapore one was. So 5a's regional inference was wrong
+   and no reader gets coins today. The remedy is a different crypto upstream,
+   measured from the Worker first — the owner's decision (doc 10 §4).
+
+**M5 still waits** on the keyed S3 run (after #16, on a day the misreading did
+not inflate) and on coins answering at all.
 
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF

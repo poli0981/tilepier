@@ -176,6 +176,32 @@ the client; grep-guard in CI, doc 21 §5).
   that settles it — Week 5b, gated on `DEV_DASH_TOKEN`. Nothing here should be
   changed again on a guess.
 
+  **Measured 2026-09-23, and the inference was wrong.** `/api/_health`, read by
+  the operator on production:
+
+  ```
+  colo SJC · binance half-open · 17 failures
+  upstream 403: <html> <head><title>403 Forbidden</title></head> <body>
+  <center><h1>403 Forbidden</h1></center> </body> </html>
+  ```
+
+  - **403, not 451.** Binance documents 451 for a restricted location and 403
+    for "a WAF (Web Application Firewall) rule has been violated. This can
+    indicate a rate limit violation or a security block." A bare HTML page from
+    the edge, not Binance's JSON error, is the WAF answering before the API
+    does. (The client saw 400: the route answers an upstream 4xx as
+    `BAD_REQUEST`, which is why the probes above read as 400.)
+  - **From `SJC`, not `SIN`.** A US location gets the same refusal as the
+    Singapore one did, so this is not a jurisdiction, and it is not per-reader:
+    no PoP a reader can be served from is known to get through.
+  - **Rate is not the cause.** The breaker lets one probe through every 120 s.
+    What is left is the WAF refusing Cloudflare Workers' egress — shared
+    addresses that thousands of other Workers also call Binance from.
+
+  So the fix is not a mirror or a header: it is **a different crypto
+  upstream**, measured from the Worker before it is chosen. That choice is the
+  owner's, and changes §1's table, doc 16 §5's credits and doc 09 §1 together.
+
 ## 5. Stocks — Finnhub + Twelve Data
 
 - Finnhub quote: `GET /api/v1/quote?symbol=AAPL` (fields c,d,dp,h,l,o,pc,t).
@@ -183,9 +209,14 @@ the client; grep-guard in CI, doc 21 §5).
 - Finnhub search: `GET /api/v1/search?q=` → filter `type==='Common Stock'`,
   US exchanges first.
 - Twelve Data series: `GET /time_series?symbol=AAPL&interval=15min|1day
-  &outputsize=…&format=JSON`. 1 credit per symbol-call. Read
+  &outputsize=…&format=JSON`. 1 credit per symbol-call. ~~Read
   `api-credits-used` / `api-credits-left` response headers into the breaker
-  state (doc 11 §6). Daily quota 800, resets midnight UTC.
+  state (doc 11 §6).~~ Daily quota 800, resets midnight UTC — **and 8 credits
+  a minute**, which is what those two headers count (corrected 2026-09-23;
+  Twelve Data's support pages: the credit quota "is restored at the start of
+  each new minute", and Basic's 800 resets at midnight UTC). Read as the day,
+  the header stopped every series after the first call — doc 11 §5 has the
+  measurement and the rule that replaced it.
 - ~~Stooq fallback~~ — **dropped 2026-09-23.** Measured that day from a
   developer machine: `GET https://stooq.com/q/d/l/?s=aapl.us&i=d` answered
   200 with an HTML page running a SHA-256 proof-of-work in JavaScript and
@@ -212,8 +243,12 @@ the client; grep-guard in CI, doc 21 §5).
   - **Twelve Data's errors can arrive inside a 200** as
     `{ status: 'error', code }`. A symbol it does not cover is cached as an
     empty series under its family's own TTL, and is never a breaker failure,
-    so a few mistyped symbols cannot open the breaker for every reader; a 429
-    or exhausted credits is a quota trip until UTC midnight. Series are requested with `timezone=UTC` and `order=asc`, so
+    so a few mistyped symbols cannot open the breaker for every reader. A 429
+    comes in two sizes with one code — "You have run out of API credits for
+    the current minute…" (verbatim) and the day's — and only one that says
+    "for the day" is a quota trip until UTC midnight; any other 429 is the
+    minute (doc 11 §5), the side where a wrong guess costs a minute rather than
+    a day. Series are requested with `timezone=UTC` and `order=asc`, so
     a bar parses without an exchange calendar and arrives in plotting order.
   - **Only a symbol Finnhub quotes may spend a Twelve Data credit** — a series
     MISS first reads (or fetches) `st:q:v1:<sym>`, and answers an unknown
