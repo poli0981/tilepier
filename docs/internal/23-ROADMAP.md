@@ -757,9 +757,9 @@ key and answers scripts with a proof-of-work page (doc 10 §5). The owner chose
 to drop the rung rather than chase a key; the ladder ends in the seven-day daily
 stale window and the quote-only view.
 
-**Ten faults found by the work.** Six were latent, two were the documentation
-being wrong about production, and two were 5a's markets code meeting the
-second source it had been written for:
+**Eleven faults found by the work.** Seven were latent, two were the
+documentation being wrong about production, and two were 5a's markets code
+meeting the second source it had been written for:
 
 1. **A quota trip released at the midpoint** between the trip and UTC midnight —
    six hours early from a noon trip. Latent since the S3 spike; the one test
@@ -789,6 +789,12 @@ second source it had been written for:
     windows** — a year of candles drawn under 1M, or a month under 1Y, until
     the entry went stale. Latent from 5a, which has two daily crypto ranges;
     confirmed at runtime by a test that fails on the 5a code (#15, doc 09 §1).
+11. **Every Turnstile pass verified under four spellings.** `atob` discards the
+    spare bits of a base64url segment's last character, and the parse took any
+    final character. It gave no extra power, but it was not the strict parse
+    doc 15 §3 promises. Found because #14's "almost right" test flipped that
+    character and went red about one CI run in sixteen — a flaky test with a
+    real bug behind it, not noise to re-run (#15, doc 15 §3).
 
 **Decisions taken rather than inherited**, each in the doc it changes:
 
@@ -804,7 +810,7 @@ second source it had been written for:
   from the quote's own timestamp rather than from a market calendar (doc 04 §3,
   doc 09 §1).
 
-**Numbers at the end of 5b:** 1603 unit/component tests in 107 files (from 1413
+**Numbers at the end of 5b:** 1605 unit/component tests in 107 files (from 1413
 at the end of 5a), 94.67 % lines and 88.01 % branches covered, 575 message keys
 (from 538), budgets 7/7 — the shared echarts chunk still 183.0 KB gz, and the
 markets detail, now carrying both kinds and search-add, 4.8 KB gz.

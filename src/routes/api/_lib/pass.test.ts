@@ -49,10 +49,43 @@ describe('issuePass / verifyPass', () => {
 	});
 
 	it('refuses a signature that is almost right', async () => {
+		// The MAC's *first* character, which is six bits of signature. This case
+		// used to change the last one, and that was a flaky test with a real bug
+		// behind it — see the next case.
 		const { pass } = await issuePass(SECRET, NOW);
-		const last = pass.at(-1) === 'A' ? 'B' : 'A';
+		const at = pass.lastIndexOf('.') + 1;
+		const swapped = pass[at] === 'A' ? 'B' : 'A';
 
-		expect(await verifyPass(SECRET, pass.slice(0, -1) + last, NOW)).toBe(false);
+		expect(await verifyPass(SECRET, pass.slice(0, at) + swapped + pass.slice(at + 1), NOW)).toBe(
+			false
+		);
+	});
+
+	it('accepts every pass it issues — the one-spelling rule is not too strict', async () => {
+		// The rule narrows the final character of two segments to the values an
+		// encoder can write. A value missing from that list would refuse one real
+		// pass in sixteen, which one round trip would catch one run in sixteen.
+		// Three hundred make the chance of missing a class about one in 10⁸.
+		for (let i = 0; i < 300; i++) {
+			const { pass } = await issuePass(SECRET, NOW);
+			expect(await verifyPass(SECRET, pass, NOW), pass).toBe(true);
+		}
+	});
+
+	it('refuses a second spelling of the same signature', async () => {
+		// A 32-byte MAC is 43 base64url characters, and the last one carries two
+		// bits that encode nothing. `atob` discards them, so until 2026-09-23 a
+		// pass with either bit set decoded to the same MAC and verified — four
+		// spellings of every pass. Found because the case above flipped the last
+		// character and went red whenever a MAC happened to end in `A` (one run
+		// in sixteen): `A` to `B` sets exactly one of those bits.
+		const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+		const { pass } = await issuePass(SECRET, NOW);
+		const last = pass.at(-1) as string;
+		const twin = ALPHABET[ALPHABET.indexOf(last) | 1] as string;
+
+		expect(twin).not.toBe(last);
+		expect(await verifyPass(SECRET, pass.slice(0, -1) + twin, NOW)).toBe(false);
 	});
 
 	it('refuses an expiry further out than any pass this build issues', async () => {

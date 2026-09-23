@@ -132,6 +132,15 @@ analytics or waits on Cloudflare.
      - It is not bound to an address, because phones change IP between
        towers. The cost: a lifted pass works elsewhere until it expires, so
        the rate limiter and the budget guard still stand behind it.
+     - **It has exactly one spelling** (2026-09-23). The parse is strict
+       before any crypto runs: at most 128 characters, every field's shape,
+       and the final character of each base64url segment limited to the
+       values an encoder can write. `atob` discards the spare bits of that
+       character, so until #15 every pass also verified under three other
+       spellings. That gave no extra power, but it was not the strict parse
+       this section promises. A test that flipped the MAC's last character
+       found it by going red about one run in sixteen, and the case that
+       replaces it is deterministic.
    - **Deny by default, in one place.** The gate runs in `hooks.server.ts`
      before any endpoint, and exemptions are route ids (`/api/verify`,
      `/api/_health`). Refusal is `401 VERIFY_REQUIRED`, `no-store`. The
