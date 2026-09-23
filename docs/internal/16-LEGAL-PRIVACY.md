@@ -28,8 +28,28 @@
   constant. Bumping the constant (material changes only) re-gates with a
   "what changed" line.
 - Gate must be keyboard-accessible and not dismissible by DOM deletion
-  alone (the app store hydrates only after acceptance flag exists — the
-  gate is a real gate in code, not an overlay).
+  alone (the deck mounts only after the acceptance flag exists — the gate is
+  a real gate in code, not an overlay).
+
+**That parenthesis was false until 2026-09-23.** It said "the app store
+hydrates only after acceptance", and nothing did that. `hooks.client.ts`
+hydrates the settings and deck stores on every load — the deck has to, because
+a bug report filed from `/settings` needs it (doc 18 §2). The deck page then
+mounted the grid and every widget under the hidden `.tp-app`. The gate was CSS
+alone, and a networked tile was free to fetch behind it:
+`e2e/legal-gate.e2e.ts` found a currency tile calling `/api/fx` before the
+visitor had agreed to anything.
+
+The stores still hydrate; that is harmless, because a store reads local data
+and sends nothing. What waits now is **mounting**:
+
+- `stores/legal.svelte.ts` is the reactive view of `tp.legal.v1`;
+- the deck page's loading effect and the `/w/[id]` detail route return early
+  until it says the current version was accepted;
+- accepting flips it, so the deck appears without a reload.
+
+The e2e test that found the fault is the one that holds the line: no
+`.grid-stack-item` and no `/api/*` request before the click, both after it.
 
 **Mechanism (added 2026-08-10 — this section previously stated three
 requirements without saying how they coexist).** Acceptance lives in
