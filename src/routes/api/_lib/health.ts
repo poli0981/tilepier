@@ -2,6 +2,7 @@ import type { TpHealthBreaker, TpHealthReport } from '$lib/api-types';
 import { STOCK_BUDGET } from '$lib/shared-constants';
 import { breakerVerdict, readBreaker, UPSTREAMS } from './breaker';
 import { readSpend, utcDateKey } from './budget';
+import { gateState } from './gate';
 
 /**
  * The body of `GET /api/_health` (doc 11 §9). Kept out of the route file
@@ -29,7 +30,9 @@ export function sanitizeReason(reason: string): string {
 
 export async function healthReport(
 	kv: KVNamespace,
-	env: Partial<Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY'>>,
+	env: Partial<
+		Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY' | 'TURNSTILE_SECRET_KEY' | 'TURNSTILE_SITE_KEY'>
+	>,
 	colo: string | null,
 	now = Date.now()
 ): Promise<TpHealthReport> {
@@ -62,7 +65,9 @@ export async function healthReport(
 		},
 		keys: {
 			finnhub: (env.FINNHUB_KEY ?? '') !== '',
-			twelvedata: (env.TWELVEDATA_KEY ?? '') !== ''
-		}
+			twelvedata: (env.TWELVEDATA_KEY ?? '') !== '',
+			turnstile: (env.TURNSTILE_SECRET_KEY ?? '') !== ''
+		},
+		gate: gateState(env)
 	};
 }

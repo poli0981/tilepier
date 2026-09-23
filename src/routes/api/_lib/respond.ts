@@ -48,7 +48,8 @@ const STATUS: Record<TpApiErrorCode, number> = {
 	BAD_REQUEST: 400,
 	RATE_LIMITED: 429,
 	QUOTA_EXHAUSTED: 503,
-	UPSTREAM_DOWN: 503
+	UPSTREAM_DOWN: 503,
+	VERIFY_REQUIRED: 401
 };
 
 export function fail(code: TpApiErrorCode, retryAfterS?: number): Response {

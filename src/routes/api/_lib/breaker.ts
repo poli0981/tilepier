@@ -18,7 +18,16 @@ import { BREAKER } from '$lib/shared-constants';
  * is what stops the health report from quietly leaving one out. A list the
  * report kept for itself would be right on the day it was written.
  */
-export const UPSTREAMS = ['open-meteo', 'photon', 'nominatim', 'er-api', 'binance'] as const;
+export const UPSTREAMS = [
+	'open-meteo',
+	'photon',
+	'nominatim',
+	'er-api',
+	'binance',
+	// Not a data source: Turnstile's siteverify, whose outages the verify route
+	// records here so the health report can say why passes went degraded.
+	'turnstile'
+] as const;
 export type TpUpstream = (typeof UPSTREAMS)[number];
 
 type BreakerState = 'closed' | 'open';

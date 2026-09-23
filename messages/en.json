@@ -136,6 +136,7 @@
 	"settings.diagnostics.health_refused": "No report — the token is wrong, or this deploy has none set.",
 	"settings.diagnostics.health_failed": "The report could not be read.",
 	"settings.diagnostics.health_where": "Answered from {colo} · build {sha}",
+	"settings.diagnostics.health_gate": "Bot check gate: {state}",
 	"settings.diagnostics.health_budget": "Twelve Data today: {spent} of {limit} credits",
 	"settings.diagnostics.key_set": "set",
 	"settings.diagnostics.key_missing": "missing",

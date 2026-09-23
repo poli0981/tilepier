@@ -60,8 +60,20 @@
 		"traces": {
 			"enabled": true
 		}
-	}
+	},
 
-	// Secrets FINNHUB_KEY and TWELVEDATA_KEY are set with `wrangler secret put`
-	// and never appear here or in CI logs (doc 15 §6, doc 21 §4).
+	// Public, and committed on purpose: a Turnstile sitekey is printed into every
+	// page that renders the check. The Worker hands it to the client through
+	// `GET /api/verify` only when TURNSTILE_SECRET_KEY is also set, so a checkout
+	// without the secret — a developer's machine, CI — has no gate at all
+	// (doc 15 §3). Override it in `.dev.vars` with a Turnstile testing sitekey to
+	// run the gate locally.
+	"vars": {
+		"TURNSTILE_SITE_KEY": "0x4AAAAAAFAn5Klt4ewHsJOl"
+	},
+
+	// Secrets FINNHUB_KEY, TWELVEDATA_KEY, DEV_DASH_TOKEN and TURNSTILE_SECRET_KEY
+	// are set with `wrangler secret put` (or as Secret-type variables in the
+	// dashboard — a Text-type one is overwritten by the next deploy) and never
+	// appear here or in CI logs (doc 15 §6, doc 21 §4).
 }

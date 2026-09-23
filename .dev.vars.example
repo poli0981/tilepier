@@ -22,5 +22,13 @@ TWELVEDATA_KEY=
 
 # Any random string of at least 32 characters; shorter or empty turns the
 # endpoint off. Gates GET /api/_health (doc 11 §9), sent as
-# `Authorization: Bearer <token>` — never in a query string.
+# `Authorization: Bearer <token>` — never in a query string. The same bearer
+# also passes the Turnstile gate, for curl and the S3 harness.
 DEV_DASH_TOKEN=
+
+# Cloudflare Turnstile's secret (doc 15 §3). Empty means no gate: /api/* is
+# open, as on CI. To run the gate locally, use a testing pair instead of the
+# real one — secret 1x0000000000000000000AA with
+# TURNSTILE_SITE_KEY=1x00000000000000000000BB here (invisible, always passes),
+# or 2x0000000000000000000AA / 2x00000000000000000000BB to watch it fail.
+TURNSTILE_SECRET_KEY=

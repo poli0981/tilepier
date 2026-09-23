@@ -11,9 +11,15 @@ import type { TpApiMeta, TpApiResponse } from '$lib/api-types';
  * has to fake the thing the other one owns.
  */
 
-/** doc 04 §2. */
+/** doc 04 §2. `VERIFY_REQUIRED` is the Turnstile gate's refusal (doc 15 §3). */
 export type TpApiErrorCode =
-	'NETWORK' | 'RATE_LIMITED' | 'QUOTA_EXHAUSTED' | 'UPSTREAM_DOWN' | 'BAD_REQUEST' | 'MALFORMED';
+	| 'NETWORK'
+	| 'RATE_LIMITED'
+	| 'QUOTA_EXHAUSTED'
+	| 'UPSTREAM_DOWN'
+	| 'BAD_REQUEST'
+	| 'MALFORMED'
+	| 'VERIFY_REQUIRED';
 
 export class TpApiError extends Error {
 	readonly code: TpApiErrorCode;

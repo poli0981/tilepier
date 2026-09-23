@@ -6,8 +6,12 @@
  * bundle quietly triples in size.
  */
 
-/** doc 11 §2. */
-export type TpApiErrorCode = 'UPSTREAM_DOWN' | 'RATE_LIMITED' | 'BAD_REQUEST' | 'QUOTA_EXHAUSTED';
+/**
+ * doc 11 §2. `VERIFY_REQUIRED` (401) arrived with the Turnstile pass (doc 15
+ * §3): the request carried no pass, or one that is expired or forged.
+ */
+export type TpApiErrorCode =
+	'UPSTREAM_DOWN' | 'RATE_LIMITED' | 'BAD_REQUEST' | 'QUOTA_EXHAUSTED' | 'VERIFY_REQUIRED';
 
 export interface TpApiMeta {
 	/** Unix seconds when the payload was fetched from upstream. */
@@ -392,5 +396,29 @@ export interface TpHealthReport {
 		dailySeriesStopAt: number;
 	};
 	/** Whether each upstream key is set on this deploy — never its value. */
-	keys: { finnhub: boolean; twelvedata: boolean };
+	keys: { finnhub: boolean; twelvedata: boolean; turnstile: boolean };
+	/**
+	 * The Turnstile gate in front of `/api/*` (doc 15 §3). `misconfigured` is a
+	 * secret with no sitekey, which is reported here and not enforced.
+	 */
+	gate: 'on' | 'off' | 'misconfigured';
+}
+
+/* ──────────────────────────────────────────── verification (doc 15 §3) */
+
+/**
+ * `GET /api/verify`: which Turnstile sitekey to render, or `null` when this
+ * deploy has no gate — no secret set, as on a developer's machine and in CI.
+ * The client asks rather than knowing, so the Worker stays the one place that
+ * decides whether the gate is on.
+ */
+export interface TpVerifyConfig {
+	sitekey: string | null;
+}
+
+/** `POST /api/verify`: a pass for the `x-tp-pass` header, and when it lapses. */
+export interface TpVerifyPass {
+	pass: string;
+	/** Unix ms. */
+	expiresAt: number;
 }

@@ -278,6 +278,16 @@ export const BREAKER = {
 	cooldownMs: 120 * SECOND
 } as const;
 
+/**
+ * The Turnstile `action` the bot check renders with and the Worker insists on
+ * (doc 15 §3). Shared by both halves, so a token minted for anything else —
+ * another page's widget on the same sitekey, a future action — is refused.
+ */
+export const TURNSTILE_ACTION = 'app-open';
+
+/** The request header a verified browser carries on every `/api/*` call. */
+export const PASS_HEADER = 'x-tp-pass';
+
 /** Applied to every upstream fetch from the Worker (doc 11 §8, doc 15 §5). */
 export const UPSTREAM = {
 	timeoutMs: 8 * SECOND,

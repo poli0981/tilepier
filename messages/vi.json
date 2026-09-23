@@ -136,6 +136,7 @@
 	"settings.diagnostics.health_refused": "Không có báo cáo — sai mã, hoặc bản triển khai này chưa đặt mã.",
 	"settings.diagnostics.health_failed": "Không đọc được báo cáo.",
 	"settings.diagnostics.health_where": "Trả lời từ {colo} · bản {sha}",
+	"settings.diagnostics.health_gate": "Cổng kiểm tra bot: {state}",
 	"settings.diagnostics.health_budget": "Twelve Data hôm nay: {spent} trên {limit} credit",
 	"settings.diagnostics.key_set": "đã đặt",
 	"settings.diagnostics.key_missing": "chưa có",

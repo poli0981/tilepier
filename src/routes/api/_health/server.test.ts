@@ -39,7 +39,9 @@ interface CallOptions {
 	/** What the deploy has set. Omitted means the secret was never put. */
 	secret?: string;
 	authorization?: string;
-	env?: Partial<Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY'>>;
+	env?: Partial<
+		Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY' | 'TURNSTILE_SECRET_KEY' | 'TURNSTILE_SITE_KEY'>
+	>;
 	colo?: string;
 }
 
@@ -54,7 +56,16 @@ async function call(options: CallOptions = {}): Promise<Response> {
 			request: Request;
 			url: URL;
 			platform?: {
-				env: Partial<Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY' | 'DEV_DASH_TOKEN'>> & {
+				env: Partial<
+					Pick<
+						Env,
+						| 'FINNHUB_KEY'
+						| 'TWELVEDATA_KEY'
+						| 'DEV_DASH_TOKEN'
+						| 'TURNSTILE_SECRET_KEY'
+						| 'TURNSTILE_SITE_KEY'
+					>
+				> & {
 					TILEPIER_CACHE: KVNamespace | undefined;
 				};
 				cf?: { colo?: string };
@@ -190,9 +201,20 @@ describe('what it reports', () => {
 		const text = await response.clone().text();
 		const data = await report(response);
 
-		expect(data.keys).toEqual({ finnhub: true, twelvedata: false });
+		expect(data.keys).toEqual({ finnhub: true, twelvedata: false, turnstile: false });
+		expect(data.gate).toBe('off');
 		expect(text).not.toContain('finnhub-secret-value');
 		expect(text).not.toContain(TOKEN);
+	});
+
+	// A secret put without its sitekey would have every networked tile refused;
+	// the report is where an operator finds out which half is missing.
+	it('reports the gate as on, or as misconfigured when a half is missing', async () => {
+		const both = { TURNSTILE_SECRET_KEY: 's', TURNSTILE_SITE_KEY: 'k' };
+		expect((await report(await call({ ...authorised, env: both }))).gate).toBe('on');
+		expect(
+			(await report(await call({ ...authorised, env: { TURNSTILE_SECRET_KEY: 's' } }))).gate
+		).toBe('misconfigured');
 	});
 
 	it('is a 503 in the envelope when the KV binding is absent', async () => {
