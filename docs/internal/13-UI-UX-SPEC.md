@@ -251,13 +251,14 @@ with a real answer and it was not a Week 3 problem: doc 23 puts the quota
 telemetry watch at Week 5, which is when a breaker table first has anything to
 say. Recorded here rather than left as a gap in a numbered list.
 
-**The typing half is resolved, 2026-09-01**, and the answer turned out not to
-need a generator at all: `src/worker-env.d.ts` declares the three secrets by
-hand and merges into the global `Env`, leaving the generated file untouched so
-`--check` stays green on both sides. doc 11 §9 carries the mechanism. What the
-deferral got right is that this was never only the health endpoint's problem —
-it blocked every `/api/stock/*` route the same way, so Week 5 could not have
-started anywhere else.
+**The typing half is resolved** — on the second attempt. The first, 2026-09-01,
+declared the three secrets by hand in `src/worker-env.d.ts`, which kept the
+committed file stable but left `--check` reading a developer's `.dev.vars`; it
+was green only because nobody had one yet. Since 2026-09-23 `pnpm gen` generates
+them from the committed `.dev.vars.example`, and doc 11 §9 carries the
+mechanism and the measurement. What the deferral got right is that this was
+never only the health endpoint's problem — it blocked every `/api/stock/*` route
+the same way, so Week 5 could not have started anywhere else.
 
 **The token is the half still to decide**, and it is a UI question rather than a
 typing one: this section asks the panel to render breaker state while doc 11 §9

@@ -223,20 +223,33 @@ No third-party telemetry. Rely on Cloudflare's built-in Workers metrics
 `GET /api/_health` returns breaker states and today's stock-budget counter
 — gated by `env.DEV_DASH_TOKEN` query secret; absent in docs/UI.
 
-**The three secrets are typed by hand in `src/worker-env.d.ts`** (2026-09-01),
-and that file exists because `wrangler types` cannot produce them. Secrets are
-not declared in `wrangler.jsonc` — they are set with `wrangler secret put` — so
-the generator learns their names from `.dev.vars`, which is gitignored. The
-committed `worker-configuration.d.ts` would then differ between a checkout that
-has one and CI, which does not, and `wrangler types --check` inside `pnpm lint`
-would fail on whichever side it ran. Doc 13 §10 recorded that as the reason the
-diagnostics breaker rows were deferred out of Week 3; it blocked `/api/stock/*`
-just as hard, which is why Week 5 settles it first.
+**The secrets are typed by the generator, from the committed example**
+(2026-09-23). Secrets are not declared in `wrangler.jsonc` — they are set with
+`wrangler secret put` — and by default `wrangler types` learns their names from
+`.dev.vars`, which is gitignored. A checkout with one therefore generated a
+different `worker-configuration.d.ts` from CI's, and `wrangler types --check`
+inside `pnpm lint` failed on whichever side had not generated it. Doc 13 §10
+recorded that as the reason the diagnostics breaker rows were deferred out of
+Week 3; it blocked `/api/stock/*` just as hard.
 
-The mechanism is declaration merging, not a second generator: `interface Env` is
-global in the generated file, so a global `.d.ts` adds members to it and leaves
-the generated file byte-identical. `src/fsa.d.ts` does the same thing to
-`FileSystemHandle`. Typed `string` rather than `string | undefined` — the
-optional chain on `platform?` already makes each read `string | undefined` at
-the call site, so the "deployed without `wrangler secret put`" branch stays
-reachable and is guarded the way a missing KV binding is.
+**The first answer, 2026-09-01, only moved the failure.** It typed the three
+secrets by hand in `src/worker-env.d.ts` and left the generated file alone,
+which kept the *committed* file stable — but `--check` still read the
+developer's `.dev.vars`, so the claim here that it "stays green on both sides"
+held only while nobody had one, and Week 5b is the week that needs one.
+Measured before it bit: `wrangler types --check --env-file .dev.vars.example`
+reported the committed file out of date.
+
+`pnpm gen` now runs `wrangler types --env-file .dev.vars.example`, and `build`
+and `check` go through it. An explicit env file **replaces** the default lookup
+rather than adding to it, so the generator reads the committed names — which
+carry no values — on every machine and in CI, and a developer's `.dev.vars` is
+never consulted. Verified 2026-09-23 with a `.dev.vars` carrying real-looking
+values and an extra local-only name: `--check` stayed green and a regenerate
+produced no diff. `src/worker-env.d.ts` is gone. Adding a secret is now "name
+it in `.dev.vars.example`, then `pnpm gen`".
+
+Each is typed `string`. The optional chain on `platform?` already makes a read
+`string | undefined` at the call site, so the "deployed without `wrangler
+secret put`" branch stays reachable and is guarded the way a missing KV binding
+is.

@@ -7,9 +7,12 @@
 # nowhere in `wrangler.jsonc`, in CI logs, or in any client bundle — doc 21 §5
 # greps the built output for them on every run.
 #
-# Their *types* are declared by hand in `src/worker-env.d.ts`, because
-# `wrangler types` would read this file's real counterpart and produce a
-# `worker-configuration.d.ts` that differs between a checkout and CI.
+# This file is also where their *types* come from. `pnpm gen` runs
+# `wrangler types --env-file .dev.vars.example`, so the committed
+# `worker-configuration.d.ts` is generated from these names on every machine
+# and in CI alike — and a developer's real `.dev.vars` is never read by the
+# generator. Add a secret here, then `pnpm gen`, or `pnpm lint` fails its
+# `--check` (doc 11 §9).
 
 # https://finnhub.io — free tier, 60 calls/min.
 FINNHUB_KEY=
@@ -17,5 +20,7 @@ FINNHUB_KEY=
 # https://twelvedata.com — free "Basic", 800 credits/day, resets 00:00 UTC.
 TWELVEDATA_KEY=
 
-# Any long random string. Gates GET /api/_health (doc 11 §9).
+# Any random string of at least 32 characters; shorter or empty turns the
+# endpoint off. Gates GET /api/_health (doc 11 §9), sent as
+# `Authorization: Bearer <token>` — never in a query string.
 DEV_DASH_TOKEN=
