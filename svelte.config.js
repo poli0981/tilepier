@@ -22,7 +22,12 @@ const config = {
 			mode: 'hash',
 			directives: {
 				'default-src': ['self'],
-				'script-src': ['self'],
+				// Cloudflare Turnstile's api.js, which refuses to run from a proxied
+				// or bundled copy (doc 15 §3). The only third-party script source.
+				'script-src': ['self', 'https://challenges.cloudflare.com'],
+				// Turnstile draws its challenge in an iframe from the same host.
+				// Without this, default-src 'self' would refuse the frame.
+				'frame-src': ['https://challenges.cloudflare.com'],
 				// Svelte writes inline styles for transitions — the pragmatic cost
 				// doc 15 §2 already accepts.
 				'style-src': ['self', 'unsafe-inline'],
