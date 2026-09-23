@@ -27,7 +27,7 @@
 	 * MUST equal LEGAL_VERSION in src/lib/shared-constants.ts.
 	 * A test asserts the two agree, because this file cannot import it.
 	 */
-	var LEGAL_VERSION = 1;
+	var LEGAL_VERSION = 2;
 
 	var root = document.documentElement;
 
@@ -45,6 +45,9 @@
 		var legal = readJSON('tp.legal.v1');
 		if (legal && typeof legal.acceptedVersion === 'number' && legal.acceptedVersion >= LEGAL_VERSION) {
 			root.setAttribute('data-legal', 'ok');
+		} else if (legal && typeof legal.acceptedVersion === 'number') {
+			// An older acceptance: the gate returns with a "what changed" line.
+			root.setAttribute('data-legal-prev', String(legal.acceptedVersion));
 		}
 	} catch {
 		/* gate stays up — failing closed is correct here */

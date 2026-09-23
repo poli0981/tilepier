@@ -17,8 +17,14 @@ import type { TpCryptoInterval } from './api-types';
  * Bump only for material changes to the legal texts. A stored
  * `tp.legal.v1.acceptedVersion` below this re-gates the app with a
  * "what changed" line (doc 16 §2).
+ *
+ * **2 (2026-09-23):** Cloudflare Web Analytics and the Turnstile bot check. The
+ * privacy page a reader agreed to said "no analytics, no telemetry", and that
+ * stopped being true, so everyone who agreed to 1 is asked again — with a line
+ * saying why — rather than finding out from a page they have no reason to
+ * re-read.
  */
-export const LEGAL_VERSION = 1;
+export const LEGAL_VERSION = 2;
 
 /* ─────────────────────────────────────────────────────────────── durations */
 

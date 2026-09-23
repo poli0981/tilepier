@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
+	import { previousLegalVersion } from '$lib/core/legal';
 	import { LOCALES } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
@@ -54,6 +55,11 @@
 		const accepted = legalGate.sync();
 		if (accepted) root.setAttribute('data-legal', 'ok');
 		else root.removeAttribute('data-legal');
+
+		// The "what changed" line, from the same rule boot.js applies (doc 16 §2).
+		const previous = accepted ? null : previousLegalVersion();
+		if (previous === null) root.removeAttribute('data-legal-prev');
+		else root.setAttribute('data-legal-prev', String(previous));
 	});
 
 	function onAccept() {
@@ -80,6 +86,10 @@
 
 		{#each LOCALES as locale (locale)}
 			<div data-locale={locale}>
+				<!-- Shown only to a reader who agreed to an older version (doc 16 §2). -->
+				<p class="tp-gate__changed" data-testid="gate-changed">
+					{m['legal.gate.changed'](undefined, { locale })}
+				</p>
 				<p>{m['legal.gate.summary'](undefined, { locale })}</p>
 				<p class="tp-gate__links">
 					<a href={resolve('/legal/terms')}>{m['legal.terms.title'](undefined, { locale })}</a>
@@ -171,6 +181,19 @@
 	.tp-gate__links {
 		display: flex;
 		gap: 1rem;
+	}
+
+	/* doc 16 §2: only for a reader who agreed to an older version. boot.js sets
+	   the attribute before first paint, so the line never flashes for anyone. */
+	.tp-gate__panel .tp-gate__changed {
+		display: none;
+		border-left: 2px solid var(--color-beacon);
+		padding-left: 0.75rem;
+		color: var(--color-fg);
+	}
+
+	:global(html[data-legal-prev]) .tp-gate__panel .tp-gate__changed {
+		display: block;
 	}
 
 	.tp-gate__links a {
