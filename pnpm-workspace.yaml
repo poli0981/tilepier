@@ -27,3 +27,12 @@ allowBuilds:
 # Entries here are packages consciously taken before that window elapsed.
 minimumReleaseAgeExclude:
   - knip@6.32.1
+
+# Security floors for transitive dependencies whose parents have not moved yet.
+# Each entry names its advisory and comes out when the parent's own range does.
+overrides:
+  # GHSA-pxg6-pf52-xh8x (Dependabot, low): cookie < 0.7.0 accepts out-of-bounds
+  # characters in a cookie's name, path and domain. @sveltejs/kit 2.70.x still
+  # asks for ^0.6.0. 0.7 keeps 0.6's parse/serialize API, and this app sets no
+  # cookies at all (doc 16 §3), so raising the floor changes nothing it does.
+  'cookie@<0.7.0': '^0.7.2'

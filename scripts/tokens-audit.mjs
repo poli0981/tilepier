@@ -32,8 +32,14 @@ const EXCLUDE = [/^src\/lib\/paraglide\//, /^src\/routes\/spike\//];
 /** The one file allowed to name colours, and only where it defines a token. */
 const TOKEN_SOURCE = 'src/app.css';
 
-/** Valid CSS hex-colour lengths only: #rgb, #rgba, #rrggbb, #rrggbbaa. */
-const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F\w-])/g;
+/**
+ * Valid CSS hex-colour lengths only: #rgb, #rgba, #rrggbb, #rrggbbaa — and not
+ * followed by a word character or a hyphen, so `#fff` matches and `#fffx` or
+ * `#fff-id` does not. `\w` already contains every hex digit; the class used to
+ * spell them out as well, which CodeQL (js/overly-large-range) rightly read as
+ * a range overlapping `\w`.
+ */
+const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![\w-])/g;
 
 /**
  * Same escape-hatch idea as `i18n-audit.mjs`, but line-scoped rather than

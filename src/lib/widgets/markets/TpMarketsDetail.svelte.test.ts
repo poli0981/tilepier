@@ -72,9 +72,9 @@ function klinesEnvelope(count: number): unknown {
 			symbol: 'BTCUSDT',
 			interval: '5m',
 			candles: candles(count),
-			attribution: 'Crypto data by Binance'
+			attribution: 'Crypto data by Binance.US'
 		},
-		meta: { cachedAt: 1_788_220_800, source: 'binance', stale: false }
+		meta: { cachedAt: 1_788_220_800, source: 'binance-us', stale: false }
 	};
 }
 
@@ -160,7 +160,7 @@ describe('the chart', () => {
 		serveBoth({
 			ok: true,
 			data: { symbol: 'BTCUSDT', interval: '5m', candles: [], attribution: '' },
-			meta: { cachedAt: 1, source: 'binance', stale: false }
+			meta: { cachedAt: 1, source: 'binance-us', stale: false }
 		});
 		const screen = render(TpMarketsDetail, props());
 
@@ -230,9 +230,9 @@ describe('the ranges', () => {
 							symbol: 'BTCUSDT',
 							interval: url.searchParams.get('interval'),
 							candles: candles(DEEP).slice(-limit),
-							attribution: 'Crypto data by Binance'
+							attribution: 'Crypto data by Binance.US'
 						},
-						meta: { cachedAt: 1_788_220_800, source: 'binance', stale: false }
+						meta: { cachedAt: 1_788_220_800, source: 'binance-us', stale: false }
 					};
 					return new Response(JSON.stringify(body), {
 						headers: { 'content-type': 'application/json' }
@@ -307,7 +307,7 @@ describe('the footer', () => {
 
 		// In the payload rather than in the component, so a surface cannot render
 		// a price without also having been handed the credit for it.
-		await expect.element(screen.getByText('Crypto data by Binance')).toBeInTheDocument();
+		await expect.element(screen.getByText('Crypto data by Binance.US')).toBeInTheDocument();
 	});
 });
 

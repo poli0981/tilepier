@@ -28,9 +28,13 @@ const ID_LENGTH = 8;
 export function newId(prefix: string): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(ID_LENGTH));
 	let out = '';
-	// charAt rather than indexing: noUncheckedIndexedAccess types [] as
-	// possibly undefined, and a modulo into a fixed alphabet never is.
-	for (const byte of bytes) out += ALPHABET.charAt(byte % ALPHABET.length);
+	// The low five bits of a uniform byte: a uniform draw from 0–31, the same
+	// number `% 32` gave, written as the bit mask it is. The modulo was correct
+	// and read as biased — CodeQL's js/biased-cryptographic-random flagged it,
+	// because a modulo is only unbiased when the divisor divides 256, and that
+	// fact lived in a comment rather than in the expression. charAt rather than
+	// indexing: noUncheckedIndexedAccess types [] as possibly undefined.
+	for (const byte of bytes) out += ALPHABET.charAt(byte & 0b11111);
 	return `${prefix}_${out}`;
 }
 

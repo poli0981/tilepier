@@ -101,6 +101,11 @@ Measured 2026-08-10 by spike S4: entry 1.7 KB gz, CSS 6.2 KB gz, fonts
 close to its limit (88 %), and it has no tree-shaking left to give — a major
 bump is what would push it over.
 
+**Re-measured 2026-09-23 on maplibre-gl 6.10** — the major, taken for a
+security fix (doc 02, rule 7): **274.1 KB gz, 91 %**. It fits, with 26 KB
+left rather than 36, and the map widget's own code lands in its detail chunk,
+not in this one.
+
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit
 owns the emitted names and they are content hashes. A filename-matching budget

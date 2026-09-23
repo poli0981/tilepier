@@ -39,8 +39,8 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/geocode` | q, lang | Photon → Nominatim |
 | `GET /api/fx` | — (full USD table) | ER-API + snapshot side-effect |
 | `GET /api/fx/history` | pair, days ∈ {7,30,90,365} | KV snapshots only |
-| `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
-| `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance klines |
+| `GET /api/crypto/ticker` | symbols (≤12) | Binance.US ticker/24hr (doc 10 §4) |
+| `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance.US klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
 | `GET /api/stock/series` | symbol, interval(15min\|1day), limit ∈ range set | Twelve Data (no fallback source since 2026-09-23, doc 10 §5) |
 | `GET /api/stock/search` | q (1–40 chars: letters, digits, space, `. & ' -`) | Finnhub search |

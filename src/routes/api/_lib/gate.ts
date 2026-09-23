@@ -15,7 +15,7 @@ import { fail } from './respond';
  * replays any cacheable GET from `caches.default` before hooks run, so a URL
  * already in the edge cache answers without a pass for up to half its TTL.
  * That is public data costing nothing; what a pass stands in front of is the
- * cache MISS — the request that reaches Twelve Data, Open-Meteo, Binance — which
+ * cache MISS — the request that reaches Twelve Data, Open-Meteo, Binance.US — which
  * is the quota-drain threat doc 15 §1(c) names.
  */
 

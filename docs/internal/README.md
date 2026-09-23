@@ -61,7 +61,7 @@ New to the project: 01 → 02 → 03 → 04 → 06 → 12. Implementing a widget
 ## Locked decisions (2026-07-19)
 
 1. Scope v1.0 = full 15-widget set, 8-week schedule.
-2. Markets widget = crypto (Binance, keyless) + US stocks
+2. Markets widget = crypto (Binance.US, keyless) + US stocks
    (Finnhub quotes + Twelve Data series). VN equities: out of scope v1.
 3. Standalone product; no OmniDeck branding or shared design tokens.
 4. Name **TilePier**; component prefix `Tp`; design system **"Đài quan trắc"**.

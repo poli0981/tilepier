@@ -277,7 +277,7 @@ describe('cache and failure', () => {
 		expect(kv.store.has(`kv:${cacheKey.cryptoKlines('BTCUSDT', '5m')}`)).toBe(false);
 		// The breaker record *is* written — an empty series counts as upstream
 		// failing — so this checks the cache key rather than the store size.
-		expect(kv.store.has('kv:brk:binance')).toBe(true);
+		expect(kv.store.has('kv:brk:binance-us')).toBe(true);
 	});
 
 	it('serves a stale entry when upstream is down, still windowed', async () => {
@@ -286,12 +286,12 @@ describe('cache and failure', () => {
 			symbol: 'BTCUSDT',
 			interval: '1d',
 			candles: Array.from({ length: 500 }, (_, i) => [i, 1, 2, 0.5, 1.5, 10] as const),
-			attribution: 'Crypto data by Binance'
+			attribution: 'Crypto data by Binance.US'
 		};
 		kv.store.set(
 			`kv:${cacheKey.cryptoKlines('BTCUSDT', '1d')}`,
 			// Past the 900 s TTL, inside the 6 h stale window.
-			JSON.stringify({ cachedAt: Date.now() - 3_600_000, source: 'binance', payload })
+			JSON.stringify({ cachedAt: Date.now() - 3_600_000, source: 'binance-us', payload })
 		);
 
 		const { response } = await call({ kv, search: '?symbol=BTCUSDT&interval=1d&limit=30' });
@@ -311,7 +311,7 @@ describe('cache and failure', () => {
 		const kv = fakeKv();
 		await call({ kv });
 
-		const record = JSON.parse(kv.store.get('kv:brk:binance') as string) as { state: string };
+		const record = JSON.parse(kv.store.get('kv:brk:binance-us') as string) as { state: string };
 		expect(record.state).toBe('open');
 	});
 });

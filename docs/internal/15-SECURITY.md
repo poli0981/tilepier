@@ -216,6 +216,17 @@ analytics or waits on Cloudflare.
 - pnpm 11 additionally gates packages published inside its minimum-release-age
   window; conscious exceptions are listed in `minimumReleaseAgeExclude`. This
   is the same caution asked of Renovate below, now enforced at install time.
+  **A non-strict install adds to that list by itself** (2026-09-23): asked for
+  a version inside the window, pnpm 11 writes the exclusion and installs. That
+  happened with `wrangler@4.136.3`, fourteen hours old. The exclusion was
+  reverted and an older version taken (4.136.1, which carried the same fix), and
+  the lockfile policy check then caught the stale entry, as it should. Read
+  `pnpm-workspace.yaml`'s diff after every dependency change; an exclusion that
+  nobody wrote a reason for is the tell.
+- **Security floors for transitive dependencies** live in `pnpm-workspace.yaml`'s
+  `overrides` (added 2026-09-23). Each entry names its advisory, and it comes out
+  when the parent package raises its own range. The first is
+  `cookie@<0.7.0 → ^0.7.2` under SvelteKit (GHSA-pxg6-pf52-xh8x).
 - No CDN scripts/fonts — everything bundled/self-hosted (also a CSP
   consequence), with the two named Cloudflare exceptions of §2. CI grep
   forbids `https://cdn`, `unpkg`, `jsdelivr`, `googleapis` in the build

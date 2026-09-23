@@ -86,7 +86,7 @@ const STOCKS: TpStockQuotePayload = {
 
 const CRYPTO: TpCryptoTickerPayload = {
 	quotes: { BTCUSDT: quote('BTCUSDT', 62_910.53) },
-	attribution: 'Crypto data by Binance'
+	attribution: 'Crypto data by Binance.US'
 };
 
 /** A handle as `cryptoSide` and `stockSide` read one: what `swr` is showing. */
@@ -302,7 +302,7 @@ describe('rows', () => {
 
 	const payload: TpCryptoTickerPayload = {
 		quotes: { BTCUSDT: quote('BTCUSDT', 62_910.53), GONEUSDT: null },
-		attribution: 'Crypto data by Binance'
+		attribution: 'Crypto data by Binance.US'
 	};
 
 	const coins = side(payload);

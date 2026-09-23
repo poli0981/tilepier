@@ -52,33 +52,55 @@
  * explaining the difference. It is not something a mirror of the same operator
  * can fix.
  *
- * It is still an inference. `/api/_health` prints the breaker's `reason`, which
- * carries the upstream status verbatim — that is the one measurement that would
- * settle it, and it needs `DEV_DASH_TOKEN` (Week 5b). Until then nothing here
- * should be changed again on a guess; two speculative fixes are one more than
- * this file should carry.
+ * ## Measured, and the inference was wrong (2026-09-23)
  *
- * ## Why this mirror anyway
+ * `/api/_health` printed the reason the paragraphs above could only guess at:
+ * `upstream 403` with a bare HTML "403 Forbidden" page, from `SJC` and then
+ * from `SIN`. Binance documents 451 for a restricted location and 403 for "a
+ * WAF (Web Application Firewall) rule has been violated" — so this is Binance's
+ * WAF refusing Cloudflare Workers' shared egress, from every PoP, and not a
+ * jurisdiction. No reader got coins from 5a on. A `User-Agent` changes nothing
+ * (`_lib/probe.ts` asks both ways).
  *
- * `data-api.binance.vision` is Binance's own public market-data endpoint. It
- * serves `/api/v3/ticker/24hr` and `/api/v3/klines` with byte-identical shapes
- * (verified against both), carries no account or trading surface at all, and
- * needs no key — so nothing about doc 10 §1's ToS line or doc 16 §5's credit
- * changes. `api1..4.binance.com` are aliases of the same service and would
- * inherit the same restriction; this one exists precisely to be reachable.
+ * ## Binance.US, chosen by measurement (2026-09-23)
  *
- * The primary stays first in the list and unused, rather than deleted: it is
- * the record of what this used to be and what to try again.
+ * The probe behind `/api/_health?probe=crypto` asked nine keyless candidates
+ * from the Worker (doc 10 §4). `api.binance.us` answered both the ticker and
+ * the klines, and it is the one that changes nothing else:
+ *
+ * - **The same API.** `/api/v3/ticker/24hr` with a `symbols` batch, and
+ *   `/api/v3/klines`, with Binance's shapes, symbols (`BTCUSDT`), string-typed
+ *   numbers and error codes. The normaliser, the split on a refused batch, the
+ *   deep klines series and every test of them carry over untouched.
+ * - **Every coin on the top-list** (`CRYPTO_TOP_LIST`) trades there as a USDT
+ *   pair, checked against `exchangeInfo` the same day.
+ * - **Prices that track.** BTC read 85 991 against Coinbase's 85 976 BTC-USD,
+ *   ETH within 0.2 %. The small coins are thin — DOT and TRX trade about a
+ *   hundred times a day — which the permanent "reference only" disclaimer
+ *   already covers; a wider spread is the cost, not a wrong price.
+ * - **No key, weight limits per IP** (6 000 a minute), and 429/418 are the
+ *   breaker's existing immediate trips.
+ *
+ * Coinbase Exchange answered too, faster, but with other shapes, no BNB or
+ * TRX, and 300 candles a request. It is the next candidate if this host ever
+ * goes the way of the others — measured with the same probe first.
+ *
+ * The hosts stay listed rather than deleted: they are the record of what was
+ * tried, and why it stopped.
  */
 
 /** Not exported: the builders below are the only readers, and knip is
  *  CI-blocking on an export nothing imports. Naming them here is what doc 10 §4
  *  asks for — one place, documented — rather than a value other modules pass
  *  around. */
-const BINANCE_HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'] as const;
+const BINANCE_HOSTS = [
+	'https://api.binance.com',
+	'https://data-api.binance.vision',
+	'https://api.binance.us'
+] as const;
 
-/** The host in use. Index 1 since 2026-09-02 — see above. */
-const BINANCE_HOST = BINANCE_HOSTS[1];
+/** The host in use: Binance.US since 2026-09-23 — see above. */
+const BINANCE_HOST = BINANCE_HOSTS[2];
 
 /** `?symbols=["A","B"]` — Binance wants a JSON array here, not a comma list. */
 export function tickerBatchUrl(symbols: readonly string[]): string {

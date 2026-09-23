@@ -18,7 +18,7 @@ Node 24 LTS · pnpm 11 · SvelteKit ≥2.69.3 (adapter-cloudflare) · Svelte 5
 **runes only** · TypeScript 6 strict · Vite 8 (Rolldown —
 `build.rolldownOptions`) · Tailwind 4.3 (CSS-first `@theme`, no config js)
 · gridstack 12.6 · ECharts 6.1 (lazy, tree-shaken imports from
-`echarts/core`) · Dexie 4 · Paraglide JS 2 · MapLibre GL 5 + OpenFreeMap ·
+`echarts/core`) · Dexie 4 · Paraglide JS 2 · MapLibre GL 6 + OpenFreeMap ·
 music-metadata · marked + DOMPurify · fast-xml-parser 5 · Vitest 4
 (browser mode via @vitest/browser-playwright) · Playwright · MSW 2 ·
 ESLint 10 flat · Prettier 3 · knip.

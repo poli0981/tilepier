@@ -5,7 +5,7 @@ import { MARKETS_MAX_SYMBOLS } from '$lib/shared-constants';
  * (doc 05 §2) — never in Dexie, and never a schema on the manifest.
  */
 
-/** doc 09 §1: the Worker maps crypto to Binance and stock to Finnhub and
+/** doc 09 §1: the Worker maps crypto to Binance.US and stock to Finnhub and
  *  Twelve Data, so the client has to say which it means. */
 export type TpMarketKind = 'crypto' | 'stock';
 

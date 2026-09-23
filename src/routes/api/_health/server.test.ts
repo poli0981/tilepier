@@ -162,23 +162,25 @@ describe('what it reports', () => {
 	it('reports an open breaker with the reason and the verdict the clock gives', async () => {
 		const kv = fakeKv();
 		kv.store.set(
-			'kv:brk:binance',
+			'kv:brk:binance-us',
 			JSON.stringify({
 				state: 'open',
 				openedAt: Date.now() - 10 * 60_000,
-				reason: 'upstream 451: {"code":0,"msg":"Service unavailable from a restricted location"}',
-				failures: 3
+				// What production's report actually said about Binance on 2026-09-23.
+				reason:
+					'upstream 403: <html> <head><title>403 Forbidden</title></head> <body> <center><h1>403 Forbidden</h1></center> </body> </html>',
+				failures: 17
 			})
 		);
 
 		const data = await report(await call({ ...authorised, kv }));
-		const binance = data.breakers.find((b) => b.upstream === 'binance');
+		const crypto = data.breakers.find((b) => b.upstream === 'binance-us');
 
-		expect(binance?.state).toBe('open');
+		expect(crypto?.state).toBe('open');
 		// Ten minutes past a 120 s cool-down: the next request would probe.
-		expect(binance?.verdict).toBe('half-open');
-		expect(binance?.reason).toContain('upstream 451');
-		expect(binance?.reason).toContain('restricted location');
+		expect(crypto?.verdict).toBe('half-open');
+		expect(crypto?.reason).toContain('upstream 403');
+		expect(crypto?.reason).toContain('403 Forbidden');
 	});
 
 	it("reads today's Twelve Data spend against doc 11 §5's tiers", async () => {

@@ -127,9 +127,12 @@ function seed(kv: KVNamespace & { store: Map<string, string> }, ageMs: number): 
 		// One real row and one absent one, so a seeded entry also exercises the
 		// per-symbol `null` on the way back out of KV.
 		quotes: { BTCUSDT: CACHED_BTC, ETHUSDT: null },
-		attribution: 'Crypto data by Binance'
+		attribution: 'Crypto data by Binance.US'
 	};
-	kv.store.set(KEY, JSON.stringify({ cachedAt: Date.now() - ageMs, source: 'binance', payload }));
+	kv.store.set(
+		KEY,
+		JSON.stringify({ cachedAt: Date.now() - ageMs, source: 'binance-us', payload })
+	);
 }
 
 /** A `Response` `fetchUpstream` will accept, or reject with the given status. */
@@ -258,7 +261,7 @@ describe('cache', () => {
 
 		expect(response.headers.get('x-tp-cache')).toBe('MISS');
 		expect(body.data.quotes['BTCUSDT']?.price).toBe(62_910.53);
-		expect(body.meta.source).toBe('binance');
+		expect(body.meta.source).toBe('binance-us');
 		expect(kv.store.has(KEY)).toBe(true);
 	});
 
@@ -357,7 +360,7 @@ describe('the per-symbol split (doc 09 §1)', () => {
 		// §6's breaker exists to prevent.
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 
-		const record = JSON.parse(kv.store.get('kv:brk:binance') as string) as {
+		const record = JSON.parse(kv.store.get('kv:brk:binance-us') as string) as {
 			state: string;
 			failures: number;
 		};

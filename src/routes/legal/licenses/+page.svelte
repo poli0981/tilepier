@@ -24,7 +24,7 @@
 		{ item: 'Photon (komoot)', licence: 'Apache-2.0', obligation: 'legal.licenses.ob_photon' },
 		{ item: 'Nominatim', licence: 'ODbL + policy', obligation: 'legal.licenses.ob_nominatim' },
 		{
-			item: 'Finnhub · Twelve Data · Binance',
+			item: 'Finnhub · Twelve Data · Binance.US',
 			licence: 'per ToS',
 			obligation: 'legal.licenses.ob_markets'
 		},

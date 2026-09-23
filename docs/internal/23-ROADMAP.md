@@ -869,6 +869,40 @@ machine, which closes that half of S3 (doc 22).
 **M5 still waits** on the keyed S3 run (after #16, on a day the misreading did
 not inflate) and on coins answering at all.
 
+### Week 5b closes — coins through Binance.US, and every open alert (2026-09-23)
+
+**The probe (#17) settled the crypto upstream in one request.** Run by the
+owner from `SIN`: Binance 403 at the WAF on both endpoints, with or without a
+`User-Agent`; Binance.US, Coinbase and Kraken 200 on both; OKX and KuCoin
+throttled (429) on the Workers' shared egress; Bybit, Bitstamp and CoinGecko
+each out for a reason of its own (doc 10 §4 has the table). **#18 takes
+Binance.US.** Its API is Binance's, so the switch is a host and nothing else.
+All twelve coins of the top-list trade there as USDT pairs, and BTC read within
+0.02 % of Coinbase's BTC-USD. The small coins are thin, which the permanent
+"reference only" line already covers. Coinbase is the next candidate, and the
+probe runs again before any further switch.
+
+**Every open security alert closed in the same PR**, at the owner's request:
+
+| alert | severity | fix |
+|---|---|---|
+| maplibre-gl ≤ 6.4.0, GHSA-jrc7-96c5-q579 (×2) | critical | 6.10 — the major doc 02 held back, taken for the fix; chunk 274.1 of 300 KB gz |
+| sharp < 0.35.4, libheif (via miniflare) | high | wrangler 4.136.1 — not 4.136.3, which pnpm's release-age gate refused (doc 15 §6) |
+| vitest / @vitest/mocker < 4.1.11, GHSA-82fw-gwwq-j7x9 | medium ×2 | 4.1.11, staying on 4.x |
+| cookie < 0.7.0 (under SvelteKit), GHSA-pxg6-pf52-xh8x | low | a floor in `pnpm-workspace.yaml`'s new `overrides` |
+| CodeQL js/biased-cryptographic-random, `ids.ts` | high | `byte & 0b11111` — the modulo was already unbiased, and now it reads as unbiased |
+| CodeQL js/overly-large-range, `tokens-audit.mjs` (×3) | medium | `(?![\w-])`, the same matches on every case |
+
+**What M5 waits on now** is observation, not code:
+
+- **Coins on production**, from more than one colo. The probe measured
+  Binance.US from `SIN`, and a reader served from `SJC` should see it too. The
+  owner's next probe run, or the markets tile itself, is the check.
+- **S3's keyed run**, on the first UTC day the minute-credit misreading did not
+  inflate (doc 22 §S3).
+- **The week of quota watching** doc 23's milestone line asks for, starting
+  from #18's deploy.
+
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF
 guards + parser fixtures) + reader UI + OPML. **M6:** all networked

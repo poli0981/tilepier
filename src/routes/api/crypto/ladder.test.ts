@@ -100,7 +100,7 @@ function seedTicker(kv: KVNamespace & { store: Map<string, string> }, ageMs: num
 		`kv:${cacheKey.cryptoTicker('BTCUSDT')}`,
 		JSON.stringify({
 			cachedAt: Date.now() - ageMs,
-			source: 'binance',
+			source: 'binance-us',
 			payload: {
 				quotes: {
 					BTCUSDT: {
@@ -113,7 +113,7 @@ function seedTicker(kv: KVNamespace & { store: Map<string, string> }, ageMs: num
 						at: 1
 					}
 				},
-				attribution: 'Crypto data by Binance'
+				attribution: 'Crypto data by Binance.US'
 			}
 		})
 	);
@@ -123,7 +123,7 @@ function breakerOf(kv: KVNamespace & { store: Map<string, string> }): {
 	state: string;
 	failures: number;
 } {
-	return JSON.parse(kv.store.get('kv:brk:binance') ?? '{}') as {
+	return JSON.parse(kv.store.get('kv:brk:binance-us') ?? '{}') as {
 		state: string;
 		failures: number;
 	};
@@ -213,7 +213,7 @@ describe('rung 2 — the breaker is open', () => {
 		// Past the 30 s TTL, inside the 10 min stale window.
 		seedTicker(kv, 60_000);
 		kv.store.set(
-			'kv:brk:binance',
+			'kv:brk:binance-us',
 			JSON.stringify({ state: 'open', openedAt: Date.now(), reason: '429', failures: 1 })
 		);
 
@@ -233,7 +233,7 @@ describe('rung 2 — the breaker is open', () => {
 
 		const kv = fakeKv();
 		kv.store.set(
-			'kv:brk:binance',
+			'kv:brk:binance-us',
 			JSON.stringify({ state: 'open', openedAt: Date.now(), reason: '429', failures: 1 })
 		);
 
@@ -251,7 +251,7 @@ describe('rung 2 — the breaker is open', () => {
 
 		const kv = fakeKv();
 		kv.store.set(
-			'kv:brk:binance',
+			'kv:brk:binance-us',
 			JSON.stringify({ state: 'open', openedAt: Date.now(), reason: '429', failures: 1 })
 		);
 
@@ -272,7 +272,7 @@ describe('rung 3 — the cool-down passes', () => {
 
 		const kv = fakeKv();
 		kv.store.set(
-			'kv:brk:binance',
+			'kv:brk:binance-us',
 			JSON.stringify({
 				state: 'open',
 				// Opened longer ago than the cool-down, so the next request is the
@@ -300,7 +300,7 @@ describe('rung 3 — the cool-down passes', () => {
 
 		const kv = fakeKv();
 		kv.store.set(
-			'kv:brk:binance',
+			'kv:brk:binance-us',
 			JSON.stringify({
 				state: 'open',
 				openedAt: Date.now() - BREAKER.cooldownMs - 1000,

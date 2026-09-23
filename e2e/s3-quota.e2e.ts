@@ -179,7 +179,7 @@ test.describe('S3 · the quota model on paper', () => {
 	test('a full day of warm stock symbols stays under the Twelve Data ceiling', () => {
 		// doc 11 §5: 15 min TTL → ≤ 96 calls/day per symbol-interval; 6 h daily
 		// TTL → ≤ 4. The default watchlist is 4 symbols, 2 of them crypto
-		// (Binance, keyless), so 2 stocks reach Twelve Data.
+		// (Binance.US, keyless), so 2 stocks reach Twelve Data.
 		const perDay = (ttlMs: number) => Math.floor(86_400_000 / ttlMs);
 
 		expect(perDay(CACHE_POLICY.stSeries15min.ttlMs)).toBe(96);
