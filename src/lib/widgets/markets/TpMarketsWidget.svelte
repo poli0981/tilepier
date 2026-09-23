@@ -5,7 +5,7 @@
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
 	import type { TpWidgetProps } from '$lib/core/types';
-	import { fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
+	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
@@ -342,12 +342,13 @@
 						<span class="tp-mk-row__flat" title={m['widget.markets.no_change']()}>—</span>
 					{:else}
 						{@const change = fmtPercentChange(quote.change, settings.locale)}
+						{@const direction = changeDirection(quote.change, settings.locale)}
 						<!-- doc 12 §4.2: `Intl` places the sign before the colour is
 						     applied, so colour reinforces rather than carries. -->
 						<span
 							class="tp-mk-row__change tp-num"
-							class:tp-mk-row__change--up={quote.change > 0}
-							class:tp-mk-row__change--down={quote.change < 0}
+							class:tp-mk-row__change--up={direction === 'up'}
+							class:tp-mk-row__change--down={direction === 'down'}
 							aria-label={row.entry.kind === 'stock'
 								? m['widget.markets.change_label_day']({ change })
 								: m['widget.markets.change_label']({ change })}

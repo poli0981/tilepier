@@ -136,6 +136,12 @@ watches change, it's mono + tnum. No exceptions.**
    not decoration. Category icons are `fg-mute`, never rainbow.
 2. up/down pair verified for deuteranopia (green/red-orange separation +
    always paired with a sign glyph — color is never the only channel).
+   **And the colour follows the glyph, not the number behind it** (2026-09-23):
+   a move is coloured from `changeDirection`, which reads the sign off the
+   formatted text. −0.004 % prints as an unsigned "0%", so it is uncoloured.
+   Colouring from the raw fraction put a red "0%" beside BTC on production —
+   colour carrying a fall the text had rounded away, which is this rule broken
+   from the other side.
 3. Charts: series-1 = beacon; series-2 = `#7B8FF2` (harbor blue, charts
    only); further series from a fixed 5-step calibrated ramp defined in the
    ECharts theme — widgets don't invent colors.

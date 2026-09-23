@@ -523,3 +523,20 @@ describe('the stock half (doc 09 §1)', () => {
 		expect(asked.some((url) => url.includes('/api/stock/series'))).toBe(false);
 	});
 });
+
+describe('the change chip’s colour (doc 12 §4.2)', () => {
+	it('does not colour a move that prints as 0%', async () => {
+		// Production, 2026-09-23: BTC a few thousandths of a percent down, printed
+		// as an unsigned "0%" — and coloured red, a fall the text did not show.
+		const flat = structuredClone(CRYPTO_OK);
+		const btc = flat.ok ? flat.data.quotes['BTCUSDT'] : null;
+		if (btc) btc.change24h = -0.000_04;
+		serve(flat);
+		const screen = render(TpMarketsWidget, props());
+
+		const chip = screen.getByLabelText(m['widget.markets.change_label']({ change: '0%' }));
+		await expect.element(chip).toBeInTheDocument();
+		await expect.element(chip).not.toHaveClass('tp-mk-row__change--down');
+		await expect.element(chip).not.toHaveClass('tp-mk-row__change--up');
+	});
+});

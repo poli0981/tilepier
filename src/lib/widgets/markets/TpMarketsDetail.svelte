@@ -5,7 +5,7 @@
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import type { TpDetailProps } from '$lib/core/types';
-	import { fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
+	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
@@ -402,10 +402,11 @@
 				<div class="tp-mkd__figures">
 					<span class="tp-mkd__price tp-num">{priceText(quote.price)}</span>
 					{#if quote.change !== null}
+						{@const direction = changeDirection(quote.change, settings.locale)}
 						<span
 							class="tp-mkd__change tp-num"
-							class:tp-mkd__change--up={quote.change > 0}
-							class:tp-mkd__change--down={quote.change < 0}
+							class:tp-mkd__change--up={direction === 'up'}
+							class:tp-mkd__change--down={direction === 'down'}
 						>
 							{fmtPercentChange(quote.change, settings.locale)}
 						</span>

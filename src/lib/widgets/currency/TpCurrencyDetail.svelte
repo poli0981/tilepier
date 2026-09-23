@@ -5,7 +5,7 @@
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import type { TpDetailProps } from '$lib/core/types';
-	import { fmtCurrency, fmtPercentChange, fmtRate } from '$lib/i18n/fmt';
+	import { changeDirection, fmtCurrency, fmtPercentChange, fmtRate } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
@@ -305,11 +305,9 @@
 								<td
 									class="tp-curd__right tp-num"
 									data-testid="currency-change-{row.code}"
-									data-dir={row.change === null || row.change === 0
+									data-dir={row.change === null
 										? 'flat'
-										: row.change > 0
-											? 'up'
-											: 'down'}
+										: changeDirection(row.change, settings.locale)}
 								>
 									{row.change === null ? '—' : fmtPercentChange(row.change, settings.locale)}
 								</td>

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { fmtDate, fmtTime, isValidZone, zoneOffsetMinutes } from './fmt';
+import {
+	changeDirection,
+	fmtDate,
+	fmtPercentChange,
+	fmtTime,
+	isValidZone,
+	zoneOffsetMinutes
+} from './fmt';
 
 /**
  * doc 14 §3. Every assertion is pinned to a fixed instant and an explicit
@@ -100,5 +107,29 @@ describe('isValidZone', () => {
 		// doc 07 §1: a stored zone that stops resolving is dropped, not thrown on.
 		expect(isValidZone('Mars/Olympus_Mons')).toBe(false);
 		expect(isValidZone('')).toBe(false);
+	});
+});
+
+describe('changeDirection', () => {
+	it('reads the direction off the printed value, not off the fraction', () => {
+		// Production, 2026-09-23: BTC's 24 h move was a few thousandths of a
+		// percent down. It prints as an unsigned "0%", so it is flat — a red
+		// chip there claimed a fall the text had rounded away.
+		expect(fmtPercentChange(-0.000_04, 'en')).toBe('0%');
+		expect(changeDirection(-0.000_04, 'en')).toBe('flat');
+		expect(changeDirection(0.000_04, 'en')).toBe('flat');
+	});
+
+	it('follows the sign whenever one is printed', () => {
+		expect(fmtPercentChange(-0.0005, 'en')).toBe('-0.05%');
+		expect(changeDirection(-0.0005, 'en')).toBe('down');
+		expect(changeDirection(0.021_26, 'en')).toBe('up');
+		expect(changeDirection(0, 'en')).toBe('flat');
+	});
+
+	it('agrees with Vietnamese formatting too, whose sign and spacing differ', () => {
+		expect(changeDirection(-0.0154, 'vi')).toBe('down');
+		expect(changeDirection(0.0041, 'vi')).toBe('up');
+		expect(changeDirection(-0.000_01, 'vi')).toBe('flat');
 	});
 });
