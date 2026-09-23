@@ -7,7 +7,16 @@ import {
 	recordFailure,
 	recordSuccess
 } from './breaker';
-import { mayFetch, parseCreditsLeft, readSpend, recordSpend, utcDateKey } from './budget';
+import {
+	markMinuteSpent,
+	mayFetch,
+	minuteSpent,
+	parseCreditsLeft,
+	readSpend,
+	recordSpend,
+	secondsToNextMinute,
+	utcDateKey
+} from './budget';
 import { readCache, ttlSeconds, writeCache } from './kv-cache';
 import { checkRateLimit } from './ratelimit';
 import { parseCoords } from './geohash';
@@ -281,14 +290,25 @@ describe('Twelve Data budget tiers (doc 11 §5)', () => {
 		expect(mayFetch('daily', STOCK_BUDGET.dailySeriesStopAt)).toBe(false);
 	});
 
-	it('takes the pessimistic view when upstream disagrees with our counter', () => {
-		// We think we have spent 10, upstream says only 50 credits remain — i.e.
-		// 750 spent. The header wins because it is the real figure.
-		expect(mayFetch('intraday', 10, 50)).toBe(false);
-		// And the reverse: our counter is higher, so it wins.
-		expect(mayFetch('intraday', 730, 700)).toBe(false);
-		// Both agree there is room.
-		expect(mayFetch('intraday', 10, 790)).toBe(true);
+	// 'takes the pessimistic view when upstream disagrees with our counter' lived
+	// here until 2026-09-23. Its premise was that `api-credits-left` counts the
+	// day; it counts the minute, and the test pinned the reading that stopped
+	// every series after the first call of the day (budget.ts, doc 11 §5).
+
+	it('marks a spent minute, and forgets it when the minute turns', async () => {
+		const t0 = Date.parse('2026-09-23T15:00:10Z');
+		expect(await minuteSpent(kv, t0)).toBe(false);
+
+		await markMinuteSpent(kv, t0);
+		expect(await minuteSpent(kv, t0 + 49_000)).toBe(true);
+		// 15:01:00 is a new minute, whatever KV has not yet expired.
+		expect(await minuteSpent(kv, Date.parse('2026-09-23T15:01:00Z'))).toBe(false);
+	});
+
+	it('names the seconds left in the minute as the retry-after', () => {
+		expect(secondsToNextMinute(Date.parse('2026-09-23T15:00:10Z'))).toBe(50);
+		expect(secondsToNextMinute(Date.parse('2026-09-23T15:00:59.500Z'))).toBe(1);
+		expect(secondsToNextMinute(Date.parse('2026-09-23T15:00:00Z'))).toBe(60);
 	});
 
 	it('accumulates spend per UTC day', async () => {

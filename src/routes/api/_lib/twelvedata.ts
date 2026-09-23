@@ -51,6 +51,21 @@ export interface TpTwelveDataError {
 }
 
 /**
+ * Which of Twelve Data's two limits a 429 is about (doc 10 §5).
+ *
+ * The same code covers both: "You have run out of API credits for the current
+ * minute…" (verbatim, from a real response) and the day's refusal. Only an
+ * explicit "for the day" is read as the day. Anything else is the minute,
+ * because the two mistakes are not the same size: a day read as a minute costs
+ * about one refused call a minute until midnight, while a minute read as a day
+ * costs every chart until midnight — which is what every 429 did here until
+ * 2026-09-23. Our own counter stops daily series at 780 regardless.
+ */
+export function creditWindow(message: string): 'minute' | 'day' {
+	return /\bfor the day\b/i.test(message) ? 'day' : 'minute';
+}
+
+/**
  * Twelve Data reports some failures inside a 200 as `{ status: 'error', code,
  * message }` rather than as an HTTP status — a symbol it does not cover, a plan
  * limit, and on some routes the daily credits running out. Read both ways.

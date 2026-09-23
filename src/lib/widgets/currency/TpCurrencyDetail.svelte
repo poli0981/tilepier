@@ -92,8 +92,11 @@
 
 	const attribution = $derived(payload?.attribution ?? '');
 
+	/** A failed retry lands in the handle's own status, which is what the tile
+	 *  renders — so the rejection has nowhere further to go, and dropping it
+	 *  would make it an `unhandledrejection` in the ring buffer. */
 	function retry(): void {
-		void handle?.revalidate('retry');
+		void handle?.revalidate('retry').catch(() => undefined);
 	}
 
 	function setAmount(raw: string): void {

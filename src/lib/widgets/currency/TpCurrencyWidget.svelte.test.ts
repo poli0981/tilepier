@@ -144,6 +144,29 @@ describe('states (doc 06 §3)', () => {
 		await expect.element(screen.getByText(m['common.retry']())).toBeInTheDocument();
 	});
 
+	it('a retry that fails again says so in the tile, not as an unhandled rejection', async () => {
+		// `revalidate` rejects on failure, because backoff belongs to the
+		// scheduler (doc 04 §2). A button that dropped the promise turned every
+		// failed retry into an `unhandledrejection` — and the ring buffer a bug
+		// report exports into a list of them. Production's diagnostics showed
+		// exactly that on 2026-09-23.
+		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
+		const unhandled: unknown[] = [];
+		const listen = (event: PromiseRejectionEvent) => void unhandled.push(event.reason);
+		window.addEventListener('unhandledrejection', listen);
+
+		try {
+			const screen = render(TpCurrencyWidget, props());
+			await screen.getByText(m['common.retry']()).click();
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			await expect.element(screen.getByTestId('currency-error')).toBeInTheDocument();
+			expect(unhandled).toEqual([]);
+		} finally {
+			window.removeEventListener('unhandledrejection', listen);
+		}
+	});
+
 	it('rate-limited: says so rather than showing the generic failure', async () => {
 		serve({ ok: false, error: { code: 'RATE_LIMITED', retryAfterS: 30 } }, { status: 429 });
 		const screen = render(TpCurrencyWidget, props());

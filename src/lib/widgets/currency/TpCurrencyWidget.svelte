@@ -159,8 +159,11 @@
 		untrack(() => void mirrorFxSnapshot(current, db));
 	});
 
+	/** A failed retry lands in the handle's own status, which is what the tile
+	 *  renders — so the rejection has nowhere further to go, and dropping it
+	 *  would make it an `unhandledrejection` in the ring buffer. */
 	function retry(): void {
-		void handle?.revalidate('retry');
+		void handle?.revalidate('retry').catch(() => undefined);
 	}
 
 	/** doc 13 §7's badge, published to the host header (doc 13 §3). */

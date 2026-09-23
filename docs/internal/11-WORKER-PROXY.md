@@ -201,14 +201,31 @@ copes).
 - Budget guard: maintain `st:budget:<utc-date>` counter (KV, best-effort).
   At ≥ 720 (90%), stop MISS fetches for *intraday* (serve stale, else
   `QUOTA_EXHAUSTED` — Stooq, the old fallback, is gone; doc 10 §5);
-  daily series keep going to 780; at 780 full stop until UTC reset. Also
-  trust upstream truth: parse `api-credits-left` header each response and
-  fold into the same guard (min of both signals).
+  daily series keep going to 780; at 780 full stop until UTC reset.
+  ~~Also trust upstream truth: parse `api-credits-left` header each response
+  and fold into the same guard (min of both signals).~~ **Withdrawn
+  2026-09-23:** that header counts the current *minute*, not the day. Folded in
+  as written, one call's "7 left" read as "793 spent" and stopped every series
+  until UTC midnight — measured on production the day stocks shipped
+  (`budget: 793 of 800`). No response header carries a daily figure, so the
+  counter above is the only one, and the 20 credits between 780 and 800 are
+  the slack for its under-counting.
+- **The minute is a second limit** (added 2026-09-23): Basic allows eight
+  credits a minute. A response whose `api-credits-left` is 0, or a 429 that
+  does not say "for the day", marks the minute in KV (`st:minute:<epoch-min>`,
+  60 s TTL). Until it turns, the route answers stale or `RATE_LIMITED` with a
+  `retry-after` of the seconds left, and spends nothing on a refusal it can
+  predict. The minute trips no breaker and touches no budget: it says nothing
+  about upstream's health or the day.
 
 ## 6. Circuit breaker (per upstream)
 
 State in KV `brk:<upstream>` `{state: closed|open, openedAt, reason}`.
-- Open on: 3 consecutive 5xx/timeouts, any 429/418, or quota guard trip.
+- Open on: 3 consecutive 5xx/timeouts, any 429/418, or quota guard trip —
+  **except Twelve Data's per-minute 429** (2026-09-23), which is §5's minute
+  mark rather than a breaker failure. Until then every Twelve Data 429 was a
+  quota trip, so a ninth request inside one minute would have stopped charts
+  until midnight.
 - While open (cool-down 120 s; quota trips → until UTC midnight): skip
   upstream, serve stale, else `QUOTA_EXHAUSTED`/`UPSTREAM_DOWN` envelope.
 - Half-open: first request after cool-down probes upstream; success closes.

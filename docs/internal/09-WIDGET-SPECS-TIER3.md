@@ -186,7 +186,11 @@ call rather than per candle — and a few kilobytes on a 1M view.
   has nothing stale; the detail then draws the daily week with a note, while
   the picker keeps showing 1D and the chart summary names the range actually
   drawn. The collapse is per symbol and per panel: the next opening asks again,
-  for the price of one refused request that spends nothing.
+  for the price of one refused request that spends nothing. **Twelve Data's
+  per-minute limit is not this rung** (2026-09-23): a spent minute answers
+  `RATE_LIMITED` with the seconds left, and the chart area says "too many
+  requests — waiting a moment" rather than collapsing a range the day has not
+  refused (doc 11 §5).
 - **Quote-only** is an empty series: a symbol Finnhub quotes and Twelve Data
   does not cover, or one the Worker would not spend a credit on because
   Finnhub had no quote for it (doc 11 §3). The header's price stands and the
