@@ -24,6 +24,8 @@ export const UPSTREAMS = [
 	'nominatim',
 	'er-api',
 	'binance',
+	'finnhub',
+	'twelvedata',
 	// Not a data source: Turnstile's siteverify, whose outages the verify route
 	// records here so the health report can say why passes went degraded.
 	'turnstile'

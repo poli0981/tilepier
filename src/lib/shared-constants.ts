@@ -1,4 +1,4 @@
-import type { TpCryptoInterval } from './api-types';
+import type { TpCryptoInterval, TpStockInterval } from './api-types';
 
 /**
  * Constants shared by client and Worker.
@@ -75,6 +75,8 @@ export const CACHE_POLICY = {
 	stSeries15min: { ttlMs: 900 * SECOND, staleMs: 24 * HOUR },
 	/** Stock daily series (Twelve Data; the 7-day stale window is the fallback). */
 	stSeries1day: { ttlMs: 21600 * SECOND, staleMs: 7 * DAY },
+	/** Stock symbol search (Finnhub). A company's symbol changes rarely. */
+	stSearch: { ttlMs: 24 * HOUR, staleMs: 7 * DAY },
 	/** RSS feed, per feed URL. */
 	rss: { ttlMs: 1200 * SECOND, staleMs: 24 * HOUR }
 } as const satisfies Record<string, TpCachePolicy>;
@@ -95,6 +97,13 @@ export function cryptoKlinesFamily(interval: TpCryptoInterval): TpCacheFamily {
 	return interval === '5m' || interval === '15m' ? 'crKlinesIntraday' : 'crKlinesDaily';
 }
 
+/** The stock twin of `cryptoKlinesFamily`, for the same reason: the endpoint
+ *  and the client must read one answer, or the client polls faster than the
+ *  edge refreshes. */
+export function stockSeriesFamily(interval: TpStockInterval): TpCacheFamily {
+	return interval === '15min' ? 'stSeries15min' : 'stSeries1day';
+}
+
 /* ──────────────────────────────────────────────────────────── cache keys */
 
 /**
@@ -112,7 +121,11 @@ export const cacheKey = {
 	cryptoTicker: (set: string) => `cr:tick:v1:${set}`,
 	cryptoKlines: (symbol: string, interval: string) => `cr:kl:v1:${symbol}:${interval}`,
 	stockQuote: (symbol: string) => `st:q:v1:${symbol}`,
+	/** The client's entry for a watchlist's stock set; the Worker caches each
+	 *  symbol under `stockQuote` instead (doc 11 §3–§4). */
+	stockQuotes: (set: string) => `st:qs:v1:${set}`,
 	stockSeries: (symbol: string, interval: '15min' | '1day') => `st:se:v1:${symbol}:${interval}`,
+	stockSearch: (queryNorm: string) => `st:sr:v1:${queryNorm}`,
 	rss: (urlHash: string) => `rss:v1:${urlHash}`
 } as const;
 

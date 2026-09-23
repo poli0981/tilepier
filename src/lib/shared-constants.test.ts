@@ -39,8 +39,11 @@ const ROW_TO_FAMILY: Record<string, TpCacheFamily | [TpCacheFamily, TpCacheFamil
 	// One doc row, two policies: "300 s (5m int) / 900 s (1h+)".
 	'cr:kl:v1:<sym>:<int>': ['crKlinesIntraday', 'crKlinesDaily'],
 	'st:q:v1:<sym>': 'stQuote',
+	// The client's set entry takes the per-symbol policy (doc 11 §4).
+	'st:qs:v1:<set>': 'stQuote',
 	'st:se:v1:<sym>:15min': 'stSeries15min',
 	'st:se:v1:<sym>:1day': 'stSeries1day',
+	'st:sr:v1:<q-norm>': 'stSearch',
 	'rss:v1:<url-hash>': 'rss'
 };
 
@@ -174,7 +177,9 @@ describe('cache keys', () => {
 		['cr:tick:v1:', cacheKey.cryptoTicker('abc123')],
 		['cr:kl:v1:', cacheKey.cryptoKlines('BTCUSDT', '5m')],
 		['st:q:v1:', cacheKey.stockQuote('AAPL')],
+		['st:qs:v1:', cacheKey.stockQuotes('AAPL,MSFT')],
 		['st:se:v1:', cacheKey.stockSeries('AAPL', '1day')],
+		['st:sr:v1:', cacheKey.stockSearch('apple')],
 		['rss:v1:', cacheKey.rss('deadbeef')]
 	])('builder output starts with the doc prefix %s', (prefix, built) => {
 		expect(built.startsWith(prefix)).toBe(true);

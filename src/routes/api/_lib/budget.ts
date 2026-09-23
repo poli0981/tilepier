@@ -57,6 +57,23 @@ export function mayFetch(kind: SeriesKind, spent: number, creditsLeft?: number):
 		: effective < STOCK_BUDGET.dailySeriesStopAt;
 }
 
+/**
+ * Folds Twelve Data's own count into ours after a call (doc 11 §5: "min of
+ * both signals"). `mayFetch` takes `creditsLeft` too, but a request only learns
+ * it *after* spending — so the pessimistic figure is written back here, and the
+ * next request's guard reads it as spend. Only ever raises the counter.
+ */
+export async function noteCreditsLeft(
+	kv: KVNamespace,
+	creditsLeft: number,
+	now = Date.now()
+): Promise<void> {
+	const floor = STOCK_BUDGET.dailyCredits - creditsLeft;
+	if (floor > (await readSpend(kv, now))) {
+		await kv.put(counterKey(utcDateKey(now)), String(floor), { expirationTtl: 90_000 });
+	}
+}
+
 /** Parses Twelve Data's `api-credits-left` header; undefined when absent. */
 export function parseCreditsLeft(headers: Headers): number | undefined {
 	const raw = headers.get('api-credits-left');

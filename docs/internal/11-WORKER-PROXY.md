@@ -100,9 +100,22 @@ here is every reader asking for the same pair and range.
 | `cr:tick:v1:<set>` | 30 s | 10 min |
 | `cr:kl:v1:<sym>:<int>` | 300 s (sub-hourly) / 900 s (1h and coarser) | 6 h |
 | `st:q:v1:<sym>` | 90 s | 12 h |
+| `st:qs:v1:<set>` (client only) | 90 s | 12 h |
 | `st:se:v1:<sym>:15min` | 900 s | 24 h |
 | `st:se:v1:<sym>:1day` | 21600 s (6 h) | 7 d |
+| `st:sr:v1:<q-norm>` | 24 h | 7 d |
 | `rss:v1:<url-hash>` | 1200 s | 24 h |
+
+**Two stock rows arrived with Week 5b (2026-09-23).**
+
+- **`st:qs:v1:<set>`** is the *client's* entry for a watchlist's stock set. It
+  is one swr subscription and one request per refresh, the way
+  `cr:tick:v1:<set>` is for crypto. The Worker does not cache the set: §3 asks
+  it to cache **each symbol** under `st:q:v1:<sym>`, so two watchlists sharing
+  AAPL share its quote. The client row therefore carries the per-symbol
+  policy.
+- **`st:sr:v1:<q-norm>`** is symbol search, cached like geocoding. A company's
+  ticker changes rarely, and every lookup is a Finnhub call.
 
 Implementation: KV `put(key, body, { expirationTtl: ttl + staleWindow })`
 with `cachedAt` inside the value; freshness = `now - cachedAt <= ttl`;
