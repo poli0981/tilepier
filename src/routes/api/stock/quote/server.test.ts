@@ -64,9 +64,7 @@ async function call(
 	return { response, settled: Promise.all(pending) };
 }
 
-async function body(
-	response: Response
-): Promise<{
+async function body(response: Response): Promise<{
 	ok: boolean;
 	data: TpStockQuotePayload;
 	meta: { stale: boolean };
