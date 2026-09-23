@@ -23,12 +23,6 @@ export const MAX_TOKEN_LENGTH = 2048;
 
 const TIMEOUT_MS = 5000;
 
-/**
- * The documented testing secrets (`1x…`, `2x…`, `3x…`), recognised so their
- * placeholder answers are not mistaken for a mismatch.
- */
-const TEST_SECRET = /^[123]x0{19}AA$/;
-
 export type TpSiteverify =
 	| { verdict: 'pass' }
 	| { verdict: 'fail'; codes: string[] }
@@ -39,6 +33,7 @@ interface SiteverifyBody {
 	'error-codes'?: unknown;
 	action?: unknown;
 	hostname?: unknown;
+	metadata?: { result_with_testing_key?: unknown };
 }
 
 export async function siteverify(options: {
@@ -82,10 +77,15 @@ export async function siteverify(options: {
 	if (codes.includes('internal-error')) return { verdict: 'unavailable', reason: 'internal-error' };
 	if (body.success !== true) return { verdict: 'fail', codes };
 
-	// A testing secret answers with a placeholder action and host, so neither
-	// can be checked for one — which is safe only because a testing secret never
-	// verifies a real token.
-	if (TEST_SECRET.test(options.secret)) return { verdict: 'pass' };
+	// An answer for a testing secret carries no action and the host
+	// `example.com`, so neither can be checked — which is safe only because a
+	// testing secret never verifies a real token. Siteverify says so itself;
+	// trusting that flag beats matching the secret's shape, which the first
+	// version of this file got wrong (the testing secrets are 35 characters,
+	// `1x` + 31 zeros + `AA`, and it expected 23 — measured on 2026-09-23 by
+	// an end-to-end run against `pnpm preview`, which the stubbed tests could
+	// not have caught).
+	if (body.metadata?.result_with_testing_key === true) return { verdict: 'pass' };
 	if (body.action !== TURNSTILE_ACTION) return { verdict: 'fail', codes: ['action-mismatch'] };
 	if (body.hostname !== options.hostname) return { verdict: 'fail', codes: ['hostname-mismatch'] };
 	return { verdict: 'pass' };

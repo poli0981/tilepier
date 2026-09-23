@@ -56,14 +56,38 @@ describe('siteverify', () => {
 		expect(await verify(fetcher)).toEqual({ verdict: 'fail', codes: ['hostname-mismatch'] });
 	});
 
-	it('does not check action or host for a testing secret, whose answers carry neither', async () => {
-		const fetcher = answering({ success: true, action: '', hostname: 'example.com' });
-		expect(await verify(fetcher, '1x0000000000000000000AA')).toEqual({ verdict: 'pass' });
+	// The exact bodies siteverify returned for the testing secrets on 2026-09-23.
+	// A testing key's answer has no action and the host example.com, and says it
+	// came from a testing key — which is what the code keys off.
+	it("does not check action or host on a testing key's answer, which carries neither", async () => {
+		const fetcher = answering({
+			challenge_ts: '2026-09-23T04:45:52.034Z',
+			'error-codes': [],
+			hostname: 'example.com',
+			metadata: { result_with_testing_key: true },
+			success: true
+		});
+		expect(await verify(fetcher, '1x0000000000000000000000000000000AA')).toEqual({
+			verdict: 'pass'
+		});
 	});
 
-	it("still fails a testing secret's refusal", async () => {
-		const fetcher = answering({ success: false, 'error-codes': ['invalid-input-response'] });
-		expect((await verify(fetcher, '2x0000000000000000000AA')).verdict).toBe('fail');
+	it("still fails a testing key's refusal", async () => {
+		const fetcher = answering({
+			'error-codes': ['invalid-input-response'],
+			success: false,
+			messages: [],
+			metadata: { result_with_testing_key: true }
+		});
+		expect((await verify(fetcher, '2x0000000000000000000000000000000AA')).verdict).toBe('fail');
+	});
+
+	it('checks action and host whenever the answer is not from a testing key', async () => {
+		const fetcher = answering({ success: true, hostname: 'example.com' });
+		expect(await verify(fetcher, '1x0000000000000000000000000000000AA')).toEqual({
+			verdict: 'fail',
+			codes: ['action-mismatch']
+		});
 	});
 
 	it('calls internal-error, a 5xx, a timeout and HTML all unavailable', async () => {
