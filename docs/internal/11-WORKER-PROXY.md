@@ -42,7 +42,7 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
 | `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
-| `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data → Stooq |
+| `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data (no fallback source since 2026-09-23, doc 10 §5) |
 | `GET /api/stock/search` | q | Finnhub search |
 | `GET /api/rss` | url (https) | arbitrary feed (guarded, doc 15 §5) |
 
@@ -173,7 +173,8 @@ copes).
   symbols; mitigations: per-instance watchlist cap 12, series fetched only
   when a detail view opens (not for tiles), and the breaker below.
 - Budget guard: maintain `st:budget:<utc-date>` counter (KV, best-effort).
-  At ≥ 720 (90%), stop MISS fetches for *intraday* (serve stale/Stooq);
+  At ≥ 720 (90%), stop MISS fetches for *intraday* (serve stale, else
+  `QUOTA_EXHAUSTED` — Stooq, the old fallback, is gone; doc 10 §5);
   daily series keep going to 780; at 780 full stop until UTC reset. Also
   trust upstream truth: parse `api-credits-left` header each response and
   fold into the same guard (min of both signals).

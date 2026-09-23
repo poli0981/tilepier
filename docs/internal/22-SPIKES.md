@@ -154,7 +154,7 @@ type-checked instead of casting.
   the split routing works.
 - **Fail → fallback:** raise TTLs per table until model closes; if
   intraday still tight, 1D range ships crypto-only and stocks start at 1W
-  (Stooq daily).
+  (Twelve Data daily — this said Stooq, dropped 2026-09-23, doc 10 §5).
 
 ### Findings — 2026-08-10 · **GREEN for the keyless half** (weather measured on
 ### production at 94 % hit rate); the stock half still needs a keyed run

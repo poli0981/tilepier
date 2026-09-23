@@ -43,7 +43,7 @@ export async function recordSpend(
 }
 
 /**
- * doc 11 §5: at ≥ 720 stop intraday MISS fetches (serve stale or Stooq); daily
+ * doc 11 §5: at ≥ 720 stop intraday MISS fetches (serve stale, or refuse); daily
  * series keep going to 780; past that nothing goes upstream until UTC reset.
  */
 export function mayFetch(kind: SeriesKind, spent: number, creditsLeft?: number): boolean {

@@ -5,8 +5,8 @@ import { MARKETS_MAX_SYMBOLS } from '$lib/shared-constants';
  * (doc 05 §2) — never in Dexie, and never a schema on the manifest.
  */
 
-/** doc 09 §1: the Worker maps crypto to Binance and stock to
- *  Finnhub/TwelveData/Stooq, so the client has to say which it means. */
+/** doc 09 §1: the Worker maps crypto to Binance and stock to Finnhub and
+ *  Twelve Data, so the client has to say which it means. */
 export type TpMarketKind = 'crypto' | 'stock';
 
 export interface TpWatchEntry {
@@ -42,7 +42,7 @@ export const MARKETS_DEFAULTS: TpMarketsSettings = {
 };
 
 /**
- * doc 09 §1's "max 12 in v1 (quota model, doc 11 §7)".
+ * doc 09 §1's "max 12 in v1 (quota model, doc 11 §5)".
  *
  * The same number as `MARKETS_MAX_SYMBOLS` because it is the same limit seen
  * from the other side — re-exported rather than restated so a hand-edited

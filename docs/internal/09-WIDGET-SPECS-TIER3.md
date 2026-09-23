@@ -16,7 +16,7 @@ Finnhub free **does not** include `/stock/candle` (403) — the split above is
 mandatory, not an optimization.
 
 - **Watchlist:** ordered list in widget settings, default
-  `[BTCUSDT, ETHUSDT, AAPL, MSFT]`, max 12 in v1 (quota model, doc 11 §7).
+  `[BTCUSDT, ETHUSDT, AAPL, MSFT]`, max 12 in v1 (quota model, doc 11 §5 — this said §7, which is rate limiting).
   Each entry `{ kind: 'crypto'|'stock', symbol, display }`.
 
   **Week 5a seeds the crypto half of that default and 5b restores the rest**,
@@ -43,9 +43,14 @@ mandatory, not an optimization.
   with search-add. Stocks show a "delayed/cached — not for trading" footnote
   (doc 16 §4).
 - **Degradation ladder (stocks):** Twelve Data quota breaker open →
-  serve KV stale with badge → if none, Stooq EOD fallback (daily only,
-  ranges 1D collapses to 1W) → if none, quote-only view with explanatory
-  empty chart state. Never a spinner that hangs.
+  serve KV stale with badge → if none, quote-only view with explanatory
+  empty chart state. Never a spinner that hangs. Between the intraday stop
+  (720) and the daily one (780), 1D collapses to 1W: the detail shows the
+  daily series with a note rather than an empty intraday chart.
+
+  (Amended 2026-09-23. The ladder had a Stooq EOD rung between stale and
+  quote-only. Stooq was dropped on 2026-09-23: its CSV endpoint has needed an API key since 2026-03, and it answers scripted clients with a JavaScript proof-of-work page — a bot check this project does not circumvent. The daily stale window is seven days, which covers
+  most of what that rung was for.)
 - **Formatting:** `Intl.NumberFormat` with per-asset precision (BTC 2 dp,
   sub-$1 alts 4–6 dp, stocks 2 dp); percent always signed. The precision is
   keyed off the **price** rather than off the symbol (`priceDigits`): the rule

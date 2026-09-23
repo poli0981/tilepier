@@ -73,7 +73,7 @@ export const CACHE_POLICY = {
 	stQuote: { ttlMs: 90 * SECOND, staleMs: 12 * HOUR },
 	/** Stock intraday series (Twelve Data). */
 	stSeries15min: { ttlMs: 900 * SECOND, staleMs: 24 * HOUR },
-	/** Stock daily series (Twelve Data, Stooq fallback). */
+	/** Stock daily series (Twelve Data; the 7-day stale window is the fallback). */
 	stSeries1day: { ttlMs: 21600 * SECOND, staleMs: 7 * DAY },
 	/** RSS feed, per feed URL. */
 	rss: { ttlMs: 1200 * SECOND, staleMs: 24 * HOUR }
@@ -258,7 +258,7 @@ export function symbolSetKey(symbols: readonly string[]): string {
 export const STOCK_BUDGET = {
 	/** Hard daily ceiling published by the upstream. */
 	dailyCredits: 800,
-	/** At 90%, stop MISS fetches for intraday series — serve stale or Stooq. */
+	/** At 90%, stop MISS fetches for intraday series — serve stale, or refuse. */
 	intradayStopAt: 720,
 	/** Daily series keep going to here, then everything stops until UTC reset. */
 	dailySeriesStopAt: 780

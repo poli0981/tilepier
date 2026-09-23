@@ -16,7 +16,7 @@ export type TpApiErrorCode =
 export interface TpApiMeta {
 	/** Unix seconds when the payload was fetched from upstream. */
 	cachedAt: number;
-	/** Which upstream produced it — `open-meteo`, `binance`, `stooq`, … */
+	/** Which upstream produced it — `open-meteo`, `binance`, `twelvedata`, … */
 	source: string;
 	/** True when served past its TTL because upstream failed or the breaker is open. */
 	stale: boolean;
