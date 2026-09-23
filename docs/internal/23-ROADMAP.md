@@ -863,7 +863,8 @@ machine, which closes that half of S3 (doc 22).
    documents 403 as a WAF rule and 451 as a restricted location, and a US PoP
    is refused like the Singapore one was. So 5a's regional inference was wrong
    and no reader gets coins today. The remedy is a different crypto upstream,
-   measured from the Worker first — the owner's decision (doc 10 §4).
+   measured from the Worker first — the owner's decision, which chose to
+   measure before choosing: #17 adds that measurement (doc 10 §4).
 
 **M5 still waits** on the keyed S3 run (after #16, on a day the misreading did
 not inflate) and on coins answering at all.

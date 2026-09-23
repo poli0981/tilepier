@@ -202,6 +202,15 @@ the client; grep-guard in CI, doc 21 §5).
   upstream**, measured from the Worker before it is chosen. That choice is the
   owner's, and changes §1's table, doc 16 §5's credits and doc 09 §1 together.
 
+  **The measurement is `GET /api/_health?probe=crypto`** (#17, doc 11 §9): the
+  operator's bearer, one request, and the Worker asks Binance (the control,
+  with and without a `User-Agent`), Binance.US, Coinbase Exchange, Kraken, OKX,
+  Bybit, KuCoin, Bitstamp and CoinGecko for a BTC ticker — and five-minute
+  candles where they serve them — reporting what each answered and from which
+  colo. A candidate is worth building on only if it answers from every colo a
+  reader is served from, so the probe is worth running from more than one
+  place before the choice is made.
+
 ## 5. Stocks — Finnhub + Twelve Data
 
 - Finnhub quote: `GET /api/v1/quote?symbol=AAPL` (fields c,d,dp,h,l,o,pc,t).

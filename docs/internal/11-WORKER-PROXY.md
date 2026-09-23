@@ -311,6 +311,16 @@ What it reports:
 - the build;
 - `cf.colo`, the Cloudflare location that answered.
 
+**`?probe=crypto`** (added 2026-09-23, #17) answers a different question from
+the same door: which crypto upstream answers *this Worker*, now that Binance's
+WAF refuses it (doc 10 §4). It asks a fixed list of keyless candidates in
+parallel — a BTC ticker from each, and five-minute candles where an exchange
+serves them — and returns each one's status, milliseconds and first 160
+characters, with the colo it ran from. The parameter names a report and never
+carries a target: any other value gets the ordinary report and fetches
+nothing. Every probe URL is https and credential-free, which a test asserts;
+each has a 5 s timeout and reads at most 4 KB.
+
 `/api/_health` and `/api/verify` are the gate's two exemptions. The operator's
 bearer also passes the gate on every other route, so curl spot checks and the
 S3 harness do not need a challenge.
