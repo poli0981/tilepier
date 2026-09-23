@@ -235,6 +235,9 @@
 }
 
 html {
+	/* The top bar is sticky, so anything scrolled into view — by Tab, by a
+	   fragment link — would otherwise land underneath it (WCAG 2.4.11). */
+	scroll-padding-top: var(--tp-bar-h);
 	background: var(--color-ink-950);
 	color: var(--color-fg);
 	font-family: var(--font-sans);

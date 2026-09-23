@@ -6,6 +6,30 @@
   (calm), right cluster: add-widget, edit-mode toggle, settings, about.
   Bar hides on scroll-down / reveals on scroll-up (dashboard rarely
   scrolls on desktop; matters on mobile).
+
+  **Built 2026-09-23.** This line was a spec with no code for five weeks.
+  Rules that apply as built:
+
+  - It reacts only to movement past an 8 px slop, and it is always shown
+    within its own height of the top.
+  - It **never hides while it is in use**:
+    - in edit mode (the strip under it is sticky at the bar's height, and its
+      Done button is how edit mode ends);
+    - while the drawer or the shortcuts sheet is open;
+    - while focus is inside it. A keyboard user must not tab into a bar they
+      cannot see (WCAG 2.4.11), and `html` carries
+      `scroll-padding-top: var(--tp-bar-h)` for the same reason.
+  - It hides with `transform` only, so the grid's geometry and the detail
+    overlay's FLIP never see it move.
+  - The in-app reduced-motion setting drops the transition, not just the OS
+    one.
+
+  `TpTopBar.svelte.test.ts` drives a real scroll for each rule.
+
+  The bar's content sits on the deck's rail — the same `--tp-deck-max` and
+  `--tp-page-pad` as `main` — so the brand and the grid share a left edge at
+  every width. `e2e/top-bar.e2e.ts` measures it, and doc 12 §2a records why it
+  did not until then.
 - Dashboard fills the viewport; grid max-width 1680 px centered;
   page padding 16/24 px. That padding is measured to the **grid container**;
   tiles then sit 12 px inside it (doc 06 §5 rules 4 and 12), so the outer gutter
