@@ -51,7 +51,7 @@ export async function fetchUpstream<T>(
 
 	if (!response.ok) {
 		throw new UpstreamError(
-			`upstream ${response.status}`,
+			`upstream ${response.status}${await statusSnippet(response)}`,
 			'status',
 			response.status,
 			response.headers
@@ -86,6 +86,28 @@ export async function fetchUpstream<T>(
 			response.status,
 			response.headers
 		);
+	}
+}
+
+/** How much of an error body rides along in the message. */
+const STATUS_SNIPPET = 160;
+
+/**
+ * The start of a non-2xx body, flattened to one line, for the breaker's
+ * `reason` — which is what `/api/_health` prints (doc 11 §9).
+ *
+ * A bare `upstream 451` says a request was refused; the body usually says why,
+ * and "why" is the question: 5a's Binance failure alternated 400/503 on
+ * production for a week with nothing that could tell a regional block from a
+ * malformed request. Best-effort and bounded: a body that will not read, or
+ * runs past the cap, simply contributes nothing.
+ */
+async function statusSnippet(response: Response): Promise<string> {
+	try {
+		const text = (await readCapped(response)).replace(/\s+/g, ' ').trim();
+		return text === '' ? '' : `: ${text.slice(0, STATUS_SNIPPET)}`;
+	} catch {
+		return '';
 	}
 }
 

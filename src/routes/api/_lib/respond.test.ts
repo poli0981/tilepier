@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fail, isCrossSite, ok } from './respond';
+import { fail, isCrossSite, ok, okNoStore } from './respond';
 
 /** The envelope contract, doc 11 §2. A client that trusts these shapes is the
  *  whole reason `lib/api-types.ts` is shared by both sides. */
@@ -26,6 +26,17 @@ describe('ok', () => {
 
 	it('floors a half-second TTL rather than emitting a fraction', () => {
 		expect(ok({}, META, 'MISS', 1).headers.get('cache-control')).toBe('public, max-age=0');
+	});
+});
+
+describe('okNoStore', () => {
+	// The adapter replays any cacheable GET before the handler runs, so this is
+	// the only thing standing between an authorised answer and the next caller.
+	it('is never cacheable, and carries the same envelope', async () => {
+		const response = okNoStore({ t: 21 }, META);
+
+		expect(response.headers.get('cache-control')).toBe('no-store');
+		expect(await response.json()).toEqual({ ok: true, data: { t: 21 }, meta: META });
 	});
 });
 

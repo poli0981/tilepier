@@ -220,8 +220,43 @@ back-off, not perfection.
 
 No third-party telemetry. Rely on Cloudflare's built-in Workers metrics
 (requests, errors, CPU) + `wrangler tail` during incidents. A dev-only
-`GET /api/_health` returns breaker states and today's stock-budget counter
-— gated by `env.DEV_DASH_TOKEN` query secret; absent in docs/UI.
+`GET /api/_health` returns breaker states and today's stock-budget counter.
+
+**`/api/_health`, as built (2026-09-23).** It answers only
+`Authorization: Bearer <DEV_DASH_TOKEN>`. This section said "query secret"
+until then, and a query string is the wrong carrier on two counts: the URL
+lands in the Worker's invocation logs (`wrangler.jsonc` `observability`), and
+in browser history, where a header does not.
+
+The rules that make it safe on a public origin, each with a test in
+`routes/api/_health/server.test.ts`:
+
+- **A missing, wrong, or unconfigured token gets a bare `404`**, not a `401`,
+  so asking does not reveal the endpoint.
+- **An unset or short secret switches it off.** Below 32 characters it is off,
+  because `.dev.vars.example` ships the name empty and an empty secret must
+  never match an empty bearer.
+- **The comparison is constant-time** (`_lib/dev-token.ts`).
+- **Every answer is `no-store`**, the refusal included. The adapter's worker
+  replays any cacheable GET from `caches.default` *before* hooks or handlers
+  run, so a `public` report would reach the next caller whatever they sent.
+
+What it reports:
+
+- every upstream in `_lib/breaker.ts`'s `UPSTREAMS`, with state, the verdict
+  the clock gives now, failures, and the last reason. That list is a typed
+  union the breaker functions accept, so an endpoint naming a new upstream
+  does not compile until the report can see it;
+- today's Twelve Data spend against §5's tiers;
+- whether each upstream key is set (never its value);
+- the build;
+- `cf.colo`, the Cloudflare location that answered.
+
+A reason is masked before it leaves: `name=value` pairs that sound secret and
+any 32-plus-character key-shaped run. It is also cut to 200 characters. Since
+the same date, a non-2xx reason carries the first 160 characters of the error
+body (`_lib/upstream.ts`). A bare `upstream 451` could not tell 5a's Binance
+failure from a malformed request; the body can.
 
 **The secrets are typed by the generator, from the committed example**
 (2026-09-23). Secrets are not declared in `wrangler.jsonc` — they are set with
