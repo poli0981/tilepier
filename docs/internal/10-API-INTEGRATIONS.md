@@ -199,6 +199,27 @@ the client; grep-guard in CI, doc 21 §5).
 - Symbol namespace: client sends `{kind, symbol}`; Worker maps
   crypto→Binance, stock→Finnhub (quote, search) / Twelve Data (series). Uppercase-normalize,
   allowlist charset `^[A-Z0-9.\-]{1,12}$`.
+- **As built in Week 5b (2026-09-23)**, and where it differs from the lines
+  above:
+  - **Both keys travel in headers** — `X-Finnhub-Token` and
+    `Authorization: apikey …` — never in the URL. An upstream failure's message
+    carries its URL, that message is the breaker's `reason`, and `reason` is
+    what `/api/_health` prints (doc 11 §9); a key in a query string would be one
+    log line from leaking.
+  - **Finnhub answers an unknown symbol with zeros, not an error** (`c: 0`,
+    `t: 0`), which is normalised to a `null` row — doc 09 §1's per-row absence.
+    Search asks with `exchange=US` and keeps `type === 'Common Stock'`.
+  - **Twelve Data's errors can arrive inside a 200** as
+    `{ status: 'error', code }`. A symbol it does not cover is cached as an
+    empty series under its family's own TTL, and is never a breaker failure,
+    so a few mistyped symbols cannot open the breaker for every reader; a 429
+    or exhausted credits is a quota trip until UTC midnight. Series are requested with `timezone=UTC` and `order=asc`, so
+    a bar parses without an exchange calendar and arrives in plotting order.
+  - **Only a symbol Finnhub quotes may spend a Twelve Data credit** — a series
+    MISS first reads (or fetches) `st:q:v1:<sym>`, and answers an unknown
+    symbol with an empty series (the detail's quote-only view) rather than a
+    credit. One gate pass allows thirty requests a ten-second bucket (doc 11
+    §7), which is the whole day's budget in half a minute of random symbols.
 
 ## 6. Maps — OpenFreeMap + Photon/Nominatim
 
