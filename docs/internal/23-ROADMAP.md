@@ -533,7 +533,7 @@ chart still renders its building-history copy until fourteen (doc 08 §2's
 
 That closes the last outstanding item of Week 4.
 
-## Week 5 — Markets · **code complete 2026-09-23; production verification pending**
+## Week 5 — Markets · **COMPLETE 2026-09-23, M5 met**
 crypto ticker/klines endpoints · stock quote/series/search endpoints
 (budget guard + breaker; ~~Stooq fallback~~ — dropped 2026-09-23, doc 10 §5) · markets tile + detail
 (candles, ranges, watchlist) · degradation ladder verified by fault
@@ -902,6 +902,39 @@ probe runs again before any further switch.
   inflate (doc 22 §S3).
 - **The week of quota watching** doc 23's milestone line asks for, starting
   from #18's deploy.
+
+### Week 5 closes — M5 met (2026-09-23)
+
+**The owner confirmed coins on production** within the hour of #18's deploy.
+BTCUSDT read 85 879.55 on the tile and in the detail. 1D drew from five-minute
+candles, and `Crypto data by Binance.US` sat under the chart, beside AAPL and
+GOOGL from Finnhub and Twelve Data. Both halves of "the hardest widget" are
+live and have been looked at, and that is M5.
+
+**One more fault, found by looking at that screenshot** (#19). The BTC chip
+read an unsigned "0%" in red. The 24 h move was a few thousandths of a percent
+down, which `fmtPercentChange` rounds to "0%" and prints without a sign, while
+the colour came from `change < 0` on the raw fraction. That is doc 12 §4.2
+broken from the other side: colour carrying a fall that the text had rounded
+away. The same bug sat in the currency table's `data-dir`, where FX moves are
+routinely that small. Every coloured move now reads its direction off the
+printed parts (`changeDirection`), with a test that fails on the old code.
+
+**The security alerts.** Code scanning shows none open: CodeQL re-analysed
+`main` after #18 and closed all four. GitHub's dependency graph already lists
+every patched version (maplibre-gl 6.10.0, sharp 0.35.4, vitest and
+@vitest/mocker 4.1.11, cookie 0.7.2). The six Dependabot alerts close as
+Dependabot re-evaluates against it.
+
+**Carried into Week 6, each with a date rather than an intention:**
+
+1. **S3's keyed run on 2026-09-24**, the first UTC day the minute-credit
+   misreading did not inflate. Results go to doc 22 §S3.
+2. **A week of quota watching, through 2026-09-30** — M5's own clause.
+   `/api/_health` covers Twelve Data's spend, the minute marks and every
+   breaker. The first question to answer is whether 780 is ever approached.
+3. **Binance.US from a US colo.** It has been measured from `SIN` only; the
+   next probe run from an `SJC` network settles it.
 
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF
