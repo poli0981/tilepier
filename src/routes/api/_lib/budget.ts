@@ -1,13 +1,20 @@
 import { STOCK_BUDGET } from '$lib/shared-constants';
 
 /**
- * Twelve Data daily credit guard (doc 11 §5).
+ * Twelve Data's two limits (doc 11 §5, doc 10 §5): 800 credits a day on
+ * Basic, and eight a minute.
  *
- * Two signals, and the lower one wins: a KV counter we increment ourselves,
- * and the `api-credits-left` header upstream sends back. Trusting only our own
- * counter drifts (KV is eventually consistent, and other clients on the same
- * key would not be counted); trusting only the header means the first request
- * of the day has no idea where it stands.
+ * **The day is our own counter, and only our own counter.** Until 2026-09-23
+ * this module also folded in the `api-credits-left` header as "credits left
+ * today", taking the pessimistic view of the two. The header counts the
+ * *minute*: after the first call of a day it says 7, which read as 793 spent,
+ * and the guard stopped every series until UTC midnight. Production showed
+ * `budget: 793 of 800` the day stocks shipped. There is no daily figure in any
+ * header; Twelve Data's `/api_usage` has one and costs a credit to ask.
+ *
+ * **The minute is what the header is for.** When it reaches 0, the rest of
+ * that minute is marked in KV so the next request answers "slow down" without
+ * spending a call on a refusal — the same mark a per-minute 429 leaves.
  */
 
 export type SeriesKind = 'intraday' | 'daily';
@@ -45,36 +52,41 @@ export async function recordSpend(
 /**
  * doc 11 §5: at ≥ 720 stop intraday MISS fetches (serve stale, or refuse); daily
  * series keep going to 780; past that nothing goes upstream until UTC reset.
+ * The 20-credit slack above 780 is what absorbs our counter under-counting
+ * under concurrency — it is the only daily figure there is.
  */
-export function mayFetch(kind: SeriesKind, spent: number, creditsLeft?: number): boolean {
-	// `api-credits-left` is upstream's own truth; fold it in by treating it as
-	// an alternative spend figure and taking the pessimistic view.
-	const effective =
-		creditsLeft == null ? spent : Math.max(spent, STOCK_BUDGET.dailyCredits - creditsLeft);
-
+export function mayFetch(kind: SeriesKind, spent: number): boolean {
 	return kind === 'intraday'
-		? effective < STOCK_BUDGET.intradayStopAt
-		: effective < STOCK_BUDGET.dailySeriesStopAt;
+		? spent < STOCK_BUDGET.intradayStopAt
+		: spent < STOCK_BUDGET.dailySeriesStopAt;
+}
+
+/* ─────────────────────────────────────────────────────────────── the minute */
+
+const minuteKey = (now: number) => `kv:st:minute:${String(Math.floor(now / 60_000))}`;
+
+/** Seconds until the minute turns — what a "slow down" names as `retry-after`. */
+export function secondsToNextMinute(now: number): number {
+	return 60 - Math.floor((now % 60_000) / 1000);
 }
 
 /**
- * Folds Twelve Data's own count into ours after a call (doc 11 §5: "min of
- * both signals"). `mayFetch` takes `creditsLeft` too, but a request only learns
- * it *after* spending — so the pessimistic figure is written back here, and the
- * next request's guard reads it as spend. Only ever raises the counter.
+ * Whether this minute's credits are known to be spent. Best-effort, like the
+ * rate limiter: KV is eventually consistent, so another PoP may not see the
+ * mark in time and spend one refused call finding out for itself.
  */
-export async function noteCreditsLeft(
-	kv: KVNamespace,
-	creditsLeft: number,
-	now = Date.now()
-): Promise<void> {
-	const floor = STOCK_BUDGET.dailyCredits - creditsLeft;
-	if (floor > (await readSpend(kv, now))) {
-		await kv.put(counterKey(utcDateKey(now)), String(floor), { expirationTtl: 90_000 });
-	}
+export async function minuteSpent(kv: KVNamespace, now = Date.now()): Promise<boolean> {
+	return (await kv.get(minuteKey(now))) !== null;
 }
 
-/** Parses Twelve Data's `api-credits-left` header; undefined when absent. */
+/** Marks the rest of this minute as spent. Sixty seconds is KV's shortest TTL,
+ *  and the key names the minute, so a mark cannot outlive it by more. */
+export async function markMinuteSpent(kv: KVNamespace, now = Date.now()): Promise<void> {
+	await kv.put(minuteKey(now), '1', { expirationTtl: 60 });
+}
+
+/** Parses Twelve Data's `api-credits-left` header — credits left **this
+ *  minute** — or undefined when absent. */
 export function parseCreditsLeft(headers: Headers): number | undefined {
 	const raw = headers.get('api-credits-left');
 	if (raw == null) return undefined;

@@ -8,11 +8,13 @@ import {
 } from '$lib/shared-constants';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
 import {
+	markMinuteSpent,
 	mayFetch,
-	noteCreditsLeft,
+	minuteSpent,
 	parseCreditsLeft,
 	readSpend,
-	recordSpend
+	recordSpend,
+	secondsToNextMinute
 } from '../../_lib/budget';
 import { FINNHUB, finnhubHeaders, finnhubQuoteUrl } from '../../_lib/finnhub';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
@@ -21,6 +23,7 @@ import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { parseStockSeriesQuery } from '../../_lib/stock-query';
 import {
+	creditWindow,
 	TWELVEDATA,
 	timeSeriesUrl,
 	twelveDataError,
@@ -47,13 +50,18 @@ import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
  *    Daily reaching its stop trips the breaker until UTC midnight, which is
  *    what makes the stop stick across PoPs. Stale is served either way; with
  *    nothing stale the answer is `QUOTA_EXHAUSTED`.
- * 4. **Twelve Data's own words.** Its errors can arrive inside a 200. A 429,
- *    or credits running out, is a quota trip. A symbol it does not cover is a
- *    negative cache, never a breaker failure, so three mistyped symbols cannot
- *    open the breaker for everyone. Anything else is a failure like any
- *    upstream's.
- * 5. **The spend is recorded after the call**, and `api-credits-left` is folded
- *    in so the next guard sees the pessimistic figure.
+ * 4. **The minute.** Basic allows eight credits a minute as well as 800 a day.
+ *    A minute already known to be spent answers `RATE_LIMITED` until it turns
+ *    (stale first, when there is some) without spending a call on the refusal.
+ * 5. **Twelve Data's own words.** Its errors can arrive inside a 200. A 429 is
+ *    the day only when it says so — a quota trip until midnight — and the
+ *    minute otherwise, which marks the minute and trips nothing. A symbol it
+ *    does not cover is a negative cache, never a breaker failure, so three
+ *    mistyped symbols cannot open the breaker for everyone. Anything else is a
+ *    failure like any upstream's.
+ * 6. **The spend is recorded after the call.** `api-credits-left` counts the
+ *    minute, not the day — reading it as the day stopped every series after
+ *    the first call on 2026-09-23 — so it only ever marks the minute.
  *
  * There is no fallback source. Stooq was dropped on 2026-09-23 (doc 10 §5),
  * and the daily stale window — seven days — is what covers an outage.
@@ -78,8 +86,13 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		return serve(cached.value, 'HIT', false, family, query.limit);
 	}
 
-	const stale = (code: 'UPSTREAM_DOWN' | 'QUOTA_EXHAUSTED') =>
-		cached.value ? serve(cached.value, 'STALE', true, family, query.limit) : fail(code);
+	const stale = (
+		code: 'UPSTREAM_DOWN' | 'QUOTA_EXHAUSTED' | 'RATE_LIMITED',
+		retryAfterS?: number
+	) =>
+		cached.value
+			? serve(cached.value, 'STALE', true, family, query.limit)
+			: fail(code, retryAfterS);
 
 	const env = platform?.env;
 	const tdKey = env?.TWELVEDATA_KEY ?? '';
@@ -125,20 +138,19 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		return stale('QUOTA_EXHAUSTED');
 	}
 
+	if (await minuteSpent(kv, now)) return stale('RATE_LIMITED', secondsToNextMinute(now));
+
 	try {
 		const result = await fetchUpstream<unknown>(timeSeriesUrl(query.symbol, query.interval), {
 			headers: twelveDataHeaders(tdKey)
 		});
 		const creditsLeft = parseCreditsLeft(result.headers);
-		void persist(
-			recordSpend(kv, 1, now).then(() =>
-				creditsLeft === undefined ? undefined : noteCreditsLeft(kv, creditsLeft, now)
-			)
-		);
+		void persist(recordSpend(kv, 1, now));
+		if (creditsLeft === 0) void persist(markMinuteSpent(kv, now));
 
 		const reported = twelveDataError(result.data);
 		if (reported !== null) {
-			if (reported.code === 429) return quotaTrip(reported.message);
+			if (reported.code === 429) return refused(reported.message);
 			if (reported.code >= 400 && reported.code < 500) return notCovered();
 			throw new UpstreamError(`twelvedata ${String(reported.code)}: ${reported.message}`, 'status');
 		}
@@ -153,7 +165,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		return answer(payload, now, 'MISS', family, query.limit);
 	} catch (error) {
 		const upstream = error instanceof UpstreamError ? error : null;
-		if (upstream?.status === 429) return quotaTrip(upstream.message);
+		if (upstream?.status === 429) return refused(upstream.message);
 		if (upstream?.status === 400 || upstream?.status === 404) return notCovered();
 		await recordFailure(kv, TWELVEDATA, upstream?.message ?? String(error), { now }).catch(
 			() => undefined
@@ -161,14 +173,23 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		return stale('UPSTREAM_DOWN');
 	}
 
-	/** Out of credits by Twelve Data's own count: hold until UTC midnight. */
-	async function quotaTrip(reason: string): Promise<Response> {
-		await recordFailure(kv!, TWELVEDATA, reason, {
-			immediate: true,
-			untilUtcMidnight: true,
-			now
-		}).catch(() => undefined);
-		return stale('QUOTA_EXHAUSTED');
+	/**
+	 * A 429, sized by its own words (`creditWindow`). The day holds the breaker
+	 * until UTC midnight; the minute marks the minute, which the next request
+	 * reads before spending a call, and leaves the breaker alone — running into
+	 * a per-minute limit says nothing about whether Twelve Data is healthy.
+	 */
+	async function refused(reason: string): Promise<Response> {
+		if (creditWindow(reason) === 'day') {
+			await recordFailure(kv!, TWELVEDATA, reason, {
+				immediate: true,
+				untilUtcMidnight: true,
+				now
+			}).catch(() => undefined);
+			return stale('QUOTA_EXHAUSTED');
+		}
+		await markMinuteSpent(kv!, now).catch(() => undefined);
+		return stale('RATE_LIMITED', secondsToNextMinute(now));
 	}
 
 	/** A symbol Twelve Data does not cover: an empty series, cached, and no

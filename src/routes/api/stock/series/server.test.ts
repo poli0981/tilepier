@@ -34,10 +34,23 @@ interface Upstream {
 	requests: { url: string; headers: Headers }[];
 }
 
+/**
+ * Twelve Data's two refusals. The minute's wording is verbatim from a real
+ * response; the day's is the same template with the day's numbers, and the
+ * route keys off nothing but its "for the day" — anything else is taken as the
+ * minute, the side where a wrong guess costs a minute rather than a day.
+ */
+const MINUTE_429 =
+	'You have run out of API credits for the current minute. 9 API credits were used, with the current limit being 8. Wait for the next minute or consider switching to a higher tier plan at https://twelvedata.com/pricing';
+const DAY_429 =
+	'You have run out of API credits for the day. 800 API credits were used, with the current limit being 800. Wait for the next day or consider switching to a higher tier plan at https://twelvedata.com/pricing';
+
 /** Routes by host: Finnhub answers quotes, Twelve Data answers series. */
 function upstream(options: {
 	series?: unknown;
 	seriesStatus?: number;
+	/** The body of a refused series, when `seriesStatus` is 4xx or 5xx. */
+	refusal?: string;
 	creditsLeft?: number;
 	quote?: unknown;
 }): Upstream {
@@ -54,7 +67,10 @@ function upstream(options: {
 			if (options.creditsLeft !== undefined)
 				headers['api-credits-left'] = String(options.creditsLeft);
 			if (options.seriesStatus !== undefined && options.seriesStatus >= 400) {
-				return new Response('refused', { status: options.seriesStatus, headers });
+				return new Response(options.refusal ?? 'refused', {
+					status: options.seriesStatus,
+					headers
+				});
 			}
 			return Response.json(options.series ?? bars(40), { headers });
 		})
@@ -98,6 +114,15 @@ function known(kv: ReturnType<typeof fakeKv>, symbol = 'AAPL'): void {
 
 function spent(kv: ReturnType<typeof fakeKv>): number {
 	return Number(kv.store.get(`kv:st:budget:${TODAY()}`) ?? '0');
+}
+
+/** The Twelve Data breaker as stored, closed when nothing was ever written. */
+function breaker(kv: ReturnType<typeof fakeKv>): { state: string; untilUtcMidnight?: boolean } {
+	return JSON.parse(kv.store.get('kv:brk:twelvedata') ?? '{"state":"closed"}') as never;
+}
+
+function seriesCalls(requests: Upstream['requests']): number {
+	return requests.filter((r) => r.url.startsWith('https://api.twelvedata.com/')).length;
 }
 
 async function call(
@@ -173,15 +198,21 @@ describe('a known symbol', () => {
 		expect(spent(kv)).toBe(1);
 	});
 
-	it('folds api-credits-left in when it says more was spent than we counted', async () => {
+	it('reads api-credits-left as the minute it counts, never as the day', async () => {
+		// Twelve Data's credit headers count the current minute — Basic allows
+		// eight a minute and 800 a day. Until 2026-09-23 this route read "7 left"
+		// as "793 spent today", so the first call of each day stopped every
+		// series until UTC midnight. Measured on production: `budget: 793 of 800`.
 		const kv = fakeKv();
 		known(kv);
-		upstream({ creditsLeft: 100 });
+		upstream({ creditsLeft: 7 });
 
-		const { settled } = await call(kv);
+		const { response, settled } = await call(kv);
 		await settled;
 
-		expect(spent(kv)).toBe(STOCK_BUDGET.dailyCredits - 100);
+		expect(response.status).toBe(200);
+		expect(spent(kv)).toBe(1);
+		expect(breaker(kv).state).toBe('closed');
 	});
 
 	it('answers a second range from the same cached series without spending again', async () => {
@@ -282,15 +313,113 @@ describe('the budget guard (doc 11 §5)', () => {
 		});
 	});
 
-	it('trips the same way when Twelve Data says the credits are gone', async () => {
+	it('trips the same way when Twelve Data says the day is spent', async () => {
 		const kv = fakeKv();
 		known(kv);
-		upstream({ seriesStatus: 429 });
+		upstream({ seriesStatus: 429, refusal: DAY_429 });
 
 		const { response } = await call(kv);
 
 		expect((await read(response)).error?.code).toBe('QUOTA_EXHAUSTED');
-		expect(JSON.parse(kv.store.get('kv:brk:twelvedata') ?? '{}').untilUtcMidnight).toBe(true);
+		expect(breaker(kv)).toMatchObject({ state: 'open', untilUtcMidnight: true });
+	});
+
+	it('reads the day from a refusal inside a 200 as well', async () => {
+		const kv = fakeKv();
+		known(kv);
+		upstream({ series: { code: 429, message: DAY_429, status: 'error' } });
+
+		const { response } = await call(kv);
+
+		expect((await read(response)).error?.code).toBe('QUOTA_EXHAUSTED');
+		expect(breaker(kv)).toMatchObject({ state: 'open', untilUtcMidnight: true });
+	});
+});
+
+/**
+ * Twelve Data's other limit: eight credits a minute on Basic. Hitting it is
+ * ordinary — two readers flicking through ranges will — so it pauses the
+ * route until the next minute and says nothing about upstream's health or the
+ * day's budget. Until 2026-09-23 every 429 was read as the day running out.
+ */
+describe('the minute (doc 10 §5)', () => {
+	beforeEach(() => {
+		vi.useFakeTimers({ toFake: ['Date'], now: Date.parse('2026-09-23T15:00:10Z') });
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('answers RATE_LIMITED until the next minute when Twelve Data says the minute is spent', async () => {
+		for (const refusal of [
+			{ series: { code: 429, message: MINUTE_429, status: 'error' } },
+			{ seriesStatus: 429, refusal: MINUTE_429 }
+		]) {
+			const kv = fakeKv();
+			known(kv);
+			upstream(refusal);
+
+			const { response, settled } = await call(kv);
+			await settled;
+
+			expect(response.status).toBe(429);
+			expect((await read(response)).error?.code).toBe('RATE_LIMITED');
+			// Fifty seconds are left of 15:00 at 15:00:10.
+			expect(response.headers.get('retry-after')).toBe('50');
+			expect(breaker(kv).state).toBe('closed');
+		}
+	});
+
+	it('takes an unrecognised 429 as the minute: the cheap side to be wrong on', async () => {
+		const kv = fakeKv();
+		known(kv);
+		upstream({ seriesStatus: 429, refusal: 'too many requests' });
+
+		const { response } = await call(kv);
+
+		expect((await read(response)).error?.code).toBe('RATE_LIMITED');
+		expect(breaker(kv).state).toBe('closed');
+	});
+
+	it('does not ask again in a minute its credits say is spent, and asks in the next', async () => {
+		const kv = fakeKv();
+		known(kv);
+		const { requests } = upstream({ creditsLeft: 0 });
+
+		await (
+			await call(kv)
+		).settled;
+		const refused = await call(kv, '?symbol=AAPL&interval=15min&limit=26');
+
+		// One call, not two: the second would only have met the refusal.
+		expect(seriesCalls(requests)).toBe(1);
+		expect(refused.response.status).toBe(429);
+		expect(spent(kv)).toBe(1);
+
+		vi.setSystemTime(Date.parse('2026-09-23T15:01:00Z'));
+		const next = await call(kv, '?symbol=AAPL&interval=15min&limit=26');
+
+		expect(next.response.status).toBe(200);
+		expect(seriesCalls(requests)).toBe(2);
+	});
+
+	it('serves a stale series rather than the refusal, when it has one', async () => {
+		const kv = fakeKv();
+		known(kv);
+		upstream({ series: bars(40) });
+		await (
+			await call(kv)
+		).settled;
+
+		// Past the daily family's six-hour TTL, inside its seven-day window.
+		vi.setSystemTime(Date.parse('2026-09-23T22:00:10Z'));
+		known(kv);
+		upstream({ series: { code: 429, message: MINUTE_429, status: 'error' } });
+		const { response } = await call(kv);
+
+		expect(response.status).toBe(200);
+		expect((await read(response)).meta.stale).toBe(true);
 	});
 });
 

@@ -28,6 +28,11 @@ type Handler = (event: {
 const ENV = { TWELVEDATA_KEY: 'td', FINNHUB_KEY: 'fh' };
 const QUOTE_OK = { c: 227.5, dp: 0.8, h: 228, l: 225, o: 226, pc: 225.7, t: 1790175600 };
 
+/** The day's refusal. A 429 that does not say "for the day" is the minute's, which
+ *  pauses rather than trips (`series/server.test.ts`, doc 10 §5). */
+const DAY_429 =
+	'You have run out of API credits for the day. 800 API credits were used, with the current limit being 800.';
+
 function fakeKv(): KVNamespace & { store: Map<string, string> } {
 	const store = new Map<string, string>();
 	return {
@@ -102,7 +107,7 @@ afterEach(() => {
 describe('rung 1 — Twelve Data out of credits', () => {
 	it('keeps the quote answering while the series is refused: the quote-only view', async () => {
 		const kv = fakeKv();
-		upstreams(() => new Response('out of credits', { status: 429 }));
+		upstreams(() => new Response(DAY_429, { status: 429 }));
 
 		const series = await call(SERIES, SERIES_PATH, kv);
 		const quote = await call(QUOTE, QUOTE_PATH, kv);
@@ -117,7 +122,7 @@ describe('rung 1 — Twelve Data out of credits', () => {
 	it('serves the stale series, flagged, while the trip holds', async () => {
 		const kv = fakeKv();
 		seedSeries(kv, 7 * 60 * 60_000);
-		upstreams(() => new Response('out of credits', { status: 429 }));
+		upstreams(() => new Response(DAY_429, { status: 429 }));
 
 		const response = await call(SERIES, SERIES_PATH, kv);
 		const body = (await response.json()) as { meta: { stale: boolean } };
@@ -134,7 +139,7 @@ describe('rung 2 — the trip holds until UTC midnight, then probes', () => {
 		upstreams(() => {
 			seriesCalls++;
 			return seriesCalls === 1
-				? new Response('out of credits', { status: 429 })
+				? new Response(DAY_429, { status: 429 })
 				: Response.json({
 						values: [{ datetime: '2026-09-23', open: '1', high: '2', low: '1', close: '2' }]
 					});
