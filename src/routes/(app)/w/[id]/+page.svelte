@@ -9,6 +9,7 @@
 	import { widgetLabels } from '$lib/i18n/widget-labels';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
+	import { legalGate } from '$lib/stores/legal.svelte';
 	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
 
 	/**
@@ -49,8 +50,9 @@
 
 	$effect(() => {
 		// Loads the detail chunk for this route. Code, not data — doc 20 §3's ban
-		// is on fetching data in an effect.
-		if (widgetId === null || manifest?.loadDetail === undefined) return;
+		// is on fetching data in an effect. Not before the legal gate is passed,
+		// though: a detail fetches the moment it mounts (doc 16 §2).
+		if (!legalGate.accepted || widgetId === null || manifest?.loadDetail === undefined) return;
 
 		let cancelled = false;
 		loadDetailComponent(widgetId)
@@ -131,14 +133,8 @@
 	.tp-w {
 		max-width: 1120px;
 		margin: 0 auto;
-		padding: var(--tp-page-pad, 16px);
-		min-height: calc(100dvh - var(--tp-bar-h, 48px));
-	}
-
-	@media (min-width: 768px) {
-		.tp-w {
-			padding: 24px;
-		}
+		padding: var(--tp-page-pad);
+		min-height: calc(100dvh - var(--tp-bar-h));
 	}
 
 	header {

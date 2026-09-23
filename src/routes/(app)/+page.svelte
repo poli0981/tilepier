@@ -10,6 +10,7 @@
 	import { isWidgetId, type TpWidgetProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
+	import { legalGate } from '$lib/stores/legal.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
 	import TpDetailOverlay from '$lib/ui/TpDetailOverlay.svelte';
 
@@ -33,7 +34,11 @@
 		// Loads the grid and exactly the widget chunks this deck needs, before
 		// either is rendered. This is the lazy-loading boundary: the entry chunk
 		// carries manifests, components arrive per widget (doc 06 §1).
-		if (!deck.loaded) return;
+		//
+		// And not before the legal gate is passed (doc 16 §2). The deck used to
+		// mount under the hidden `.tp-app` and let its widgets fetch before the
+		// visitor had agreed to anything; `e2e/legal-gate` holds this line.
+		if (!deck.loaded || !legalGate.accepted) return;
 
 		let cancelled = false;
 		const ids = [...new Set(deck.widgetIds)];
@@ -230,17 +235,14 @@
 {/if}
 
 <style>
+	/* The deck's rail: the top bar's content shares this max-width and padding
+	   (doc 13 §1), which is why both come from app.css tokens rather than
+	   literals here. */
 	main {
-		max-width: 1680px;
+		max-width: var(--tp-deck-max);
 		margin: 0 auto;
-		padding: var(--tp-page-pad, 16px);
-		min-height: calc(100dvh - var(--tp-bar-h, 48px));
-	}
-
-	@media (min-width: 768px) {
-		main {
-			padding: 24px;
-		}
+		padding: var(--tp-page-pad);
+		min-height: calc(100dvh - var(--tp-bar-h));
 	}
 
 	/* doc 13 §2: edit mode shows a faint dot lattice behind the grid. */

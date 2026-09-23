@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
-	import { acceptLegal, hasAcceptedLegal } from '$lib/core/legal';
 	import { LOCALES } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
+	import { legalGate } from '$lib/stores/legal.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
 	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
 	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
@@ -50,13 +50,13 @@
 	// by hand in devtools without a matching localStorage entry gets undone.
 	$effect(() => {
 		const root = document.documentElement;
-		const accepted = hasAcceptedLegal();
+		const accepted = legalGate.sync();
 		if (accepted) root.setAttribute('data-legal', 'ok');
 		else root.removeAttribute('data-legal');
 	});
 
 	function onAccept() {
-		acceptLegal();
+		legalGate.accept();
 	}
 </script>
 

@@ -5,8 +5,10 @@ import { LEGAL_VERSION, LOCAL_KEYS } from '$lib/shared-constants';
  *
  * The gate is a real gate, not an overlay: `data-legal="ok"` on <html> is set
  * by static/boot.js before first paint, and CSS keys off it. Deleting the gate
- * node from the DOM does not grant access, because the app store only
- * hydrates once the flag exists.
+ * node from the DOM does not grant access, because the deck page and the
+ * detail route mount nothing until `stores/legal.svelte.ts` says the current
+ * version was accepted. (Until Week 5b this comment claimed that and the code
+ * did not do it: the deck mounted under the hidden `.tp-app` and could fetch.)
  */
 
 /** Shape of `tp.legal.v1` (doc 05 §2). Not exported until something outside

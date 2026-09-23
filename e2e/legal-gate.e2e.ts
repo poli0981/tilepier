@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { seedLayout } from './_lib/seed';
 
 /**
  * Smoke coverage for the legal gate (doc 16 §2) and the security headers
@@ -22,6 +23,46 @@ test('gate markup is in the HTML before any JavaScript runs', async ({ request }
 	const response = await request.get('/');
 	const html = await response.text();
 	expect(html).toContain('tp-gate');
+});
+
+// doc 16 §2: "the app store hydrates only after acceptance flag exists — the
+// gate is a real gate in code, not an overlay". Until Week 5b it was an overlay:
+// the deck mounted under the hidden `.tp-app`, and a networked tile was free to
+// call /api/* before the visitor had agreed to anything. A currency tile is the
+// probe because it needs no permission to fetch; the seeded deck's weather
+// tile waits for geolocation, so it would have hidden the fault.
+test('nothing mounts and nothing is fetched until the gate is accepted', async ({ page }) => {
+	await seedLayout(page, [
+		{
+			instanceId: 'wgt_fx',
+			widgetId: 'currency',
+			x: 0,
+			y: 0,
+			w: 3,
+			h: 2,
+			settings: { base: 'USD', quote: 'VND', amount: 1 }
+		}
+	]);
+	const api: string[] = [];
+	page.on('request', (request) => {
+		const { pathname } = new URL(request.url());
+		if (pathname.startsWith('/api/')) api.push(pathname);
+	});
+	await page.route('**/api/**', (route) =>
+		route.fulfill({ status: 503, json: { ok: false, error: { code: 'UPSTREAM_DOWN' } } })
+	);
+
+	await page.goto('/');
+	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
+	await expect(accept).toBeEnabled();
+	await page.waitForLoadState('networkidle');
+
+	expect(await page.locator('.grid-stack-item').count()).toBe(0);
+	expect(api).toEqual([]);
+
+	await accept.click();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect.poll(() => api).toContain('/api/fx');
 });
 
 test('accepting reveals the deck and survives a reload', async ({ page }) => {
@@ -114,6 +155,9 @@ test('security headers are set on HTML responses', async ({ request }) => {
 	const headers = response.headers();
 
 	expect(headers['strict-transport-security']).toContain('max-age=31536000');
+	// Matches the zone's own HSTS in production, which replaces this header at
+	// the edge (doc 15 §2) — so what this suite sees is what readers get.
+	expect(headers['strict-transport-security']).toContain('preload');
 	expect(headers['x-content-type-options']).toBe('nosniff');
 	expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
 	expect(headers['cross-origin-opener-policy']).toBe('same-origin');

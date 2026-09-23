@@ -35,8 +35,8 @@ export default defineConfig({
 		// Cloudflare runtime: the _headers rules and the prerendered gate both
 		// need that to mean anything.
 		//
-		// HTTPS locally is not optional. The CSP in _headers ends with
-		// `upgrade-insecure-requests`, which over plain HTTP rewrites every
+		// HTTPS locally is not optional. The CSP SvelteKit emits from
+		// svelte.config.js ends with `upgrade-insecure-requests`, which over plain HTTP rewrites every
 		// subresource request to https on a port that is not listening — the app
 		// never hydrates, and only the tests that need JavaScript fail, which is
 		// a genuinely confusing way to find out.

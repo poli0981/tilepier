@@ -44,13 +44,13 @@
 <style>
 	.tp-coach {
 		position: fixed;
-		right: var(--tp-page-pad, 16px);
-		bottom: var(--tp-page-pad, 16px);
+		right: var(--tp-page-pad);
+		bottom: var(--tp-page-pad);
 		z-index: 40;
 		display: flex;
 		align-items: flex-start;
 		gap: 0.75rem;
-		max-width: min(26rem, calc(100vw - 2 * var(--tp-page-pad, 16px)));
+		max-width: min(26rem, calc(100vw - 2 * var(--tp-page-pad)));
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
 		background: var(--color-ink-850);
