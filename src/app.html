@@ -19,5 +19,20 @@
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
+		<!--
+			Cloudflare Web Analytics (doc 16 §3): cookieless visit counts and page
+			timings. At the end of the body on purpose — SvelteKit's CSP arrives in
+			the head as a meta tag, which only governs what follows it, and this
+			script is one of the two third-party sources it names (doc 15 §2). Not
+			self-hosted: Cloudflare versions the beacon, and a stale copy would
+			report into a pipeline that expects the current one.
+		-->
+		<!-- Cloudflare Web Analytics -->
+		<script
+			type="module"
+			src="https://static.cloudflareinsights.com/beacon.min.js"
+			data-cf-beacon='{"token": "ac6b7e4d537f4649909952281591c087"}'
+		></script>
+		<!-- End Cloudflare Web Analytics -->
 	</body>
 </html>

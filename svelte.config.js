@@ -22,9 +22,14 @@ const config = {
 			mode: 'hash',
 			directives: {
 				'default-src': ['self'],
-				// Cloudflare Turnstile's api.js, which refuses to run from a proxied
-				// or bundled copy (doc 15 §3). The only third-party script source.
-				'script-src': ['self', 'https://challenges.cloudflare.com'],
+				// The two third-party scripts, and nothing else (doc 15 §2): Cloudflare
+				// Turnstile's api.js, which refuses to run from a proxied or bundled
+				// copy (doc 15 §3), and the Web Analytics beacon (doc 16 §3).
+				'script-src': [
+					'self',
+					'https://challenges.cloudflare.com',
+					'https://static.cloudflareinsights.com'
+				],
 				// Turnstile draws its challenge in an iframe from the same host.
 				// Without this, default-src 'self' would refuse the frame.
 				'frame-src': ['https://challenges.cloudflare.com'],
@@ -33,8 +38,9 @@ const config = {
 				'style-src': ['self', 'unsafe-inline'],
 				'img-src': ['self', 'data:', 'blob:', 'https://tiles.openfreemap.org'],
 				'media-src': ['self', 'blob:'],
-				// The single third party the browser may talk to directly (doc 10 §6).
-				'connect-src': ['self', 'https://tiles.openfreemap.org'],
+				// Map tiles (doc 10 §6), and where the analytics beacon reports
+				// (doc 16 §3). Every data request goes through /api instead.
+				'connect-src': ['self', 'https://tiles.openfreemap.org', 'https://cloudflareinsights.com'],
 				'font-src': ['self'],
 				'worker-src': ['self'],
 				'frame-ancestors': ['none'],

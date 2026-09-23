@@ -20,7 +20,12 @@ test.describe('S4 · lazy chunk loading', () => {
 	test('no heavy library is fetched on first paint', async ({ page }) => {
 		const requested: string[] = [];
 		page.on('request', (r) => {
-			if (r.resourceType() === 'script') requested.push(r.url());
+			// Our own bundles only. The analytics beacon is a Cloudflare script
+			// on every page (doc 16 §3); it is outside doc 20 §6's budgets, and
+			// re-fetching it here would pull it off the internet into CI.
+			if (r.resourceType() === 'script' && new URL(r.url()).origin === new URL(page.url()).origin) {
+				requested.push(r.url());
+			}
 		});
 
 		await page.goto('/spike/s4');

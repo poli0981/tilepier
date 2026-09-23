@@ -179,10 +179,27 @@ test('the CSP carries the hash for SvelteKit inline script', async ({ request })
 	const meta = /<meta http-equiv="content-security-policy" content="([^"]+)"/.exec(html);
 
 	expect(meta, 'no CSP meta tag emitted').not.toBeNull();
-	const policy = meta?.[1] ?? '';
-	expect(policy).toContain("default-src 'self'");
-	expect(policy).toContain('https://tiles.openfreemap.org');
-	expect(policy).toMatch(/script-src 'self' 'sha256-[A-Za-z0-9+/=]+'/);
+	const directives = new Map(
+		(meta?.[1] ?? '')
+			.split(';')
+			.map((part) => part.trim().split(/\s+/))
+			.filter((words) => words[0] !== undefined && words[0] !== '')
+			.map(([name, ...values]) => [name, values.sort()] as const)
+	);
+
+	// Exact sets, not "contains": the point of doc 15 §2 is that nothing else
+	// gets in. SvelteKit appends its hashes after the configured sources, so the
+	// order is not the contract — the membership is.
+	expect(directives.get('default-src')).toEqual(["'self'"]);
+	const script = directives.get('script-src') ?? [];
+	expect(script.filter((v) => !v.startsWith("'sha256-"))).toEqual(
+		["'self'", 'https://challenges.cloudflare.com', 'https://static.cloudflareinsights.com'].sort()
+	);
+	expect(script.some((v) => /^'sha256-[A-Za-z0-9+/=]+'$/.test(v))).toBe(true);
+	expect(directives.get('connect-src')).toEqual(
+		["'self'", 'https://cloudflareinsights.com', 'https://tiles.openfreemap.org'].sort()
+	);
+	expect(directives.get('frame-src')).toEqual(['https://challenges.cloudflare.com']);
 });
 
 test('no page raises a CSP violation', async ({ page }) => {
