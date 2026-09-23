@@ -1,5 +1,5 @@
 import { STOCK_INTERVALS, STOCK_RANGES, type TpStockInterval } from '$lib/api-types';
-import { isMarketSymbol } from '$lib/shared-constants';
+import { isMarketSymbol, stockSearchText } from '$lib/shared-constants';
 import { parseCryptoTickerQuery, type TpCryptoTickerQuery } from './crypto-query';
 
 /**
@@ -53,17 +53,11 @@ export interface TpStockSearchQuery {
 	norm: string;
 }
 
-/** Long enough for a company name, short enough not to be a vector. */
-const MAX_QUERY = 40;
-
 /**
- * `?q=apple`. Letters, digits, spaces and the few marks company names and
- * share classes use; anything else is refused rather than stripped, because a
- * stripped query answers a different question under the asker's key.
+ * `?q=apple`. The rule itself is `stockSearchText`, shared with the detail's
+ * search box so the client never offers a search this refuses.
  */
 export function parseStockSearchQuery(url: URL): TpStockSearchQuery | null {
-	const text = (url.searchParams.get('q') ?? '').trim().replace(/\s+/g, ' ');
-	if (text.length === 0 || text.length > MAX_QUERY) return null;
-	if (!/^[\p{L}\p{N} .&'-]+$/u.test(text)) return null;
-	return { text, norm: text.toLowerCase() };
+	const text = stockSearchText(url.searchParams.get('q') ?? '');
+	return text === null ? null : { text, norm: text.toLowerCase() };
 }

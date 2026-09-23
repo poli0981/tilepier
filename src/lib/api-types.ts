@@ -429,6 +429,8 @@ export const STOCK_RANGES = {
 	'1Y': { interval: '1day', limit: 252 }
 } as const satisfies Record<string, { interval: TpStockInterval; limit: number }>;
 
+export type TpStockRange = keyof typeof STOCK_RANGES;
+
 export interface TpStockSearchResult {
 	/** What to add to the watchlist: `AAPL`. */
 	symbol: string;

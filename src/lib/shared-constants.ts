@@ -260,6 +260,26 @@ export function symbolSetKey(symbols: readonly string[]): string {
 	return canonicalSymbols(symbols).join(',');
 }
 
+/** Long enough for a company name, short enough not to be a vector. */
+const STOCK_SEARCH_MAX = 40;
+
+/**
+ * doc 11 §3's `/api/stock/search?q=`, as both halves read it: surrounding
+ * space trimmed and inner runs collapsed, then letters, digits, spaces and the
+ * few marks company names and share classes use. `null` for anything else —
+ * **refused rather than stripped**, because a stripped query answers a
+ * different question under the asker's cache key.
+ *
+ * Here rather than in the endpoint because the detail's search box asks the
+ * same question before it sends anything, and two copies of the rule would
+ * drift into a client that offers searches the Worker refuses.
+ */
+export function stockSearchText(raw: string): string | null {
+	const text = raw.trim().replace(/\s+/g, ' ');
+	if (text.length === 0 || text.length > STOCK_SEARCH_MAX) return null;
+	return /^[\p{L}\p{N} .&'-]+$/u.test(text) ? text : null;
+}
+
 /* ────────────────────────────────────────────────────── Twelve Data quota */
 
 /**

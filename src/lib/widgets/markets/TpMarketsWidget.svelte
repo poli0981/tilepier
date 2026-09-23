@@ -10,21 +10,33 @@
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import {
-		cryptoLookup,
+		atClose,
+		cryptoSide,
 		cryptoSource,
+		entryId,
+		oldestAt,
 		peekSparkline,
 		priceDigits,
 		readSettings,
+		removeFromWatchlist,
 		rowsFor,
 		sparklinePoints,
+		stockQuotesKey,
+		stockSide,
+		stockSource,
 		symbolsOf,
 		tickerKey,
+		tileBadge,
+		tileView,
+		type TpSide,
+		type TpStockReading,
 		type TpTickerReading
 	} from './service';
+	import type { TpWatchEntry } from './types';
 
 	/**
-	 * doc 09 §1's tile: watchlist rows, each a symbol, a last price and a 24 h
-	 * change chip.
+	 * doc 09 §1's tile: watchlist rows, each a symbol, a last price and a change
+	 * chip — over 24 h for a coin, on the day for a stock.
 	 *
 	 * **Tier S does not exist here.** `min` is 2×2 and doc 13 §3's tier S is
 	 * `w <= 2 && h <= 1`, so nothing this widget can be resized to reaches it —
@@ -32,59 +44,76 @@
 	 * gap in the DoD. A watchlist is a list, and a list has no honest one-line
 	 * rendering.
 	 *
-	 * **The scheduler id is the `instanceId`, not the data key**, which is a
-	 * deviation from doc 04 §3's rule for networked widgets and the first time
-	 * that rule has met a widget with *two* data keys — the crypto set and, from
-	 * Week 5b, the stock set. That section says the id is the caller's choice;
-	 * this is the first choice that is not obvious. `multiInstance: false` makes
-	 * it safe: there is exactly one markets tile, so there is no second
-	 * registration for a shared id to de-duplicate.
-	 *
-	 * It also removes weather's `{#key}` remount dance. `useRefresh` snapshots
-	 * its id at mount, so a widget registered under a data key has to be
-	 * remounted when that key moves — and this key moves every time the reader
-	 * edits the watchlist. Registered under the instance, the cadence outlives
-	 * every edit and only the `swr` subscription is rebuilt.
+	 * **Two sources, two scheduler entries.** The crypto set comes from Binance
+	 * and the stock set from Finnhub, each under its own data key, and each is
+	 * registered under the *instance* rather than under that key — a deviation
+	 * from doc 04 §3's rule for networked widgets that `multiInstance: false`
+	 * makes safe, and that lets the cadence outlive every watchlist edit (the
+	 * keys move with the set; the instance does not). Two entries rather than
+	 * one running both, because the scheduler owns backoff per entry: one entry
+	 * would slow the coins down every time Finnhub had a bad minute.
 	 *
 	 * **States (doc 06 §3).** `markets` is doc 17 §3's cached-data class, so all
-	 * seven are required. Five map from `TpSwrStatus`; `stale` and `stale-error`
-	 * leave through `core/tile-status` to the host header rather than being drawn
-	 * here (doc 13 §7). `empty` is the judgement `swr` cannot make, and here it is
-	 * an empty watchlist — a reader can remove every row, and that is a state
-	 * rather than a fault. `permission-needed` is **forbidden**: the manifest
-	 * declares no `permissions` (doc 06 §3's single-widget N/A rule).
+	 * seven are required, and with two sources they are decided by `tileView`
+	 * rather than read off one handle: the list as soon as either side has
+	 * quotes, the skeleton while neither has and one is still asking, the most
+	 * telling failure after that. A side that has not answered says so in its own
+	 * rows. `stale` and `stale-error` leave through `core/tile-status` to the host
+	 * header (doc 13 §7). `empty` is an empty watchlist. `permission-needed` is
+	 * **forbidden**: the manifest declares no `permissions` (doc 06 §3's
+	 * single-widget N/A rule).
 	 */
 	interface Props extends TpWidgetProps {
 		/** Test seam: a throwaway Dexie, the way `weather` and `currency` thread one. */
 		db?: TpDb | undefined;
 	}
 
-	let { instanceId, settings: tileSettings, size, onOpenDetail, db = undefined }: Props = $props();
+	let {
+		instanceId,
+		settings: tileSettings,
+		size,
+		onOpenDetail,
+		onUpdateSettings,
+		db = undefined
+	}: Props = $props();
 
 	const prefs = $derived(readSettings(tileSettings));
 	const cryptoSymbols = $derived(symbolsOf(prefs.watchlist, 'crypto'));
+	const stockSymbols = $derived(symbolsOf(prefs.watchlist, 'stock'));
 
-	/** A string, so the subscription effect below re-runs when the *set* moves
-	 *  and not on every render — `cryptoSymbols` is a fresh array each derive. */
-	const dataKey = $derived(cryptoSymbols.length === 0 ? '' : tickerKey(cryptoSymbols));
+	/** Strings, so each subscription effect re-runs when its *set* moves and not
+	 *  on every render — the symbol lists are fresh arrays each derive. */
+	const cryptoKey = $derived(cryptoSymbols.length === 0 ? '' : tickerKey(cryptoSymbols));
+	const stockKey = $derived(stockSymbols.length === 0 ? '' : stockQuotesKey(stockSymbols));
 
-	let handle = $state.raw<TpSwrHandle<TpTickerReading> | null>(null);
+	let cryptoHandle = $state.raw<TpSwrHandle<TpTickerReading> | null>(null);
+	let stockHandle = $state.raw<TpSwrHandle<TpStockReading> | null>(null);
 
 	// `untrack` is mandatory: `swr()` reads its dedupe map and then writes to it,
 	// so a tracked call self-invalidates into `effect_update_depth_exceeded`.
 	$effect(() => {
-		const key = dataKey;
+		const key = cryptoKey;
 		const source = untrack(() => (key === '' ? null : cryptoSource(cryptoSymbols, db)));
-		handle = source;
+		cryptoHandle = source;
 		return () => {
 			source?.release();
-			handle = null;
+			cryptoHandle = null;
+		};
+	});
+
+	$effect(() => {
+		const key = stockKey;
+		const source = untrack(() => (key === '' ? null : stockSource(stockSymbols, db)));
+		stockHandle = source;
+		return () => {
+			source?.release();
+			stockHandle = null;
 		};
 	});
 
 	/*
-	 * doc 06 §7: `interval 60 s, visibleOnly`. The manifest row and this call are
-	 * the same two facts and must not drift.
+	 * doc 06 §7: `interval 60 s, visibleOnly`. The manifest row and these calls
+	 * are the same two facts and must not drift.
 	 *
 	 * `untrack` because `useRefresh` snapshots its id on purpose — its effect has
 	 * no dependencies and registers once per mount — and reading a prop straight
@@ -92,22 +121,36 @@
 	 * intention here, and saying so is better than a warning that reads as a bug.
 	 */
 	const taskId = untrack(() => instanceId);
+	const CADENCE = { kind: 'interval', everyMs: 60_000, visibleOnly: true } as const;
 
 	useRefresh(
 		taskId,
-		{ kind: 'interval', everyMs: 60_000, visibleOnly: true },
+		CADENCE,
 		async () => {
-			await handle?.revalidate('scheduler');
+			await cryptoHandle?.revalidate('scheduler');
 		},
 		{ label: 'markets:ticker', runOnRegister: false }
 	);
 
-	const status = $derived(handle?.status ?? 'loading');
-	const reading = $derived(handle?.data);
-	const payload = $derived(reading?.payload);
+	useRefresh(
+		`${taskId}:stock`,
+		CADENCE,
+		async () => {
+			await stockHandle?.revalidate('scheduler');
+		},
+		{ label: 'markets:stock', runOnRegister: false }
+	);
 
-	/** The Worker's own staleness, which `swr` cannot see (doc 11 §4). */
-	const servedStale = $derived(reading?.meta.stale === true);
+	const cryptoView = $derived(cryptoHandle === null ? null : cryptoSide(cryptoHandle));
+	const stockView = $derived(stockHandle === null ? null : stockSide(stockHandle));
+
+	/** Only the sides this watchlist uses: a handle exists exactly when its kind
+	 *  has a row, so a stock-only list is judged on the stock side alone. */
+	const sides = $derived([cryptoView, stockView].filter((side): side is TpSide => side !== null));
+
+	const view = $derived(tileView(sides));
+	const rows = $derived(rowsFor(prefs.watchlist, { crypto: cryptoView, stock: stockView }));
+	const isEmpty = $derived(prefs.watchlist.length === 0);
 
 	let now = $state(Date.now());
 	$effect(() => {
@@ -117,13 +160,11 @@
 		return () => clearInterval(id);
 	});
 
-	const ageLine = $derived(
-		handle?.cachedAt === undefined ? '' : fmtRelative(handle.cachedAt, settings.locale, now)
-	);
+	function ageOf(at: number | undefined): string {
+		return at === undefined ? '' : fmtRelative(at, settings.locale, now);
+	}
 
-	const rows = $derived(rowsFor(prefs.watchlist, cryptoLookup(payload)));
-	const isEmpty = $derived(prefs.watchlist.length === 0);
-	const hasAnyQuote = $derived(rows.some((row) => row.quote !== null));
+	const ageLine = $derived(ageOf(oldestAt(sides)));
 
 	/** doc 09 §1's per-asset precision, applied through `Intl` rather than by
 	 *  hand so a Vietnamese reader gets Vietnamese grouping. */
@@ -131,19 +172,30 @@
 		return fmtPrice(price, settings.locale, priceDigits(price));
 	}
 
+	/** Both sides, because the reader pressed one button. A refusal lands in the
+	 *  side's own status, which is what the tile renders from — so the rejection
+	 *  itself has nowhere further to go. */
 	function retry(): void {
-		void handle?.revalidate('retry');
+		void cryptoHandle?.revalidate('retry').catch(() => undefined);
+		void stockHandle?.revalidate('retry').catch(() => undefined);
+	}
+
+	/** doc 09 §1: "delisted symbol → row error chip with remove shortcut". */
+	function remove(entry: TpWatchEntry): void {
+		onUpdateSettings?.({
+			watchlist: removeFromWatchlist(prefs.watchlist, entry.kind, entry.symbol)
+		});
 	}
 
 	/** doc 13 §7's badge, published to the host header (doc 13 §3). */
 	const badge = $derived.by<TpTileStatus | null>(() => {
-		if (reading === undefined) return null;
-		if (status === 'offline') return { kind: 'offline', age: '', retry: null };
-		if (status === 'stale-error' || status === 'rate-limited') {
-			return { kind: 'stale-error', age: ageLine, retry };
+		const worst = tileBadge(sides);
+		if (worst === null) return null;
+		if (worst.kind === 'offline') return { kind: 'offline', age: '', retry: null };
+		if (worst.kind === 'stale-error') {
+			return { kind: 'stale-error', age: ageOf(worst.cachedAt), retry };
 		}
-		if (status === 'stale' || servedStale) return { kind: 'stale', age: ageLine, retry: null };
-		return null;
+		return { kind: 'stale', age: ageOf(worst.cachedAt), retry: null };
 	});
 
 	$effect(() => {
@@ -172,17 +224,18 @@
 	const SPARK_W = 40;
 	const SPARK_H = 12;
 
+	/** Keyed by `entryId`: the symbol alone is not unique on a mixed watchlist. */
 	let sparks = $state.raw<Record<string, number[]>>({});
 
 	/**
 	 * **A read, never a fetch.** doc 11 §5 keeps series out of the tile's request
-	 * path entirely — that is what makes the Twelve Data quota model hold in 5b —
-	 * so this peeks `apiCache` and subscribes to nothing. The consequence is that
-	 * a sparkline is absent until the reader has opened that symbol's detail
-	 * once, and absent is an ordinary state rather than a fault.
+	 * path entirely — that is what makes the Twelve Data quota model hold — so
+	 * this peeks `apiCache` and subscribes to nothing. The consequence is that a
+	 * sparkline is absent until the reader has opened that symbol's detail once,
+	 * and absent is an ordinary state rather than a fault.
 	 *
-	 * Keyed on the symbols and on `cachedAt`, so it re-reads when new candles
-	 * could have landed and not on every render.
+	 * Keyed on the watchlist and on both sides' `cachedAt`, so it re-reads when
+	 * new candles could have landed and not on every render.
 	 */
 	$effect(() => {
 		if (!showSpark) {
@@ -190,15 +243,15 @@
 			return;
 		}
 
-		const symbols = cryptoSymbols;
-		const stamp = handle?.cachedAt ?? 0;
-		void stamp;
+		const entries = prefs.watchlist;
+		void cryptoHandle?.cachedAt;
+		void stockHandle?.cachedAt;
 
 		let live = true;
 		void untrack(async () => {
 			const next: Record<string, number[]> = {};
-			for (const symbol of symbols) {
-				next[symbol] = await peekSparkline(symbol, Date.now(), db);
+			for (const entry of entries) {
+				next[entryId(entry)] = await peekSparkline(entry, Date.now(), db);
 			}
 			if (live) sparks = next;
 		});
@@ -221,24 +274,24 @@
 			<p class="tp-mk-empty__hint">{m['widget.markets.no_rows_hint']()}</p>
 		{/if}
 	</div>
-{:else if status === 'loading' || status === 'idle'}
+{:else if view === 'loading'}
 	<!-- doc 12 §7: skeleton blocks, never a spinner. One bar per watched row, so
 	     the tile does not resize when the answer arrives. -->
 	<div class="tp-mk-skeleton" aria-label={m['widget.markets.loading']()}>
-		{#each prefs.watchlist as entry (entry.kind + entry.symbol)}
+		{#each prefs.watchlist as entry (entryId(entry))}
 			<div class="tp-mk-skeleton__row"></div>
 		{/each}
 	</div>
-{:else if !hasAnyQuote && (status === 'error' || status === 'offline' || status === 'rate-limited')}
-	<!-- Inline, never blank (doc 13 §7). Only when there is nothing underneath:
-	     a tile still holding prices through a failure keeps them and says so
-	     through the host badge instead. -->
+{:else if view !== 'list'}
+	<!-- Inline, never blank (doc 13 §7). Only when neither side has anything to
+	     show: a tile still holding prices through a failure keeps them and says
+	     so through the host badge instead. -->
 	<div class="tp-mk-error">
 		<TpIcon name="chart" size={20} />
 		<p class="tp-mk-error__text">
-			{#if status === 'offline'}
+			{#if view === 'offline'}
 				{m['widget.markets.offline']()}
-			{:else if status === 'rate-limited'}
+			{:else if view === 'rate-limited'}
 				{m['widget.markets.rate_limited']()}
 			{:else}
 				{m['widget.markets.error']()}
@@ -250,20 +303,23 @@
 	</div>
 {:else}
 	<ul class="tp-mk-list" aria-label={m['widget.markets.list_label']()}>
-		{#each rows as row (row.entry.kind + row.entry.symbol)}
+		{#each rows as row (entryId(row.entry))}
+			{@const id = entryId(row.entry)}
 			<li class="tp-mk-row">
 				<span class="tp-mk-row__label">{row.label}</span>
 
-				{#if row.quote === null}
-					<span
-						class="tp-mk-row__absent"
-						title={m['widget.markets.unavailable_hint']({ symbol: row.entry.symbol })}
-					>
-						{m['widget.markets.unavailable']()}
-					</span>
-				{:else}
-					<span class="tp-mk-row__price tp-num">{priceText(row.quote.price)}</span>
-					{#if showSpark && (sparks[row.entry.symbol]?.length ?? 0) > 1}
+				{#if row.state.kind === 'quoted'}
+					{@const quote = row.state.quote}
+					{#if atClose(row.entry.kind, quote, now)}
+						<span
+							class="tp-mk-row__tag"
+							title={m['widget.markets.at_close_hint']({ age: ageOf(quote.at) })}
+						>
+							{m['widget.markets.at_close']()}
+						</span>
+					{/if}
+					<span class="tp-mk-row__price tp-num">{priceText(quote.price)}</span>
+					{#if showSpark && (sparks[id]?.length ?? 0) > 1}
 						<svg
 							class="tp-mk-row__spark"
 							viewBox="0 0 {SPARK_W} {SPARK_H}"
@@ -273,7 +329,7 @@
 							focusable="false"
 						>
 							<polyline
-								points={sparklinePoints(sparks[row.entry.symbol] ?? [], SPARK_W, SPARK_H)}
+								points={sparklinePoints(sparks[id] ?? [], SPARK_W, SPARK_H)}
 								fill="none"
 								stroke="currentColor"
 								stroke-width="1"
@@ -282,22 +338,47 @@
 							/>
 						</svg>
 					{/if}
-					{#if row.quote.change24h === null}
+					{#if quote.change === null}
 						<span class="tp-mk-row__flat" title={m['widget.markets.no_change']()}>—</span>
 					{:else}
+						{@const change = fmtPercentChange(quote.change, settings.locale)}
 						<!-- doc 12 §4.2: `Intl` places the sign before the colour is
 						     applied, so colour reinforces rather than carries. -->
 						<span
 							class="tp-mk-row__change tp-num"
-							class:tp-mk-row__change--up={row.quote.change24h > 0}
-							class:tp-mk-row__change--down={row.quote.change24h < 0}
-							aria-label={m['widget.markets.change_label']({
-								change: fmtPercentChange(row.quote.change24h, settings.locale)
-							})}
+							class:tp-mk-row__change--up={quote.change > 0}
+							class:tp-mk-row__change--down={quote.change < 0}
+							aria-label={row.entry.kind === 'stock'
+								? m['widget.markets.change_label_day']({ change })
+								: m['widget.markets.change_label']({ change })}
 						>
-							{fmtPercentChange(row.quote.change24h, settings.locale)}
+							{change}
 						</span>
 					{/if}
+				{:else if row.state.kind === 'absent'}
+					<span
+						class="tp-mk-row__absent"
+						title={m['widget.markets.unavailable_hint']({ symbol: row.entry.symbol })}
+					>
+						{m['widget.markets.unavailable']()}
+					</span>
+					{#if onUpdateSettings}
+						<button
+							type="button"
+							class="tp-mk-row__remove"
+							aria-label={m['widget.markets.remove_row']({ symbol: row.entry.symbol })}
+							onclick={() => remove(row.entry)}
+						>
+							<TpIcon name="trash" size={14} />
+						</button>
+					{/if}
+				{:else if row.state.kind === 'waiting'}
+					<span class="tp-mk-row__waiting" role="img" aria-label={m['widget.markets.loading']()}
+					></span>
+				{:else}
+					<span class="tp-mk-row__absent" title={m['widget.markets.error']()}>
+						{m['widget.markets.row_unread']()}
+					</span>
 				{/if}
 			</li>
 		{/each}
@@ -339,6 +420,14 @@
 		white-space: nowrap;
 	}
 
+	/* doc 09 §1's "as of close". Beside the price it qualifies, and dim: it is a
+	   footnote to the number rather than a second number. */
+	.tp-mk-row__tag {
+		flex: none;
+		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
+	}
+
 	.tp-mk-row__price {
 		color: var(--color-fg);
 	}
@@ -370,6 +459,38 @@
 		color: var(--color-fg-dim);
 		font-size: var(--text-2xs);
 		text-align: right;
+	}
+
+	/* One row still on its way while the other side has answered: the skeleton
+	   idiom (doc 12 §7) at the width of the price it stands in for. */
+	.tp-mk-row__waiting {
+		width: 4.25rem;
+		height: 0.75rem;
+		align-self: center;
+		border-radius: var(--radius-ctl);
+		background: var(--color-ink-850);
+	}
+
+	.tp-mk-row__remove {
+		display: inline-flex;
+		align-self: center;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: var(--radius-ctl);
+		background: transparent;
+		color: var(--color-fg-dim);
+		cursor: pointer;
+		padding: 0.125rem;
+	}
+
+	.tp-mk-row__remove:hover {
+		color: var(--color-fg);
+	}
+
+	.tp-mk-row__remove:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 1px;
 	}
 
 	.tp-mk-foot {

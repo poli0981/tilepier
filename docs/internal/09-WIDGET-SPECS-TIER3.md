@@ -19,12 +19,12 @@ mandatory, not an optimization.
   `[BTCUSDT, ETHUSDT, AAPL, MSFT]`, max 12 in v1 (quota model, doc 11 §5 — this said §7, which is rate limiting).
   Each entry `{ kind: 'crypto'|'stock', symbol, display }`.
 
-  **Week 5a seeds the crypto half of that default and 5b restores the rest**,
-  which is a deviation worth naming rather than hiding: `/api/stock/quote`
-  lands in 5b, so seeding `AAPL` and `MSFT` now would put two permanently
-  unanswerable rows on a tile whose whole job is to say what it knows. A stock
-  row is rendered exactly like a delisted coin until then — the row model is
-  already written for both kinds.
+  **Week 5a seeded the crypto half of that default and 5b restored the rest**
+  (2026-09-23), with the endpoint that can answer for them: seeding `AAPL` and
+  `MSFT` before `/api/stock/quote` existed would have put two permanently
+  unanswerable rows on a tile whose whole job is to say what it knows. A reader
+  who added the widget in between keeps the list they have — settings are per
+  instance, and the default is only read for a bag with no list in it.
 - **Tier S is unreachable**, because `min` is 2×2 and doc 13 §3's tier S is
   `w <= 2 && h <= 1`. Named here per doc 06 §3's single-widget N/A rule rather
   than left as a gap in the DoD: a watchlist is a list, and a list has no honest
@@ -39,7 +39,8 @@ mandatory, not an optimization.
 - **Detail:** symbol header (price, change, day range), **candlestick +
   volume** via ECharts (`candlestick` + `bar` on shared axis, dataZoom),
   range presets: 1D (crypto 5 m klines / stock 15 m intraday), 1W, 1M, 1Y
-  (daily), MAX (stock daily via Twelve Data EOD depth). Watchlist manager
+  (daily), ~~MAX (stock daily via Twelve Data EOD depth)~~ — cut for v1, Week
+  5's one approved depth cut (doc 23 §Week 5). Watchlist manager
   with search-add. Stocks show a "delayed/cached — not for trading" footnote
   (doc 16 §4).
 - **Degradation ladder (stocks):** Twelve Data quota breaker open →
@@ -78,11 +79,14 @@ both are deliberate:
 - **A sparkline is absent until the reader has opened that symbol's detail at
   least once.** That is an ordinary state and the row simply renders without
   one, the way it renders without a change figure upstream did not send.
-- **A cached series older than six hours is not drawn**, even though `swr`'s own
-  ceiling is seven days. Seven days is right for a payload that *is* the
-  reading; it is wrong for one sitting beside a live price, where a week-old
+- **A cached coin series older than six hours is not drawn**, even though
+  `swr`'s own ceiling is seven days. Seven days is right for a payload that *is*
+  the reading; it is wrong for one sitting beside a live price, where a week-old
   shape reads as this morning. Six hours is doc 11 §4's klines stale window —
-  past it the endpoint would not serve those candles either.
+  past it the endpoint would not serve those candles either. **A stock's window
+  is a day** (2026-09-23), the intraday series' own stale window: its series
+  goes quiet with the exchange, and six hours would blank every stock sparkline
+  overnight while nothing it showed had changed.
 
 The peek prefers the finest interval it finds and falls back through the
 coarser ones, because the sparkline is about the shape of recent trading rather
@@ -114,6 +118,93 @@ claim about the market, and a high equal to the low is a claim about the day.
 A row with no usable **price**, though, is `null` outright — a quote without a
 price is not a quote, and the tile has something to say about an absent row and
 nothing to say about a price that is missing.
+
+### Two sources on one tile (2026-09-23)
+
+The stock half made the tile the first to read **two** quote sources at once —
+the crypto set from Binance, the stock set from Finnhub — each under its own
+data key, and that changed what a row and the tile can be.
+
+- **A row has four states, not two.** `quoted`; `absent` (its source answered
+  and had nothing — the delisted case, and the only one with the remove
+  shortcut); `waiting` (its source has not answered — a skeleton bar at the
+  width of the price it stands in for); `unread` (its source failed with
+  nothing cached). Before 5b one request answered for every row, so a row could
+  only be quoted or not, and "not" always meant delisted. With two sources the
+  stock rows can be on their way, or failed, while the coins are on screen, and
+  neither of those is "upstream had nothing for this symbol".
+- **The tile's state comes from both sides** (`tileView`): the list as soon as
+  either has quotes; the skeleton while neither has and one is still asking;
+  after that the most telling failure — offline, then rate-limited, then
+  error. A side the watchlist does not use is not consulted at all. **This
+  fixed a 5a bug that could not yet be reached:** the tile read its status off
+  the crypto handle, and a watchlist of only stocks has no crypto handle, so it
+  would have held a skeleton for as long as it was open.
+- **The host badge is the most worrying side's**, dated by that side — a badge
+  is a claim about particular prices, and an age borrowed from the healthier
+  side would understate it. A side with nothing on screen raises no badge; its
+  rows already say so.
+- **Two scheduler entries**, `<instanceId>` and `<instanceId>:stock`, both at
+  doc 06 §7's 60 s. Two rather than one running both because the scheduler
+  owns backoff per entry, and one entry would slow the coins down every time
+  Finnhub had a bad minute.
+- **"As of close" comes from the quote's own timestamp**, not from a market
+  calendar: a stock whose last trade is more than 30 minutes old is marked
+  "close" beside its price (`CLOSE_QUIET_MS`). A calendar is a holiday list
+  somebody has to keep, and it would still be wrong about a halted stock.
+  Finnhub stamps a quote with its last trade, which in session is seconds old
+  for anything a watchlist would hold. Coins trade around the clock and are
+  never marked.
+- **The remove shortcut writes through `onUpdateSettings`**, and is absent
+  where there is nowhere to write — the `/w/[id]` direct load has no host to
+  hand the callback down, and a button that cannot do anything is worse than
+  none.
+
+### Two ranges over one interval (2026-09-23)
+
+1M and 1Y are both daily candles, so they share one data key — doc 11 §4 keys a
+series by symbol and interval only. **Through Week 5a each range still sent its
+own `limit`**, so the key named two different responses: whichever range was
+opened second read the first one's window out of `apiCache` as fresh and drew
+it under its own label — a year captioned 1M, or a month captioned 1Y, until
+the entry went stale. Found writing the stock detail, whose three daily ranges
+share a key three ways; confirmed at runtime by a test that fails on the 5a
+code ("BTC over 1M: … opened 135.00", a year's first candle).
+
+The fix is the klines rule applied on the client too: **each interval is always
+fetched at the deepest window any range asks of it** (1d → 365 for coins, 1day
+→ 252 for stocks), and the range picker cuts its window out of that
+(`windowOf`). The key is the request again, which is what `swr`'s
+de-duplication assumes. It costs nothing upstream — the Worker holds one deep
+series per interval whatever the window, and Twelve Data charges a credit per
+call rather than per candle — and a few kilobytes on a 1M view.
+
+### The stock detail (2026-09-23)
+
+- **1D collapses to the week when intraday is refused.** The Worker answers 1D
+  with `QUOTA_EXHAUSTED` when the intraday stop (720) has been reached and it
+  has nothing stale; the detail then draws the daily week with a note, while
+  the picker keeps showing 1D and the chart summary names the range actually
+  drawn. The collapse is per symbol and per panel: the next opening asks again,
+  for the price of one refused request that spends nothing.
+- **Quote-only** is an empty series: a symbol Finnhub quotes and Twelve Data
+  does not cover, or one the Worker would not spend a credit on because
+  Finnhub had no quote for it (doc 11 §3). The header's price stands and the
+  chart area says there is no chart for it. With the daily series refused too —
+  the last rung — it says the day's allowance is spent and when it returns.
+- **Footer:** doc 16 §4's disclaimer permanently, the "delayed/cached — not for
+  trading" footnote above for a stock, and a credit line per payload actually drawn —
+  Finnhub for the price and Twelve Data for the candles, or Binance once for a
+  coin.
+- **Search-add.** A kind selector beside the add box; for a stock the box
+  searches `/api/stock/search` after 300 ms without typing and from the second
+  character — a single letter matches half the exchange, and a one-letter ticker
+  (`F`, `T`) is still added by typing it. The query goes up lower-cased, so
+  "Apple" and "apple" are one edge entry and one key, and it is validated by
+  the Worker's own rule (`stockSearchText`, shared) so the box never offers a
+  search the Worker refuses. Results are buttons; one already on the watchlist
+  is disabled and says so. Company names are text nodes (CLAUDE.md rule 7).
+  A coin is never searched — its list is the bundled top-list.
 
 ## 2. `music` — Local Music Player
 

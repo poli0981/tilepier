@@ -42,8 +42,8 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
 | `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
-| `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data (no fallback source since 2026-09-23, doc 10 §5) |
-| `GET /api/stock/search` | q | Finnhub search |
+| `GET /api/stock/series` | symbol, interval(15min\|1day), limit ∈ range set | Twelve Data (no fallback source since 2026-09-23, doc 10 §5) |
+| `GET /api/stock/search` | q (1–40 chars: letters, digits, space, `. & ' -`) | Finnhub search |
 | `GET /api/rss` | url (https) | arbitrary feed (guarded, doc 15 §5) |
 
 All GET, all side-effect-free from the client's perspective (fx snapshot is
@@ -77,8 +77,21 @@ twelve), and it costs one upstream call rather than one per range.
 
 **`/api/stock/series` needs the same answer for the same reason**, and it is
 recorded here rather than there because this is where it was first built: that
-row's params include a `range` while §4's key is `st:se:v1:<sym>:<int>`, which
-is the identical collision one endpoint later.
+row's params included a `range` while §4's key is `st:se:v1:<sym>:<int>`, which
+is the identical collision one endpoint later. Built in 5b the same way — one
+deep series per interval (130 fifteen-minute bars, 260 sessions), `limit` an
+allowlist derived from `STOCK_RANGES`, and the response a window onto it.
+
+**The client asks for the deepest window, and windows it itself** (2026-09-23).
+The collision above has a twin one layer up: `swr` keys the client's
+`apiCache` the same way, with no depth, so through Week 5a a 1M response and a
+1Y response were stored under one key and each range read the other's window as
+fresh — a year of candles drawn under 1M's label. So each interval is requested
+at the deepest `limit` any range asks of it (365 for `1d`, 252 for `1day`) and
+the range picker cuts its window client-side (doc 09 §1). The other values in
+the allowlist stay valid; nothing this app ships sends them any more. It costs
+no extra upstream call — the Worker fetches its deep series whatever the
+window — and Twelve Data charges per call, not per candle.
 
 **`/api/fx/history` has no KV entry of its own**, and that is a decision rather
 than an omission. Its inputs are the `fx:snap:` pile, which is permanent, so a
