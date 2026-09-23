@@ -39,7 +39,7 @@ interface CallOptions {
 	/** What the deploy has set. Omitted means the secret was never put. */
 	secret?: string;
 	authorization?: string;
-	env?: Partial<Env>;
+	env?: Partial<Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY'>>;
 	colo?: string;
 }
 
@@ -54,7 +54,9 @@ async function call(options: CallOptions = {}): Promise<Response> {
 			request: Request;
 			url: URL;
 			platform?: {
-				env: Partial<Env> & { TILEPIER_CACHE: KVNamespace | undefined };
+				env: Partial<Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY' | 'DEV_DASH_TOKEN'>> & {
+					TILEPIER_CACHE: KVNamespace | undefined;
+				};
 				cf?: { colo?: string };
 			};
 		}) => Promise<Response>

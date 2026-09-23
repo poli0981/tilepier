@@ -260,14 +260,32 @@ mechanism and the measurement. What the deferral got right is that this was
 never only the health endpoint's problem — it blocked every `/api/stock/*` route
 the same way, so Week 5 could not have started anywhere else.
 
-**The token is the half still to decide**, and it is a UI question rather than a
-typing one: this section asks the panel to render breaker state while doc 11 §9
-says the endpoint is "absent in docs/UI", and a client that fetches it has to
-hold a secret from somewhere. The proposal on the table is that the panel reads
-it from the query string (`?debug=1&health=<token>`), stores it **nowhere** —
-not in `tp.settings.v1`, which is the three-key rule and also just the wrong
-place for a secret — and renders the section as unavailable without one. Settle
-it before the rows are written, not after.
+**The token half is settled (2026-09-23), and not the way it was proposed.**
+The question was how a client that renders breaker state holds a secret that
+doc 11 §9 keeps "absent in docs/UI". The proposal on the table was
+`?debug=1&health=<token>`, stored nowhere. It stores it nowhere, and the rows
+are built that way — but **not in the query string**, which turned out to be
+three places at once:
+
+- the Worker's invocation logs, which record the request URL;
+- browser history;
+- the page the analytics beacon runs beside (doc 15 §2).
+
+What ships instead:
+
+- `?debug=1` (or `tp.settings.v1.debug`) reveals the section, as before.
+- The breaker rows sit behind a password field.
+- The token typed there lives in the panel component's state, is sent once as
+  `Authorization: Bearer`, and goes when the page does. It never reaches
+  `tp.settings.v1` (the three-key rule, and the wrong place for a secret),
+  the URL, or `logEntry` — a bug report exports the ring buffer. The component
+  test asserts all three.
+- The read is a form submit, not an effect.
+- A refusal says the token is wrong or unset rather than pretending the
+  upstreams are fine.
+
+`core/health.ts` is the transport, deliberately not `fetchEnvelope`, whose
+retries and error vocabulary belong to the widgets.
 
 Section 7 ships in Week 1 deliberately, out of order of apparent usefulness: it
 is what makes the ring buffer worth having, and M1's stated QA strategy is
