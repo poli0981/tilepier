@@ -557,5 +557,22 @@
 	"widget.markets.all_added": "every symbol on the list is already here",
 	"widget.markets.refused_invalid": "that is not a symbol this can ask for",
 	"widget.markets.refused_duplicate": "{symbol} is already on the watchlist",
-	"widget.markets.refused_full": "the watchlist holds {max} symbols — remove one first"
+	"widget.markets.refused_full": "the watchlist holds {max} symbols — remove one first",
+	"widget.markets.change_label_day": "{change} on the day",
+	"widget.markets.at_close": "close",
+	"widget.markets.at_close_hint": "at the close, {age}",
+	"widget.markets.row_unread": "not read",
+	"widget.markets.day_band": "{low} – {high} on the day",
+	"widget.markets.intraday_paused": "The intraday allowance for today is used up — this is the week instead.",
+	"widget.markets.quota_note": "The chart allowance for today is used up — charts return after 00:00 UTC.",
+	"widget.markets.quote_only": "No chart for {symbol} — the price above is all there is.",
+	"widget.markets.stock_note": "Stock prices are delayed or cached — not for trading.",
+	"widget.markets.kind_label": "kind",
+	"widget.markets.kind_crypto": "coin",
+	"widget.markets.kind_stock": "US stock",
+	"widget.markets.add_label_stock": "symbol or company",
+	"widget.markets.search_results": "matching US stocks",
+	"widget.markets.search_add": "add {symbol}, {name}",
+	"widget.markets.search_empty": "no US stock matches “{query}”",
+	"widget.markets.search_failed": "search is unavailable right now — type the symbol instead"
 }

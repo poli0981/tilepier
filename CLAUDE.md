@@ -102,8 +102,11 @@ fails the build. Slice commits vertically — a primitive plus its first consume
    variables. Never import them into client-reachable code paths. Name a new
    one in `.dev.vars.example` and run `pnpm gen`; add it to the CI grep.
 5. **Finnhub free tier has no stock candles** (403). Series come from
-   Twelve Data (budgeted, 800/day) with Stooq EOD fallback. Don't
-   "simplify" this split.
+   Twelve Data (budgeted, 800/day); quotes and search from Finnhub. Don't
+   "simplify" this split. There is no third source: Stooq, the old EOD
+   fallback, was dropped on 2026-09-23 — it needs an API key since 2026-03
+   and answers scripts with a proof-of-work page, which this project does not
+   circumvent (doc 10 §5). The daily stale window (7 d) is the fallback now.
 6. **Runes only.** No legacy `$:` reactivity, no `export let`. Props via
    `$props()`. Effects never fetch — data flows through `swr()` +
    `service.ts`.

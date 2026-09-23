@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { CRYPTO_OK, CRYPTO_PAYLOAD, CRYPTO_STALE } from '$lib/core/__fixtures__/crypto';
+import { STOCK_OK } from '$lib/core/__fixtures__/stock';
 import manifest from './manifest';
 import { scheduler } from '$lib/core/scheduler';
 import { createDb, type TpDb } from '$lib/core/storage/db';
@@ -10,7 +11,7 @@ import type { TpTileSize } from '$lib/core/types';
 import { m } from '$lib/paraglide/messages';
 import { online } from '$lib/stores/online.svelte';
 import { settings } from '$lib/stores/settings.svelte';
-import { klinesKey, SPARK_MAX_AGE_MS, tickerKey } from './service';
+import { klinesKey, SPARK_MAX_AGE_MS, stockSeriesKey, tickerKey } from './service';
 import TpMarketsWidget from './TpMarketsWidget.svelte';
 
 /**
@@ -267,14 +268,16 @@ describe('the manifest contract', () => {
 		expect(manifest.refresh).toEqual({ kind: 'interval', everyMs: 60_000, visibleOnly: true });
 	});
 
-	it('registers exactly one scheduler entry, under the instance', async () => {
+	it('registers one scheduler entry per source, under the instance', async () => {
 		serve(CRYPTO_OK);
 		render(TpMarketsWidget, props());
 
-		// The id is the instanceId rather than the data key, which is what lets
-		// the cadence outlive a watchlist edit — the data key moves with the set.
-		await vi.waitFor(() => expect(scheduler.size).toBe(1));
-		expect(scheduler.inspect()[0]?.id).toBe('wgt_mk');
+		// The ids come from the instanceId rather than the data keys, which is
+		// what lets the cadence outlive a watchlist edit — the keys move with the
+		// set. Two because backoff is per entry: one entry running both would
+		// slow the coins down every time Finnhub had a bad minute.
+		await vi.waitFor(() => expect(scheduler.size).toBe(2));
+		expect(scheduler.inspect().map((task) => task.id)).toEqual(['wgt_mk', 'wgt_mk:stock']);
 	});
 });
 
@@ -358,5 +361,162 @@ describe('the sparkline (doc 09 §1)', () => {
 
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
 		expect(screen.container.querySelector('polyline')).toBeNull();
+	});
+});
+
+/**
+ * The stock half, from Week 5b: a second source on the same tile, which is
+ * what made a row able to be in a state of its own.
+ */
+describe('the stock half (doc 09 §1)', () => {
+	const STOCKS_ONLY = [
+		{ kind: 'stock', symbol: 'AAPL', display: '' },
+		{ kind: 'stock', symbol: 'MSFT', display: 'Microsoft' }
+	];
+
+	const MIXED = [
+		{ kind: 'crypto', symbol: 'BTCUSDT', display: 'BTC' },
+		{ kind: 'stock', symbol: 'AAPL', display: '' }
+	];
+
+	type Route = () => Response | Promise<Response>;
+
+	function json(body: unknown, status = 200): Route {
+		return () =>
+			new Response(JSON.stringify(body), {
+				status,
+				headers: { 'content-type': 'application/json' }
+			});
+	}
+
+	/** A route that never answers, so its side stays `loading`. */
+	const pending: Route = () => new Promise<Response>(() => {});
+
+	/** Answers each path with its own body. An unrouted path is a 404, which
+	 *  the assertions below would see rather than a silent pass. */
+	function serveRoutes(routes: Record<string, Route>): ReturnType<typeof vi.fn> {
+		const spy = vi.fn(async (input: string) => {
+			const { pathname } = new URL(String(input), 'https://tilepier.test');
+			return (routes[pathname] ?? json({ ok: false, error: { code: 'BAD_REQUEST' } }, 404))();
+		});
+		vi.stubGlobal('fetch', spy);
+		return spy;
+	}
+
+	it('lists a watchlist of only stocks rather than holding a skeleton forever', async () => {
+		// Before 5b the tile's status was the crypto handle's, and a watchlist
+		// with no coins has no crypto handle: `loading`, for as long as it was open.
+		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+
+		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
+		await expect.element(screen.getByText('Microsoft')).toBeInTheDocument();
+	});
+
+	it('reads each half from its own source, in the reader order', async () => {
+		const spy = serveRoutes({
+			'/api/crypto/ticker': json(CRYPTO_OK),
+			'/api/stock/quote': json(STOCK_OK)
+		});
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+
+		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
+		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
+
+		const asked = spy.mock.calls.map((call) => String(call[0]));
+		expect(asked).toContain('/api/crypto/ticker?symbols=BTCUSDT');
+		expect(asked).toContain('/api/stock/quote?symbols=AAPL');
+	});
+
+	it('calls a stock move the day’s rather than 24 hours’', async () => {
+		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+
+		await expect
+			.element(screen.getByLabelText(m['widget.markets.change_label_day']({ change: '+0.41%' })))
+			.toBeInTheDocument();
+	});
+
+	it('says a stock is quoted from the close once it has stopped trading', async () => {
+		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+
+		// The suite's clock is four hours past Monday's close.
+		await expect
+			.element(screen.getByText(m['widget.markets.at_close']()).first())
+			.toBeInTheDocument();
+	});
+
+	it('keeps the coins on screen while the stocks are still on their way', async () => {
+		serveRoutes({ '/api/crypto/ticker': json(CRYPTO_OK), '/api/stock/quote': pending });
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+
+		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('img', { name: m['widget.markets.loading']() }))
+			.toBeInTheDocument();
+	});
+
+	it('says a stock row was not read when its source failed with nothing cached', async () => {
+		serveRoutes({
+			'/api/crypto/ticker': json(CRYPTO_OK),
+			'/api/stock/quote': json({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, 503)
+		});
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+
+		await expect.element(screen.getByText(m['widget.markets.row_unread']())).toBeInTheDocument();
+		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
+		// Not the delisted chip: nothing has said AAPL is gone.
+		expect(screen.container.textContent).not.toContain(m['widget.markets.unavailable']());
+	});
+
+	it('offers to remove a row upstream had nothing for', async () => {
+		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
+		const onUpdateSettings = vi.fn();
+		const watchlist = [
+			{ kind: 'stock', symbol: 'AAPL', display: '' },
+			{ kind: 'stock', symbol: 'GONE', display: '' }
+		];
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist }, onUpdateSettings }));
+
+		await screen
+			.getByRole('button', { name: m['widget.markets.remove_row']({ symbol: 'GONE' }) })
+			.click();
+
+		expect(onUpdateSettings).toHaveBeenCalledWith({ watchlist: [watchlist[0]] });
+	});
+
+	it('offers no shortcut where there is nowhere to write the edit', async () => {
+		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
+		const watchlist = [{ kind: 'stock', symbol: 'GONE', display: '' }];
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist } }));
+
+		await expect.element(screen.getByText(m['widget.markets.unavailable']())).toBeInTheDocument();
+		expect(screen.container.querySelector('button')).toBeNull();
+	});
+
+	it('draws a stock sparkline from the stock series cache, and never asks for one', async () => {
+		const spy = serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
+		await db.apiCache.put({
+			key: stockSeriesKey('AAPL', '1day'),
+			cachedAt: NOW.getTime(),
+			payload: {
+				payload: {
+					symbol: 'AAPL',
+					interval: '1day',
+					candles: Array.from({ length: 60 }, (_, i) => [i, 200, 210 + i, 190, 200 + i, 1]),
+					attribution: 'Stock charts by Twelve Data'
+				},
+				meta: { cachedAt: 1, source: 'twelvedata', stale: false }
+			}
+		});
+
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+
+		await vi.waitFor(() => expect(screen.container.querySelectorAll('polyline')).toHaveLength(1));
+		// doc 11 §5: series only from a detail view. A tile that asked would spend
+		// Twelve Data credits once a minute per watched stock.
+		const asked = spy.mock.calls.map((call) => String(call[0]));
+		expect(asked.some((url) => url.includes('/api/stock/series'))).toBe(false);
 	});
 });

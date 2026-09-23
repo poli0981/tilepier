@@ -35,7 +35,25 @@ export const DEGRADED_PASS_TTL_S = 600;
 /** Anything longer than this is not a pass, and is refused before any crypto. */
 const MAX_PASS_LENGTH = 128;
 
-const PASS = /^v1\.(\d{1,12})\.([A-Za-z0-9_-]{22})\.([01])\.([A-Za-z0-9_-]{43})$/;
+/**
+ * **Every segment has exactly one spelling.** Base64url of a length that is not
+ * a multiple of three ends in a character carrying bits that encode nothing,
+ * and `atob` discards them. So the final character of each encoded segment is
+ * limited to the values with those bits clear:
+ *
+ * - the MAC is 32 bytes, 43 characters, two spare bits — `[AEIMQUYcgkosw048]`;
+ * - the nonce is 16 bytes, 22 characters, four spare bits — `[AQgw]`.
+ *
+ * Until 2026-09-23 the MAC took any final character, which made every pass
+ * valid under four spellings. Nothing more could be done with them than with
+ * the pass itself, but a parse that accepts what `issuePass` never writes is not
+ * the strict parse this module promises, and it would have become a real
+ * problem the day anything keyed on the pass string. The nonce is never
+ * decoded, so a second spelling of it already failed the MAC; it is held to the
+ * same rule so that no segment needs that reasoning.
+ */
+const PASS =
+	/^v1\.(\d{1,12})\.([A-Za-z0-9_-]{21}[AQgw])\.([01])\.([A-Za-z0-9_-]{42}[AEIMQUYcgkosw048])$/;
 
 const keys = new Map<string, Promise<CryptoKey>>();
 

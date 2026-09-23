@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
+import type { TpHealthReport } from '../src/lib/api-types';
 import { CACHE_POLICY, STOCK_BUDGET } from '../src/lib/shared-constants';
 
 /**
@@ -16,9 +17,9 @@ import { CACHE_POLICY, STOCK_BUDGET } from '../src/lib/shared-constants';
  * **What this measures and what it cannot.** Open-Meteo needs no key, so
  * `/api/weather` is exercised against the real upstream through the real
  * worker with a real KV namespace. The Twelve Data and Finnhub halves need
- * secrets that live on the deployed Worker, not on this machine — those are
- * covered by the `_lib` unit suite (tiers, breaker, header parsing) and are
- * marked in doc 22 as needing a keyed run.
+ * secrets that live on the deployed Worker, not on this machine — the `_lib`
+ * unit suite covers their logic (tiers, breaker, header parsing), and the keyed
+ * run at the bottom of this file covers the rest against a deployed Worker.
  *
  * The claim under test is doc 11 §5's load model: **watchlists share KV, so
  * 500 users on the same place cost the same as one.** That is what makes the
@@ -35,10 +36,20 @@ const PLACES = [
 
 const VIRTUAL_USERS = 50;
 
+/**
+ * Against a deployed Worker the Turnstile gate is on (doc 15 §3), so a script
+ * needs the `DEV_DASH_TOKEN` bypass. Read from the environment and sent as a
+ * header, never written anywhere — it is the same secret `/api/_health`
+ * answers to, and a log line holding it would be a leak.
+ */
+const BEARER = process.env.S3_BEARER;
+const gateBypass = BEARER ? { authorization: `Bearer ${BEARER}` } : undefined;
+
 /** A URL the CDN has never seen, resolving to the same KV key. */
 let counter = 0;
+const bust = () => `${Date.now()}-${counter++}`;
 const uncached = (place: { lat: number; lon: number }) =>
-	`/api/weather?lat=${place.lat}&lon=${place.lon}&cb=${Date.now()}-${counter++}`;
+	`/api/weather?lat=${place.lat}&lon=${place.lon}&cb=${bust()}`;
 
 test.describe('S3 · cache behaviour under load', () => {
 	test.setTimeout(180_000);
@@ -59,7 +70,10 @@ test.describe('S3 · cache behaviour under load', () => {
 	}) => {
 		test.skip(!DEPLOYED, 'set S3_BASE_URL to a deployed Worker origin — see the note above');
 
-		const api = await playwright.request.newContext({ baseURL: DEPLOYED });
+		const api = await playwright.request.newContext({
+			baseURL: DEPLOYED,
+			...(gateBypass ? { extraHTTPHeaders: gateBypass } : {})
+		});
 
 		// Warm each place once, serially, so the measurement is not racing itself.
 		for (const place of PLACES) {
@@ -180,5 +194,93 @@ test.describe('S3 · the quota model on paper', () => {
 		// Comfortably below the intraday guard, which is the point: the guard is
 		// for the long tail of unique symbols, not the default deck.
 		expect(dailyCost).toBeLessThan(STOCK_BUDGET.intradayStopAt);
+	});
+});
+
+/**
+ * The keyed half of S3, which doc 22 held over to Week 5b: it needs the
+ * Finnhub and Twelve Data keys, and those exist only on the deployed Worker.
+ *
+ *     S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN>  *       pnpm exec playwright test e2e/s3-quota.e2e.ts -g keyed
+ *
+ * It spends at most two Twelve Data credits, and asserts that is all it
+ * spends: the claim is doc 11 §5's — a warm series is a KV read, so the twenty
+ * requests after the first two cost nothing however they are spelled.
+ *
+ * Finnhub's missing `/stock/candle` (doc 10 §5) cannot be shown from here,
+ * because the Worker never asks for it. doc 22 §S3 records the one-line curl
+ * that shows the 403 with the key on the reader's own machine.
+ */
+test.describe('S3 · the stock half, keyed', () => {
+	const DEPLOYED = process.env.S3_BASE_URL;
+
+	async function health(api: APIRequestContext): Promise<TpHealthReport> {
+		const res = await api.get('/api/_health');
+		expect(res.status(), 'the bearer was refused — is S3_BEARER the deployed token?').toBe(200);
+		return ((await res.json()) as { data: TpHealthReport }).data;
+	}
+
+	test('quotes, series and search answer, and a warm series costs nothing', async ({
+		playwright
+	}) => {
+		test.skip(!DEPLOYED || !gateBypass, 'set S3_BASE_URL and S3_BEARER — see the note above');
+		test.setTimeout(120_000);
+
+		const api = await playwright.request.newContext({
+			baseURL: DEPLOYED,
+			extraHTTPHeaders: gateBypass ?? {}
+		});
+
+		const before = await health(api);
+		expect(before.keys, 'a key is missing on this deploy').toEqual({
+			finnhub: true,
+			twelvedata: true,
+			turnstile: true
+		});
+
+		const quote = await api.get(`/api/stock/quote?symbols=AAPL,MSFT&cb=${bust()}`);
+		expect(quote.status()).toBe(200);
+		const quotes = (
+			(await quote.json()) as { data: { quotes: Record<string, { price: number } | null> } }
+		).data.quotes;
+		expect(quotes['AAPL']?.price).toBeGreaterThan(0);
+		expect(quotes['MSFT']?.price).toBeGreaterThan(0);
+
+		const warm: string[] = [];
+		for (const [interval, limit] of [
+			['15min', 26],
+			['1day', 252]
+		] as const) {
+			const url = () =>
+				`/api/stock/series?symbol=AAPL&interval=${interval}&limit=${limit}&cb=${bust()}`;
+			const first = await api.get(url());
+			expect(first.status(), interval).toBe(200);
+			const body = (await first.json()) as { data: { candles: unknown[] } };
+			expect(body.data.candles.length, interval).toBeGreaterThan(0);
+
+			for (let i = 0; i < 10; i++) {
+				const again = await api.get(url());
+				warm.push(`${interval}:${again.headers()['x-tp-cache'] ?? again.status()}`);
+			}
+		}
+
+		const search = await api.get(`/api/stock/search?q=apple&cb=${bust()}`);
+		expect(search.status()).toBe(200);
+		const found = ((await search.json()) as { data: { results: { symbol: string }[] } }).data
+			.results;
+		expect(found.some((result) => result.symbol === 'AAPL')).toBe(true);
+
+		const after = await health(api);
+		await api.dispose();
+
+		console.log(
+			`S3 keyed · colo ${after.colo ?? '?'} · Twelve Data spend ${before.budget.spent} → ${after.budget.spent} · warm ${JSON.stringify(warm)}`
+		);
+
+		expect(
+			warm.filter((status) => status.endsWith('MISS')),
+			'a warm series went upstream'
+		).toEqual([]);
+		expect(after.budget.spent - before.budget.spent).toBeLessThanOrEqual(2);
 	});
 });

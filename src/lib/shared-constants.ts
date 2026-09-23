@@ -1,4 +1,4 @@
-import type { TpCryptoInterval } from './api-types';
+import type { TpCryptoInterval, TpStockInterval } from './api-types';
 
 /**
  * Constants shared by client and Worker.
@@ -73,8 +73,10 @@ export const CACHE_POLICY = {
 	stQuote: { ttlMs: 90 * SECOND, staleMs: 12 * HOUR },
 	/** Stock intraday series (Twelve Data). */
 	stSeries15min: { ttlMs: 900 * SECOND, staleMs: 24 * HOUR },
-	/** Stock daily series (Twelve Data, Stooq fallback). */
+	/** Stock daily series (Twelve Data; the 7-day stale window is the fallback). */
 	stSeries1day: { ttlMs: 21600 * SECOND, staleMs: 7 * DAY },
+	/** Stock symbol search (Finnhub). A company's symbol changes rarely. */
+	stSearch: { ttlMs: 24 * HOUR, staleMs: 7 * DAY },
 	/** RSS feed, per feed URL. */
 	rss: { ttlMs: 1200 * SECOND, staleMs: 24 * HOUR }
 } as const satisfies Record<string, TpCachePolicy>;
@@ -95,6 +97,13 @@ export function cryptoKlinesFamily(interval: TpCryptoInterval): TpCacheFamily {
 	return interval === '5m' || interval === '15m' ? 'crKlinesIntraday' : 'crKlinesDaily';
 }
 
+/** The stock twin of `cryptoKlinesFamily`, for the same reason: the endpoint
+ *  and the client must read one answer, or the client polls faster than the
+ *  edge refreshes. */
+export function stockSeriesFamily(interval: TpStockInterval): TpCacheFamily {
+	return interval === '15min' ? 'stSeries15min' : 'stSeries1day';
+}
+
 /* ──────────────────────────────────────────────────────────── cache keys */
 
 /**
@@ -112,7 +121,11 @@ export const cacheKey = {
 	cryptoTicker: (set: string) => `cr:tick:v1:${set}`,
 	cryptoKlines: (symbol: string, interval: string) => `cr:kl:v1:${symbol}:${interval}`,
 	stockQuote: (symbol: string) => `st:q:v1:${symbol}`,
+	/** The client's entry for a watchlist's stock set; the Worker caches each
+	 *  symbol under `stockQuote` instead (doc 11 §3–§4). */
+	stockQuotes: (set: string) => `st:qs:v1:${set}`,
 	stockSeries: (symbol: string, interval: '15min' | '1day') => `st:se:v1:${symbol}:${interval}`,
+	stockSearch: (queryNorm: string) => `st:sr:v1:${queryNorm}`,
 	rss: (urlHash: string) => `rss:v1:${urlHash}`
 } as const;
 
@@ -247,6 +260,26 @@ export function symbolSetKey(symbols: readonly string[]): string {
 	return canonicalSymbols(symbols).join(',');
 }
 
+/** Long enough for a company name, short enough not to be a vector. */
+const STOCK_SEARCH_MAX = 40;
+
+/**
+ * doc 11 §3's `/api/stock/search?q=`, as both halves read it: surrounding
+ * space trimmed and inner runs collapsed, then letters, digits, spaces and the
+ * few marks company names and share classes use. `null` for anything else —
+ * **refused rather than stripped**, because a stripped query answers a
+ * different question under the asker's cache key.
+ *
+ * Here rather than in the endpoint because the detail's search box asks the
+ * same question before it sends anything, and two copies of the rule would
+ * drift into a client that offers searches the Worker refuses.
+ */
+export function stockSearchText(raw: string): string | null {
+	const text = raw.trim().replace(/\s+/g, ' ');
+	if (text.length === 0 || text.length > STOCK_SEARCH_MAX) return null;
+	return /^[\p{L}\p{N} .&'-]+$/u.test(text) ? text : null;
+}
+
 /* ────────────────────────────────────────────────────── Twelve Data quota */
 
 /**
@@ -258,7 +291,7 @@ export function symbolSetKey(symbols: readonly string[]): string {
 export const STOCK_BUDGET = {
 	/** Hard daily ceiling published by the upstream. */
 	dailyCredits: 800,
-	/** At 90%, stop MISS fetches for intraday series — serve stale or Stooq. */
+	/** At 90%, stop MISS fetches for intraday series — serve stale, or refuse. */
 	intradayStopAt: 720,
 	/** Daily series keep going to here, then everything stops until UTC reset. */
 	dailySeriesStopAt: 780

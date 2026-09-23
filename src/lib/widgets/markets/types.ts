@@ -5,8 +5,8 @@ import { MARKETS_MAX_SYMBOLS } from '$lib/shared-constants';
  * (doc 05 §2) — never in Dexie, and never a schema on the manifest.
  */
 
-/** doc 09 §1: the Worker maps crypto to Binance and stock to
- *  Finnhub/TwelveData/Stooq, so the client has to say which it means. */
+/** doc 09 §1: the Worker maps crypto to Binance and stock to Finnhub and
+ *  Twelve Data, so the client has to say which it means. */
 export type TpMarketKind = 'crypto' | 'stock';
 
 export interface TpWatchEntry {
@@ -25,24 +25,25 @@ export interface TpMarketsSettings {
 }
 
 /**
- * doc 09 §1's default is `[BTCUSDT, ETHUSDT, AAPL, MSFT]`.
+ * doc 09 §1's default, `[BTCUSDT, ETHUSDT, AAPL, MSFT]`.
  *
- * **Week 5a ships the crypto half of it**, and that is a deviation worth
- * naming rather than hiding: `/api/stock/quote` lands in 5b, so seeding AAPL
- * and MSFT now would put two permanently unanswerable rows on a tile whose
- * whole job is to say what it knows. The two stock symbols join this list in
- * 5b with the endpoint that can answer for them; a reader who added the widget
- * before then keeps the list they have, because settings are per instance.
+ * Week 5a shipped the crypto half, because `/api/stock/quote` did not exist yet
+ * and two rows nothing could answer would have sat on a tile whose whole job is
+ * to say what it knows. The stock half joined in 5b with the endpoint. A reader
+ * who added the widget before then keeps the list they have — settings are per
+ * instance, and a default is only ever read for a bag with no list in it.
  */
 export const MARKETS_DEFAULTS: TpMarketsSettings = {
 	watchlist: [
 		{ kind: 'crypto', symbol: 'BTCUSDT', display: '' },
-		{ kind: 'crypto', symbol: 'ETHUSDT', display: '' }
+		{ kind: 'crypto', symbol: 'ETHUSDT', display: '' },
+		{ kind: 'stock', symbol: 'AAPL', display: '' },
+		{ kind: 'stock', symbol: 'MSFT', display: '' }
 	]
 };
 
 /**
- * doc 09 §1's "max 12 in v1 (quota model, doc 11 §7)".
+ * doc 09 §1's "max 12 in v1 (quota model, doc 11 §5)".
  *
  * The same number as `MARKETS_MAX_SYMBOLS` because it is the same limit seen
  * from the other side — re-exported rather than restated so a hand-edited

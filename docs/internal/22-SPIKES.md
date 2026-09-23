@@ -154,7 +154,7 @@ type-checked instead of casting.
   the split routing works.
 - **Fail → fallback:** raise TTLs per table until model closes; if
   intraday still tight, 1D range ships crypto-only and stocks start at 1W
-  (Stooq daily).
+  (Twelve Data daily — this said Stooq, dropped 2026-09-23, doc 10 §5).
 
 ### Findings — 2026-08-10 · **GREEN for the keyless half** (weather measured on
 ### production at 94 % hit rate); the stock half still needs a keyed run
@@ -185,8 +185,12 @@ upstream calls, because upstream cost depends only on distinct places and the
 TTL. Pass criterion was ≥ 85 %.
 
 ```
-S3_BASE_URL=https://tilepier.win pnpm exec playwright test s3-quota
+S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN> pnpm exec playwright test s3-quota
 ```
+
+(`S3_BEARER` since 2026-09-23: production's `/api/*` sits behind the Turnstile
+gate, doc 15 §3, and a script passes it with the operator's bearer. The token
+comes from the environment and is never written anywhere by the suite.)
 
 > **Retraction.** An earlier version of this section claimed `wrangler dev`
 > could not do same-process KV read-after-write, and called it blocking. That
@@ -248,6 +252,40 @@ consumption against the model, live `api-credits-left` parsing, and the
 documented proof that Finnhub's free tier answers 403 on `/stock/candle`.
 `FINNHUB_KEY` and `TWELVEDATA_KEY` are Worker secrets and deliberately not on
 the build machine; a local run needs them in `.dev.vars` (gitignored, doc 03).
+
+### The keyed half — written 2026-09-23, **run by the operator**
+
+The keys exist only on the deployed Worker, and the gate in front of it only
+opens to `DEV_DASH_TOKEN`, which is the operator's. So the keyed half is a
+test the operator runs, not one CI can:
+
+```
+S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN> \
+  pnpm exec playwright test e2e/s3-quota.e2e.ts -g keyed
+```
+
+It reads `/api/_health` before and after, asks for a quote pair, both series
+intervals cold and then ten times each warm, and a search; it passes when every
+key is set, the warm twenty never go upstream, and **Twelve Data's spend moved
+by at most two credits**. The spend is the Worker's own counter with
+`api-credits-left` folded in (doc 11 §5), so a pass is also the live check of
+that parsing — the header can only raise the figure. It prints one line:
+colo, spend before → after, and the warm statuses. That line belongs here.
+
+**Finnhub's 403 on `/stock/candle` cannot come from this suite**, because the
+Worker never asks for candles — which is the point of the split. The proof is
+one request with the key on the operator's own machine, and only its status
+belongs here:
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" -H "X-Finnhub-Token: $FINNHUB_KEY" \
+  "https://finnhub.io/api/v1/stock/candle?symbol=AAPL&resolution=D&from=1756684800&to=1758585600"
+```
+
+The key goes in a header, never the query string, for the reason doc 10 §5
+gives about every key: a URL is what ends up in a log.
+
+**Results:** _not yet recorded._
 
 Nothing found so far argues for the fallback (raising TTLs). The arithmetic
 model is asserted in the suite so a TTL edit cannot silently break it: 50 users

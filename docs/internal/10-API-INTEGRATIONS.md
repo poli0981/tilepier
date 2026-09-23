@@ -17,7 +17,7 @@ Analytics and Turnstile. Neither is a data source, so neither is here: doc 15
 | Binance public REST | none | generous IP-based weight limits; `/klines`, `/ticker/24hr` | crypto | ToS: display use OK; no redistribution claims |
 | Finnhub | API key (free) | 60 calls/min; `/quote`, `/search` OK; **`/stock/candle` = 403 on free** | US stock quotes, symbol search | per ToS; show "data provided by Finnhub" in detail footer |
 | Twelve Data | API key (free "Basic") | **8 credits/min, 800/day**, resets 00:00 UTC; `/time_series` = 1 credit/symbol; US equities incl. 30+ yr EOD + intraday | US stock series | per ToS footer note |
-| Stooq CSV | none | keyless EOD daily CSV | stock series fallback | courtesy link in licenses page |
+| ~~Stooq CSV~~ | ~~none~~ | **dropped 2026-09-23** — API key since 2026-03, and a proof-of-work page for scripts (§5) | — | — |
 | Photon (komoot) | none | fair-use | geocoding primary | "Search by Photon/komoot, data © OSM contributors" |
 | Nominatim (OSM) | none | **max 1 req/s, mandatory identifying UA/Referer**, caching required | geocoding fallback | ODbL attribution |
 | OpenFreeMap tiles | none | free, no key, no hard limits | map tiles/styles | © OpenStreetMap contributors (ODbL) on-map |
@@ -176,7 +176,7 @@ the client; grep-guard in CI, doc 21 §5).
   that settles it — Week 5b, gated on `DEV_DASH_TOKEN`. Nothing here should be
   changed again on a guess.
 
-## 5. Stocks — Finnhub + Twelve Data + Stooq
+## 5. Stocks — Finnhub + Twelve Data
 
 - Finnhub quote: `GET /api/v1/quote?symbol=AAPL` (fields c,d,dp,h,l,o,pc,t).
   Budget: 60/min is ample once cached 90 s.
@@ -186,11 +186,40 @@ the client; grep-guard in CI, doc 21 §5).
   &outputsize=…&format=JSON`. 1 credit per symbol-call. Read
   `api-credits-used` / `api-credits-left` response headers into the breaker
   state (doc 11 §6). Daily quota 800, resets midnight UTC.
-- Stooq fallback: `GET https://stooq.com/q/d/l/?s=aapl.us&i=d` (CSV,
-  EOD daily). Parse server-side; mark payload `source:'stooq', eod:true`.
+- ~~Stooq fallback~~ — **dropped 2026-09-23.** Measured that day from a
+  developer machine: `GET https://stooq.com/q/d/l/?s=aapl.us&i=d` answered
+  200 with an HTML page running a SHA-256 proof-of-work in JavaScript and
+  posting the result to `/__verify` for a cookie, not with CSV. Stooq has
+  also required an API key for CSV downloads since 2026-03, obtained through
+  its site. A Worker could compute the proof, and it would then be
+  defeating a bot check its owner put there on purpose, so it does not. The
+  ladder (doc 09 §1) ends in the 7-day daily stale window and a quote-only
+  view instead. A second keyed EOD source (Tiingo, Polygon) is a post-1.0
+  candidate, not a 5b item.
 - Symbol namespace: client sends `{kind, symbol}`; Worker maps
-  crypto→Binance, stock→Finnhub/TwelveData/Stooq. Uppercase-normalize,
+  crypto→Binance, stock→Finnhub (quote, search) / Twelve Data (series). Uppercase-normalize,
   allowlist charset `^[A-Z0-9.\-]{1,12}$`.
+- **As built in Week 5b (2026-09-23)**, and where it differs from the lines
+  above:
+  - **Both keys travel in headers** — `X-Finnhub-Token` and
+    `Authorization: apikey …` — never in the URL. An upstream failure's message
+    carries its URL, that message is the breaker's `reason`, and `reason` is
+    what `/api/_health` prints (doc 11 §9); a key in a query string would be one
+    log line from leaking.
+  - **Finnhub answers an unknown symbol with zeros, not an error** (`c: 0`,
+    `t: 0`), which is normalised to a `null` row — doc 09 §1's per-row absence.
+    Search asks with `exchange=US` and keeps `type === 'Common Stock'`.
+  - **Twelve Data's errors can arrive inside a 200** as
+    `{ status: 'error', code }`. A symbol it does not cover is cached as an
+    empty series under its family's own TTL, and is never a breaker failure,
+    so a few mistyped symbols cannot open the breaker for every reader; a 429
+    or exhausted credits is a quota trip until UTC midnight. Series are requested with `timezone=UTC` and `order=asc`, so
+    a bar parses without an exchange calendar and arrives in plotting order.
+  - **Only a symbol Finnhub quotes may spend a Twelve Data credit** — a series
+    MISS first reads (or fetches) `st:q:v1:<sym>`, and answers an unknown
+    symbol with an empty series (the detail's quote-only view) rather than a
+    credit. One gate pass allows thirty requests a ten-second bucket (doc 11
+    §7), which is the whole day's budget in half a minute of random symbols.
 
 ## 6. Maps — OpenFreeMap + Photon/Nominatim
 

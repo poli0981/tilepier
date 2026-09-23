@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { CRYPTO_OK } from '$lib/core/__fixtures__/crypto';
+import { STOCK_OK } from '$lib/core/__fixtures__/stock';
 import { scheduler } from '$lib/core/scheduler';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import { swrCache } from '$lib/core/swr.svelte';
@@ -199,6 +200,86 @@ describe('the ranges', () => {
 		});
 	});
 
+	/**
+	 * 1M and 1Y are both daily candles, so they share one data key (doc 11 §4)
+	 * — and until 2026-09-23 they shared it with different depths. Whichever
+	 * range was opened second read the first one's window out of `apiCache` as
+	 * fresh and drew it under its own label: a year of candles captioned 1M, or
+	 * a month captioned 1Y, for as long as the entry stayed fresh.
+	 *
+	 * The endpoint answers the last `limit` candles of one deep series, so the
+	 * stub does the same thing rather than handing back `limit` fresh ones.
+	 */
+	describe('two ranges over one interval', () => {
+		const DEEP = 400;
+
+		function serveWindows(): void {
+			vi.stubGlobal(
+				'fetch',
+				vi.fn(async (input: string) => {
+					const url = new URL(String(input), 'https://tilepier.test');
+					if (url.pathname !== '/api/crypto/klines') {
+						return new Response(JSON.stringify(CRYPTO_OK), {
+							headers: { 'content-type': 'application/json' }
+						});
+					}
+					const limit = Number(url.searchParams.get('limit'));
+					const body = {
+						ok: true,
+						data: {
+							symbol: 'BTCUSDT',
+							interval: url.searchParams.get('interval'),
+							candles: candles(DEEP).slice(-limit),
+							attribution: 'Crypto data by Binance'
+						},
+						meta: { cachedAt: 1_788_220_800, source: 'binance', stale: false }
+					};
+					return new Response(JSON.stringify(body), {
+						headers: { 'content-type': 'application/json' }
+					});
+				})
+			);
+		}
+
+		/** Candle `i` opens at `100 + i` and its low is `95 + i`. */
+		function opensAt(i: number): string {
+			return `${String(100 + i)}.00`;
+		}
+
+		async function caption(screen: ReturnType<typeof render>, range: string): Promise<string> {
+			await vi.waitFor(() => {
+				const node = screen.container.querySelector('[data-testid="chart-summary"]');
+				expect(node?.textContent).toContain(` ${range}:`);
+			});
+			const node = screen.container.querySelector('[data-testid="chart-summary"]');
+			return node?.textContent ?? '';
+		}
+
+		it('draws a month under 1M after a year was drawn under 1Y', async () => {
+			serveWindows();
+			const screen = render(TpMarketsDetail, props());
+			await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
+
+			await screen.getByRole('button', { name: m['widget.markets.range_1y']() }).click();
+			expect(await caption(screen, m['widget.markets.range_1y']())).toContain(opensAt(DEEP - 365));
+
+			await screen.getByRole('button', { name: m['widget.markets.range_1m']() }).click();
+			expect(await caption(screen, m['widget.markets.range_1m']())).toContain(opensAt(DEEP - 30));
+		});
+
+		it('draws a year under 1Y after a month was drawn under 1M', async () => {
+			serveWindows();
+			const screen = render(TpMarketsDetail, props());
+			await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
+
+			await screen.getByRole('button', { name: m['widget.markets.range_1m']() }).click();
+			expect(await caption(screen, m['widget.markets.range_1m']())).toContain(opensAt(DEEP - 30));
+
+			await screen.getByRole('button', { name: m['widget.markets.range_1y']() }).click();
+			expect(await caption(screen, m['widget.markets.range_1y']())).toContain(opensAt(DEEP - 365));
+		});
+	});
+
 	it('marks the chosen range as pressed, not merely as coloured', async () => {
 		serveBoth(klinesEnvelope(40));
 		const screen = render(TpMarketsDetail, props());
@@ -321,5 +402,257 @@ describe('the watchlist manager (doc 09 §1)', () => {
 		// Both already on the watchlist.
 		expect(options).not.toContain('BTCUSDT');
 		expect(options).not.toContain('DOGEUSDT');
+	});
+});
+
+/**
+ * The stock half of the detail, from Week 5b. The routes answer by URL, the
+ * way the Worker does, because most of what is asserted here is *which*
+ * question the panel asked.
+ */
+describe('stocks in the detail (doc 09 §1)', () => {
+	const STOCK_FIRST = [
+		{ kind: 'stock', symbol: 'AAPL', display: '' },
+		{ kind: 'crypto', symbol: 'BTCUSDT', display: 'BTC' }
+	];
+
+	type Route = (url: URL) => Response | Promise<Response>;
+
+	function reply(body: unknown, status = 200): Response {
+		return new Response(JSON.stringify(body), {
+			status,
+			headers: { 'content-type': 'application/json' }
+		});
+	}
+
+	const QUOTA = { ok: false, error: { code: 'QUOTA_EXHAUSTED' } };
+
+	function series(url: URL, count: number): Response {
+		return reply({
+			ok: true,
+			data: {
+				symbol: url.searchParams.get('symbol'),
+				interval: url.searchParams.get('interval'),
+				candles: candles(count),
+				attribution: 'Stock charts by Twelve Data'
+			},
+			meta: { cachedAt: 1_788_220_800, source: 'twelvedata', stale: false }
+		});
+	}
+
+	function search(results: { symbol: string; name: string }[]): Route {
+		return (url) =>
+			reply({
+				ok: true,
+				data: { query: url.searchParams.get('q'), results, attribution: 'Search by Finnhub' },
+				meta: { cachedAt: 1_788_220_800, source: 'finnhub', stale: false }
+			});
+	}
+
+	function serveRoutes(routes: Record<string, Route>): ReturnType<typeof vi.fn> {
+		const all: Record<string, Route> = {
+			'/api/crypto/ticker': () => reply(CRYPTO_OK),
+			'/api/stock/quote': () => reply(STOCK_OK),
+			'/api/stock/series': (url) => series(url, 40),
+			'/api/crypto/klines': () => reply(klinesEnvelope(40)),
+			...routes
+		};
+		const spy = vi.fn(async (input: string) => {
+			const url = new URL(String(input), 'https://tilepier.test');
+			const route = all[url.pathname];
+			return route ? route(url) : reply({ ok: false, error: { code: 'BAD_REQUEST' } }, 404);
+		});
+		vi.stubGlobal('fetch', spy);
+		return spy;
+	}
+
+	function asked(spy: ReturnType<typeof vi.fn>, path: string): URL[] {
+		return spy.mock.calls
+			.map((call) => new URL(String(call[0]), 'https://tilepier.test'))
+			.filter((url) => url.pathname === path);
+	}
+
+	function stockProps(over: Record<string, unknown> = {}) {
+		return props({ settings: { watchlist: STOCK_FIRST }, ...over });
+	}
+
+	it('heads a stock with its price, its day move and its day band', async () => {
+		serveRoutes({});
+		const screen = render(TpMarketsDetail, stockProps());
+
+		await expect.element(screen.getByRole('heading', { name: 'AAPL' })).toBeInTheDocument();
+		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
+		await expect.element(screen.getByText('+0.41%')).toBeInTheDocument();
+		await expect
+			.element(screen.getByText(m['widget.markets.day_band']({ low: '225.10', high: '228.40' })))
+			.toBeInTheDocument();
+	});
+
+	it('picks by kind and symbol, not by symbol alone', async () => {
+		serveRoutes({});
+		const screen = render(TpMarketsDetail, stockProps());
+
+		const values = [...screen.container.querySelectorAll('select option')].map(
+			(node) => (node as HTMLOptionElement).value
+		);
+		expect(values).toContain('stock:AAPL');
+		expect(values).toContain('crypto:BTCUSDT');
+
+		await screen
+			.getByLabelText(m['widget.markets.symbol_label'](), { exact: true })
+			.selectOptions('crypto:BTCUSDT');
+		await expect.element(screen.getByRole('heading', { name: 'BTC' })).toBeInTheDocument();
+	});
+
+	it('asks for the deep daily series whichever daily range is picked', async () => {
+		const spy = serveRoutes({});
+		const screen = render(TpMarketsDetail, stockProps());
+		await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
+
+		// 1D is the only fifteen-minute range, so it is its own deepest window.
+		expect(asked(spy, '/api/stock/series')[0]?.search).toBe('?symbol=AAPL&interval=15min&limit=26');
+
+		await screen.getByRole('button', { name: m['widget.markets.range_1w']() }).click();
+
+		// 1W, 1M and 1Y share one daily key, so each asks for the year and windows
+		// it — the key names one response again (see "two ranges over one interval").
+		await vi.waitFor(() => {
+			const daily = asked(spy, '/api/stock/series').filter(
+				(url) => url.searchParams.get('interval') === '1day'
+			);
+			expect(daily.map((url) => url.searchParams.get('limit'))).toEqual(['252']);
+		});
+	});
+
+	it('collapses 1D to the week, with a note, when intraday is refused', async () => {
+		serveRoutes({
+			'/api/stock/series': (url) =>
+				url.searchParams.get('interval') === '15min' ? reply(QUOTA, 503) : series(url, 252)
+		});
+		const screen = render(TpMarketsDetail, stockProps());
+
+		await expect
+			.element(screen.getByText(m['widget.markets.intraday_paused']()))
+			.toBeInTheDocument();
+		await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
+		// The caption names what is drawn; the picker keeps what the reader chose.
+		await vi.waitFor(() => {
+			const caption = screen.container.querySelector('[data-testid="chart-summary"]');
+			expect(caption?.textContent).toContain(` ${m['widget.markets.range_1w']()}:`);
+		});
+		await expect
+			.element(screen.getByRole('button', { name: m['widget.markets.range_1d']() }))
+			.toHaveAttribute('aria-pressed', 'true');
+	});
+
+	it('says the allowance is spent when the week is refused too', async () => {
+		serveRoutes({ '/api/stock/series': () => reply(QUOTA, 503) });
+		const screen = render(TpMarketsDetail, stockProps());
+
+		await expect.element(screen.getByText(m['widget.markets.quota_note']())).toBeInTheDocument();
+		// The price still stands: this is the quote-only rung, not an error.
+		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
+	});
+
+	it('draws the quote-only view for a symbol Twelve Data does not cover', async () => {
+		serveRoutes({ '/api/stock/series': (url) => series(url, 0) });
+		const screen = render(TpMarketsDetail, stockProps());
+
+		await expect
+			.element(screen.getByText(m['widget.markets.quote_only']({ symbol: 'AAPL' })))
+			.toBeInTheDocument();
+		await expect.element(screen.getByTestId('chart-canvas')).not.toBeInTheDocument();
+	});
+
+	it('carries the stock footnote and credits both upstreams (doc 16 §5)', async () => {
+		serveRoutes({});
+		const screen = render(TpMarketsDetail, stockProps());
+
+		await expect.element(screen.getByText(m['widget.markets.stock_note']())).toBeInTheDocument();
+		await expect.element(screen.getByText('Stock quotes by Finnhub')).toBeInTheDocument();
+		await expect.element(screen.getByText('Stock charts by Twelve Data')).toBeInTheDocument();
+	});
+
+	it('says when a stock is quoted from the close', async () => {
+		serveRoutes({});
+		const screen = render(TpMarketsDetail, stockProps());
+
+		await expect
+			.element(screen.getByText(m['widget.markets.at_close_hint']({ age: '4 hours ago' })))
+			.toBeInTheDocument();
+	});
+
+	describe('search-add', () => {
+		const APPLE = [
+			{ symbol: 'AAPL', name: 'APPLE INC' },
+			{ symbol: 'APLE', name: 'APPLE HOSPITALITY REIT INC' }
+		];
+
+		async function searchFor(screen: ReturnType<typeof render>, text: string): Promise<void> {
+			await screen.getByLabelText(m['widget.markets.kind_label']()).selectOptions('stock');
+			await screen.getByLabelText(m['widget.markets.add_label_stock']()).fill(text);
+		}
+
+		it('searches after a pause, in lower case, and adds the pick', async () => {
+			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
+			const onUpdateSettings = vi.fn();
+			const screen = render(TpMarketsDetail, props({ onUpdateSettings }));
+
+			await searchFor(screen, 'Apple');
+			await screen
+				.getByRole('button', {
+					name: m['widget.markets.search_add']({ symbol: 'AAPL', name: 'APPLE INC' })
+				})
+				.click();
+
+			expect(asked(spy, '/api/stock/search').map((url) => url.search)).toEqual(['?q=apple']);
+			expect(onUpdateSettings).toHaveBeenCalledWith({
+				watchlist: [...WATCHLIST, { kind: 'stock', symbol: 'AAPL', display: '' }]
+			});
+		});
+
+		it('will not add a result the watchlist already holds', async () => {
+			serveRoutes({ '/api/stock/search': search(APPLE) });
+			const screen = render(TpMarketsDetail, stockProps());
+
+			await searchFor(screen, 'apple');
+
+			await expect
+				.element(
+					screen.getByRole('button', {
+						name: m['widget.markets.refused_duplicate']({ symbol: 'AAPL' })
+					})
+				)
+				.toBeDisabled();
+		});
+
+		it('says so when there is no match, and when search cannot answer', async () => {
+			serveRoutes({ '/api/stock/search': search([]) });
+			const empty = render(TpMarketsDetail, props());
+			await searchFor(empty, 'zzzz');
+			await expect
+				.element(empty.getByText(m['widget.markets.search_empty']({ query: 'zzzz' })))
+				.toBeInTheDocument();
+			empty.unmount();
+
+			serveRoutes({
+				'/api/stock/search': () => reply({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, 503)
+			});
+			const down = render(TpMarketsDetail, props());
+			await searchFor(down, 'apple');
+			await expect.element(down.getByText(m['widget.markets.search_failed']())).toBeInTheDocument();
+		});
+
+		it('never searches while a coin is being added', async () => {
+			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
+			const screen = render(TpMarketsDetail, props());
+
+			await screen.getByLabelText(m['widget.markets.add_label']()).fill('apple');
+			await new Promise((resolve) => setTimeout(resolve, 700));
+
+			// The coin list is the bundled one (doc 09 §1); asking Finnhub about it
+			// would spend a call on an answer the picker cannot use.
+			expect(asked(spy, '/api/stock/search')).toEqual([]);
+		});
 	});
 });

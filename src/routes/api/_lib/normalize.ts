@@ -7,10 +7,19 @@ import type {
 	TpCryptoTickerPayload,
 	TpFxPayload,
 	TpGeocodeResult,
+	TpStockCandle,
+	TpStockInterval,
+	TpStockQuote,
+	TpStockSearchPayload,
+	TpStockSearchResult,
+	TpStockSeriesPayload,
 	TpWeatherDay,
 	TpWeatherHour,
 	TpWeatherPayload
 } from '$lib/api-types';
+import { isMarketSymbol } from '$lib/shared-constants';
+import { FINNHUB_ATTRIBUTION } from './finnhub';
+import { TWELVEDATA_ATTRIBUTION } from './twelvedata';
 
 /**
  * Upstream shapes die here (doc 11 §1.4, doc 10 §2).
@@ -482,4 +491,125 @@ export function normalizeCryptoKlines(
 	candles.sort((a, b) => a[0] - b[0]);
 
 	return { symbol, interval, candles, attribution: CRYPTO_ATTRIBUTION };
+}
+
+/* ──────────────────────────────────────────────────────── stocks (doc 10 §5) */
+
+/**
+ * One Finnhub `/quote` answer, or `null` when it carries no usable price.
+ *
+ * Finnhub sends numbers as numbers (`{c, d, dp, h, l, o, pc, t}`), and for a
+ * symbol it does not know it still answers 200 — with every field zero. That is
+ * the case `null` exists for: a zero price is not a quote, and the tile has a
+ * row chip that says so (doc 09 §1). The surrounding figures are refused at
+ * zero too, because a zero high is not a claim Finnhub means to make.
+ */
+export function normalizeStockQuote(
+	body: unknown,
+	symbol: string,
+	now: number
+): TpStockQuote | null {
+	const source = (body ?? {}) as Record<string, unknown>;
+	const price = decimal(source['c']);
+	if (price === null || price <= 0) return null;
+
+	const positive = (value: unknown): number | null => {
+		const parsed = decimal(value);
+		return parsed !== null && parsed > 0 ? parsed : null;
+	};
+	const percent = decimal(source['dp']);
+	const seconds = decimal(source['t']);
+
+	return {
+		symbol,
+		price,
+		changeDay: percent === null ? null : percent / 100,
+		high: positive(source['h']),
+		low: positive(source['l']),
+		open: positive(source['o']),
+		prevClose: positive(source['pc']),
+		at: seconds !== null && seconds > 0 ? seconds * 1000 : now
+	};
+}
+
+/**
+ * A Twelve Data bar's `datetime` as Unix ms. The series is requested with
+ * `timezone=UTC`, so `2026-09-22 15:45:00` and `2026-09-22` are both UTC and
+ * no exchange calendar is needed; anything else is `null`.
+ */
+function barTime(value: unknown): number | null {
+	if (typeof value !== 'string') return null;
+	const iso = /^\d{4}-\d{2}-\d{2}$/.test(value)
+		? `${value}T00:00:00Z`
+		: `${value.replace(' ', 'T')}Z`;
+	const parsed = Date.parse(iso);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * `/time_series` → `[openTime, open, high, low, close, volume]`, ascending.
+ *
+ * Twelve Data sends every OHLCV value as a string, like Binance. A bar that
+ * cannot produce six finite numbers is dropped rather than zero-filled — the
+ * same rule, and the same reason: the chart plots against a time axis. Volume
+ * alone may be absent (an index has none), and is 0 then rather than a reason
+ * to lose the bar.
+ */
+export function normalizeStockSeries(
+	body: unknown,
+	symbol: string,
+	interval: TpStockInterval
+): TpStockSeriesPayload {
+	const values = (body as { values?: unknown } | null)?.values;
+	const rows = Array.isArray(values) ? values : [];
+	const candles: TpStockCandle[] = [];
+
+	for (const row of rows) {
+		const source = (row ?? {}) as Record<string, unknown>;
+		const openTime = barTime(source['datetime']);
+		const open = decimal(source['open']);
+		const high = decimal(source['high']);
+		const low = decimal(source['low']);
+		const close = decimal(source['close']);
+		if (openTime === null || open === null || high === null || low === null || close === null) {
+			continue;
+		}
+		if (open <= 0 || high <= 0 || low <= 0 || close <= 0) continue;
+		candles.push([openTime, open, high, low, close, decimal(source['volume']) ?? 0]);
+	}
+
+	candles.sort((a, b) => a[0] - b[0]);
+	return { symbol, interval, candles, attribution: TWELVEDATA_ATTRIBUTION };
+}
+
+/** How many search results the detail's suggestion list is given. */
+const SEARCH_LIMIT = 10;
+
+/**
+ * Finnhub `/search` → symbols a watchlist can hold.
+ *
+ * Common stock only, and only symbols that pass doc 10 §5's allowlist — the
+ * same check the manager applies to a typed symbol, so a suggestion can never
+ * be one the watchlist would then refuse. The description is kept as text for
+ * a text node (CLAUDE.md rule 7), never markup.
+ */
+export function normalizeStockSearch(body: unknown, query: string): TpStockSearchPayload {
+	const list = (body as { result?: unknown } | null)?.result;
+	const rows = Array.isArray(list) ? list : [];
+	const results: TpStockSearchResult[] = [];
+	const seen = new Set<string>();
+
+	for (const row of rows) {
+		const source = (row ?? {}) as Record<string, unknown>;
+		if (source['type'] !== 'Common Stock') continue;
+		const raw = source['symbol'];
+		const symbol = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+		if (!isMarketSymbol(symbol) || seen.has(symbol)) continue;
+		const description = source['description'];
+		seen.add(symbol);
+		results.push({ symbol, name: typeof description === 'string' ? description.trim() : '' });
+		if (results.length === SEARCH_LIMIT) break;
+	}
+
+	return { query, results, attribution: FINNHUB_ATTRIBUTION };
 }

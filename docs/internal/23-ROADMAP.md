@@ -533,9 +533,9 @@ chart still renders its building-history copy until fourteen (doc 08 §2's
 
 That closes the last outstanding item of Week 4.
 
-## Week 5 — Markets · **in progress from 2026-09-01**
+## Week 5 — Markets · **code complete 2026-09-23; production verification pending**
 crypto ticker/klines endpoints · stock quote/series/search endpoints
-(budget guard + breaker + Stooq fallback) · markets tile + detail
+(budget guard + breaker; ~~Stooq fallback~~ — dropped 2026-09-23, doc 10 §5) · markets tile + detail
 (candles, ranges, watchlist) · degradation ladder verified by fault
 injection. **M5:** the hardest widget done; quota telemetry watched for a
 full week from here.
@@ -553,7 +553,7 @@ cut depth, not widgets, and split the week.
 | A | `/api/crypto/ticker` + the shared set-hash | 3 | 3 | 1.5 |
 | B | `/api/crypto/klines` | 3 | 3 | 1.25 |
 | C | `/api/stock/quote` | 4 | 4 | 2.0 |
-| D | `/api/stock/series` + Stooq | 4 | 5 | 3.0 |
+| D | `/api/stock/series` + ~~Stooq~~ (dropped 2026-09-23) | 4 | 5 | 3.0 |
 | E | `/api/stock/search` | 2 | 3 | 1.0 |
 | F | markets tile + service | 5 | 4 | 2.5 |
 | G | markets detail | 5 | 5 | 3.5 |
@@ -733,6 +733,102 @@ honestly, because a tile that cannot reach upstream shows an inline error with
 a retry rather than a spinner. And nothing else about 5a is in question: the
 tile, the detail, the candles, the manager and the ladder are all exercised
 against fixtures and all green.
+
+### Week 5b — code complete 2026-09-23, in four parts
+
+Four PRs, in the order the week needed them rather than the order the plan
+listed them — `/api/_health` first, as the record above asked:
+
+| part | PR | what |
+|---|---|---|
+| 1 | #12 | `/api/_health` behind the operator's bearer · a quota trip that holds to UTC midnight · secret types from the committed example |
+| 2 | #13 | a legal gate that is a gate · the top bar on the deck's rail, hiding on scroll-down · the headers production actually sends |
+| 3 | #14 | Cloudflare Web Analytics · a Turnstile pass in front of `/api/*` · `LEGAL_VERSION` 2 with privacy text that is true |
+| 4 | #15 | the three stock endpoints · the stock half of the tile and the detail · search-add · the stock ladder · S3's keyed run, written |
+
+**Two requests from the owner joined the week, and both reversed a documented
+decision:** doc 15 §3.1's "Turnstile deliberately not used" and the privacy
+page's "no analytics". Each reversal is dated in the doc it contradicts, and
+every reader who agreed to version 1 sees the gate again with the "what
+changed" line doc 16 §2 described from Week 1 and nothing drew until #14.
+
+**One source left the plan:** Stooq, the stock series fallback, now needs an API
+key and answers scripts with a proof-of-work page (doc 10 §5). The owner chose
+to drop the rung rather than chase a key; the ladder ends in the seven-day daily
+stale window and the quote-only view.
+
+**Eleven faults found by the work.** Seven were latent, two were the
+documentation being wrong about production, and two were 5a's markets code
+meeting the second source it had been written for:
+
+1. **A quota trip released at the midpoint** between the trip and UTC midnight —
+   six hours early from a noon trip. Latent since the S3 spike; the one test
+   sampled two instants that pass either way (#12).
+2. **`wrangler types --check` read the developer's `.dev.vars`**, so it was green
+   only because nobody had one — and 5b is the week that needs one (#12).
+3. **The legal gate was an overlay.** The deck mounted under it, and a seeded
+   currency tile called `/api/fx` for a visitor who had agreed to nothing (#13).
+4. **doc 12 §2a's chrome tokens did not exist**, and every use carried its own
+   fallback, so nothing failed: the bar sat 8 px off the grid at 768 and
+   1280 px and 128 px off at 1920 (#13).
+5. **The repo's HSTS said no `preload`**; the zone sends it (#13).
+6. **The privacy page said the proxy kept "no logs of its own"** while
+   invocation logs have kept the address for seven days since the S3 spike
+   turned them on (#14).
+7. **The adapter replays cacheable GETs before any hook runs.** So
+   `/api/_health` must be `no-store` or it replays an authorised report to
+   anyone, and the Turnstile gate guards cache misses — upstream spend — rather
+   than the data (#12, #14). A property, recorded in doc 15 §3 as one.
+8. **Cloudflare's Turnstile testing secrets are 35 characters**, not the 23 this
+   project's own setup notes gave. Found only by the end-to-end run against
+   `pnpm preview` with the real `api.js`; the stubbed suite could not (#14).
+9. **A watchlist of only stocks would have held a skeleton forever.** The tile
+   read its status off the crypto handle, and such a list has none. Latent from
+   5a, unreachable until stocks existed (#15).
+10. **Two ranges over one interval shared a client cache entry with different
+    windows** — a year of candles drawn under 1M, or a month under 1Y, until
+    the entry went stale. Latent from 5a, which has two daily crypto ranges;
+    confirmed at runtime by a test that fails on the 5a code (#15, doc 09 §1).
+11. **Every Turnstile pass verified under four spellings.** `atob` discards the
+    spare bits of a base64url segment's last character, and the parse took any
+    final character. It gave no extra power, but it was not the strict parse
+    doc 15 §3 promises. Found because #14's "almost right" test flipped that
+    character and went red about one CI run in sixteen — a flaky test with a
+    real bug behind it, not noise to re-run (#15, doc 15 §3).
+
+**Decisions taken rather than inherited**, each in the doc it changes:
+
+- `/api/_health`'s token is a bearer header, never a query string — closing
+  doc 13 §10's open question (doc 11 §9).
+- The pass is a stateless HMAC, an hour long and bound to no address; when
+  siteverify itself is down the gate issues a ten-minute degraded pass rather
+  than taking the app down with it (doc 15 §3).
+- Only a symbol Finnhub quotes may spend a Twelve Data credit (doc 10 §5).
+- Each series interval is fetched at its deepest window and cut on the client
+  (doc 11 §3, doc 09 §1).
+- `markets` registers one scheduler entry per source, and says "at the close"
+  from the quote's own timestamp rather than from a market calendar (doc 04 §3,
+  doc 09 §1).
+
+**Numbers at the end of 5b:** 1605 unit/component tests in 107 files (from 1413
+at the end of 5a), 94.67 % lines and 88.01 % branches covered, 575 message keys
+(from 538), budgets 7/7 — the shared echarts chunk still 183.0 KB gz, and the
+markets detail, now carrying both kinds and search-add, 4.8 KB gz.
+
+**Not verified yet, and M5 waits on it.** The milestone reads "the hardest
+widget done; quota telemetry watched for a full week from here" — met in code by
+#15, and on production only after these:
+
+- **The stock half on production** — doc 19 §5's Week 5b list, after #15 is
+  deployed.
+- **S3's keyed run and Finnhub's `/stock/candle` 403** — both written into doc
+  22 §S3 as operator runs, because the keys and the bearer are the operator's.
+- **5a's Binance failure is still undiagnosed.** `/api/_health` has been live
+  since #12, and its `binance.reason` and `colo` are what settle it; they have
+  not been read into this document yet. Until they are, `markets` may be
+  answering coins for some readers and not others.
+
+The week of quota watching starts at #15's deploy.
 
 ## Week 6 — Map · RSS
 maplibre integration + geocode UI + saved places · rss endpoint (SSRF

@@ -42,8 +42,8 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/crypto/ticker` | symbols (≤12) | Binance ticker/24hr |
 | `GET /api/crypto/klines` | symbol, interval, limit ∈ range set | Binance klines |
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
-| `GET /api/stock/series` | symbol, interval(15min\|1day), range | Twelve Data → Stooq |
-| `GET /api/stock/search` | q | Finnhub search |
+| `GET /api/stock/series` | symbol, interval(15min\|1day), limit ∈ range set | Twelve Data (no fallback source since 2026-09-23, doc 10 §5) |
+| `GET /api/stock/search` | q (1–40 chars: letters, digits, space, `. & ' -`) | Finnhub search |
 | `GET /api/rss` | url (https) | arbitrary feed (guarded, doc 15 §5) |
 
 All GET, all side-effect-free from the client's perspective (fx snapshot is
@@ -77,8 +77,21 @@ twelve), and it costs one upstream call rather than one per range.
 
 **`/api/stock/series` needs the same answer for the same reason**, and it is
 recorded here rather than there because this is where it was first built: that
-row's params include a `range` while §4's key is `st:se:v1:<sym>:<int>`, which
-is the identical collision one endpoint later.
+row's params included a `range` while §4's key is `st:se:v1:<sym>:<int>`, which
+is the identical collision one endpoint later. Built in 5b the same way — one
+deep series per interval (130 fifteen-minute bars, 260 sessions), `limit` an
+allowlist derived from `STOCK_RANGES`, and the response a window onto it.
+
+**The client asks for the deepest window, and windows it itself** (2026-09-23).
+The collision above has a twin one layer up: `swr` keys the client's
+`apiCache` the same way, with no depth, so through Week 5a a 1M response and a
+1Y response were stored under one key and each range read the other's window as
+fresh — a year of candles drawn under 1M's label. So each interval is requested
+at the deepest `limit` any range asks of it (365 for `1d`, 252 for `1day`) and
+the range picker cuts its window client-side (doc 09 §1). The other values in
+the allowlist stay valid; nothing this app ships sends them any more. It costs
+no extra upstream call — the Worker fetches its deep series whatever the
+window — and Twelve Data charges per call, not per candle.
 
 **`/api/fx/history` has no KV entry of its own**, and that is a decision rather
 than an omission. Its inputs are the `fx:snap:` pile, which is permanent, so a
@@ -100,9 +113,22 @@ here is every reader asking for the same pair and range.
 | `cr:tick:v1:<set>` | 30 s | 10 min |
 | `cr:kl:v1:<sym>:<int>` | 300 s (sub-hourly) / 900 s (1h and coarser) | 6 h |
 | `st:q:v1:<sym>` | 90 s | 12 h |
+| `st:qs:v1:<set>` (client only) | 90 s | 12 h |
 | `st:se:v1:<sym>:15min` | 900 s | 24 h |
 | `st:se:v1:<sym>:1day` | 21600 s (6 h) | 7 d |
+| `st:sr:v1:<q-norm>` | 24 h | 7 d |
 | `rss:v1:<url-hash>` | 1200 s | 24 h |
+
+**Two stock rows arrived with Week 5b (2026-09-23).**
+
+- **`st:qs:v1:<set>`** is the *client's* entry for a watchlist's stock set. It
+  is one swr subscription and one request per refresh, the way
+  `cr:tick:v1:<set>` is for crypto. The Worker does not cache the set: §3 asks
+  it to cache **each symbol** under `st:q:v1:<sym>`, so two watchlists sharing
+  AAPL share its quote. The client row therefore carries the per-symbol
+  policy.
+- **`st:sr:v1:<q-norm>`** is symbol search, cached like geocoding. A company's
+  ticker changes rarely, and every lookup is a Finnhub call.
 
 Implementation: KV `put(key, body, { expirationTtl: ttl + staleWindow })`
 with `cachedAt` inside the value; freshness = `now - cachedAt <= ttl`;
@@ -173,7 +199,8 @@ copes).
   symbols; mitigations: per-instance watchlist cap 12, series fetched only
   when a detail view opens (not for tiles), and the breaker below.
 - Budget guard: maintain `st:budget:<utc-date>` counter (KV, best-effort).
-  At ≥ 720 (90%), stop MISS fetches for *intraday* (serve stale/Stooq);
+  At ≥ 720 (90%), stop MISS fetches for *intraday* (serve stale, else
+  `QUOTA_EXHAUSTED` — Stooq, the old fallback, is gone; doc 10 §5);
   daily series keep going to 780; at 780 full stop until UTC reset. Also
   trust upstream truth: parse `api-credits-left` header each response and
   fold into the same guard (min of both signals).

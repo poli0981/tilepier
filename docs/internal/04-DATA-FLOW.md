@@ -265,6 +265,14 @@ per instance would fetch twice for one payload. Local-only widgets pass their
 `instanceId`; networked widgets pass the doc 04 §5 data key. Registrations
 sharing an id are refcounted — one entry, and `unregister()` decrements.
 
+> **The one networked widget that does not** is `markets`, whose two data keys
+> (the crypto set and the stock set) move with every watchlist edit. It
+> registers `<instanceId>` and, from Week 5b, `<instanceId>:stock` — one entry
+> per source, because backoff is per entry and one entry would slow the coins
+> down whenever Finnhub failed. `multiInstance: false` is what makes an
+> instance id safe here: there is no second tile for a shared id to
+> de-duplicate (doc 09 §1).
+
 **Overlap:** an entry already `running` is skipped on tick, never queued.
 `runNow()` while running aborts the in-flight `signal` and starts fresh.
 

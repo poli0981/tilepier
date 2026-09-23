@@ -16,7 +16,7 @@ export type TpApiErrorCode =
 export interface TpApiMeta {
 	/** Unix seconds when the payload was fetched from upstream. */
 	cachedAt: number;
-	/** Which upstream produced it — `open-meteo`, `binance`, `stooq`, … */
+	/** Which upstream produced it — `open-meteo`, `binance`, `twelvedata`, … */
 	source: string;
 	/** True when served past its TTL because upstream failed or the breaker is open. */
 	stale: boolean;
@@ -355,6 +355,94 @@ export type TpCryptoRange = keyof typeof CRYPTO_RANGES;
 /** What the detail opens on: the tightest window, because a reader opening a
  *  market wants today before they want the year. */
 export const CRYPTO_RANGE_DEFAULT: TpCryptoRange = '1D';
+
+/* ─────────────────────────────────────────────────────── stocks (doc 10 §5) */
+
+/**
+ * One Finnhub quote, normalised to the same shape rules as `TpCryptoQuote`:
+ * the row exists only with a price, and every figure around the price is
+ * nullable on its own rather than defaulted.
+ *
+ * `changeDay`, not `change24h`: a stock's move is against the previous close,
+ * which is what Finnhub's `dp` reports and what doc 09 §1's chip says for a
+ * stock ("day"). A fraction, like the crypto figure, so `Intl.NumberFormat`
+ * places the sign and the percent sign.
+ */
+export interface TpStockQuote {
+	/** As Finnhub spells it, uppercase: `AAPL`, `BRK.B`. */
+	symbol: string;
+	/** Last price, USD. */
+	price: number;
+	changeDay: number | null;
+	high: number | null;
+	low: number | null;
+	open: number | null;
+	prevClose: number | null;
+	/**
+	 * Unix ms of the last trade — which, outside market hours, is the close.
+	 * The tile says "as of close" from this, not from a market calendar.
+	 */
+	at: number;
+}
+
+export interface TpStockQuotePayload {
+	/**
+	 * One entry per requested symbol; `null` for a symbol Finnhub does not
+	 * quote — the per-row degradation doc 09 §1 asks for, inside `data` because
+	 * the envelope is all-or-nothing.
+	 */
+	quotes: Record<string, TpStockQuote | null>;
+	attribution: string;
+}
+
+/** Twelve Data's two intervals this app asks for (doc 10 §5). */
+export const STOCK_INTERVALS = ['15min', '1day'] as const;
+
+export type TpStockInterval = (typeof STOCK_INTERVALS)[number];
+
+/** `[openTime, open, high, low, close, volume]`, the crypto candle's shape,
+ *  so one chart builder draws both. */
+export type TpStockCandle = TpCryptoCandle;
+
+export interface TpStockSeriesPayload {
+	symbol: string;
+	interval: TpStockInterval;
+	/** Ascending by `openTime`, which is UTC — the series is requested with
+	 *  `timezone=UTC` so no exchange calendar is needed to read it. */
+	candles: TpStockCandle[];
+	attribution: string;
+}
+
+/**
+ * doc 09 §1's stock ranges, and the interval and depth each asks for. Kept
+ * beside `CRYPTO_RANGES` for the same reason: it is the contract between the
+ * range picker and the endpoint's `limit` allowlist.
+ *
+ * Trading days, not calendar days: a US session is 6.5 hours, so 1D is 26
+ * fifteen-minute bars, and a week, a month and a year are 5, 22 and 252
+ * sessions. `MAX` stays cut, as for crypto (doc 23 §Week 5).
+ */
+export const STOCK_RANGES = {
+	'1D': { interval: '15min', limit: 26 },
+	'1W': { interval: '1day', limit: 5 },
+	'1M': { interval: '1day', limit: 22 },
+	'1Y': { interval: '1day', limit: 252 }
+} as const satisfies Record<string, { interval: TpStockInterval; limit: number }>;
+
+export type TpStockRange = keyof typeof STOCK_RANGES;
+
+export interface TpStockSearchResult {
+	/** What to add to the watchlist: `AAPL`. */
+	symbol: string;
+	/** Finnhub's description: `APPLE INC`. A text node, never markup. */
+	name: string;
+}
+
+export interface TpStockSearchPayload {
+	query: string;
+	results: TpStockSearchResult[];
+	attribution: string;
+}
 
 /* ─────────────────────────────────────────────── health (doc 11 §9, 13 §10) */
 

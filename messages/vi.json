@@ -557,5 +557,22 @@
 	"widget.markets.all_added": "mọi mã trong danh sách đều đã có ở đây",
 	"widget.markets.refused_invalid": "đây không phải mã có thể hỏi",
 	"widget.markets.refused_duplicate": "{symbol} đã có trong danh sách theo dõi",
-	"widget.markets.refused_full": "danh sách chứa tối đa {max} mã — bỏ bớt một mã trước"
+	"widget.markets.refused_full": "danh sách chứa tối đa {max} mã — bỏ bớt một mã trước",
+	"widget.markets.change_label_day": "{change} trong phiên",
+	"widget.markets.at_close": "đóng cửa",
+	"widget.markets.at_close_hint": "giá đóng cửa, {age}",
+	"widget.markets.row_unread": "chưa đọc được",
+	"widget.markets.day_band": "{low} – {high} trong phiên",
+	"widget.markets.intraday_paused": "Đã hết hạn mức dữ liệu trong ngày cho hôm nay — đang hiển thị theo tuần.",
+	"widget.markets.quota_note": "Đã hết hạn mức biểu đồ cho hôm nay — biểu đồ sẽ có lại sau 00:00 UTC.",
+	"widget.markets.quote_only": "Không có biểu đồ cho {symbol} — chỉ có giá ở trên.",
+	"widget.markets.stock_note": "Giá cổ phiếu có thể trễ hoặc lấy từ bộ nhớ đệm — không dùng để giao dịch.",
+	"widget.markets.kind_label": "loại",
+	"widget.markets.kind_crypto": "tiền mã hoá",
+	"widget.markets.kind_stock": "cổ phiếu Mỹ",
+	"widget.markets.add_label_stock": "mã hoặc tên công ty",
+	"widget.markets.search_results": "cổ phiếu Mỹ khớp",
+	"widget.markets.search_add": "thêm {symbol}, {name}",
+	"widget.markets.search_empty": "không có cổ phiếu Mỹ nào khớp “{query}”",
+	"widget.markets.search_failed": "chưa tìm được lúc này — hãy gõ mã trực tiếp"
 }
