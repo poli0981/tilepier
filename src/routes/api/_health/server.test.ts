@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TpHealthReport } from '$lib/api-types';
 import { STOCK_BUDGET } from '$lib/shared-constants';
 import { GET } from './+server';
 import { UPSTREAMS } from '../_lib/breaker';
 import { DEV_TOKEN_MIN_LENGTH } from '../_lib/dev-token';
 import { sanitizeReason } from '../_lib/health';
+import { CRYPTO_PROBES, probeCrypto, type TpProbeReport } from '../_lib/probe';
 
 /**
  * `GET /api/_health` — doc 11 §9.
@@ -43,11 +44,13 @@ interface CallOptions {
 		Pick<Env, 'FINNHUB_KEY' | 'TWELVEDATA_KEY' | 'TURNSTILE_SECRET_KEY' | 'TURNSTILE_SITE_KEY'>
 	>;
 	colo?: string;
+	/** The query string, `?` included. */
+	search?: string;
 }
 
 async function call(options: CallOptions = {}): Promise<Response> {
 	const kv = options.kv === undefined ? fakeKv() : (options.kv ?? undefined);
-	const url = new URL('https://tilepier.win/api/_health');
+	const url = new URL(`https://tilepier.win/api/_health${options.search ?? ''}`);
 	const headers: Record<string, string> = {};
 	if (options.authorization !== undefined) headers['authorization'] = options.authorization;
 
@@ -244,5 +247,115 @@ describe('sanitizeReason', () => {
 		const out = sanitizeReason('word '.repeat(200));
 		expect(out.length).toBe(200);
 		expect(out.endsWith('…')).toBe(true);
+	});
+});
+
+/**
+ * `?probe=crypto` (doc 10 §4): which crypto upstream answers this Worker. The
+ * cases that matter are the ones about *not* being a way out: only the
+ * operator can trigger it, the parameter names a report rather than a target,
+ * and every probe is a fixed keyless URL.
+ */
+describe('the crypto probe', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	/** Binance's WAF page, one candidate that answers, and a network that fails. */
+	function stubUpstreams(): string[] {
+		const asked: string[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (input: RequestInfo | URL) => {
+				const url = new URL(String(input));
+				asked.push(url.href);
+				if (url.host === 'data-api.binance.vision') {
+					return new Response(
+						'<html> <head><title>403 Forbidden</title></head> <body></body> </html>',
+						{ status: 403 }
+					);
+				}
+				if (url.host === 'api.kraken.com') {
+					return Response.json({ error: [], result: { XBTUSDT: { c: ['62910.5', '1'] } } });
+				}
+				throw new TypeError('network down');
+			})
+		);
+		return asked;
+	}
+
+	it('answers only the operator, like the report it shares a door with', async () => {
+		const asked = stubUpstreams();
+
+		const response = await call({ secret: TOKEN, search: '?probe=crypto' });
+
+		expect(response.status).toBe(404);
+		expect(asked).toEqual([]);
+	});
+
+	it('asks every candidate from where it runs, and says what each answered', async () => {
+		stubUpstreams();
+
+		const response = await call({
+			secret: TOKEN,
+			authorization: `Bearer ${TOKEN}`,
+			search: '?probe=crypto',
+			colo: 'SJC'
+		});
+		const body = (await response.json()) as { data: TpProbeReport };
+
+		expect(response.headers.get('cache-control')).toBe('no-store');
+		expect(body.data.colo).toBe('SJC');
+		expect(body.data.results).toHaveLength(CRYPTO_PROBES.length);
+
+		const binance = body.data.results.find((r) => r.name === 'binance' && r.kind === 'ticker');
+		expect(binance?.status).toBe(403);
+		expect(binance?.snippet).toContain('403 Forbidden');
+		expect(body.data.results.find((r) => r.name === 'kraken')?.status).toBe(200);
+		expect(body.data.results.find((r) => r.name === 'okx')).toMatchObject({
+			status: null,
+			snippet: 'network down'
+		});
+	});
+
+	it('reads the parameter as a report name, never as a target', async () => {
+		const asked = stubUpstreams();
+
+		const response = await call({
+			secret: TOKEN,
+			authorization: `Bearer ${TOKEN}`,
+			search: '?probe=https://example.com/'
+		});
+
+		// The ordinary report, and nothing fetched on the caller's say-so.
+		expect((await report(response)).breakers).toHaveLength(UPSTREAMS.length);
+		expect(asked).toEqual([]);
+	});
+
+	it('reports a candidate that never answers instead of waiting on it', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(
+				(_input: RequestInfo | URL, init?: RequestInit) =>
+					new Promise<Response>((_resolve, reject) => {
+						init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+					})
+			)
+		);
+
+		const { results } = await probeCrypto('SIN', 20, [
+			{ name: 'slow', kind: 'ticker', url: 'https://slow.example/ticker' }
+		]);
+
+		expect(results[0]).toMatchObject({ status: null, snippet: 'no answer in 20 ms' });
+	});
+
+	it('probes only fixed https URLs that carry no credential', () => {
+		for (const target of CRYPTO_PROBES) {
+			const url = new URL(target.url);
+			expect(url.protocol, target.url).toBe('https:');
+			expect(url.search, target.url).not.toMatch(/key|token|secret|signature/i);
+			expect(target.headers?.['authorization'], target.url).toBeUndefined();
+		}
 	});
 });

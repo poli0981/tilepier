@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import { hasDevToken } from '../_lib/dev-token';
 import { healthReport } from '../_lib/health';
+import { probeCrypto } from '../_lib/probe';
 import { fail, okNoStore } from '../_lib/respond';
 
 /**
@@ -17,15 +18,30 @@ import { fail, okNoStore } from '../_lib/respond';
  * discovered by asking. And every answer is `no-store` (`okNoStore`): the
  * adapter replays cacheable GETs before this handler runs, so a cacheable
  * report would reach the next caller whatever they sent.
+ *
+ * **`?probe=crypto`** answers a different question from the same door: which
+ * crypto upstream answers *this Worker* (`_lib/probe.ts`, doc 10 §4). Any other
+ * value is ignored and the ordinary report comes back — the parameter selects
+ * a report, it never carries a target.
  */
-export const GET: RequestHandler = async ({ request, platform }) => {
+export const GET: RequestHandler = async ({ request, url, platform }) => {
 	if (!(await hasDevToken(request, platform?.env.DEV_DASH_TOKEN))) return notFound();
+
+	const colo = platform?.cf?.colo ?? null;
+	if (url.searchParams.get('probe') === 'crypto') {
+		const now = Date.now();
+		return okNoStore(await probeCrypto(colo), {
+			cachedAt: Math.floor(now / 1000),
+			source: 'probe',
+			stale: false
+		});
+	}
 
 	const kv = platform?.env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const now = Date.now();
-	const report = await healthReport(kv, platform.env, platform.cf?.colo ?? null, now);
+	const report = await healthReport(kv, platform.env, colo, now);
 	return okNoStore(report, { cachedAt: Math.floor(now / 1000), source: 'health', stale: false });
 };
 
