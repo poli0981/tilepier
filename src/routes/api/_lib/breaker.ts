@@ -23,7 +23,7 @@ export const UPSTREAMS = [
 	'photon',
 	'nominatim',
 	'er-api',
-	'binance',
+	'binance-us',
 	'finnhub',
 	'twelvedata',
 	// Not a data source: Turnstile's siteverify, whose outages the verify route

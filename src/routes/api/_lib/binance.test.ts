@@ -16,7 +16,7 @@ describe('binance urls', () => {
 			tickerSymbolUrl('BTCUSDT'),
 			klinesUrl('BTCUSDT', '1d', 500)
 		]) {
-			expect(url.startsWith('https://data-api.binance.vision/')).toBe(true);
+			expect(url.startsWith('https://api.binance.us/')).toBe(true);
 		}
 	});
 

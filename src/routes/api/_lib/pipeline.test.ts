@@ -83,7 +83,7 @@ describe('kv cache freshness (doc 11 §4)', () => {
 
 	it('reports MISS past the stale window, rather than trusting KV to have gone', async () => {
 		const t0 = Date.parse('2026-08-10T00:00:00Z');
-		await writeCache(kv, 'crTick', 'cr:tick:v1:BTCUSDT', { n: 1 }, 'binance', t0);
+		await writeCache(kv, 'crTick', 'cr:tick:v1:BTCUSDT', { n: 1 }, 'binance-us', t0);
 
 		const window = CACHE_POLICY.crTick.ttlMs + (CACHE_POLICY.crTick.staleMs ?? 0);
 		const inside = await readCache(kv, 'crTick', 'cr:tick:v1:BTCUSDT', t0 + window - 1);
@@ -213,7 +213,7 @@ describe('circuit breaker (doc 11 §6)', () => {
 	});
 
 	it('opens immediately on 429 or 418', async () => {
-		const record = await recordFailure(kv, 'binance', '418', { immediate: true });
+		const record = await recordFailure(kv, 'binance-us', '418', { immediate: true });
 		expect(record.state).toBe('open');
 		expect(record.failures).toBe(1);
 	});

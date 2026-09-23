@@ -130,7 +130,7 @@ describe('diagnostics', () => {
 			build: { version: '0.0.0', sha: 'abc1234' },
 			breakers: [
 				{
-					upstream: 'binance',
+					upstream: 'binance-us',
 					state: 'open',
 					verdict: 'open',
 					openedAt: Date.now(),

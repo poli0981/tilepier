@@ -28,7 +28,7 @@ import type { TpCryptoKlinesPayload } from '$lib/api-types';
  * in Week 5b for the same reason, arriving one endpoint early.
  */
 
-const UPSTREAM = 'binance';
+const UPSTREAM = 'binance-us';
 
 /**
  * Binance's own ceiling for this endpoint, and the depth every range fits
@@ -71,7 +71,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		// symbol it knows nothing about, and caching that would draw an empty
 		// chart for the whole window with no error anywhere to explain it.
 		if (payload.candles.length === 0) {
-			throw new UpstreamError('binance returned no candles', 'malformed');
+			throw new UpstreamError('binance-us returned no candles', 'malformed');
 		}
 
 		// doc 11 §8: persistence rides on waitUntil so the response does not wait

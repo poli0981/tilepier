@@ -227,7 +227,7 @@ describe('the host badge (doc 13 §7)', () => {
 		await db.apiCache.put({
 			key: tickerKey(['BTCUSDT', 'DOGEUSDT', 'GONEUSDT']),
 			cachedAt: NOW.getTime() - 60_000,
-			payload: { payload: CRYPTO_PAYLOAD, meta: { cachedAt: 1, source: 'binance', stale: false } }
+			payload: { payload: CRYPTO_PAYLOAD, meta: { cachedAt: 1, source: 'binance-us', stale: false } }
 		});
 		serve({ ok: false, error: { code: 'RATE_LIMITED' } }, { status: 429 });
 
@@ -301,9 +301,9 @@ describe('the sparkline (doc 09 §1)', () => {
 					symbol,
 					interval: '5m',
 					candles: Array.from({ length: 60 }, (_, i) => [i, 100, 110 + i, 90, 100 + i, 1]),
-					attribution: 'Crypto data by Binance'
+					attribution: 'Crypto data by Binance.US'
 				},
-				meta: { cachedAt: 1, source: 'binance', stale: false }
+				meta: { cachedAt: 1, source: 'binance-us', stale: false }
 			}
 		});
 	}

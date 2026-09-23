@@ -23,7 +23,7 @@ import type { TpCryptoTickerPayload } from '$lib/api-types';
  */
 
 /** The breaker key, and the `source` every response carries. */
-const UPSTREAM = 'binance';
+const UPSTREAM = 'binance-us';
 
 /** doc 11 §4's family for this payload. */
 const FAMILY = 'crTick';
@@ -66,7 +66,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		 * below exists to produce.
 		 */
 		if (!Object.values(payload.quotes).some((quote) => quote !== null)) {
-			throw new UpstreamError('binance answered for none of the symbols', 'malformed');
+			throw new UpstreamError('binance-us answered for none of the symbols', 'malformed');
 		}
 
 		// doc 11 §8: persistence rides on waitUntil so the response does not wait

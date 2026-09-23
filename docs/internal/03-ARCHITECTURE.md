@@ -24,7 +24,7 @@
 │  · soft rate limit + circuit breaker    │
 └───────┬─────────────────────────────────┘
         ▼
-External APIs: Open-Meteo · open.er-api.com · Binance · Finnhub
+External APIs: Open-Meteo · open.er-api.com · Binance.US · Finnhub
 · Twelve Data · Photon/Nominatim · arbitrary RSS feeds (guarded)
 ```
 

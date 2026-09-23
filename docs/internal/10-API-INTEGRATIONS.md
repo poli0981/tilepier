@@ -14,7 +14,7 @@ Analytics and Turnstile. Neither is a data source, so neither is here: doc 15
 |----------|------|-------------------------------|----------|-------------|
 | Open-Meteo (forecast, air-quality, geocoding) | none | fair-use, non-commercial free tier | weather widget | required: "Weather data by Open-Meteo" + link (data CC BY 4.0) |
 | open.er-api.com (ExchangeRate-API open endpoint) | none | daily-updated rates, ~160 currencies incl. VND | currency rates | required: link to exchangerate-api.com per their terms |
-| Binance public REST | none | generous IP-based weight limits; `/klines`, `/ticker/24hr` | crypto | ToS: display use OK; no redistribution claims |
+| Binance.US public REST (Binance until 2026-09-23 — its WAF refuses Workers, §4) | none | request weight 6 000/min per IP; `/klines`, `/ticker/24hr` | crypto | public market data, shown not resold; credit "Crypto data by Binance.US" |
 | Finnhub | API key (free) | 60 calls/min; `/quote`, `/search` OK; **`/stock/candle` = 403 on free** | US stock quotes, symbol search | per ToS; show "data provided by Finnhub" in detail footer |
 | Twelve Data | API key (free "Basic") | **8 credits/min, 800/day**, resets 00:00 UTC; `/time_series` = 1 credit/symbol; US equities incl. 30+ yr EOD + intraday | US stock series | per ToS footer note |
 | ~~Stooq CSV~~ | ~~none~~ | **dropped 2026-09-23** — API key since 2026-03, and a proof-of-work page for scripts (§5) | — | — |
@@ -104,7 +104,7 @@ the client; grep-guard in CI, doc 21 §5).
 - Attribution string is part of the normalized payload so the UI can't
   forget it.
 
-## 4. Binance (crypto)
+## 4. Binance.US (crypto; Binance until 2026-09-23)
 
 - `GET /api/v3/ticker/24hr?symbols=[...]` for tile quotes (one batched call
   for the whole watchlist crypto subset).
@@ -211,6 +211,39 @@ the client; grep-guard in CI, doc 21 §5).
   reader is served from, so the probe is worth running from more than one
   place before the choice is made.
 
+  **Chosen 2026-09-23, by measurement: Binance.US** (`api.binance.us`). The
+  owner ran the probe from `SIN`:
+
+  | candidate | ticker | candles | note |
+  |---|---|---|---|
+  | Binance (± `User-Agent`) | 403 | 403 | the WAF page, as from `SJC` |
+  | **Binance.US** | 200 | 200 | ~0.5 s |
+  | Coinbase Exchange | 200 | 200 | 23–38 ms |
+  | Kraken | 200 | 200 | 85–300 ms |
+  | OKX | 200 | **429** | the shared egress, rate-limited |
+  | KuCoin | **429** | — | the same |
+  | Bybit | 200 | — | refuses US addresses, so `SJC` would fail |
+  | Bitstamp | 200 | — | 834 ms, a short coin list |
+  | CoinGecko | 403 | — | wants a `User-Agent`, and a key for real use |
+
+  Binance.US is the one that changes nothing else. It serves Binance's API
+  unchanged — `/api/v3/ticker/24hr` with a `symbols` batch, `/api/v3/klines`,
+  the same symbols, string-typed numbers and error codes — so this section's
+  rules above, the normaliser and every test carry over. All twelve coins of
+  `CRYPTO_TOP_LIST` trade there as USDT pairs (`exchangeInfo`, the same day),
+  and its prices track: BTC 85 991 against Coinbase's 85 976 BTC-USD, ETH
+  within 0.2 %. Public endpoints need no key and are weight-limited per IP
+  (6 000 a minute); 429 and 418 are already immediate breaker trips.
+
+  **Known limits, stated rather than discovered later.** The small coins are
+  thin — DOT and TRX trade about a hundred times a day — so their spread is
+  wider than on Binance itself; the markets detail's permanent "reference only"
+  line already says what that costs. It has been measured from `SIN`, not yet
+  from `SJC`; a US exchange refusing a US PoP would be a surprise, and the
+  probe is what checks it. Coinbase is the next candidate if this host ever
+  follows the others — other shapes, no BNB or TRX, 300 candles a request — and
+  the probe runs again before anything is switched.
+
 ## 5. Stocks — Finnhub + Twelve Data
 
 - Finnhub quote: `GET /api/v1/quote?symbol=AAPL` (fields c,d,dp,h,l,o,pc,t).
@@ -237,7 +270,7 @@ the client; grep-guard in CI, doc 21 §5).
   view instead. A second keyed EOD source (Tiingo, Polygon) is a post-1.0
   candidate, not a 5b item.
 - Symbol namespace: client sends `{kind, symbol}`; Worker maps
-  crypto→Binance, stock→Finnhub (quote, search) / Twelve Data (series). Uppercase-normalize,
+  crypto→Binance.US, stock→Finnhub (quote, search) / Twelve Data (series). Uppercase-normalize,
   allowlist charset `^[A-Z0-9.\-]{1,12}$`.
 - **As built in Week 5b (2026-09-23)**, and where it differs from the lines
   above:

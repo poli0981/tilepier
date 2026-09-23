@@ -6,8 +6,8 @@
 
 | Need | Source | Path |
 |------|--------|------|
-| Crypto quote + 24 h stats | Binance public | `/api/crypto/ticker` |
-| Crypto candles | Binance klines | `/api/crypto/klines` |
+| Crypto quote + 24 h stats | Binance.US public (doc 10 §4) | `/api/crypto/ticker` |
+| Crypto candles | Binance.US klines | `/api/crypto/klines` |
 | US stock quote | Finnhub `/quote` (free) | `/api/stock/quote` |
 | US stock candles/series | Twelve Data `/time_series` | `/api/stock/series` |
 | Symbol search | Finnhub `/search` (stocks) + static top-list (crypto) | `/api/stock/search` |
@@ -122,7 +122,7 @@ nothing to say about a price that is missing.
 ### Two sources on one tile (2026-09-23)
 
 The stock half made the tile the first to read **two** quote sources at once —
-the crypto set from Binance, the stock set from Finnhub — each under its own
+the crypto set from Binance.US, the stock set from Finnhub — each under its own
 data key, and that changed what a row and the tile can be.
 
 - **A row has four states, not two.** `quoted`; `absent` (its source answered
@@ -198,7 +198,7 @@ call rather than per candle — and a few kilobytes on a 1M view.
   the last rung — it says the day's allowance is spent and when it returns.
 - **Footer:** doc 16 §4's disclaimer permanently, the "delayed/cached — not for
   trading" footnote above for a stock, and a credit line per payload actually drawn —
-  Finnhub for the price and Twelve Data for the candles, or Binance once for a
+  Finnhub for the price and Twelve Data for the candles, or Binance.US once for a
   coin.
 - **Search-add.** A kind selector beside the add box; for a stock the box
   searches `/api/stock/search` after 300 ms without typing and from the second

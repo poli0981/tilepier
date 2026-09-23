@@ -44,7 +44,7 @@
 	 * gap in the DoD. A watchlist is a list, and a list has no honest one-line
 	 * rendering.
 	 *
-	 * **Two sources, two scheduler entries.** The crypto set comes from Binance
+	 * **Two sources, two scheduler entries.** The crypto set comes from Binance.US
 	 * and the stock set from Finnhub, each under its own data key, and each is
 	 * registered under the *instance* rather than under that key — a deviation
 	 * from doc 04 §3's rule for networked widgets that `multiInstance: false`

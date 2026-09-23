@@ -356,7 +356,7 @@
 	/**
 	 * doc 16 §5's credit lines, from the payloads that were actually drawn — a
 	 * stock names Finnhub for the price and Twelve Data for the candles, a coin
-	 * names Binance once.
+	 * names Binance.US once.
 	 */
 	const credits = $derived.by(() => {
 		const quoteCredit =

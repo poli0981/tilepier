@@ -30,7 +30,7 @@ interface TpProbeTarget {
 const UA = { 'user-agent': 'TilePier/1.0 (tilepier.win)' };
 
 export const CRYPTO_PROBES: readonly TpProbeTarget[] = [
-	// The control: the host `markets` uses today.
+	// The control: the host `markets` used until 2026-09-23, refused at its WAF.
 	{
 		name: 'binance',
 		kind: 'ticker',
@@ -47,6 +47,7 @@ export const CRYPTO_PROBES: readonly TpProbeTarget[] = [
 		url: 'https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT',
 		headers: UA
 	},
+	// The host `markets` uses since 2026-09-23 (`_lib/binance.ts`).
 	{
 		name: 'binance-us',
 		kind: 'ticker',

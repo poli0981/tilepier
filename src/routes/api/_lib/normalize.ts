@@ -360,10 +360,11 @@ export function normalizeFx(
 
 /* ──────────────────────────────────────────────────────── crypto (doc 10 §4) */
 
-/** doc 10 §1: display use is fine under Binance's ToS, and doc 16 §5 wants the
- *  credit line in the markets detail. Carried in the payload so the UI cannot
- *  forget it, the way the weather and fx payloads carry theirs. */
-export const CRYPTO_ATTRIBUTION = 'Crypto data by Binance';
+/** doc 10 §1: public market data, keyless, shown rather than resold — and doc
+ *  16 §5 wants the credit line in the markets detail. Binance.US since
+ *  2026-09-23 (`_lib/binance.ts` has why). Carried in the payload so the UI
+ *  cannot forget it, the way the weather and fx payloads carry theirs. */
+export const CRYPTO_ATTRIBUTION = 'Crypto data by Binance.US';
 
 /**
  * Binance sends every price, size and percentage as a **string** — `"63120.41"`,

@@ -45,10 +45,10 @@ export const CRYPTO_PAYLOAD: TpCryptoTickerPayload = {
 		},
 		GONEUSDT: null
 	},
-	attribution: 'Crypto data by Binance'
+	attribution: 'Crypto data by Binance.US'
 };
 
-const META = { cachedAt: 1_788_220_800, source: 'binance', stale: false };
+const META = { cachedAt: 1_788_220_800, source: 'binance-us', stale: false };
 
 export const CRYPTO_OK: TpApiResponse<TpCryptoTickerPayload> = {
 	ok: true,

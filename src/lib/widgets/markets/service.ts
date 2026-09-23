@@ -42,7 +42,7 @@ import {
 /**
  * The markets tile's data layer — the tier-2 pattern's third proof, and the
  * first widget that reads from **two** endpoints for one tile: the crypto set
- * from Binance through `/api/crypto/ticker`, the stock set from Finnhub through
+ * from Binance.US through `/api/crypto/ticker`, the stock set from Finnhub through
  * `/api/stock/quote` (doc 09 §1).
  *
  * Pure but for the `*Source` functions and `peekSparkline`, so every decision
