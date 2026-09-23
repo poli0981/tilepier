@@ -272,6 +272,20 @@ Cloudflare hosts to nowhere, and CI has no Turnstile secret):
 - **curl** without a pass and with a cache-busting parameter gets `401`; with
   the operator's bearer it gets `200`.
 
+And for the stock half of `markets` (Week 5b), which needs the deployed keys:
+
+- **A fresh markets tile** shows BTC, ETH, AAPL and MSFT; outside US hours the
+  two stocks are marked "close". A watchlist of only stocks lists, and never
+  sits on a skeleton.
+- **The detail on a stock:** 1D draws fifteen-minute candles, and 1W, 1M and 1Y
+  each draw their own window — switching 1Y → 1M → 1Y never shows one range's
+  candles under another's label. Both credit lines and the stock footnote are
+  in the footer.
+- **Search-add:** "apple" offers AAPL with its company name, a held symbol is
+  disabled, and adding one writes the row to the tile.
+- **The keyed S3 run** (`e2e/s3-quota.e2e.ts -g keyed`, doc 22 §S3) passes
+  against production and its spend line is recorded there.
+
 This is the **Week 8 release gate** and is not run per week. What *is* worth
 doing at each milestone is a spot check of the surfaces that week added, on the
 deployed build — the charter's QA strategy is dogfooding in production, and a
