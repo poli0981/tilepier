@@ -129,7 +129,10 @@ function seed(kv: KVNamespace & { store: Map<string, string> }, ageMs: number): 
 		quotes: { BTCUSDT: CACHED_BTC, ETHUSDT: null },
 		attribution: 'Crypto data by Binance.US'
 	};
-	kv.store.set(KEY, JSON.stringify({ cachedAt: Date.now() - ageMs, source: 'binance-us', payload }));
+	kv.store.set(
+		KEY,
+		JSON.stringify({ cachedAt: Date.now() - ageMs, source: 'binance-us', payload })
+	);
 }
 
 /** A `Response` `fetchUpstream` will accept, or reject with the given status. */

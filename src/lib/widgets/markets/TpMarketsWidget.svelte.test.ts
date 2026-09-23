@@ -227,7 +227,10 @@ describe('the host badge (doc 13 §7)', () => {
 		await db.apiCache.put({
 			key: tickerKey(['BTCUSDT', 'DOGEUSDT', 'GONEUSDT']),
 			cachedAt: NOW.getTime() - 60_000,
-			payload: { payload: CRYPTO_PAYLOAD, meta: { cachedAt: 1, source: 'binance-us', stale: false } }
+			payload: {
+				payload: CRYPTO_PAYLOAD,
+				meta: { cachedAt: 1, source: 'binance-us', stale: false }
+			}
 		});
 		serve({ ok: false, error: { code: 'RATE_LIMITED' } }, { status: 429 });
 
