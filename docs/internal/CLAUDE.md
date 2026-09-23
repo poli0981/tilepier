@@ -54,8 +54,10 @@ Week 2 with a backlog of zero.
 
 Three ordering rules worth knowing before they cost you an hour:
 
-- **Run `pnpm gen` after any `wrangler.jsonc` edit**, or `wrangler types
-  --check` inside `pnpm lint` fails.
+- **Run `pnpm gen` after any `wrangler.jsonc` or `.dev.vars.example` edit**,
+  or `wrangler types --check` inside `pnpm lint` fails. `gen` reads secret
+  names from the committed example, never from your `.dev.vars` (doc 11 §9), so
+  a new secret is named there first.
 - **Lint before build, or clean first.** Two separate tools break on leftover
   build output. `svelte-check` walks the workspace directory regardless of
   tsconfig excludes, so a stale `.svelte-kit/cloudflare` produces hundreds of

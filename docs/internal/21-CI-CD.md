@@ -118,8 +118,9 @@ Consequences worth keeping straight:
 (+ `preview_id` so branch builds cannot pollute the production cache), and the
 `compatibility_date` pinned to what the installed workerd supports. Secrets
 `FINNHUB_KEY` / `TWELVEDATA_KEY` / `DEV_DASH_TOKEN` are set with `wrangler
-secret put` and never appear in the repo. Their *types* do — by hand, in
-`src/worker-env.d.ts`, for the reason doc 11 §9 records.
+secret put` and never appear in the repo. Their *names* do, twice and valueless:
+in `.dev.vars.example`, and — generated from it by `pnpm gen` — as types in
+`worker-configuration.d.ts`, for the reason doc 11 §9 records.
 
 Rollback: previous versions are retained — roll back from the dashboard, or
 `wrangler rollback` locally.
@@ -150,7 +151,7 @@ files under `.svelte-kit/cloudflare`. So `/api/stock/*` reading
 `platform?.env.FINNHUB_KEY` in Week 5 cannot trip this gate, and a gate that
 would have to be relaxed for correct code is not a gate.
 
-`DEV_DASH_TOKEN` joined the pattern on 2026-09-01 with `src/worker-env.d.ts`:
+`DEV_DASH_TOKEN` joined the pattern on 2026-09-01 with its type declaration:
 it is the third Worker secret (doc 11 §9) and had no reason to be the one left
 out.
 

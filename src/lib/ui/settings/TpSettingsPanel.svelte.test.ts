@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
+import type { TpHealthReport } from '$lib/api-types';
+import { readLog } from '$lib/core/log-buffer';
 import { m } from '$lib/paraglide/messages';
 import { LOCAL_KEYS } from '$lib/shared-constants';
 import { deck } from '$lib/stores/deck.svelte';
@@ -27,6 +29,7 @@ beforeEach(() => {
 afterEach(() => {
 	settings.dispose();
 	deck.dispose();
+	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
 });
 
@@ -116,6 +119,67 @@ describe('diagnostics', () => {
 
 		await expect.element(screen.getByTestId('diagnostics')).toBeVisible();
 		await expect.element(screen.getByText(m['settings.diagnostics.no_tasks']())).toBeVisible();
+	});
+
+	// doc 13 §10: the token is typed, sent once as a header, and kept nowhere.
+	it('reads the breaker rows with the typed token, and stores the token nowhere', async () => {
+		settings.patch({ debug: true });
+		const report: TpHealthReport = {
+			now: Date.now(),
+			colo: 'SIN',
+			build: { version: '0.0.0', sha: 'abc1234' },
+			breakers: [
+				{
+					upstream: 'binance',
+					state: 'open',
+					verdict: 'open',
+					openedAt: Date.now(),
+					failures: 3,
+					reason: 'upstream 451: restricted location',
+					untilUtcMidnight: false
+				}
+			],
+			budget: {
+				date: '2026-09-23',
+				spent: 12,
+				dailyCredits: 800,
+				intradayStopAt: 720,
+				dailySeriesStopAt: 780
+			},
+			keys: { finnhub: true, twelvedata: false }
+		};
+		const fetcher = vi.fn(async () => Response.json({ ok: true, data: report, meta: {} }));
+		vi.stubGlobal('fetch', fetcher);
+		const screen = render(TpSettingsPanel);
+
+		await screen.getByTestId('health-token').fill('the-operator-token');
+		await screen.getByTestId('health-read').click();
+
+		await expect.element(screen.getByTestId('health-breakers')).toBeVisible();
+		await expect.element(screen.getByText('upstream 451: restricted location')).toBeVisible();
+		await expect.element(screen.getByTestId('health-where')).toHaveTextContent('SIN');
+
+		const stored = Object.keys(localStorage)
+			.map((key) => localStorage.getItem(key) ?? '')
+			.join(' ');
+		expect(stored).not.toContain('the-operator-token');
+		expect(readLog().some((entry) => entry.msg.includes('the-operator-token'))).toBe(false);
+		expect(location.search).not.toContain('the-operator-token');
+	});
+
+	it('says so when the token is refused', async () => {
+		settings.patch({ debug: true });
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response('Not Found', { status: 404 }))
+		);
+		const screen = render(TpSettingsPanel);
+
+		await screen.getByTestId('health-token').fill('wrong');
+		await screen.getByTestId('health-read').click();
+
+		await expect.element(screen.getByTestId('health-refused')).toBeVisible();
+		await expect.element(screen.getByTestId('health-breakers')).not.toBeInTheDocument();
 	});
 });
 

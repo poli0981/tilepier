@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
+	import { fetchHealth, type TpHealthResult } from '$lib/core/health';
 	import { logEntry, readLog } from '$lib/core/log-buffer';
 	import { scheduler } from '$lib/core/scheduler';
 	import { swrCache } from '$lib/core/swr.svelte';
@@ -57,6 +58,24 @@
 	const debugOn = $derived(
 		settings.debug || (browser && new URLSearchParams(location.search).get('debug') === '1')
 	);
+
+	/**
+	 * doc 13 §10's breaker rows, from `/api/_health`. The token is this
+	 * component's state and nothing else — `core/health.ts` says where it must
+	 * never go — and the read is a submit, not an effect: effects never fetch
+	 * (CLAUDE.md rule 6).
+	 */
+	let healthToken = $state('');
+	let health = $state.raw<TpHealthResult | null>(null);
+	let healthBusy = $state(false);
+
+	async function readHealth(event: SubmitEvent): Promise<void> {
+		event.preventDefault();
+		if (healthToken === '' || healthBusy) return;
+		healthBusy = true;
+		health = await fetchHealth(healthToken);
+		healthBusy = false;
+	}
 
 	$effect(() => {
 		// Reports how much of the origin's storage budget is in use (doc 05 §7).
@@ -563,6 +582,87 @@
 				</div>
 			{/if}
 
+			<!--
+				doc 13 §10's breaker rows. Behind the operator's token, which is typed
+				here each time and kept only while the page is open (doc 11 §9).
+			-->
+			<h3>{m['settings.diagnostics.health']()}</h3>
+			<form class="tp-row" onsubmit={readHealth} data-testid="health-form">
+				<label for="health-token">{m['settings.diagnostics.health_token']()}</label>
+				<span class="tp-confirm">
+					<input
+						id="health-token"
+						class="tp-secret"
+						type="password"
+						autocomplete="off"
+						spellcheck="false"
+						bind:value={healthToken}
+						data-testid="health-token"
+					/>
+					<button
+						type="submit"
+						class="tp-action"
+						disabled={healthToken === '' || healthBusy}
+						data-testid="health-read"
+					>
+						{m['settings.diagnostics.health_read']()}
+					</button>
+				</span>
+			</form>
+			<p class="tp-note">{m['settings.diagnostics.health_note']()}</p>
+
+			{#if health?.kind === 'refused'}
+				<p class="tp-warn" role="status" data-testid="health-refused">
+					{m['settings.diagnostics.health_refused']()}
+				</p>
+			{:else if health?.kind === 'failed'}
+				<p class="tp-warn" role="status">{m['settings.diagnostics.health_failed']()}</p>
+			{:else if health?.kind === 'ok'}
+				{@const report = health.report}
+				<p class="tp-note" data-testid="health-where">
+					{m['settings.diagnostics.health_where']({
+						colo: report.colo ?? '—',
+						sha: report.build.sha
+					})}
+				</p>
+				<div class="tp-scroll">
+					<table data-testid="health-breakers">
+						<tbody>
+							{#each report.breakers as breaker (breaker.upstream)}
+								<tr>
+									<td>{breaker.upstream}</td>
+									<td>{breaker.verdict}</td>
+									<td class="tp-num">{breaker.failures}</td>
+									<td>{breaker.reason}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				<p class="tp-note">
+					{m['settings.diagnostics.health_budget']({
+						spent: report.budget.spent,
+						limit: report.budget.dailyCredits
+					})}
+				</p>
+				<div class="tp-scroll">
+					<table data-testid="health-keys">
+						<tbody>
+							{#each Object.entries(report.keys) as [name, present] (name)}
+								<tr>
+									<td>{name}</td>
+									<td>
+										{present
+											? m['settings.diagnostics.key_set']()
+											: m['settings.diagnostics.key_missing']()}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
+
 			<h3>{m['settings.diagnostics.log']()}</h3>
 			<pre data-testid="diagnostics-log">{readLog()
 					.map((entry) => `${entry.level} [${entry.src}] ${entry.msg}`)
@@ -788,6 +888,17 @@
 
 	.tp-scroll {
 		overflow-x: auto;
+	}
+
+	.tp-secret {
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		background: none;
+		color: var(--color-fg);
+		font: inherit;
+		font-size: var(--text-2xs);
+		min-height: 36px;
+		padding: 0 0.5rem;
 	}
 
 	table {

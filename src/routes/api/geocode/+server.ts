@@ -1,7 +1,13 @@
 import type { RequestHandler } from './$types';
 import type { TpGeocodePayload, TpGeocodeResult } from '$lib/api-types';
 import { cacheKey } from '$lib/shared-constants';
-import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
+import {
+	breakerVerdict,
+	readBreaker,
+	recordFailure,
+	recordSuccess,
+	type TpUpstream
+} from '../_lib/breaker';
 import { readCache, ttlSeconds, writeCache } from '../_lib/kv-cache';
 import { normalizeNominatim, normalizePhoton } from '../_lib/normalize';
 import { checkRateLimit } from '../_lib/ratelimit';
@@ -108,7 +114,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 
 	async function search(
 		query: TpGeocodeQuery
-	): Promise<{ results: TpGeocodeResult[]; source: string } | null> {
+	): Promise<{ results: TpGeocodeResult[]; source: TpUpstream } | null> {
 		const photon = await tryPhoton(query);
 		if (photon !== null) return { results: photon, source: 'photon' };
 
@@ -159,7 +165,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		}
 	}
 
-	async function noteFailure(upstream: string, error: unknown): Promise<void> {
+	async function noteFailure(upstream: TpUpstream, error: unknown): Promise<void> {
 		const upstreamError = error instanceof UpstreamError ? error : null;
 		// 429/418 are upstream telling us to stop, so open at once rather than
 		// after three strikes (doc 11 §6) — which matters more here than

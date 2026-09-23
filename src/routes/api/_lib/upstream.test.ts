@@ -69,6 +69,38 @@ describe('fetchUpstream', () => {
 		expect((error as UpstreamError).headers?.get('retry-after')).toBe('30');
 	});
 
+	// The message becomes the breaker's `reason`, which /api/_health prints.
+	// A status alone could not tell 5a's Binance failure from a bad request;
+	// the body says which.
+	it('carries the start of an error body, on one line and bounded', async () => {
+		const body = `{"code":0,\n  "msg":"Service unavailable from a restricted location"}${'x'.repeat(500)}`;
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => response(body, { status: 451 }))
+		);
+
+		const error = (await fetchUpstream('https://example.test/x').catch(
+			(e: unknown) => e
+		)) as UpstreamError;
+
+		expect(error.message).toMatch(/^upstream 451: \{"code":0, "msg":"Service unavailable/);
+		expect(error.message).not.toContain('\n');
+		expect(error.message.length).toBeLessThan(200);
+	});
+
+	it('keeps the bare status when the error body is empty', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => response('', { status: 503 }))
+		);
+
+		const error = (await fetchUpstream('https://example.test/x').catch(
+			(e: unknown) => e
+		)) as UpstreamError;
+
+		expect(error.message).toBe('upstream 503');
+	});
+
 	it('rejects a declared body over the cap before reading it', async () => {
 		vi.stubGlobal(
 			'fetch',

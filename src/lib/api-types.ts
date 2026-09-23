@@ -351,3 +351,46 @@ export type TpCryptoRange = keyof typeof CRYPTO_RANGES;
 /** What the detail opens on: the tightest window, because a reader opening a
  *  market wants today before they want the year. */
 export const CRYPTO_RANGE_DEFAULT: TpCryptoRange = '1D';
+
+/* ─────────────────────────────────────────────── health (doc 11 §9, 13 §10) */
+
+/** One upstream's breaker as `GET /api/_health` reports it (doc 11 §6). */
+export interface TpHealthBreaker {
+	upstream: string;
+	state: 'closed' | 'open';
+	/**
+	 * What an endpoint would decide right now. Computed on the Worker, because
+	 * the stored `state` stays `open` after the cool-down — `half-open` is a
+	 * verdict about the clock, not a record in KV.
+	 */
+	verdict: 'closed' | 'open' | 'half-open';
+	/** Unix ms; 0 while closed. */
+	openedAt: number;
+	failures: number;
+	/** The last failure: truncated, and with anything key-shaped masked. */
+	reason: string;
+	untilUtcMidnight: boolean;
+}
+
+/**
+ * The dev-only health report. Never cached anywhere, and answered only to a
+ * bearer of `DEV_DASH_TOKEN` — everyone else gets a 404 (doc 11 §9).
+ */
+export interface TpHealthReport {
+	/** Unix ms at the Worker. */
+	now: number;
+	/** The Cloudflare location that answered (`SIN`, `HKG`…); null off the edge. */
+	colo: string | null;
+	build: { version: string; sha: string };
+	breakers: TpHealthBreaker[];
+	/** Twelve Data spend on the current UTC date against doc 11 §5's tiers. */
+	budget: {
+		date: string;
+		spent: number;
+		dailyCredits: number;
+		intradayStopAt: number;
+		dailySeriesStopAt: number;
+	};
+	/** Whether each upstream key is set on this deploy — never its value. */
+	keys: { finnhub: boolean; twelvedata: boolean };
+}

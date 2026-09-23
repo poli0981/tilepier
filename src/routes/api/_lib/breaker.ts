@@ -10,6 +10,17 @@ import { BREAKER } from '$lib/shared-constants';
  * for a $0 cache.
  */
 
+/**
+ * Every upstream that has a breaker, in the order `/api/_health` lists them.
+ *
+ * The functions below take this union rather than `string`, so an endpoint that
+ * names a new upstream does not typecheck until the name is added here — which
+ * is what stops the health report from quietly leaving one out. A list the
+ * report kept for itself would be right on the day it was written.
+ */
+export const UPSTREAMS = ['open-meteo', 'photon', 'nominatim', 'er-api', 'binance'] as const;
+export type TpUpstream = (typeof UPSTREAMS)[number];
+
 type BreakerState = 'closed' | 'open';
 
 export interface BreakerRecord {
@@ -22,9 +33,9 @@ export interface BreakerRecord {
 	untilUtcMidnight?: boolean;
 }
 
-const key = (upstream: string) => `kv:brk:${upstream}`;
+const key = (upstream: TpUpstream) => `kv:brk:${upstream}`;
 
-export async function readBreaker(kv: KVNamespace, upstream: string): Promise<BreakerRecord> {
+export async function readBreaker(kv: KVNamespace, upstream: TpUpstream): Promise<BreakerRecord> {
 	const raw = await kv.get(key(upstream), 'json');
 	return (raw as BreakerRecord | null) ?? { state: 'closed', openedAt: 0, reason: '', failures: 0 };
 }
@@ -44,6 +55,12 @@ export function msUntilUtcMidnight(now: number): number {
  *
  * Returns `half-open` for the first request after the cool-down: that request
  * probes upstream, and its outcome closes the breaker or re-opens it.
+ *
+ * A quota trip's cool-down is the time from `openedAt` to the *next* UTC
+ * midnight, measured once from the trip. It used to add `openedAt - now` on
+ * top, which moved the target as the clock moved and released the breaker at
+ * the midpoint instead — six hours early from a noon trip. Latent from Week 0
+ * until `/api/stock/series` became the branch's first caller (doc 11 §6).
  */
 export function breakerVerdict(
 	record: BreakerRecord,
@@ -52,13 +69,13 @@ export function breakerVerdict(
 	if (record.state === 'closed') return 'closed';
 
 	const cooldown = record.untilUtcMidnight
-		? msUntilUtcMidnight(record.openedAt) + (record.openedAt - now)
+		? msUntilUtcMidnight(record.openedAt)
 		: BREAKER.cooldownMs;
 
 	return now - record.openedAt >= cooldown ? 'half-open' : 'open';
 }
 
-export async function recordSuccess(kv: KVNamespace, upstream: string): Promise<void> {
+export async function recordSuccess(kv: KVNamespace, upstream: TpUpstream): Promise<void> {
 	await kv.put(
 		key(upstream),
 		JSON.stringify({ state: 'closed', openedAt: 0, reason: '', failures: 0 }),
@@ -72,7 +89,7 @@ export async function recordSuccess(kv: KVNamespace, upstream: string): Promise<
  */
 export async function recordFailure(
 	kv: KVNamespace,
-	upstream: string,
+	upstream: TpUpstream,
 	reason: string,
 	options: { immediate?: boolean; untilUtcMidnight?: boolean; now?: number } = {}
 ): Promise<BreakerRecord> {

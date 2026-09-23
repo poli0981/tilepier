@@ -25,6 +25,25 @@ export function ok<T>(
 	});
 }
 
+/**
+ * An answer that must never be stored — not by the browser, not by the CDN,
+ * and above all not by the adapter's own `caches.default`, which replays any
+ * cacheable GET *before* `hooks.server.ts` or the handler runs
+ * (`@sveltejs/adapter-cloudflare/files/worker.js`). For `/api/_health` that is
+ * the whole security of the endpoint: a `public` answer to an authorised
+ * request would be served, token and all, to the next caller without one.
+ */
+export function okNoStore<T>(data: T, meta: TpApiMeta): Response {
+	const body: TpApiResponse<T> = { ok: true, data, meta };
+	return new Response(JSON.stringify(body), {
+		status: 200,
+		headers: {
+			'content-type': 'application/json; charset=utf-8',
+			'cache-control': 'no-store'
+		}
+	});
+}
+
 const STATUS: Record<TpApiErrorCode, number> = {
 	BAD_REQUEST: 400,
 	RATE_LIMITED: 429,

@@ -75,7 +75,8 @@ Fields: `what-happened` (textarea, required) · `steps` (textarea) ·
 Settings (doc 13 §10, section 8): live ring buffer view, scheduler table from
 `scheduler.inspect()` (doc 04 §3 — id, label, cadence, last run, next due,
 state, failures), swr cache ages, breaker states from `/api/_health`
-(token-gated, doc 11 §9). Ships in prod (it's harmless + invaluable for remote
+(behind the operator's token, typed into a password field and kept only in
+the panel's memory — doc 11 §9, doc 13 §10). Ships in prod (it's harmless + invaluable for remote
 users' screenshots) but hidden behind the flag.
 
 > Corrected 2026-08-19: this previously said `localStorage tp.debug`, which
