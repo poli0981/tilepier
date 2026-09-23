@@ -69,25 +69,58 @@ acceptance.
 asserts it equals the constant in `shared-constants.ts`, so bumping the version
 to re-gate users cannot silently fail.
 
+**The "what changed" line, built 2026-09-23 for `LEGAL_VERSION` 2.** The bullet
+above has promised it since Week 1, and until a bump happened nothing drew it.
+
+- **Before paint.** When a stored acceptance is older than the current
+  version, `boot.js` sets `data-legal-prev`. CSS shows `legal.gate.changed` only
+  under that attribute, so a first visit never sees the line and a returning
+  one never sees it flash.
+- **Afterwards.** `acceptLegal()` clears the attribute. The layout re-derives it
+  from `previousLegalVersion()` whenever it re-derives `data-legal`, in case
+  `boot.js` was dropped.
+- **Test.** `e2e/legal-gate.e2e.ts` seeds a version-1 acceptance, sees the gate
+  and the line, accepts, and finds version 2 stored.
+
 ## 3. Privacy stance (the actual policy, summarized)
 
-1. No accounts, no analytics, no telemetry, no ads, no cookies.
+1. No accounts, no ads, no cookies, and nothing that follows a reader to
+   other sites.
 2. All personal content (layout, notes, todos, events, playlists, files,
    saved places) stays in the browser's storage on the user's device.
 3. Network requests go to TilePier's own `/api` proxy; the proxy holds no
-   user identifiers, keeps no logs of its own, and caches only the public
-   data payloads themselves. Cloudflare, as the infrastructure provider,
-   processes requests per its own policies (link).
-4. Coordinates are rounded (~1 km) before leaving the device; searches
+   user identifiers and caches only the public data payloads themselves.
+   Cloudflare, which runs it, keeps request logs — the address included —
+   for up to 7 days so failures can be diagnosed (Workers invocation logs,
+   `wrangler.jsonc` `observability`), under its own policies (linked).
+4. **Visit counts — Cloudflare Web Analytics**, on every page from the
+   first, the gate and `/legal/*` included. It records a page view and page
+   timings. It sends the page address with query and fragment stripped by
+   the beacon itself, the referrer, the browser, and the country. It uses no
+   cookies, no local storage, and no fingerprinting.
+5. **Bot check — Cloudflare Turnstile**, once per page load, and only after
+   the gate is accepted. Cloudflare looks at signals such as the IP address
+   and browser characteristics, under its Turnstile privacy addendum (linked).
+   TilePier keeps a one-hour pass in memory and nothing on disk (doc 15 §3).
+6. Coordinates are rounded (~1 km) before leaving the device; searches
    (geocoding, symbols, RSS URLs) necessarily transit the proxy to be
    fulfilled and are cached anonymously.
-5. Bug reports are user-initiated and user-reviewed before submission
+7. Bug reports are user-initiated and user-reviewed before submission
    (doc 18); nothing is sent automatically.
-6. Data deletion = browser storage clear + the in-app "Xóa toàn bộ dữ liệu"
+8. Data deletion = browser storage clear + the in-app "Xóa toàn bộ dữ liệu"
    button in Settings (wipes localStorage keys + Dexie db, with export
    offer first).
 
 `/legal/privacy` is the human-readable version of the above in VI + EN.
+
+**Rewritten 2026-09-23, with `LEGAL_VERSION` 2.** Point 1 read "No accounts,
+no analytics, no telemetry, no ads, no cookies". Points 4 and 5 made two of
+those five false. Point 3 said the proxy "keeps no logs of its own" while
+Workers invocation logs had been on since the S3 spike — false before this
+week, and fixed here rather than carried forward. The bump re-gates everyone
+who agreed to version 1, with a line saying what changed (§2), because a
+reader who agreed to "no analytics" should be told rather than left to
+re-read a page.
 
 ## 4. Disclaimers (surface in-product, not only in terms)
 

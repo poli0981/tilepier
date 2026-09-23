@@ -161,6 +161,10 @@ show "on deck" disabled state. Search filters by name.
   what to drop, and the four seconds are asserted to be shorter than that
   window so two can never overlap. `TpUpdateToast` keeps the root layout and
   its own slot: a service-worker update is not transient and has no timer.
+  **`TpBotCheck`'s notice (2026-09-23)** borrows the same block for the one
+  other global event a reader can meet: the Turnstile check could not finish
+  (doc 15 §3). It stays until a retry succeeds rather than timing out, because
+  live data is paused until it does.
 
 ## 8. Keyboard & a11y
 

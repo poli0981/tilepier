@@ -37,7 +37,11 @@ Rule: pin minors in `package.json` (`^` within major), let Renovate raise PRs.
 Deliberately **not** used: no UI component library (design system is bespoke,
 doc 12), no state library (runes suffice), no axios (native `fetch`), no
 moment/dayjs (`Intl` + small internal date utils + lunar module), no CDN-loaded
-scripts of any kind (doc 15 §2).
+scripts (doc 15 §2) — with exactly two named exceptions since 2026-09-23, both
+Cloudflare services that cannot be self-hosted: the Web Analytics beacon, which
+Cloudflare versions, and Turnstile's `api.js`, which refuses to run from a
+proxied or cached copy. Neither is a dependency, and neither is counted by the
+bundle budgets (doc 20 §6).
 
 ## Quality & test tooling
 

@@ -127,13 +127,19 @@ Rollback: previous versions are retained — roll back from the dashboard, or
 
 ## 5. Client-bundle secret gate
 
-CI step after build: grep the built client output for the three secret names
+CI step after build: grep the built client output for the four secret names
 and for CDN hosts (doc 15 §6). Empty or the build fails.
 
 ```
-grep -RInE '((FINNHUB|TWELVEDATA)_?KEY|DEV_DASH_TOKEN)' .svelte-kit/cloudflare
+grep -RInE '((FINNHUB|TWELVEDATA)_?KEY|DEV_DASH_TOKEN|TURNSTILE_SECRET_KEY)' .svelte-kit/cloudflare
 grep -RInE 'https://(cdn|unpkg|jsdelivr|fonts\.googleapis)'  .svelte-kit/cloudflare
 ```
+
+`TURNSTILE_SECRET_KEY` joined on 2026-09-23 with the Turnstile gate (doc 15
+§3). The CDN pattern deliberately does not match the two Cloudflare hosts the
+app now loads from (`static.cloudflareinsights.com`, `challenges.cloudflare.com`).
+Those are named exceptions, pinned by the CSP e2e test's exact sets rather
+than by this grep.
 
 **The target is `.svelte-kit/cloudflare`, not an `assets/` subdirectory** — this
 section named one until 2026-09-01 and that path has never existed. The adapter

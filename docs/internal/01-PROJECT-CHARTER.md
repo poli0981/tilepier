@@ -4,9 +4,15 @@
 
 TilePier is a calm, personal command deck in a browser tab: a grid of small,
 beautiful widgets that each open into a full instrument view. It is local-first,
-account-free, ad-free, and tracking-free. The user owns every byte: layout,
-notes, playlists, and files never leave the device except through the thin
-caching proxy that fetches public data.
+account-free, ad-free, and cookie-free, and nothing follows a reader to other
+sites. The user owns every byte: layout, notes, playlists, and files never
+leave the device except through the thin caching proxy that fetches public
+data.
+
+(Amended 2026-09-23. This said "tracking-free". Since then two Cloudflare
+services see a visit — cookieless Web Analytics and the Turnstile bot check in
+front of the proxy — and doc 16 §3 says exactly what each receives. The claims
+kept here are the ones still true.)
 
 One sentence: **"Your new-tab page, if it were built like an instrument panel."**
 
@@ -47,7 +53,8 @@ One sentence: **"Your new-tab page, if it were built like an instrument panel."*
 
 1. Primary: the developer's own daily use (dogfooding is the v1 QA plan).
 2. Vietnamese-speaking users wanting lunar dates + VND currency in a dashboard.
-3. Privacy-minded users who want a startpage without accounts or telemetry.
+3. Privacy-minded users who want a startpage without accounts, ads or
+   cookies, and a plain statement of the little that is measured (doc 16 §3).
 
 ## Success criteria for v1.0 launch
 

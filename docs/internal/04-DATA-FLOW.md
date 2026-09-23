@@ -51,7 +51,8 @@ type TpSwrStatus =
 
 type TpSwrErrorCode =
   | 'NETWORK' | 'RATE_LIMITED' | 'QUOTA_EXHAUSTED'
-  | 'UPSTREAM_DOWN' | 'BAD_REQUEST' | 'MALFORMED';
+  | 'UPSTREAM_DOWN' | 'BAD_REQUEST' | 'MALFORMED'
+  | 'VERIFY_REQUIRED';
 ```
 
 Behavior:
@@ -88,9 +89,15 @@ produces them: `empty` is a judgment about the *contents* of `data`, and
 `permission-needed` is a browser-permission state swr cannot see.
 
 Error codes map per doc 17 §4: `NETWORK` → `offline`; `RATE_LIMITED` →
-`rate-limited`; `QUOTA_EXHAUSTED`, `UPSTREAM_DOWN` and `MALFORMED` →
-`stale-error` when a cached payload exists, `error` when none does;
-`BAD_REQUEST` → `error`, logged loudly, never retried.
+`rate-limited`; `QUOTA_EXHAUSTED`, `UPSTREAM_DOWN`, `MALFORMED` and
+`VERIFY_REQUIRED` → `stale-error` when a cached payload exists, `error` when
+none does; `BAD_REQUEST` → `error`, logged loudly, never retried.
+
+`VERIFY_REQUIRED` (2026-09-23) is the Turnstile gate's refusal (doc 15 §3).
+`fetchEnvelope` has already retried once with a fresh pass by the time a
+caller sees it, so reaching swr means verification itself failed. It is
+retryable, so the backoff owns what happens next. The reader is told once, by
+`TpBotCheck`'s notice with its retry button, and not by every tile.
 
 > **`MALFORMED` moved on 2026-08-28**, when the taxonomy was implemented. This
 > line grouped it with `BAD_REQUEST` as "never retried" while doc 17 §4 said

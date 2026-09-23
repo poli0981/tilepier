@@ -94,3 +94,8 @@ users' screenshots) but hidden behind the flag.
 No Sentry/GlitchTip/telemetry SDKs — conflicts with the privacy stance
 (doc 16 §3) and the zero-cost target. The ring-buffer + issue-form flow is
 the whole story; revisit only if real-world triage proves insufficient.
+
+(Still true after 2026-09-23. Cloudflare Web Analytics counts page views and
+page timings. It is not an error reporter: it carries no stack, no log and no
+app state, and nothing from the ring buffer ever leaves the device unless the
+reader files a report.)
