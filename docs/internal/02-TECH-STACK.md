@@ -27,7 +27,7 @@ Rule: pin minors in `package.json` (`^` within major), let Renovate raise PRs.
 | dexie | **4.x** | IndexedDB wrapper: notes, todos, events, playlists, blobs, handles (doc 05). |
 | @inlang/paraglide-js | **2.x** | Compile-time i18n, EN/VI (doc 14). |
 | @inlang/plugin-message-format + @inlang/plugin-m-function-matcher | latest | inlang project plugins, devDeps. Referenced from `project.inlang/settings.json` by `node_modules` path rather than the usual jsdelivr URL, so the build never fetches at compile time — added 2026-08-19, see doc 14 §1. |
-| maplibre-gl | **5.x** | BSD-3. Map widget only; lazy chunk. Tiles: OpenFreeMap (doc 10 §6). |
+| maplibre-gl | **6.x** (5.x until 2026-09-23, rule 7) | BSD-3. Map widget only; lazy chunk. Tiles: OpenFreeMap (doc 10 §6). |
 | music-metadata | latest | Browser build; ID3/FLAC/Vorbis tags + cover art for the music widget. |
 | marked + dompurify | latest | Notes markdown preview. DOMPurify mandatory before any `{@html}`. |
 | fast-xml-parser | **5.x** | Server-side RSS/Atom/RDF parsing in the Worker (doc 10 §7). Added 2026-08-10 — it was required by docs 10 and 16 but missing from this table. |
@@ -83,6 +83,12 @@ bundle budgets (doc 20 §6).
      Re-run the S1 harness against 13 as the acceptance test for that bump.
    - **maplibre-gl 6.2.0** — held at `^5.24.0`. The map widget is Week 6; no
      reason to absorb a major before the code that uses it exists.
+     **Taken 2026-09-23, for a security fix:** GHSA-jrc7-96c5-q579 (critical,
+     an XSS sanitizer bypass in `DOM.sanitize()`) is fixed only in ≥ 6.4.1, and
+     5.24.0 is the last 5.x. Now `^6.10.0` — 6.11.0 was inside pnpm's
+     minimum-release-age window that day. The only importer is still the S4
+     harness, which asks for nothing but `Map`, and the chunk grew from 263.8
+     to 274.1 KB gz against its 300 KB budget (doc 20 §6).
    Three more entries in the tables above were **wrong**, not merely stale, and
    have been corrected in place: ESLint is **10.x** (not 9.x), Vitest is
    **4.x** (not 3.x), and the Vitest 4 browser-mode story is

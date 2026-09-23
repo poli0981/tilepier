@@ -351,7 +351,8 @@ so neither documented fallback is needed — dataZoom stays on weather.
 **maplibre has only 12 % headroom.** It is one library at one version with no
 tree-shaking to give, so treat 300 KB as effectively fixed: a maplibre major
 bump is the realistic way this row goes red, and doc 22's "accept 340 KB with a
-doc note" is the answer if it does. Entry is at 1 % because the deck is still a
+doc note" is the answer if it does. (That bump came on 2026-09-23, for a
+security fix, and measured 274.1 KB on 6.10 — still inside, doc 20 §6.) Entry is at 1 % because the deck is still a
 placeholder — that number means nothing until Week 1 lands the real shell.
 
 **The chunk-naming criterion was wrong, and so was the first budget script.**
