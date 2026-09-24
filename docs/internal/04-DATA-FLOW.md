@@ -265,6 +265,19 @@ per instance would fetch twice for one payload. Local-only widgets pass their
 `instanceId`; networked widgets pass the doc 04 §5 data key. Registrations
 sharing an id are refcounted — one entry, and `unregister()` decrements.
 
+**Each holder keeps its own `run`; the newest live one executes** (2026-09-24).
+The first registration's *schedule* still wins — cadence, label, `runOnFocus` —
+but until this date its `run` did too, for as long as anyone held the id. A
+widget's run reads state its own cleanup clears: weather's reads a handle set
+to `null` on unmount. So with two tiles on one place, removing the first left
+the second on a schedule that ran nothing, and `execute` recorded each empty
+run as a success — a healthy row in the diagnostics table over a tile that
+never refreshed again. Live since Week 4, found by the Week 6 plan review, and
+reproduced at both levels before the fix: `scheduler.test.ts` and
+`TpWeatherWidget.svelte.test.ts` ("keeps refreshing the second of two tiles").
+The same change made `revalidate()` on a released `swr` handle a no-op, since a
+stranded run was the one caller that could fetch for an entry nobody reads.
+
 > **The one networked widget that does not** is `markets`, whose two data keys
 > (the crypto set and the stock set) move with every watchlist edit. It
 > registers `<instanceId>` and, from Week 5b, `<instanceId>:stock` — one entry
@@ -326,7 +339,9 @@ the reason is two rules of this section meeting: `register()` refcounts by id an
 **the first registration's options win**, so a widget registering under its own
 `instanceId` would silently join the host's no-op entry and never run. The
 contract read as wired and was not, which is the same shape as the doc 06 §5
-rule 11 bug found in Week 2.
+rule 11 bug found in Week 2. (The second of those rules was the whole bug, and
+it bit again in Week 4 between two weather tiles; since 2026-09-24 only the
+schedule is the first registration's — see "Each holder keeps its own `run`".)
 
 The host therefore registers nothing. A widget that declares a `refresh` calls
 `useRefresh(id, cadence, run)` from `core/refresh.svelte.ts`, which is the same

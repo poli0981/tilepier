@@ -111,6 +111,95 @@ describe('register and unregister', () => {
 	});
 });
 
+/**
+ * Found by the Week 6 plan review, in production code: the entry kept the
+ * **first** registration's `run` for as long as anyone held the id. Weather's
+ * run reads a handle its own cleanup sets to `null`, so with two tiles on one
+ * place, removing the first left the second on a schedule that ran nothing —
+ * and `execute` recorded each empty run as a success, so the diagnostics table
+ * showed a healthy task. Each holder now keeps its own work; the newest live
+ * one is what runs.
+ */
+describe('a shared id outlives its first holder (doc 04 §3)', () => {
+	const every = { kind: 'interval', everyMs: 1000 } as const;
+
+	it("runs a remaining holder's work once the first has gone", async () => {
+		const first = vi.fn();
+		const second = vi.fn();
+		const a = scheduler.register('wx:v1:w3gvk', {
+			cadence: every,
+			run: first,
+			runOnRegister: false
+		});
+		const b = scheduler.register('wx:v1:w3gvk', {
+			cadence: every,
+			run: second,
+			runOnRegister: false
+		});
+
+		a.unregister();
+		await b.runNow();
+
+		expect(first).not.toHaveBeenCalled();
+		expect(second).toHaveBeenCalledTimes(1);
+	});
+
+	it('does the same on the tick, which is the path a tile actually meets', async () => {
+		const first = vi.fn();
+		const second = vi.fn();
+		const a = scheduler.register('wx:v1:w3gvk', {
+			cadence: every,
+			run: first,
+			runOnRegister: false
+		});
+		scheduler.register('wx:v1:w3gvk', { cadence: every, run: second, runOnRegister: false });
+
+		a.unregister();
+		scheduler.tick(Date.now() + 1500);
+
+		await vi.waitFor(() => expect(second).toHaveBeenCalledTimes(1));
+		expect(first).not.toHaveBeenCalled();
+	});
+
+	it('keeps running the first holder while it is still there', async () => {
+		const first = vi.fn();
+		const second = vi.fn();
+		scheduler.register('wx:v1:w3gvk', { cadence: every, run: first, runOnRegister: false });
+		const b = scheduler.register('wx:v1:w3gvk', {
+			cadence: every,
+			run: second,
+			runOnRegister: false
+		});
+
+		// The newest holder leaving hands the work back to the one that remains.
+		b.unregister();
+		scheduler.tick(Date.now() + 1500);
+
+		await vi.waitFor(() => expect(first).toHaveBeenCalledTimes(1));
+		expect(second).not.toHaveBeenCalled();
+		expect(scheduler.inspect()[0]?.refs).toBe(1);
+	});
+
+	it("keeps the first registration's schedule, whoever's work it runs", () => {
+		const a = scheduler.register('wx:v1:w3gvk', {
+			cadence: every,
+			run: () => {},
+			runOnRegister: false,
+			label: 'first'
+		});
+		scheduler.register('wx:v1:w3gvk', {
+			cadence: { kind: 'interval', everyMs: 99_000 },
+			run: () => {},
+			runOnRegister: false,
+			label: 'second'
+		});
+
+		a.unregister();
+
+		expect(scheduler.inspect()[0]).toMatchObject({ label: 'first', cadence: every, refs: 1 });
+	});
+});
+
 describe('due times', () => {
 	it('schedules from the last run rather than counting ticks', async () => {
 		const run = vi.fn();
