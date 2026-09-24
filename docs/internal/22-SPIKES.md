@@ -267,10 +267,13 @@ S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN> \
 It reads `/api/_health` before and after, asks for a quote pair, both series
 intervals cold and then ten times each warm, and a search; it passes when every
 key is set, the warm twenty never go upstream, and **Twelve Data's spend moved
-by at most two credits**. The spend is the Worker's own counter with
-`api-credits-left` folded in (doc 11 §5), so a pass is also the live check of
-that parsing — the header can only raise the figure. It prints one line:
-colo, spend before → after, and the warm statuses. That line belongs here.
+by at most two credits**. The spend is the Worker's own counter (doc 11 §5).
+This sentence said the counter had `api-credits-left` "folded in", making a
+pass a live check of that parsing too. That stopped being true in #16, when the
+header turned out to count the *minute*, and the counter became the only daily
+signal there is — corrected 2026-09-24, before the run it describes. It prints
+one line: colo, spend before → after, and the warm statuses. That line belongs
+here.
 
 **Finnhub's 403 on `/stock/candle` cannot come from this suite**, because the
 Worker never asks for candles — which is the point of the split. The proof is
