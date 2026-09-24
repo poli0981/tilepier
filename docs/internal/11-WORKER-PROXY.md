@@ -31,6 +31,20 @@ retries once with a fresh pass (doc 17 §4).
 Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 (lets the CF CDN + browser absorb repeat hits too), `retry-after` on 429/503.
 
+**Some failures are answers** (2026-09-24, `/api/rss`). An envelope error means
+"try again later" to the client: `swr` keeps what it has and the scheduler
+backs off. That is wrong for a URL that *was* fetched and simply is not a feed
+— an HTML page, a 404, a host that refuses this Worker — because retrying will
+not change it and the reader should be told what it is. Those come back as
+`ok: true` with `data: { kind: 'unavailable', reason }`, cached like any
+payload, the way `/api/stock/quote` has answered an unknown symbol with `null`
+since Week 5b. Only a failure that may pass — a timeout, the host's 429, a 5xx —
+is `UPSTREAM_DOWN`. And an answer never overwrites a feed the Worker still
+holds: while KV has a `kind: 'feed'` entry for the URL, fresh or within its
+stale window, the endpoint serves that as `STALE` instead, because a
+maintenance page served with a 200 is "not a feed" for an hour and a feed again
+after it (doc 04 §2's rule 3, applied at the edge).
+
 ## 3. Endpoints
 
 | Route | Params | Upstream (doc 10) |
@@ -44,10 +58,22 @@ Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 | `GET /api/stock/quote` | symbols (≤12, fanned ≤12 Finnhub calls, cached individually) | Finnhub |
 | `GET /api/stock/series` | symbol, interval(15min\|1day), limit ∈ range set | Twelve Data (no fallback source since 2026-09-23, doc 10 §5) |
 | `GET /api/stock/search` | q (1–40 chars: letters, digits, space, `. & ' -`) | Finnhub search |
-| `GET /api/rss` | url (https) | arbitrary feed (guarded, doc 15 §5) |
+| `GET /api/rss` | url (https, canonical — `parseFeedUrl`) | arbitrary feed (guarded, doc 15 §5) |
 
 All GET, all side-effect-free from the client's perspective (fx snapshot is
 an idempotent internal write). Non-GET → 405.
+
+**`url` must arrive in its canonical spelling** (2026-09-24), for the reason
+`days` is an allowlist: the response is cacheable by URL at the edge, and two
+spellings of one feed would be two edge entries for one answer. `parseFeedUrl`
+in `shared-constants.ts` is both the rule and the spelling, and the client
+sends what it returns, so any other spelling is `BAD_REQUEST` rather than
+silently re-spelt. The KV key is a hash of the canonical form either way.
+
+**`/api/rss` has no breaker.** §6 counts failures per upstream, and here every
+feed is its own upstream: one shared `rss` breaker would let three dead feeds
+switch off every reader's every feed for two minutes. Its protection is the
+stale window, the cached answers of §2, and each client key's own backoff.
 
 **`days` is an allowlist, not a bound** (settled 2026-08-31; this row said
 `days≤365` while doc 23 called it an allowlist, and they cannot both be right).
@@ -269,6 +295,19 @@ back-off, not perfection.
   cap (`content-length` check + streamed count), gzip accepted.
 - `waitUntil()` used for KV writes and fx snapshots so responses don't wait
   on cache persistence.
+
+**The timeout covers the body too** (2026-09-24). The signal keeps running
+after the headers arrive, so a slow body is cut by the same 8 s — and until
+then that surfaced as a raw DOMException rather than `'timeout'`, because only
+the `fetch()` call sat inside the classification (`toUpstreamError` in
+`_lib/upstream.ts`). The streamed count had no test either; both do now.
+
+**`/api/rss` does not use `fetchUpstream`.** That helper follows redirects by
+itself and decodes everything as UTF-8 — right for JSON from a known host,
+wrong for a stranger's URL. `_lib/feed-fetch.ts` does doc 15 §5's work instead:
+redirects by hand with every hop re-checked, one deadline for all hops and the
+body, the sniff, and the document's own encoding. It shares the byte cap
+(`readCappedBytes`) and the error classification rather than copying them.
 
 ## 9. Observability (privacy-respecting)
 

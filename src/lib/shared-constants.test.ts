@@ -1,11 +1,15 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
 	CACHE_POLICY,
+	FEED_URL_MAX_LENGTH,
 	STOCK_BUDGET,
 	cacheKey,
+	feedUrlHash,
 	geohash,
+	parseFeedUrl,
 	roundCoord,
 	symbolSetKey,
 	canonicalSymbols,
@@ -316,5 +320,125 @@ describe('symbol sets (doc 10 §5, doc 11 §4)', () => {
 			`${String(i).padStart(2, '0')}ABCDEFGHIJ`.slice(0, 12)
 		);
 		expect(cacheKey.cryptoTicker(symbolSetKey(widest)).length).toBeLessThan(512);
+	});
+});
+
+/**
+ * doc 15 §5's URL rules. Each rule has a case of its own and the case names
+ * the rule's reason, so deleting a rule turns exactly its row red rather than
+ * leaving a neighbour to fail for it (the Week 4b lesson: an assertion that
+ * passes through a different branch is not testing the one it names).
+ */
+describe('feed URLs (doc 15 §5)', () => {
+	it('accepts an ordinary https feed and returns its canonical spelling', () => {
+		expect(parseFeedUrl('https://vnexpress.net/rss/tin-moi-nhat.rss')).toEqual({
+			ok: true,
+			url: 'https://vnexpress.net/rss/tin-moi-nhat.rss'
+		});
+	});
+
+	it.each([
+		['surrounding space', '  https://example.com/feed.xml  ', 'https://example.com/feed.xml'],
+		['upper-case scheme and host', 'HTTPS://Example.COM/Feed.xml', 'https://example.com/Feed.xml'],
+		['the default port', 'https://example.com:443/feed', 'https://example.com/feed'],
+		['a fragment', 'https://example.com/feed#latest', 'https://example.com/feed'],
+		['an empty query', 'https://example.com/feed?', 'https://example.com/feed'],
+		['a trailing dot on the host', 'https://example.com./feed', 'https://example.com/feed'],
+		['a Unicode host', 'https://ví-dụ.vn/rss', 'https://xn--v-d-rma6749a.vn/rss']
+	])('canonicalises %s', (_name, raw, canonical) => {
+		expect(parseFeedUrl(raw)).toEqual({ ok: true, url: canonical });
+	});
+
+	it('keeps the path and the query exactly, because either can name another feed', () => {
+		const check = parseFeedUrl('https://example.com/Feed?tag=A&page=2');
+		expect(check).toEqual({ ok: true, url: 'https://example.com/Feed?tag=A&page=2' });
+	});
+
+	it('refuses a URL longer than FEED_URL_MAX_LENGTH', () => {
+		const long = `https://example.com/${'a'.repeat(FEED_URL_MAX_LENGTH)}`;
+		expect(parseFeedUrl(long)).toEqual({ ok: false, reason: 'invalid' });
+	});
+
+	it.each([
+		['', 'invalid'],
+		['not a url', 'invalid'],
+		['http://example.com/feed', 'scheme'],
+		['ftp://example.com/feed', 'scheme'],
+		['javascript:alert(1)', 'scheme'],
+		['https://user:pass@example.com/feed', 'credentials'],
+		['https://user@example.com/feed', 'credentials'],
+		['https://example.com:8443/feed', 'port'],
+		['https://127.0.0.1/feed', 'address'],
+		// WHATWG turns every one of these into 127.0.0.1 before anything looks at
+		// the host, which is why the rule reads the parsed host, never the text.
+		['https://2130706433/feed', 'address'],
+		['https://0x7f.1/feed', 'address'],
+		['https://127.1/feed', 'address'],
+		['https://[::1]/feed', 'address'],
+		['https://[fd00::1]/feed', 'address'],
+		// A single label that is on no blocklist: only the one-label rule can
+		// refuse it. Found by removing that rule and watching every other case
+		// here stay green — `localhost` and `intranet` are refused by the suffix
+		// list first, so they never reached it.
+		['https://myserver/feed', 'host'],
+		['https://localhost/feed', 'host'],
+		['https://localhost./feed', 'host'],
+		['https://intranet/feed', 'host'],
+		['https://printer.local/feed', 'host'],
+		['https://api.internal/feed', 'host'],
+		['https://router.home.arpa/feed', 'host'],
+		['https://nas.lan/feed', 'host'],
+		['https://site.test/feed', 'host'],
+		['https://hidden.onion/feed', 'host'],
+		['https://tilepier.win/api/rss', 'host'],
+		['https://preview.tilepier.win/feed', 'host']
+	])('refuses %s as %s', (raw, reason) => {
+		expect(parseFeedUrl(raw)).toEqual({ ok: false, reason });
+	});
+
+	it('refuses the host the Worker is answering on, whatever it is called', () => {
+		// A workers.dev preview is not tilepier.win, and must not fetch itself either.
+		expect(
+			parseFeedUrl('https://tilepier.demo.workers.dev/api/rss', 'tilepier.demo.workers.dev')
+		).toEqual({ ok: false, reason: 'host' });
+		expect(
+			parseFeedUrl('https://someone-else.workers.dev/feed', 'tilepier.demo.workers.dev')
+		).toEqual({
+			ok: true,
+			url: 'https://someone-else.workers.dev/feed'
+		});
+	});
+
+	it('lets a host that merely starts with a number through, for the platform to judge', () => {
+		// `10.0.0.1.nip.io` resolves to a private address, and no pattern can see
+		// that. doc 15 §5 leaves it to the Worker platform, which has no route to
+		// RFC 1918 space; the production probe in doc 19 §5 is what checks it.
+		expect(parseFeedUrl('https://10.0.0.1.nip.io/feed')).toEqual({
+			ok: true,
+			url: 'https://10.0.0.1.nip.io/feed'
+		});
+	});
+});
+
+describe('feed cache keys (doc 11 §4, doc 04 §5)', () => {
+	it('is SHA-256 of the canonical URL, in hex', async () => {
+		const url = 'https://vnexpress.net/rss/tin-moi-nhat.rss';
+		const expected = createHash('sha256').update(url).digest('hex');
+		expect(await feedUrlHash(url)).toBe(expected);
+		expect(expected).toHaveLength(64);
+	});
+
+	it('files two spellings of one feed under one key, once canonicalised', async () => {
+		const a = parseFeedUrl('HTTPS://VnExpress.net:443/rss/tin-moi-nhat.rss#top');
+		const b = parseFeedUrl('https://vnexpress.net/rss/tin-moi-nhat.rss');
+		expect(a.ok && b.ok).toBe(true);
+		if (!a.ok || !b.ok) return;
+		expect(await feedUrlHash(a.url)).toBe(await feedUrlHash(b.url));
+	});
+
+	it('stays inside the KV key limit', async () => {
+		const key = cacheKey.rss(await feedUrlHash('https://example.com/feed'));
+		expect(`kv:${key}`.length).toBeLessThan(512);
+		expect(key).toMatch(/^rss:v1:[0-9a-f]{64}$/);
 	});
 });

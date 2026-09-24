@@ -1,4 +1,4 @@
-import type { TpCryptoInterval, TpStockInterval } from './api-types';
+import type { TpCryptoInterval, TpFeedUrlRejection, TpStockInterval } from './api-types';
 
 /**
  * Constants shared by client and Worker.
@@ -280,13 +280,136 @@ export function stockSearchText(raw: string): string | null {
 	return /^[\p{L}\p{N} .&'-]+$/u.test(text) ? text : null;
 }
 
+/* ───────────────────────────────────────────────────────────── rss feeds */
+
+/** doc 08 §4: one to ten feeds per rss tile. */
+export const RSS_MAX_FEEDS = 10;
+
+/** The longest feed URL either half accepts (doc 15 §5). */
+export const FEED_URL_MAX_LENGTH = 2048;
+
+/**
+ * Top-level labels no public feed lives under: the special-use names of RFC
+ * 6761 and RFC 7686, `.arpa` (which covers `home.arpa`), and the suffixes home
+ * and office networks use by convention. doc 15 §5 compensates this way for
+ * what a Worker cannot do — resolve a name and look at the address.
+ */
+const BLOCKED_TLDS = new Set([
+	'localhost',
+	'local',
+	'localdomain',
+	'internal',
+	'intranet',
+	'lan',
+	'home',
+	'corp',
+	'private',
+	'test',
+	'invalid',
+	'example',
+	'onion',
+	'arpa'
+]);
+
+/** This app's own domain. A feed there would be the Worker fetching itself. */
+const OWN_DOMAIN = 'tilepier.win';
+
+/** What WHATWG's host parser leaves of every IPv4 spelling it accepts —
+ *  `2130706433`, `0x7f.1` and `127.1` all arrive here as `127.0.0.1`. */
+const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+
+export type TpFeedUrlCheck = { ok: true; url: string } | { ok: false; reason: TpFeedUrlRejection };
+
+/**
+ * doc 15 §5's URL rules, and the canonical spelling of a feed URL.
+ *
+ * **Both halves run it.** The Worker refuses a request that fails it, and it
+ * re-runs it on every redirect hop, since a guard that only checked the first
+ * URL would be one `Location:` header away from not being a guard. The client
+ * runs it before sending anything, so the feed box can say which rule a URL
+ * broke, and so it only ever sends the canonical form the Worker insists on.
+ *
+ * The canonical form is WHATWG's serialisation — lower-case scheme and host,
+ * punycode, no default port — minus a trailing dot on the host, the fragment
+ * (which never reaches a server) and an empty `?`. Path and query stay exactly
+ * as given: a different query can be a different feed.
+ *
+ * `ownHost` is the host the Worker is answering on (a `workers.dev` preview is
+ * not `tilepier.win`); the client passes `location.hostname`.
+ */
+export function parseFeedUrl(raw: string, ownHost?: string): TpFeedUrlCheck {
+	const text = raw.trim();
+	if (text === '' || text.length > FEED_URL_MAX_LENGTH) return { ok: false, reason: 'invalid' };
+
+	let url: URL;
+	try {
+		url = new URL(text);
+	} catch {
+		return { ok: false, reason: 'invalid' };
+	}
+
+	if (url.protocol !== 'https:') return { ok: false, reason: 'scheme' };
+	if (url.username !== '' || url.password !== '') return { ok: false, reason: 'credentials' };
+	// WHATWG already drops `:443` for https, so any port left is another one.
+	if (url.port !== '') return { ok: false, reason: 'port' };
+
+	// `example.com.` is example.com, and `localhost.` is localhost.
+	const host = url.hostname.replace(/\.$/, '');
+	if (host.startsWith('[') || IPV4.test(host)) return { ok: false, reason: 'address' };
+
+	const labels = host.split('.');
+	const tld = labels[labels.length - 1] ?? '';
+	if (labels.length < 2 || BLOCKED_TLDS.has(tld)) return { ok: false, reason: 'host' };
+
+	const own = ownHost?.toLowerCase().replace(/\.$/, '');
+	if (
+		host === OWN_DOMAIN ||
+		host.endsWith(`.${OWN_DOMAIN}`) ||
+		(own !== undefined && host === own)
+	) {
+		return { ok: false, reason: 'host' };
+	}
+
+	// One spelling per feed, or two readers of it fill two cache entries: the
+	// trailing dot goes (WHATWG keeps it), and so do the fragment and an empty `?`.
+	url.hostname = host;
+	url.hash = '';
+	if (url.search === '') url.search = '';
+	return { ok: true, url: url.href };
+}
+
+/**
+ * The `<url-hash>` of `rss:v1:<url-hash>` (doc 11 §4): SHA-256 of the
+ * canonical URL, in hex.
+ *
+ * **A cryptographic digest rather than a quick one**, because here a collision
+ * would be an attack rather than bad luck. doc 15 §5 relies on hash-based keys
+ * so that no feed's cache can be poisoned from another's, and anyone can
+ * choose a feed URL — a 32- or 64-bit hash would let them search for one that
+ * lands on a popular feed's entry. Unlike `symbolSetKey`, the literal cannot
+ * be used instead: a feed URL can be 2 KB and a KV key only 512 bytes.
+ *
+ * Async on both sides, which is the cost `symbolSetKey` declined to pay; here
+ * nothing cheaper is safe. Web Crypto is a global in the Worker, the browser
+ * and Node alike.
+ *
+ * Takes the output of `parseFeedUrl`, never a raw URL: two spellings of one
+ * feed must land on one key.
+ */
+export async function feedUrlHash(canonicalUrl: string): Promise<string> {
+	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonicalUrl));
+	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 /* ────────────────────────────────────────────────────── Twelve Data quota */
 
 /**
  * Twelve Data free tier: 800 credits/day, resets 00:00 UTC (doc 10 §5).
  * Guard tiers from doc 11 §5 — the counter lives in KV as
- * `st:budget:<utc-date>` and is folded with the upstream `api-credits-left`
- * header, taking the lower of the two signals.
+ * `st:budget:<utc-date>` and is the only daily signal there is. It was folded
+ * with the upstream `api-credits-left` header until 2026-09-23, when that
+ * header turned out to count the *minute* (doc 11 §5); the 20 credits between
+ * 780 and 800 are the slack for this counter's own under-counting.
  */
 export const STOCK_BUDGET = {
 	/** Hard daily ceiling published by the upstream. */

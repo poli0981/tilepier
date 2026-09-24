@@ -335,6 +335,57 @@ limit 3, per-feed KV cache). Parser: `fast-xml-parser` handling RSS 2.0 /
 Atom / RDF; output normalized `{title, link, items:[{id,title,link,summary,
 publishedAt,author?}], icon?}` with summaries pre-truncated to 2 KB.
 
+**Built 2026-09-24**, as `TpFeedPayload` in `api-types.ts`. What the line above
+did not settle:
+
+- **No `icon`.** A favicon would be a third-party image, which the CSP's
+  `img-src` refuses, or a second fetch per feed for the Worker to inline — a
+  second SSRF surface. The owner took the depth cut: the tile draws the feed's
+  initial on a token colour instead (doc 08 §4).
+- **`summaryHtml`, named for what it is**: a stranger's HTML, unsanitised,
+  because the Worker has no DOM. It reaches a page only through `TpFeedHtml`
+  (doc 15 §4). CDATA is taken literally, escaped markup decoded once, Atom's
+  `type="text"` escaped so its `<` stays a character, and the cut never splits a
+  tag, a reference or a surrogate pair.
+- **Titles are plain text**: markup stripped, then both layers of references a
+  CMS may have stacked decoded (`Ha&amp;rsquo;s` → `Ha’s`).
+- **Dates are parsed by hand**: RFC 822, ISO 8601, and .NET's `M/D/YYYY h:mm:ss
+  AM`. `Date.parse` reads a zoneless ISO timestamp as *local* time, which is
+  seven hours off on a developer's machine in Hà Nội and right only on the
+  Worker. A date that names no zone is read in **the zone the channel writes its
+  own dates in**, when it names one (`lastBuildDate`, Atom's `updated`), else
+  UTC. Anything unreadable is `null`, the "undated" of doc 08 §4, never a guess
+  — `9/10/2026` with no AM/PM is September in one country and October in the
+  next, so it is `null` too.
+- **Links, guids and attributes have the feed's own escaping undone.** A URL
+  in XML carries `&amp;` for `&`; read raw, every BBC link kept it.
+- **Thirty entries per feed, newest first**, dated before undated, sorted
+  *before* the cut so an oldest-first feed keeps its newest.
+- **`lang`**, from `<language>` or `xml:lang`, for the reader's `lang`
+  attribute (doc 14).
+- **"Not a feed" is an answer, not a failure** — `{ kind: 'unavailable',
+  reason }` with `not-feed`, `too-large`, `gone`, `refused`,
+  `blocked-redirect` or `too-many-redirects` (doc 11 §2 says why, and why it
+  never replaces a feed still held).
+- **Encodings**: the BOM, else the content type's `charset`, else the XML
+  declaration, else UTF-8; a label the runtime does not know falls back to
+  UTF-8 rather than failing the feed.
+
+Measured on 2026-09-24 from a developer machine: VnExpress answers `curl`'s
+user agent with a **404** and `TilePier/…` with the feed, and Tuổi Trẻ
+redirects with a *relative* `Location` (`/home.rss`). Neither is yet measured
+from the Worker's own egress — that is the production check in doc 19 §5.
+
+**Eleven real feeds through the local Worker (workerd) before merge**, as the
+plan's review asked, because the suites run in Node and workerd's
+`TextDecoder`, `redirect: 'manual'` and abort behaviour are its own: VnExpress,
+Tuổi Trẻ (through its relative redirect), BBC News, GitHub releases, Hacker
+News, a YouTube channel, WordPress News, Slashdot (RDF), the Cloudflare blog, a
+404 (`gone`) and an HTML page (`not-feed`). **Two faults every fixture had
+passed**: BBC's links kept `&amp;`, and all thirty Tuổi Trẻ items were undated
+— its item dates are .NET's `9/24/2026 9:41:00 PM`, with the zone only on the
+channel. Both fixed, both with fixtures in those shapes.
+
 ## 8. Compliance checklist (gate for Week 8, doc 23)
 
 - [ ] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail

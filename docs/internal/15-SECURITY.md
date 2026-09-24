@@ -195,6 +195,48 @@ analytics or waits on Cloudflare.
 - Per-feed cache keys are hash-based → cache can't be poisoned across
   feeds; no request headers forwarded from client except none.
 
+**Built 2026-09-24, and until then none of it existed.** `fetchUpstream`
+followed redirects on its own and looked at no content type, and
+`UPSTREAM.maxRedirects` was read by nothing. The rules as they now stand, each
+with a test that was watched going red with its rule removed (a mutation run
+found two that had none, and both have one now):
+
+1. **One rule, both halves.** `parseFeedUrl` in `shared-constants.ts` runs in
+   the reader's feed box and in the Worker. `https:` only; no `user:pass@`; no
+   port but 443; no IP literal *after* WHATWG has parsed the host — so
+   `https://2130706433/`, `0x7f.1` and `127.1` are all seen as the
+   `127.0.0.1` they are; at least two labels; no special-use or private
+   top-level label (`localhost local localdomain internal intranet lan home
+   corp private test invalid example onion arpa`); not this app's own domain,
+   nor the host the Worker is answering on; at most 2048 characters.
+2. **Every redirect hop goes through the same rule.** `redirect: 'manual'`,
+   at most three hops; a hop to http, to an address or back to this app ends
+   the fetch as the answer `blocked-redirect`, and is never requested.
+3. **One 8 s deadline for all hops and the body**, not one each — per request,
+   three redirects would buy 32 s.
+4. **1 MB**, by declared length and by streamed count.
+5. **The sniff**: a content type naming XML, RSS or Atom, or an `rss`, `feed`
+   or `rdf:RDF` root in the first 512 bytes. Otherwise the answer `not-feed`.
+6. **No entity declarations.** A document type with `<!ENTITY` in its prolog is
+   `not-feed`, before the parser sees it. The parser runs with
+   `processEntities: false` anyway; this is the second wall, because
+   fast-xml-parser 5.10.1's expansion limits are not what its own types say
+   (`maxTotalExpansions`: `Infinity` at runtime, `1000` in `fxp.d.ts`). The
+   prolog check skips comments, or `<!-- <rss> -->` in front of the declaration
+   would walk straight past it.
+7. **Nothing of the reader's request is forwarded**: the Worker sends exactly
+   `accept`, `accept-encoding` and a `user-agent` naming the app. Some hosts
+   refuse an empty one (VnExpress answered `curl`'s with a 404).
+8. **The KV key is SHA-256** of the canonical URL, not a quick hash: anyone can
+   choose a feed URL, so a 32- or 64-bit hash would let them search for one
+   that lands on a popular feed's entry.
+
+**What the rules cannot see: a name that resolves to a private address.**
+`10.0.0.1.nip.io` passes every pattern. The first bullet's compensation — no
+route from the Cloudflare edge into RFC 1918 space — is a property of the
+platform, so it is checked on production by probe (doc 19 §5), not asserted by
+a test.
+
 ## 6. Supply chain
 
 - `pnpm` with lockfile, `--frozen-lockfile` in CI; Renovate PRs only.

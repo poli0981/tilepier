@@ -444,6 +444,90 @@ export interface TpStockSearchPayload {
 	attribution: string;
 }
 
+/* ──────────────────────────────────────────────────────── rss (doc 10 §7) */
+
+/**
+ * Why a feed URL is refused before anything is fetched (doc 15 §5).
+ *
+ * `parseFeedUrl` in `shared-constants.ts` is the one rule, run by both halves:
+ * the Worker refuses the request, and the reader's feed box says *which* rule
+ * at the moment of typing rather than after a round trip.
+ */
+export type TpFeedUrlRejection =
+	/** Not a URL, empty, or longer than `FEED_URL_MAX_LENGTH`. */
+	| 'invalid'
+	/** Anything but `https:`. */
+	| 'scheme'
+	/** `user:password@` in the authority. */
+	| 'credentials'
+	/** A port other than 443. */
+	| 'port'
+	/** An IP literal — IPv4 in any of the spellings WHATWG accepts, or IPv6. */
+	| 'address'
+	/** One label, a special-use or private suffix, or this app's own host. */
+	| 'host';
+
+/** One entry of a feed, as the tile and the reader need it. */
+export interface TpFeedItem {
+	/** guid, Atom id or `rdf:about`; else the link; else title and date. Unique
+	 *  within its feed. */
+	id: string;
+	/** Plain text: entities decoded, markup stripped. May be empty. */
+	title: string;
+	/** Absolute http(s), or `null` when the entry carries none a browser could open. */
+	link: string | null;
+	/**
+	 * **Unsanitised HTML from a stranger** (doc 15 §4): the feed's own summary,
+	 * or its content when it has no summary, cut to `FEED_SUMMARY_MAX_CHARS`
+	 * without splitting a tag or an entity. The Worker has no DOM to sanitise
+	 * with; the only way this reaches a page is `TpFeedHtml`, which runs
+	 * `sanitizeRssHtml` inside itself.
+	 */
+	summaryHtml: string;
+	/** Unix ms, or `null` for an entry with no date the parser can trust — doc
+	 *  08 §4's "undated". */
+	publishedAt: number | null;
+	author: string | null;
+}
+
+export interface TpFeed {
+	/** Plain text. May be empty; the tile falls back to the host. */
+	title: string;
+	link: string | null;
+	/** The language the feed declares (`<language>`, `xml:lang`), for the
+	 *  reader's `lang` attribute (doc 14). `null` when it declares none. */
+	lang: string | null;
+	/** Newest first, dated entries before undated ones, at most
+	 *  `FEED_MAX_ITEMS`. */
+	items: TpFeedItem[];
+}
+
+/**
+ * Why a URL that *was* fetched is not a feed anyone can read.
+ *
+ * **An answer, not a failure** (doc 11 §2), for the reason `/api/stock/quote`
+ * gives about an unknown symbol: it is cached like a feed, so asking again
+ * costs the host nothing, and it never reads as an outage. Only a transient
+ * failure — a timeout, a 429, a 5xx — is `UPSTREAM_DOWN`.
+ */
+export type TpFeedUnavailable =
+	/** HTML, plain text, or XML whose root is not RSS, Atom or RDF. */
+	| 'not-feed'
+	/** Over `UPSTREAM.maxResponseBytes`. */
+	| 'too-large'
+	/** 404 or 410. */
+	| 'gone'
+	/** Any other 4xx: the host will not serve this Worker. */
+	| 'refused'
+	/** A redirect to somewhere `parseFeedUrl` refuses — http, an address,
+	 *  this app's own host. */
+	| 'blocked-redirect'
+	/** More than `UPSTREAM.maxRedirects` hops. */
+	| 'too-many-redirects';
+
+export type TpFeedPayload =
+	{ kind: 'feed'; feed: TpFeed } | { kind: 'unavailable'; reason: TpFeedUnavailable };
+
 /* ─────────────────────────────────────────────── health (doc 11 §9, 13 §10) */
 
 /** One upstream's breaker as `GET /api/_health` reports it (doc 11 §6). */
