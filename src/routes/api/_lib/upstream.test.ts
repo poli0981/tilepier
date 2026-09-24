@@ -119,6 +119,58 @@ describe('fetchUpstream', () => {
 		expect((error as UpstreamError).kind).toBe('too-large');
 	});
 
+	it('caps a body that never declared its length, while reading it', async () => {
+		// The branch doc 11 §8 exists for — "a hostile or broken upstream can simply
+		// omit" `content-length` — and it had no test until Week 6. A body built
+		// from a stream carries no length at all.
+		const chunk = new Uint8Array(256 * 1024);
+		let sent = 0;
+		const body = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				sent += chunk.byteLength;
+				controller.enqueue(chunk);
+				if (sent > 4 * UPSTREAM.maxResponseBytes) controller.close();
+			}
+		});
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response(body))
+		);
+
+		const error = await fetchUpstream('https://example.test/x', { parse: 'text' }).catch(
+			(e: unknown) => e
+		);
+
+		expect((error as UpstreamError).kind).toBe('too-large');
+		// It stopped at the cap rather than buffering everything first.
+		expect(sent).toBeLessThanOrEqual(UPSTREAM.maxResponseBytes + 2 * chunk.byteLength);
+	});
+
+	it('classifies a timeout while reading the body as a timeout', async () => {
+		// `AbortSignal.timeout` keeps running after the headers arrive, so a slow
+		// body is cut by the same deadline — and until Week 6 that surfaced as a
+		// raw DOMException, because only the `fetch()` call was inside the
+		// classification. The breaker read it as an unknown error rather than a
+		// timeout (doc 11 §6 counts the two differently).
+		const body = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(new TextEncoder().encode('{"partial":'));
+			},
+			pull(controller) {
+				controller.error(new DOMException('The operation timed out.', 'TimeoutError'));
+			}
+		});
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response(body))
+		);
+
+		const error = await fetchUpstream('https://example.test/x').catch((e: unknown) => e);
+
+		expect(error).toBeInstanceOf(UpstreamError);
+		expect((error as UpstreamError).kind).toBe('timeout');
+	});
+
 	it('classifies a network failure separately from a bad status', async () => {
 		vi.stubGlobal(
 			'fetch',
