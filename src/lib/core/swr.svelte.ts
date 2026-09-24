@@ -302,6 +302,11 @@ export function swr<T>(
 			return own.ageMs;
 		},
 		async revalidate() {
+			// A released handle asks for nothing. It still holds the entry it came
+			// from, and once the last holder has gone the map has dropped that entry,
+			// so a late call would fetch — and write Dexie — for data nobody can read.
+			// The scheduler used to make that call (doc 04 §3, `Entry.runs`).
+			if (released) return;
 			await run(own, target);
 		},
 		release() {

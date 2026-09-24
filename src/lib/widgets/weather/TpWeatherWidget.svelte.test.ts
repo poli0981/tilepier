@@ -361,6 +361,33 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 		expect(spy).toHaveBeenCalledTimes(1);
 	});
 
+	it('keeps refreshing the second of two tiles on one place after the first is removed', async () => {
+		// The Week 6 plan review's first blocker, live since Week 4: the shared
+		// task kept tile A's `run`, which reads A's handle — and A's cleanup sets
+		// that to null. So B was never refreshed again, and the scheduler recorded
+		// every empty run as a success.
+		const spy = serve(WEATHER_OK);
+		const a = render(TpWeatherWidget, props({ instanceId: 'wgt_a' }));
+		render(
+			TpWeatherWidget,
+			props({ instanceId: 'wgt_b', settings: { place: { ...HANOI, lat: 21.01, lon: 105.86 } } })
+		);
+		await vi.waitFor(() => {
+			expect(document.querySelectorAll("[data-testid='weather-temp']")).toHaveLength(2);
+		});
+		expect(spy).toHaveBeenCalledTimes(1);
+
+		a.unmount();
+		expect(scheduler.size).toBe(1);
+
+		// The headless browser can report itself hidden, which stops the ticker
+		// (doc 19 §4, the seventh rule); this test is about whose work runs.
+		vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+		scheduler.tick(Date.now() + 601_000);
+
+		await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+	});
+
 	it('leaves nothing behind on unmount', async () => {
 		serve(WEATHER_OK);
 		const screen = render(TpWeatherWidget, props());

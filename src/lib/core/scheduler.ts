@@ -51,13 +51,29 @@ export interface TpTaskSnapshot {
 	refs: number;
 }
 
+/** One holder of an id: its own work, kept apart from every other holder's. */
+interface Registration {
+	run: TpTaskOptions['run'];
+}
+
 interface Entry {
 	id: string;
 	label: string;
 	cadence: TpRefresh;
-	run: TpTaskOptions['run'];
+	/**
+	 * Every live holder's work, oldest first; `execute` runs the newest.
+	 *
+	 * **One per holder, not one per entry** (2026-09-24). The entry used to keep
+	 * the first registration's `run` for as long as anyone held the id — and a
+	 * widget's run reads state its own cleanup clears. Weather's reads a handle
+	 * set to `null` on unmount, so with two tiles on one place, removing the
+	 * first left the second on a schedule that ran nothing, and `execute`
+	 * recorded each empty run as a success. Found by the Week 6 plan review, and
+	 * live since Week 4. The *schedule* is still the first registration's
+	 * (`cadence`, `label`, `runOnFocus`); only whose work runs moved.
+	 */
+	runs: Registration[];
 	runOnFocus: boolean;
-	refs: number;
 	running: boolean;
 	controller: AbortController | null;
 	lastRunAt: number | null;
@@ -154,6 +170,8 @@ async function execute(entry: Entry, reason: TpRunReason): Promise<void> {
 	// Overlap policy (doc 04 §3): an entry already running is skipped, never
 	// queued. A slow job must not be able to build a burst behind itself.
 	if (entry.running) return;
+	const holder = entry.runs[entry.runs.length - 1];
+	if (holder === undefined) return;
 
 	entry.running = true;
 	const controller = new AbortController();
@@ -164,7 +182,7 @@ async function execute(entry: Entry, reason: TpRunReason): Promise<void> {
 	entry.lastRunAt = startedAt;
 
 	try {
-		await entry.run({ reason, signal: controller.signal });
+		await holder.run({ reason, signal: controller.signal });
 		entry.lastOkAt = Date.now();
 		entry.consecutiveFailures = 0;
 		entry.backoffUntil = null;
@@ -289,7 +307,7 @@ function detachListeners(): void {
 	detachOnline = null;
 }
 
-function makeHandle(id: string): TpTaskHandle {
+function makeHandle(id: string, registration: Registration): TpTaskHandle {
 	let released = false;
 	return {
 		id,
@@ -298,8 +316,10 @@ function makeHandle(id: string): TpTaskHandle {
 			released = true;
 			const entry = entries.get(id);
 			if (entry === undefined) return;
-			entry.refs -= 1;
-			if (entry.refs > 0) return;
+			// By identity: this holder's work goes, and nobody else's.
+			const index = entry.runs.indexOf(registration);
+			if (index !== -1) entry.runs.splice(index, 1);
+			if (entry.runs.length > 0) return;
 			entry.controller?.abort();
 			entries.delete(id);
 			if (entries.size === 0) {
@@ -334,23 +354,26 @@ export const scheduler = {
 	 * `id` is the caller's choice, not necessarily an `instanceId`: two weather
 	 * tiles pinned to the same place share one data key and must not fetch
 	 * twice (doc 04 §3). Registrations sharing an id are refcounted, and the
-	 * **first** registration's options win — a second caller joins the existing
-	 * schedule rather than redefining it.
+	 * **first** registration's schedule wins — a second caller joins it rather
+	 * than redefining it. Each keeps its own `run`, and the newest live one is
+	 * what executes, so a holder leaving never strands the others on work that
+	 * belonged to it (see `Entry.runs`).
 	 */
 	register(id: string, options: TpTaskOptions): TpTaskHandle {
+		const registration: Registration = { run: options.run };
+
 		const existing = entries.get(id);
 		if (existing !== undefined) {
-			existing.refs += 1;
-			return makeHandle(id);
+			existing.runs.push(registration);
+			return makeHandle(id, registration);
 		}
 
 		const entry: Entry = {
 			id,
 			label: options.label ?? id,
 			cadence: options.cadence,
-			run: options.run,
+			runs: [registration],
 			runOnFocus: options.runOnFocus ?? true,
-			refs: 1,
 			running: false,
 			controller: null,
 			lastRunAt: null,
@@ -370,7 +393,7 @@ export const scheduler = {
 			void execute(entry, 'register');
 		}
 
-		return makeHandle(id);
+		return makeHandle(id, registration);
 	},
 
 	/** The doc 18 §5 diagnostics table. A snapshot, never the live entries. */
@@ -386,7 +409,7 @@ export const scheduler = {
 				lastOkAt: entry.lastOkAt,
 				nextDueAt: effectiveDue(entry),
 				consecutiveFailures: entry.consecutiveFailures,
-				refs: entry.refs
+				refs: entry.runs.length
 			};
 			return entry.lastError === undefined ? base : { ...base, lastError: entry.lastError };
 		});

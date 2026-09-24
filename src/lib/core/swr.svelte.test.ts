@@ -336,6 +336,25 @@ describe('de-duplication (doc 04 §2.5)', () => {
 		b.release();
 		expect(swrCache.size).toBe(0);
 	});
+
+	it('does nothing when a released handle is asked to revalidate', async () => {
+		// Found with the scheduler's stranded-run bug (Week 6 plan review): a
+		// released handle still held the entry it came from, so a late
+		// `revalidate()` fetched — and wrote Dexie — for an entry the map had
+		// already dropped and nobody could read.
+		const db = freshDb();
+		const fetcher = stub({ n: 1 });
+		const handle = swr('d:4', fetcher, { ttlMs: 60_000 }, db);
+		await vi.waitFor(() => {
+			expect(handle.status).toBe('fresh');
+		});
+		expect(fetcher).toHaveBeenCalledTimes(1);
+
+		handle.release();
+		await handle.revalidate('scheduler');
+
+		expect(fetcher).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe('offline (doc 04 §2.4)', () => {
