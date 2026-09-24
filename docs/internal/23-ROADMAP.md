@@ -941,6 +941,94 @@ maplibre integration + geocode UI + saved places · rss endpoint (SSRF
 guards + parser fixtures) + reader UI + OPML. **M6:** all networked
 widgets complete.
 
+### Measured before it was started (2026-09-24)
+
+Seventeen items scored the way Weeks 4 and 5 were: **≈25 focused days against
+a five-day week, ≈24 after two depth cuts — 4.8×**, in line with Week 4's 4.25×
+and Week 5's 4.3×. So the same move again: cut depth, not widgets, and split.
+
+| | item | complexity | difficulty | days |
+|---|---|:--:|:--:|--:|
+| A | `feed-fetch`: the URL guard, redirects by hand, one deadline, the sniff, encodings | 4 | 5 | 2.0 |
+| B | the parser and normaliser, RSS 2.0 / Atom / RDF, with fixtures | 4 | 4 | 2.0 |
+| C | `/api/rss` and the shared URL hash | 3 | 4 | 1.0 |
+| D | `sanitizeRssHtml` on its own DOMPurify instance, `TpFeedHtml` | 2 | 4 | 1.0 |
+| E | rss tile and service: per-feed sources, pacing, status across sources | 5 | 4 | 2.75 |
+| F | rss detail: feeds, list, reader | 4 | 3 | 2.0 |
+| G | OPML import and export | 2 | 3 | 0.75 |
+| H | ~~feed favicons fetched and inlined by the Worker~~ — **cut** | 2 | 3 | ~~0.75~~ |
+| I | rss journeys, i18n, DoD, docs | 3 | 3 | 1.5 |
+| M0 | spike: MapLibre 6 × Vite 8 × CSP × WebGL2 in headless CI | 3 | 5 | 1.25 |
+| M1 | the map module: lazy load, worker, theme, attribution, WebGL2 fallback | 3 | 4 | 1.25 |
+| M2 | place search and geolocation graduate from weather to shared code | 3 | 3 | 1.0 |
+| M3 | saved places, home, clipboard, distance | 3 | 2 | 0.75 |
+| M4 | map tile | 4 | 4 | 2.0 |
+| M5 | map detail | 5 | 4 | 2.75 |
+| M6 | privacy and licence text | 2 | 2 | 0.5 |
+| M7 | map journeys, budgets, DoD, docs | 3 | 3 | 1.25 |
+| M8 | ~~a manual map style toggle~~ — **cut**: the style follows the app theme | 1 | 2 | ~~0.25~~ |
+
+**Two depth cuts taken up front**, by the owner: feed favicons become the feed's
+initial on a token colour (a favicon is a third-party image the CSP refuses, or
+a second fetch per feed and a second SSRF surface), and the map style follows
+the app theme rather than carrying a toggle. **Priced and not taken**, in this
+order if the week runs hot: OPML (−0.75, the slip policy's third), the reader
+in two panes rather than three (−0.5), distance from home (−0.25).
+
+**Split as Week 6a — rss, then 6b — map**, on the owner's call: the week's
+security risk is the proxy, which runs whole in CI and is worth putting on
+production early, while the map opens with its spike. **M6 is met by 6b.**
+
+**One owner decision on the privacy text.** The map is the one thing that
+fetches from a third party directly — `tiles.openfreemap.org` sees the reader's
+address and the area they look at — and `/legal/privacy` says two Cloudflare
+services see a visit. It will be said **where it happens**: the map tile's empty
+state names OpenFreeMap before its first tile request, and the privacy page,
+doc 16 §3 and CLAUDE.md are amended. **No `LEGAL_VERSION` bump**: the map is
+opt-in, and the gate's own summary stays true.
+
+**Found by the measurement rather than the work**, each now with an owner:
+
+1. **MapLibre's worker has never been built.** 6.x resolves it at runtime from
+   `import.meta.url`, which no bundler follows, so a real map has never run in
+   this repo — the S4 spike checked `typeof Map === 'function'` and nothing
+   more. M0.
+2. **doc 15 §5 described a guard no code had**: `fetchUpstream` follows
+   redirects itself, sniffs nothing and decodes everything as UTF-8, and
+   `UPSTREAM.maxRedirects` was read by nothing. 6a-1.
+3. **The notes sanitiser's hook sits on DOMPurify's global instance**, so a
+   second profile would inherit it — "separate functions" were not separate. 6a-2.
+4. **The service worker precaches all of `build`**, maplibre included, for
+   every visitor; doc 17 §2 says widget chunks are not precached. The doc is
+   corrected in 6b; the filter is the Week 8 PWA pass.
+5. **`e2e/s4-budgets`'s "own chunk" assertion cannot fail** — its one specific
+   check is `HEAVY.test('echarts')` on a constant. 6b.
+6. **A breaker per upstream cannot serve a class of upstreams**: copied for
+   rss, three dead feeds would switch off everyone's feeds. `/api/rss` has
+   none (doc 11 §3).
+
+**And two blockers from a review of the plan against the code**, both
+confirmed before anything was built on them:
+
+- **Weather has been shipping a refresh that stops.** The scheduler keeps the
+  first registration's `run`, and weather's reads a handle its own cleanup
+  sets to `null` — so with two tiles on one place, removing the first leaves
+  the second on a schedule that runs nothing and records success. Its own
+  `fix(core)` change, test first.
+- **An answer that is not a feed must not overwrite one.** A maintenance page
+  served with a 200 would have replaced the last good copy in KV and, through
+  `swr`, in the reader's Dexie. Settled in 6a-1 (doc 11 §2).
+
+### Week 6a-1 — `/api/rss` (2026-09-24)
+
+The guard of doc 15 §5, built and tested rule by rule — each rule was removed
+in turn and its test watched going red, and that run found two rules nobody was
+watching (a one-label host, and the host the Worker answers on). The parser
+reads RSS 2.0, Atom and RDF into one `TpFeedPayload`; "not a feed" is an answer
+the edge caches, never an overwrite of a feed still held. On the way,
+`fetchUpstream` learned that a timeout while reading a body is a timeout. The
+fixtures are synthetic text in the shapes of feeds measured that day.
+
 ## Week 7 — Music · Media
 FSA + fallback ingestion, worker tag parsing, playback + Media Session +
 playlists + resume · media player + subtitles + PiP. Visualizer only if

@@ -26,6 +26,29 @@ export interface UpstreamResult<T> {
 	headers: Headers;
 }
 
+/**
+ * What a thrown value from `fetch` or from reading its body means here.
+ *
+ * `AbortSignal.timeout()` rejects with TimeoutError per spec, but an aborted
+ * request surfaces as AbortError on some runtimes. They mean the same thing
+ * here and the breaker counts them differently from a network failure, so both
+ * map to `'timeout'`.
+ *
+ * **The body is covered too** (Week 6). The signal keeps running after the
+ * headers arrive, so a slow body is cut by the same deadline — and until then
+ * that surfaced as a raw DOMException, because only the `fetch()` call sat
+ * inside this classification.
+ */
+export function toUpstreamError(error: unknown): UpstreamError {
+	if (error instanceof UpstreamError) return error;
+	const name = error instanceof Error ? error.name : '';
+	const timedOut = name === 'TimeoutError' || name === 'AbortError';
+	return new UpstreamError(
+		timedOut ? `timeout after ${UPSTREAM.timeoutMs}ms` : String(error),
+		timedOut ? 'timeout' : 'network'
+	);
+}
+
 export async function fetchUpstream<T>(
 	url: string,
 	options: { headers?: Record<string, string>; parse?: 'json' | 'text' } = {}
@@ -37,16 +60,7 @@ export async function fetchUpstream<T>(
 			signal: AbortSignal.timeout(UPSTREAM.timeoutMs)
 		});
 	} catch (error) {
-		// AbortSignal.timeout() rejects with TimeoutError per spec, but an
-		// aborted request surfaces as AbortError on some runtimes. They mean the
-		// same thing here and the breaker counts them differently from a network
-		// failure, so both map to 'timeout'.
-		const name = error instanceof Error ? error.name : '';
-		const timedOut = name === 'TimeoutError' || name === 'AbortError';
-		throw new UpstreamError(
-			timedOut ? `timeout after ${UPSTREAM.timeoutMs}ms` : String(error),
-			timedOut ? 'timeout' : 'network'
-		);
+		throw toUpstreamError(error);
 	}
 
 	if (!response.ok) {
@@ -68,7 +82,12 @@ export async function fetchUpstream<T>(
 		);
 	}
 
-	const text = await readCapped(response);
+	let text: string;
+	try {
+		text = await readCapped(response);
+	} catch (error) {
+		throw toUpstreamError(error);
+	}
 	if (options.parse === 'text') return { data: text as T, headers: response.headers };
 
 	try {
@@ -111,14 +130,28 @@ async function statusSnippet(response: Response): Promise<string> {
 	}
 }
 
-/** Reads the body, aborting past the cap rather than buffering it all first. */
+/** Reads the body as UTF-8, aborting past the cap rather than buffering it all
+ *  first. */
 async function readCapped(response: Response): Promise<string> {
-	const reader = response.body?.getReader();
-	if (!reader) return response.text();
+	return new TextDecoder().decode(await readCappedBytes(response));
+}
 
-	const decoder = new TextDecoder();
+/**
+ * Reads the body as bytes, aborting past the cap rather than buffering it all
+ * first.
+ *
+ * Bytes rather than text for `/api/rss`, whose documents declare their own
+ * encoding in a place only the bytes can show — an XML declaration, a BOM
+ * (doc 10 §7). Everything else here is JSON, which is UTF-8 by definition.
+ * Throws the raw error of a failed read; callers classify it with
+ * `toUpstreamError`.
+ */
+export async function readCappedBytes(response: Response): Promise<Uint8Array> {
+	const reader = response.body?.getReader();
+	if (!reader) return new Uint8Array(await response.arrayBuffer());
+
+	const chunks: Uint8Array[] = [];
 	let size = 0;
-	let text = '';
 
 	for (;;) {
 		const { done, value } = await reader.read();
@@ -128,8 +161,14 @@ async function readCapped(response: Response): Promise<string> {
 			await reader.cancel();
 			throw new UpstreamError(`body exceeded ${UPSTREAM.maxResponseBytes} bytes`, 'too-large');
 		}
-		text += decoder.decode(value, { stream: true });
+		chunks.push(value);
 	}
 
-	return text + decoder.decode();
+	const bytes = new Uint8Array(size);
+	let offset = 0;
+	for (const chunk of chunks) {
+		bytes.set(chunk, offset);
+		offset += chunk.byteLength;
+	}
+	return bytes;
 }

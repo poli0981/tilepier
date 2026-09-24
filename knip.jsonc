@@ -60,9 +60,7 @@
 		// instead of fetching them from a CDN (doc 14 §1). Same blind spot as
 		// the fonts above: the edge is real, it just is not an import.
 		"@inlang/plugin-message-format",
-		"@inlang/plugin-m-function-matcher",
-		// Week 6: the RSS parser in the Worker (doc 10 §7).
-		"fast-xml-parser"
+		"@inlang/plugin-m-function-matcher"
 	],
 	"ignoreBinaries": ["wrangler"]
 }
