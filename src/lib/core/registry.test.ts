@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import { widgetLabels } from '$lib/i18n/widget-labels';
 import { ICON_PATHS } from '$lib/ui/icons/names';
 import { MANIFESTS, getManifest, isOnDeck, listByCategory, type TpRefresh } from './registry';
-import { CATEGORY_ORDER, isWidgetId } from './types';
+import { CATEGORY_ORDER, isWidgetId, type TpWidgetId } from './types';
+
+/** A widget a later release removed — in no manifest and in no union. */
+const RETIRED = 'retired' as TpWidgetId;
 
 /**
  * The same doc-drift guard `shared-constants.test.ts` uses for doc 11 §4:
@@ -141,10 +144,11 @@ describe('lookup', () => {
 	it('finds a registered manifest and misses an unknown id', () => {
 		expect(getManifest('clock')?.id).toBe('clock');
 		// doc 05 §5's unknown-widgetId case: a layout may name a widget this
-		// build does not have. `rss` took this role from `weather` when the
-		// weather tile landed in Week 4 — the case is about the id union running
-		// ahead of the registry, so it moves to whichever id is still ahead.
-		expect(getManifest('rss')).toBeUndefined();
+		// build does not have. The id is made up, and that is the point: the role
+		// passed from `weather` to `markets` to `rss` as each landed, and a
+		// widget a later release *removed* — gone from the union too — is the case
+		// that outlives Week 7, when every id in the union has a manifest.
+		expect(getManifest(RETIRED)).toBeUndefined();
 		expect(getManifest('nonsense')).toBeUndefined();
 	});
 
@@ -174,9 +178,8 @@ describe('lookup', () => {
 
 	it('reports nothing for a widget this build does not have', () => {
 		// The drawer only lists registered manifests, but a caller reading ids
-		// out of a stored layout can ask about anything. `rss` is in doc 06 §7's
-		// table and lands later; until then there is no manifest to consult, and
-		// "is it on the deck" has no answer rather than a false one.
-		expect(isOnDeck('rss', ['rss'])).toBe(false);
+		// out of a stored layout can ask about anything. With no manifest to
+		// consult, "is it on the deck" has no answer rather than a false one.
+		expect(isOnDeck(RETIRED, [RETIRED])).toBe(false);
 	});
 });
