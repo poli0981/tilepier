@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedLayout } from './_lib/seed';
+import { acceptGate } from './_lib/gate';
 
 /**
  * The two promises doc 07 §2 makes that only a real browser can be held to:
@@ -12,14 +13,6 @@ import { seedLayout } from './_lib/seed';
  */
 
 const LAYOUT_KEY = 'tp.layout.v1';
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 /** Puts a single timer tile on the deck with the given settings. */
 async function seedTimer(page: Page, settings: Record<string, unknown>): Promise<void> {

@@ -56,6 +56,10 @@ const LABELS: Partial<Record<TpWidgetId, TpWidgetLabels>> = {
 		title: () => m['widget.currency.title'](),
 		blurb: () => m['widget.currency.blurb']()
 	},
+	rss: {
+		title: () => m['widget.rss.title'](),
+		blurb: () => m['widget.rss.blurb']()
+	},
 	markets: {
 		title: () => m['widget.markets.title'](),
 		blurb: () => m['widget.markets.blurb']()

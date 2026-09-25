@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { resolve } from '$app/paths';
+	import { downloadText } from '$lib/core/download';
 	import { fetchHealth, type TpHealthResult } from '$lib/core/health';
 	import { logEntry, readLog } from '$lib/core/log-buffer';
 	import { scheduler } from '$lib/core/scheduler';
@@ -132,19 +133,8 @@
 	let confirmingReplace = $state(false);
 	let failed = $state(false);
 
-	/**
-	 * Hands the browser a file. A blob URL rather than a data: URL — a data URL
-	 * of a few megabytes of notes is a string the browser has to hold entire,
-	 * and Safari caps it. The object URL is revoked on the next frame, which is
-	 * after the click has been dispatched and before it can leak.
-	 */
 	function download(name: string, json: string): void {
-		const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-		const anchor = document.createElement('a');
-		anchor.href = url;
-		anchor.download = name;
-		anchor.click();
-		requestAnimationFrame(() => URL.revokeObjectURL(url));
+		downloadText(name, json, 'application/json');
 	}
 
 	async function exportBackup(): Promise<void> {

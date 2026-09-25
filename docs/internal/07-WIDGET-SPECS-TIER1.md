@@ -182,6 +182,17 @@ widget so far where that state means something.
   recent; very large note (>100 KB) → preview virtualization not needed v1,
   but debounce preview render to 500 ms above 20 KB.
 
+### Week 6: one DOMPurify instance per profile (2026-09-25)
+
+The notes hook was installed on the library's *global* instance, and DOMPurify
+keeps hooks per instance — so the RSS profile of Week 6 would have run the notes
+hook on every node, and the other way round. Each profile now makes its own
+instance on first use (`core/sanitize.ts`), and a profile whose instance cannot
+run returns an empty string rather than DOMPurify's own fallback, which returns
+the input unchanged. A test holds the global instance to having no hook of ours:
+it was red on the old module, which put `target="_blank"` on a link nobody had
+asked it to touch.
+
 ### Built 2026-08-27 — and two sanitiser findings worth the space
 
 **`marked` has no `html: false`.** This section says "no raw HTML (marked

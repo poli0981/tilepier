@@ -17,8 +17,9 @@ import {
 } from '$lib/api-types';
 import { fetchEnvelope } from '$lib/core/api';
 import { logEntry } from '$lib/core/log-buffer';
-import { swr, type TpSwrFetcher, type TpSwrHandle, type TpSwrStatus } from '$lib/core/swr.svelte';
+import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
 import type { TpTileStatus } from '$lib/core/tile-status';
+import type { TpSourceState } from '$lib/core/tile-view';
 import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
 import {
 	CACHE_POLICY,
@@ -290,9 +291,8 @@ function fromStock(quote: TpStockQuote): TpRowQuote {
  * `quotes` is `undefined` until a payload has arrived — or while the only one
  * on the device is past `swr`'s hard ceiling, which `data` already hides.
  */
-export interface TpSide {
+export interface TpSide extends TpSourceState {
 	quotes: Readonly<Record<string, TpRowQuote | null>> | undefined;
-	status: TpSwrStatus;
 	/** The Worker's own staleness flag (doc 11 §4), which `swr` cannot see. */
 	servedStale: boolean;
 	cachedAt: number | undefined;
@@ -314,6 +314,8 @@ function sideOf<Q>(
 	}
 	return {
 		quotes,
+		// `core/tile-view`'s question — is anything of this side on screen.
+		shown: quotes !== undefined,
 		status: handle.status,
 		servedStale: reading?.meta.stale === true,
 		cachedAt: handle.cachedAt
@@ -375,31 +377,6 @@ export function rowsFor(watchlist: readonly TpWatchEntry[], sides: TpSides): TpM
 		label: labelOf(entry),
 		state: stateOf(entry, sides[entry.kind])
 	}));
-}
-
-/**
- * What the tile as a whole renders, from the sources its watchlist uses.
- *
- * **The list as soon as either side has quotes.** Until 5b the tile's status
- * was its one handle's, and a watchlist of only stocks — no crypto handle at
- * all — read as `loading` forever: a skeleton over a question nobody was
- * asking. Now a side the watchlist does not use is not passed in, and a side
- * that has answered is enough to draw rows; the other side's rows say what they
- * are waiting for.
- *
- * With nothing to show from either, the skeleton holds while one is still
- * asking, and after that the most telling failure wins: offline says what to
- * do about it, a rate limit says it will pass, and a plain error says neither.
- */
-export type TpTileView = 'list' | 'loading' | 'offline' | 'rate-limited' | 'error';
-
-export function tileView(sides: readonly TpSide[]): TpTileView {
-	if (sides.some((side) => side.quotes !== undefined)) return 'list';
-	if (sides.length === 0) return 'loading';
-	if (sides.some((side) => side.status === 'loading' || side.status === 'idle')) return 'loading';
-	if (sides.some((side) => side.status === 'offline')) return 'offline';
-	if (sides.some((side) => side.status === 'rate-limited')) return 'rate-limited';
-	return 'error';
 }
 
 type TpBadgeKind = TpTileStatus['kind'];

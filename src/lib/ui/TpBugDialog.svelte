@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { collectEnv, formatReport, issueUrl } from '$lib/core/bug-report';
+	import { downloadText } from '$lib/core/download';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
 	import { online } from '$lib/stores/online.svelte';
@@ -56,12 +57,7 @@
 
 	function download(): void {
 		// doc 18 §4: for anyone without a GitHub account.
-		const url = URL.createObjectURL(new Blob([body], { type: 'text/plain' }));
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = `tilepier-log-${__TP_BUILD__.sha}.txt`;
-		link.click();
-		URL.revokeObjectURL(url);
+		downloadText(`tilepier-log-${__TP_BUILD__.sha}.txt`, body, 'text/plain');
 	}
 </script>
 
