@@ -119,6 +119,41 @@ describe('envelope errors (doc 17 §4)', () => {
 
 		await expect(fetchEnvelope(URL_WEATHER)).rejects.toMatchObject({ retryAfterS: 5 });
 	});
+
+	it('names no delay when neither the envelope nor a header names one', async () => {
+		// `fail(code)` sends no retry-after unless it has a wait to name, and
+		// `Number(null)` is 0 — so until 2026-09-25 this read as "retry in 0 s"
+		// for every UPSTREAM_DOWN, and the scheduler, which honours a named delay
+		// over its curve, retried a failing tile on every 5 s tick, forever.
+		serve(
+			http.get(`${BASE}/api/weather`, () =>
+				HttpResponse.json({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 })
+			)
+		);
+
+		const error = await fetchEnvelope(URL_WEATHER).catch((caught: unknown) => caught);
+
+		expect(error).toBeInstanceOf(TpApiError);
+		expect((error as TpApiError).retryAfterS).toBeUndefined();
+	});
+
+	it('ignores a retry-after it cannot read as a number of seconds', async () => {
+		// The HTTP-date form is legal and nothing here sends it; a negative or
+		// blank value is nobody's intent.
+		for (const header of ['', ' ', 'Fri, 25 Sep 2026 10:00:00 GMT', '-5']) {
+			serve(
+				http.get(`${BASE}/api/weather`, () =>
+					HttpResponse.json(
+						{ ok: false, error: { code: 'RATE_LIMITED' } },
+						{ status: 429, headers: { 'retry-after': header } }
+					)
+				)
+			);
+
+			const error = await fetchEnvelope(URL_WEATHER).catch((caught: unknown) => caught);
+			expect((error as TpApiError).retryAfterS, JSON.stringify(header)).toBeUndefined();
+		}
+	});
 });
 
 describe('malformed responses', () => {
