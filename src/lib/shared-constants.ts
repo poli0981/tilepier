@@ -479,6 +479,19 @@ export const BACKOFF = {
  */
 export const HARD_MAX_AGE_MS = 7 * DAY;
 
+/**
+ * doc 11 §7's first line of defence: the Cloudflare zone rule on `/api/*`,
+ * per IP. It lives in the dashboard rather than in code, so nothing enforces
+ * this copy of it — it is here for the one client that has to pace itself
+ * under it (`widgets/rss`), and `shared-constants.test.ts` holds it to doc
+ * 11 §7's wording. Past it the zone **blocks every `/api/*` request for 60 s**,
+ * not just the one that tripped it.
+ */
+export const ZONE_RATE_LIMIT = {
+	maxPerWindow: 60,
+	windowMs: 60 * SECOND
+} as const;
+
 /* ────────────────────────────────────────────────────────────── storage */
 
 /** The only three localStorage keys that may exist (doc 05 §2, CLAUDE.md #10). */
