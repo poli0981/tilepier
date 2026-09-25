@@ -8,13 +8,12 @@ import createPurifier, { type DOMPurify } from 'dompurify';
  * `svelte/no-at-html-tags` is an eslint *error* with per-line disables only,
  * so there is no way to render raw HTML without saying out loud that you did.
  *
- * Two profiles are documented. This file ships the notes one; the RSS profile
- * (doc 15 §4: strict, **no `img`**, links forced to `rel="noopener noreferrer"`
- * and `target="_blank"`) arrives in Week 6 with the reader that needs it. They
- * are deliberately separate functions rather than one with a flag: the two
- * threat models are different — notes are the user's own text, RSS is a
- * stranger's — and a boolean parameter is one typo away from applying the
- * wrong one.
+ * Two profiles, as doc 15 §4 has them: notes (`sanitizeNoteHtml`) and RSS
+ * (`sanitizeRssHtml` — strict, **no `img`**, links forced to
+ * `rel="noopener noreferrer"` and `target="_blank"`). They are deliberately
+ * separate functions rather than one with a flag: the two threat models are
+ * different — notes are the user's own text, RSS is a stranger's — and a
+ * boolean parameter is one typo away from applying the wrong one.
  *
  * **Each profile owns its own DOMPurify instance.** Until Week 6 the notes hook
  * sat on the library's global instance, which made "separate functions" true of
@@ -160,5 +159,61 @@ export function sanitizeNoteHtml(html: string): string {
 		// as "belt and braces" and was doing the opposite of that, which is the
 		// most dangerous kind of wrong for a sanitiser to be. The XSS corpus in
 		// `sanitize.svelte.test.ts` is what caught it.
+	});
+}
+
+/* ──────────────────────────────────────────────────────────────── RSS */
+
+/**
+ * doc 08 §4 and doc 15 §4: paragraphs, links, lists, quotes, code — and
+ * emphasis, because feeds mark it up with `b` and `i` as often as with `strong`
+ * and `em`, and dropping those would only lose the words' weight, not the words.
+ * Everything else is unwrapped to its text (DOMPurify keeps the content of an
+ * element it drops), except the elements whose content is itself dangerous —
+ * `script`, `style` and the rest of DOMPurify's `FORBID_CONTENTS`.
+ *
+ * **No `img`, in any form.** An image in a stranger's summary is a request to a
+ * stranger's host from the reader's browser the moment it renders — a tracking
+ * pixel by another name — and doc 15 §2's `img-src` would refuse it anyway,
+ * leaving a broken-image box. So it is not an attribute problem to be scrubbed:
+ * the element does not survive.
+ */
+const RSS_TAGS = [
+	'p',
+	'br',
+	'a',
+	'ul',
+	'ol',
+	'li',
+	'blockquote',
+	'pre',
+	'code',
+	'em',
+	'strong',
+	'b',
+	'i'
+];
+
+/** `title` is in DOMPurify's URI-safe list, so the regexp below leaves it be. */
+const RSS_ATTRS = ['href', 'title'];
+
+let rssPurifier: DOMPurify | null | undefined;
+
+/**
+ * Sanitises a feed item's `summaryHtml` — **a stranger's HTML**, which the
+ * Worker cut to size but could not clean, having no DOM (`api-types.ts`).
+ *
+ * Only absolute `http(s):` and `mailto:` links survive. A relative href in a
+ * feed means the *publisher's* site, and rendered here it would resolve against
+ * this app's origin — a link to a page that does not exist, at best.
+ */
+export function sanitizeRssHtml(html: string): string {
+	rssPurifier ??= makePurifier(openLinksAway);
+	if (rssPurifier === null) return '';
+
+	return rssPurifier.sanitize(html, {
+		ALLOWED_TAGS: RSS_TAGS,
+		ALLOWED_ATTR: RSS_ATTRS,
+		ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i
 	});
 }

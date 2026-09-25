@@ -612,5 +612,21 @@
 	"widget.rss.trouble_blocked_redirect": "chuyển tới nơi không an toàn",
 	"widget.rss.trouble_too_many_redirects": "chuyển hướng quá nhiều lần",
 	"widget.rss.trouble_failed": "không tải được",
-	"widget.rss.trouble_behind": "không cập nhật được"
+	"widget.rss.trouble_behind": "không cập nhật được",
+	"widget.rss.feeds_heading": "Nguồn tin · {count}/{max}",
+	"widget.rss.show_feeds": "quản lý nguồn tin",
+	"widget.rss.hide_feeds": "xong",
+	"widget.rss.all_feeds": "tất cả nguồn tin",
+	"widget.rss.retry_feed": "thử lại {feed}",
+	"widget.rss.move_up": "đưa {feed} lên trên",
+	"widget.rss.move_down": "đưa {feed} xuống dưới",
+	"widget.rss.remove_feed": "gỡ {feed}",
+	"widget.rss.stories_heading": "Bài viết",
+	"widget.rss.stories_none": "nguồn này chưa có bài nào",
+	"widget.rss.pick_story": "chọn một bài để đọc ở đây",
+	"widget.rss.back_to_list": "◂ quay lại danh sách",
+	"widget.rss.open_original": "mở bài gốc",
+	"widget.rss.summary_label": "tóm tắt từ nguồn tin",
+	"widget.rss.no_summary": "nguồn tin không kèm tóm tắt — mở bài gốc để đọc",
+	"widget.rss.published_at": "{time}, {date}"
 }

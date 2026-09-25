@@ -612,5 +612,21 @@
 	"widget.rss.trouble_blocked_redirect": "moved somewhere unsafe",
 	"widget.rss.trouble_too_many_redirects": "too many redirects",
 	"widget.rss.trouble_failed": "could not load",
-	"widget.rss.trouble_behind": "not updating"
+	"widget.rss.trouble_behind": "not updating",
+	"widget.rss.feeds_heading": "Feeds · {count} of {max}",
+	"widget.rss.show_feeds": "manage feeds",
+	"widget.rss.hide_feeds": "done",
+	"widget.rss.all_feeds": "all feeds",
+	"widget.rss.retry_feed": "try {feed} again",
+	"widget.rss.move_up": "move {feed} up",
+	"widget.rss.move_down": "move {feed} down",
+	"widget.rss.remove_feed": "remove {feed}",
+	"widget.rss.stories_heading": "Stories",
+	"widget.rss.stories_none": "nothing from this feed yet",
+	"widget.rss.pick_story": "pick a story to read it here",
+	"widget.rss.back_to_list": "◂ back to the list",
+	"widget.rss.open_original": "open the original",
+	"widget.rss.summary_label": "summary from the feed",
+	"widget.rss.no_summary": "this feed gives no summary — open the original to read it",
+	"widget.rss.published_at": "{date}, {time}"
 }

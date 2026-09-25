@@ -23,7 +23,8 @@ const manifest: TpWidgetManifest = {
 	sizes: { min: { w: 2, h: 2 }, max: { w: 6, h: 6 }, default: { w: 3, h: 4 } },
 	multiInstance: true,
 	refresh: { kind: 'interval', everyMs: 1_200_000 },
-	loadWidget: () => import('./TpRssWidget.svelte')
+	loadWidget: () => import('./TpRssWidget.svelte'),
+	loadDetail: () => import('./TpRssDetail.svelte')
 };
 
 export default manifest;

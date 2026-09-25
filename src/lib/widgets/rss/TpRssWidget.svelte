@@ -1,29 +1,24 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { SvelteMap } from 'svelte/reactivity';
-	import { logEntry } from '$lib/core/log-buffer';
 	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
 	import { tileView } from '$lib/core/tile-view';
 	import type { TpWidgetProps } from '$lib/core/types';
 	import { fmtRelative } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
-	import { feedUrlHash } from '$lib/shared-constants';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { problemText, troubleText } from './labels';
+	import { TpFeedSources } from './sources.svelte';
+	import TpRssAddFeed from './TpRssAddFeed.svelte';
 	import TpRssFeedSource from './TpRssFeedSource.svelte';
 	import {
-		addFeed,
 		feedName,
-		feedView,
 		mergeItems,
 		monogramOf,
 		readSettings,
 		rssBadge,
 		troubleOf,
-		type TpFeedReading,
-		type TpFeedRefusal,
 		type TpFeedTrouble,
 		type TpFeedView
 	} from './service';
@@ -71,57 +66,12 @@
 
 	/* ─────────────────────────────────────────────────────────── the sources */
 
-	const hashes = new SvelteMap<string, string>();
-
-	/** `crypto.subtle` exists only in a secure context. Served over plain http —
-	 *  a LAN address in development — no feed can be keyed, and the tile says so
-	 *  rather than holding a skeleton forever. */
-	let hashFailed = $state(false);
-
-	$effect(() => {
-		const wanted = prefs.feeds;
-		let live = true;
-
-		untrack(() => {
-			for (const url of [...hashes.keys()]) if (!wanted.includes(url)) hashes.delete(url);
-			for (const url of wanted) {
-				if (hashes.has(url)) continue;
-				feedUrlHash(url)
-					.then((hash) => {
-						if (live) hashes.set(url, hash);
-					})
-					.catch((error: unknown) => {
-						hashFailed = true;
-						// The error, never the URL: a private feed carries its token in it.
-						logEntry('error', 'rss: a feed URL could not be hashed', { src: 'widget', error });
-					});
-			}
-		});
-
-		return () => {
-			live = false;
-		};
-	});
-
-	const handles = new SvelteMap<string, TpSwrHandle<TpFeedReading>>();
-
-	function onHandle(url: string, handle: TpSwrHandle<TpFeedReading>): void {
-		handles.set(url, handle);
-	}
-
-	function onGone(url: string, handle: TpSwrHandle<TpFeedReading>): void {
-		if (handles.get(url) === handle) handles.delete(url);
-	}
+	const sources = new TpFeedSources(() => prefs.feeds);
 
 	/** In the reader's order, and only the feeds that have a source yet. */
-	const views = $derived(
-		prefs.feeds.flatMap((url): TpFeedView[] => {
-			const handle = handles.get(url);
-			return handle === undefined ? [] : [feedView(url, handle)];
-		})
-	);
+	const views = $derived(sources.views(prefs.feeds));
 
-	const view = $derived(hashFailed ? 'error' : tileView(views));
+	const view = $derived(sources.hashFailed ? 'error' : tileView(views));
 	const isEmpty = $derived(prefs.feeds.length === 0);
 
 	/* ──────────────────────────────────────────────────────────── the list */
@@ -161,47 +111,18 @@
 		return title === '' ? m['widget.rss.untitled']() : title;
 	}
 
-	function problemOf(trouble: TpFeedTrouble): string {
-		if (trouble.kind === 'failed') return m['widget.rss.trouble_failed']();
-		if (trouble.kind === 'behind') return m['widget.rss.trouble_behind']();
-		switch (trouble.reason) {
-			case 'not-feed':
-				return m['widget.rss.trouble_not_feed']();
-			case 'too-large':
-				return m['widget.rss.trouble_too_large']();
-			case 'gone':
-				return m['widget.rss.trouble_gone']();
-			case 'refused':
-				return m['widget.rss.trouble_refused']();
-			case 'blocked-redirect':
-				return m['widget.rss.trouble_blocked_redirect']();
-			case 'too-many-redirects':
-				return m['widget.rss.trouble_too_many_redirects']();
-		}
-	}
-
 	/** The chip's longer line, for its tooltip and its accessible name. */
 	function chipLabel(feed: TpFeedView, trouble: TpFeedTrouble): string {
-		const name = feedName(feed);
-		if (trouble.kind === 'behind' && trouble.since !== undefined) {
-			return m['widget.rss.trouble_behind_label']({ feed: name, age: ageOf(trouble.since) });
-		}
-		return m['widget.rss.trouble_label']({ feed: name, problem: problemOf(trouble) });
+		return troubleText(feedName(feed), trouble, ageOf);
 	}
 
 	/** Chips shown before the rest collapse into a count, so a tile with five
 	 *  dead feeds still has room for the ones that work. */
 	const CHIPS_SHOWN = 2;
 
-	/** Every source, because the reader pressed one button. A refusal lands in
-	 *  that feed's own status, which is what the tile renders from. Declared
-	 *  once, so the host badge's `retry` is the same function every time
-	 *  (`core/tile-status`'s unchanged-means-no-write guard). */
-	function retry(): void {
-		for (const handle of handles.values()) {
-			void handle.revalidate('retry').catch(() => undefined);
-		}
-	}
+	/** Every feed, because the reader pressed one button — one function for
+	 *  the life of the tile (`sources.retry`), as the host badge needs. */
+	const retry = sources.retry;
 
 	/** doc 13 §7's badge, published to the host header (doc 13 §3). */
 	const badge = $derived.by<TpTileStatus | null>(() => {
@@ -230,82 +151,33 @@
 
 	const SKELETON_ROWS = [0, 1, 2, 3, 4];
 
-	/* ──────────────────────────────────────────────── the first feed (empty) */
-
-	let draft = $state('');
-	let refusal = $state<TpFeedRefusal | null>(null);
-
-	function refusalText(reason: TpFeedRefusal): string {
-		switch (reason) {
-			case 'invalid':
-				return m['widget.rss.refused_invalid']();
-			case 'scheme':
-				return m['widget.rss.refused_scheme']();
-			case 'credentials':
-				return m['widget.rss.refused_credentials']();
-			case 'port':
-				return m['widget.rss.refused_port']();
-			case 'address':
-				return m['widget.rss.refused_address']();
-			case 'host':
-				return m['widget.rss.refused_host']();
-			case 'duplicate':
-				return m['widget.rss.refused_duplicate']();
-			case 'full':
-				return m['widget.rss.refused_full']();
-		}
-	}
-
-	function submit(event: SubmitEvent): void {
-		event.preventDefault();
-		const edit = addFeed(prefs.feeds, draft, location.hostname);
-		if (!edit.ok) {
-			refusal = edit.reason;
-			return;
-		}
-		refusal = null;
-		draft = '';
-		// The watermark starts with the first feed, not at the first opening —
-		// otherwise its whole back catalogue would arrive unread (types.ts).
-		onUpdateSettings?.({ feeds: edit.feeds, lastOpenedAt: prefs.lastOpenedAt ?? Date.now() });
+	/** The first feed starts the watermark, not the first opening — otherwise its
+	 *  whole back catalogue would arrive unread (types.ts). */
+	function addFirst(feeds: string[]): void {
+		onUpdateSettings?.({ feeds, lastOpenedAt: prefs.lastOpenedAt ?? Date.now() });
 	}
 </script>
 
 {#each prefs.feeds as url (url)}
-	{@const hash = hashes.get(url)}
+	{@const hash = sources.hashes.get(url)}
 	{#if hash !== undefined}
-		<TpRssFeedSource {instanceId} {url} {hash} {db} {onHandle} {onGone} />
+		<TpRssFeedSource
+			{instanceId}
+			{url}
+			{hash}
+			{db}
+			onHandle={sources.onHandle}
+			onGone={sources.onGone}
+		/>
 	{/if}
 {/each}
 
 {#if isEmpty}
 	<!-- doc 06 §3's `empty`: first-run guidance with exactly one action. -->
-	<form class="tp-rss-add" onsubmit={submit} novalidate>
+	<div class="tp-rss-add">
 		<p class="tp-rss-add__title">{m['widget.rss.no_feeds']()}</p>
-		<label class="tp-rss-add__field">
-			<TpIcon name="rss" size={14} />
-			<input
-				type="url"
-				bind:value={draft}
-				oninput={() => (refusal = null)}
-				placeholder={m['widget.rss.add_placeholder']()}
-				aria-label={m['widget.rss.add_label']()}
-				aria-invalid={refusal !== null}
-				aria-describedby={refusal === null ? undefined : `${instanceId}-rss-refusal`}
-				autocomplete="off"
-				spellcheck="false"
-				data-testid="rss-add-input"
-			/>
-		</label>
-		<button type="submit" class="tp-rss-add__submit" data-testid="rss-add">
-			{m['widget.rss.add']()}
-		</button>
-		{#if refusal !== null}
-			<p class="tp-rss-add__refusal" id="{instanceId}-rss-refusal" role="alert">
-				{refusalText(refusal)}
-			</p>
-		{/if}
-	</form>
+		<TpRssAddFeed feeds={prefs.feeds} onAdd={addFirst} id="{instanceId}-rss-add" />
+	</div>
 {:else if view === 'loading'}
 	<!-- doc 12 §7: skeleton blocks, never a spinner. -->
 	<div class="tp-rss-skeleton" aria-label={m['widget.rss.loading']()}>
@@ -319,7 +191,7 @@
 	     through the host badge and the feeds' chips instead. -->
 	<div class="tp-rss-error" data-testid="rss-error">
 		<TpIcon name="rss" size={20} />
-		{#if hashFailed}
+		{#if sources.hashFailed}
 			<p class="tp-rss-error__text">{m['widget.rss.insecure']()}</p>
 		{:else if nothingReadable}
 			<p class="tp-rss-error__text">{m['widget.rss.nothing_readable']()}</p>
@@ -369,7 +241,7 @@
 						<span class="tp-rss-mono" aria-hidden="true"
 							>{monogramOf(feedName(feed), settings.locale)}</span
 						>
-						<span class="tp-rss-chip__text" aria-hidden="true">{problemOf(trouble)}</span>
+						<span class="tp-rss-chip__text" aria-hidden="true">{problemText(trouble)}</span>
 					</button>
 				</li>
 			{/each}
@@ -483,7 +355,7 @@
 	}
 
 	a.tp-rss-item__title:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 1px;
 		border-radius: 2px;
 	}
@@ -566,7 +438,7 @@
 	}
 
 	.tp-rss-chip:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 1px;
 	}
 
@@ -618,49 +490,11 @@
 		margin: 0;
 	}
 
-	.tp-rss-add__field {
-		display: flex;
-		width: 100%;
-		align-items: center;
-		gap: 0.375rem;
-		border: 1px solid var(--color-ink-700);
-		border-radius: var(--radius-ctl);
-		padding: 0 0.5rem;
-		color: var(--color-fg-dim);
-	}
-
-	.tp-rss-add__field:focus-within {
-		border-color: var(--color-beacon);
-		color: var(--color-beacon);
-	}
-
-	.tp-rss-add__field input {
-		min-width: 0;
-		flex: 1 1 auto;
-		border: 0;
-		background: none;
-		color: var(--color-fg);
-		font: inherit;
-		font-size: var(--text-2xs);
-		padding: 0.3rem 0;
-	}
-
-	.tp-rss-add__field input:focus {
-		outline: none;
-	}
-
-	.tp-rss-add__refusal {
-		margin: 0;
-		color: var(--color-danger);
-		font-size: var(--text-2xs);
-	}
-
-	.tp-rss-add__submit,
 	.tp-rss-error__action {
 		border: 0;
 		border-radius: var(--radius-ctl);
 		background: transparent;
-		color: var(--color-accent);
+		color: var(--color-beacon);
 		cursor: pointer;
 		font: inherit;
 		padding-block: 0.125rem;
@@ -668,9 +502,8 @@
 		text-align: left;
 	}
 
-	.tp-rss-add__submit:focus-visible,
 	.tp-rss-error__action:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 2px;
 	}
 </style>
