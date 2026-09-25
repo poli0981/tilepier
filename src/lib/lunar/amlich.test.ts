@@ -125,7 +125,16 @@ describe('amlich — day-0 regression', () => {
 });
 
 describe('amlich — independent cross-check against the UTC+8 calendar', () => {
-	it('differs from it only where the fixture says it may', () => {
+	/*
+	 * Its own timeout, because the work is fixed and large: one `Intl` format for
+	 * every day from 1900 to 2100, 73 414 of them, and the counts it compares are
+	 * the port's proof (doc 19 §3.1) — sampling would make them a different
+	 * claim. Measured 2026-09-25: 1.4 s alone on a developer machine, and past
+	 * the 5 s default on CI's runner once 112 files shared it (`main`, 3c87abc).
+	 * That is contention, not a hang, and the fix is to give the known cost its
+	 * room rather than to re-run until it fits.
+	 */
+	it('differs from it only where the fixture says it may', { timeout: 30_000 }, () => {
 		const fmt = new Intl.DateTimeFormat('en-u-ca-chinese', {
 			year: 'numeric',
 			month: 'numeric',

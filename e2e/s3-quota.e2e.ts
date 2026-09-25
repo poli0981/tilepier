@@ -201,7 +201,11 @@ test.describe('S3 · the quota model on paper', () => {
  * The keyed half of S3, which doc 22 held over to Week 5b: it needs the
  * Finnhub and Twelve Data keys, and those exist only on the deployed Worker.
  *
- *     S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN>  *       pnpm exec playwright test e2e/s3-quota.e2e.ts -g keyed
+ *     S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN> \
+ *       pnpm exec playwright test e2e/s3-quota.e2e.ts -g keyed
+ *
+ * With `S3_BASE_URL` set, `playwright.config.ts` starts no local server: this
+ * file only talks to the deployed origin.
  *
  * It spends at most two Twelve Data credits, and asserts that is all it
  * spends: the claim is doc 11 §5's — a warm series is a KV read, so the twenty
