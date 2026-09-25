@@ -178,7 +178,7 @@ analytics or waits on Cloudflare.
 | Surface | Rule |
 |---------|------|
 | Notes markdown | `marked` → `DOMPurify` allowlist (no raw HTML pass-through, no img? — notes MAY keep https img; local user's own content, low risk → allow `img[src^=https]`) |
-| RSS summaries | DOMPurify strict allowlist, **no img**, links `rel="noopener noreferrer" target="_blank"` |
+| RSS summaries | DOMPurify strict allowlist, **no img**, links `rel="noopener noreferrer" target="_blank"` — built 2026-09-25 as `sanitizeRssHtml`: `p br a ul ol li blockquote pre code em strong b i`, `href` and `title` only, absolute `http(s):`/`mailto:` links only (a relative one means the publisher's site), on its own DOMPurify instance, rendered only through `TpFeedHtml` |
 | ID3/metadata strings | rendered as text nodes only — never `{@html}` |
 | Geocode/place names | text nodes only |
 | Any `{@html}` | requires a `// SAFETY:` comment naming the sanitizer; ESLint `svelte/no-at-html-tags` set to error with per-line disable only |

@@ -295,6 +295,19 @@ back-off, not perfection.
    *curve's* ceiling — a delay the server names is honoured in full, which is
    what lets §6's quota trip hold to UTC midnight.
 
+   **rss paces itself under both windows, since 2026-09-25.** One GET per feed
+   (§3) on a `multiInstance` widget is the only request pattern in the app that
+   can reach the zone rule on its own: three full tiles are thirty requests at
+   mount, and past sixty a minute the zone blocks *every* `/api/*` request for
+   a minute, the weather and the prices with the feeds. So each feed request
+   waits in `widgets/rss/pacing.ts`: two in flight, 500 ms between starts, and
+   at most half of each window (15 per 10 s, 30 per minute), leaving the other
+   half to the rest of the deck. A 429 pauses the whole queue for as long as it
+   names, or one bucket. The zone rule lives in the dashboard, so its numbers
+   are mirrored as `ZONE_RATE_LIMIT`, held to this section's wording by
+   `shared-constants.test.ts`. Per page, not per browser: two tabs pace
+   separately, which the half-share leaves room for.
+
 ## 8. Validation & limits
 
 - Query params validated first (hand validators, shared with client types).
