@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SEEDED_TILES, seedLayout } from './_lib/seed';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #2 — layout persistence.
@@ -13,16 +14,6 @@ import { SEEDED_TILES, seedLayout } from './_lib/seed';
  */
 
 const LAYOUT_KEY = 'tp.layout.v1';
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	// Enabled only once hydration has attached the handler — see the gate's
-	// `ready` flag. Waiting on it is deterministic; a bare click races.
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 async function storedLayout(
 	page: Page
