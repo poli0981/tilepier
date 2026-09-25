@@ -1058,6 +1058,39 @@ time the whole file ran against production (#23 skips them there).
 The quota week runs to 2026-09-30. The Binance.US probe from a US colo is
 still open.
 
+### Week 6b — the map (2026-09-25)
+
+**Spike M0 came first, and found that a real map had never run here** (doc 22
+§S6). MapLibre 6 finds its worker at runtime, which the bundler cannot see, so
+the worker was never built — a blank canvas with nothing logged. MapLibre's
+three modules are now copied whole into `_app/immutable/maplibre-<version>/`
+and imported from there, same-origin (a worker on another origin becomes a
+`blob:` worker, which the CSP refuses). Headless Chromium drew it with no WebGL
+flag, `page.route` sees the worker's requests, and the bytes are 294.7 of 300 KB
+(98 %).
+
+**6b-1 moved the shared parts first**, as its own PR: the place search to
+`ui/TpPlaceSearch` (unrounded — the caller rounds, weather to 2 dp, the map not
+at all for a public place), with a rate-limited answer that says how long to
+wait; and `core/clipboard`, which fixed three unhandled rejections on the way.
+
+**6b-2, the widget:** the tile — a still map around home, the saved places on
+it and a count — and the detail — search, save and rename, nearest-to-home
+first, copy coordinates, OpenStreetMap and Google Maps links, make-home. What it
+decided is in doc 08 §5; the parts with consequences elsewhere:
+
+- **Privacy in place, no new legal version** (the owner's decision, plan S1).
+  No map is requested until there is a home, and the empty state names
+  OpenFreeMap first. `/legal/privacy` gained a ninth point with OpenFreeMap's
+  own policy linked, doc 16 §3 gained it too, and both CLAUDE.md copies say
+  "nothing else does until the reader shows a map".
+- **OpenMapTiles joined the licence register** (plan S14), and the attribution is
+  never compact, so it is on every render as both licences require.
+- **MapLibre's stylesheet is trimmed**: the full 10.2 KB gz was icons for
+  controls the app does not show; CSS total is 32.3 of 45 KB with the map.
+- **`map` has no `stale` or `stale-error`** (plan S5, doc 06 §3): it holds no
+  payload for either to describe.
+
 ## Week 7 — Music · Media
 FSA + fallback ingestion, worker tag parsing, playback + Media Session +
 playlists + resume · media player + subtitles + PiP. Visualizer only if

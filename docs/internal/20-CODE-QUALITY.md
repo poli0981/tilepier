@@ -113,7 +113,10 @@ copied whole into `_app/immutable/maplibre-<version>/` and measured as a
 `static-glob` row; the 20 KB difference is the price of main and worker sharing
 one `maplibre-gl-shared.mjs` instead of bundling it twice. The row is no longer
 "map detail only": the map tile loads it too. Its stylesheet (10.5 KB gz)
-counts toward CSS total.
+counts toward CSS total — or would: the full sheet is mostly data-URI icons for
+controls this app does not show, so the map ships a trimmed copy
+(`src/lib/map/maplibre.css`, well under 1 KB gz, recoloured with tokens), and
+CSS total measured 32.3 of 45 KB with the map built.
 
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit

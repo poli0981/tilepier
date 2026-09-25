@@ -311,7 +311,13 @@ the client; grep-guard in CI, doc 21 §5).
   and KV caching (their policy **requires** caching; our 24 h TTL satisfies
   it). Normalize both to `{name, displayName, lat, lon, type}`.
 - On-map attribution control must stay enabled (ODbL condition) — never
-  hide it via CSS.
+  hide it via CSS. **Built 2026-09-25 with `compact: false`**: MapLibre's
+  default folds the attribution into an "i" once the map moves, which would
+  hide it on most renders. The text comes from OpenFreeMap's TileJSON
+  (`tiles.openfreemap.org/planet`): "OpenFreeMap © OpenMapTiles Data from
+  OpenStreetMap", which covers both licences' credit lines. The styles are
+  `/styles/liberty` and `/styles/dark` (`src/lib/map/styles.ts`), both measured
+  that day; everything they reference is on the same host.
 
 **Built 2026-08-28**, ahead of the map widget that will use it, because the
 weather widget's place picker (doc 08 §1) needs it in Week 4. Photon leads and
@@ -390,7 +396,8 @@ channel. Both fixed, both with fixtures in those shapes.
 
 - [ ] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail
 - [ ] ER-API attribution link rendered wherever rates shown
-- [ ] © OpenStreetMap contributors visible on every map render
+- [ ] © OpenStreetMap contributors visible on every map render (built 2026-09-25: attribution never compact — doc 10 §6; `TpMap.svelte.test.ts` asserts it)
+- [ ] © OpenMapTiles visible on every map render (CC BY 4.0; same control, same test)
 - [ ] Photon/komoot credited on licenses page
 - [ ] Finnhub / Twelve Data credit lines in markets detail footer
 - [ ] "Not investment advice / data may be delayed" disclaimer in markets

@@ -262,3 +262,33 @@ regardless of what its manifest says (tracked separately).
 - **Edge cases:** WebGL unavailable → static fallback card with search +
   external links (feature-detect, don't crash); geocode rate-limit 429 →
   inline retry-after message.
+
+### Built 2026-09-25 (Week 6b) — and where it differs from the lines above
+
+- **"Home" is defined** (plan S6): `home {name, lat, lon}` in the tile's
+  settings, set from the tile's empty state or from the detail. A searched home,
+  and a saved place, keep the geocoder's precision — public data about a point,
+  not about a person; a home from "use my location" is the reader's own position
+  and is stored at 2 dp, as `core/geolocate` hands it out (doc 16 §3).
+- **The tile's empty state names OpenFreeMap before the first request** (plan
+  S1, the owner's decision): no map is mounted until there is a home, and the
+  notice says who draws it and what they see. That is what let the map ship
+  without a new legal version. `/legal/privacy` carries the long form.
+- **The style follows the app theme; the toggle was cut** (owner decision) —
+  Liberty for light, OpenFreeMap's dark style for dark, swapped live.
+- **The attribution is never compact.** MapLibre's default folds it into an "i"
+  whenever the map moves, programmatic moves included, and doc 10 §8 requires it
+  on every render; it names OpenMapTiles and OpenStreetMap as OpenFreeMap's
+  TileJSON gives them.
+- **Pins are elements with token colours**, not MapLibre's default marker, whose
+  colours live in its SVG; a place's name is an attribute, never markup (rule 7).
+- **The detail's list is nearest-to-home first** (haversine, `core/geo-distance`),
+  with "copy coordinates" (five decimals, a dot in every locale — what other
+  apps parse), OpenStreetMap and Google Maps links, rename, remove and "make it
+  home". The saved places are one module-level store shared by the tile and the
+  detail, so the tile's count follows a save without a reload.
+- **Search is shared with weather** (`ui/TpPlaceSearch`, 6b-1), from two
+  characters as `/api/geocode` enforces — this section said three.
+- **MapLibre loads from its own copy**, same-origin, and only after WebGL2 is
+  known to be there (doc 22 §S6); its stylesheet is trimmed to what a map with
+  no navigation controls needs (doc 20 §6).

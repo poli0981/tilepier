@@ -508,7 +508,9 @@ blank, and **nothing is logged anywhere**.
    counts toward CSS total: **10.5 KB gz**, taking CSS total on `main` to
    39.6 of 45 KB. With the map widget's own styles that is tight enough that
    M1 trims MapLibre's stylesheet to the rules a map without controls needs,
-   rather than raising the CSS budget.
+   rather than raising the CSS budget. **Done in M1**: the trimmed copy is
+   well under 1 KB gz, and CSS total measured 32.3 KB with the map widget
+   built.
 
 The S4 e2e now asserts a map that **draws**, a worker that arrives as
 JavaScript and no CSP violation; and the assertion S4 carried since Week 0,
