@@ -111,7 +111,18 @@ test.describe('S3 · cache behaviour under load', () => {
 		expect(misses, 'a warm cache still went upstream').toBe(0);
 	});
 
+	/*
+	 * The four tests below check the local worker the e2e suite starts, through
+	 * the `request` fixture. A run pointed at a deployed Worker starts none
+	 * (`playwright.config.ts`), so they skip there. They did not, the first time
+	 * the whole file ran with `S3_BASE_URL` set (2026-09-25): `npm exec` had
+	 * taken `-g keyed` as its own `--global`, all eight tests ran, and these four
+	 * failed on a refused connection to a server nobody had started.
+	 */
+	const LOCAL_ONLY = 'checks the local worker, and none runs with S3_BASE_URL set';
+
 	test('nearby coordinates are answered from one cache key', async ({ request }) => {
+		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
 		// Two people a kilometre apart must share one KV entry, or the model in
 		// doc 11 §5 falls apart the moment a city has more than one user. The
 		// key derivation is unit-tested; this checks the endpoint honours the
@@ -128,6 +139,7 @@ test.describe('S3 · cache behaviour under load', () => {
 	});
 
 	test('the envelope matches doc 11 §2 exactly', async ({ request }) => {
+		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
 		const res = await request.get(uncached({ lat: 21.03, lon: 105.8 }));
 		const body = await res.json();
 
@@ -143,6 +155,7 @@ test.describe('S3 · cache behaviour under load', () => {
 	});
 
 	test('bad input is rejected before any upstream call', async ({ request }) => {
+		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
 		for (const query of ['lat=91&lon=0', 'lat=0&lon=181', 'lat=abc&lon=0', '']) {
 			const res = await request.get(`/api/weather?${query}`);
 			expect(res.status(), `query "${query}"`).toBe(400);
@@ -151,6 +164,7 @@ test.describe('S3 · cache behaviour under load', () => {
 	});
 
 	test('non-GET is refused', async ({ request }) => {
+		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
 		const res = await request.post('/api/weather?lat=21.03&lon=105.8');
 		// doc 11 §3: "Non-GET → 405". SvelteKit answers 405 for a route with no
 		// POST handler, which is the same contract.
@@ -204,8 +218,11 @@ test.describe('S3 · the quota model on paper', () => {
  *     S3_BASE_URL=https://tilepier.win S3_BEARER=<DEV_DASH_TOKEN> \
  *       pnpm exec playwright test e2e/s3-quota.e2e.ts -g keyed
  *
- * With `S3_BASE_URL` set, `playwright.config.ts` starts no local server: this
- * file only talks to the deployed origin.
+ * With `S3_BASE_URL` set, `playwright.config.ts` starts no local server, and
+ * the four checks of the local worker above skip. In a shell without `pnpm`,
+ * `npm exec -- playwright test e2e/s3-quota.e2e.ts -g keyed` does the same —
+ * the `--` matters: without it npm takes `-g` as its own `--global`, and the
+ * whole file runs instead of the keyed test.
  *
  * It spends at most two Twelve Data credits, and asserts that is all it
  * spends: the claim is doc 11 §5's — a warm series is a KV read, so the twenty
