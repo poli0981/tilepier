@@ -1,6 +1,7 @@
 <script lang="ts">
-	// MapLibre's own stylesheet, bundled: the modules are vendored, the CSS is not.
-	import 'maplibre-gl/dist/maplibre-gl.css';
+	// The app's trimmed MapLibre stylesheet, as the map widget uses it — the
+	// full one is 10.2 KB gz of icons for controls nothing here shows.
+	import '$lib/map/maplibre.css';
 	/**
 	 * Spike S4 harness — doc 22 §S4.
 	 *

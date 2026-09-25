@@ -10,7 +10,9 @@ TilePier — local-first widget dashboard web app. SvelteKit on Cloudflare
 Workers (single deployment: static assets + `/api/*` cache proxy).
 GPL-3.0-only. Bilingual EN/VI. No accounts, no ads, no cookies. Two
 Cloudflare services see a visit — cookieless Web Analytics and the
-Turnstile bot check — and nothing else does (doc 16 §3).
+Turnstile bot check — and nothing else does until the reader shows a map,
+whose tiles OpenFreeMap serves directly; the map tile says so before its
+first request (doc 16 §3).
 
 ## Stack (do not substitute)
 

@@ -7,6 +7,11 @@
 	 * No preamble about "your privacy matters to us" — the claim is either true
 	 * of the code or it is not, and doc 16 §3 is what makes it true.
 	 *
+	 * Nine points since Week 6 (2026-09-25): the map's OpenFreeMap requests —
+	 * the one thing that leaves the browser without passing the proxy — got a
+	 * point of their own, and the tile names OpenFreeMap in place before its
+	 * first request, so no new legal version was needed (Week 6 plan S1).
+	 *
 	 * Eight points since LEGAL_VERSION 2 (2026-09-23): the two Cloudflare
 	 * services that see a visit — Web Analytics and the Turnstile bot check —
 	 * each get their own, saying what they receive, and the proxy's point says
@@ -21,6 +26,7 @@
 		'legal.privacy.proxy',
 		'legal.privacy.analytics',
 		'legal.privacy.botcheck',
+		'legal.privacy.map',
 		'legal.privacy.coordinates',
 		'legal.privacy.bug_reports',
 		'legal.privacy.deletion'
@@ -28,6 +34,7 @@
 
 	const CLOUDFLARE_PRIVACY = 'https://www.cloudflare.com/privacypolicy/';
 	const TURNSTILE_PRIVACY = 'https://www.cloudflare.com/turnstile-privacy-policy/';
+	const OPENFREEMAP_PRIVACY = 'https://openfreemap.org/privacy/';
 </script>
 
 <svelte:head><title>{m['legal.privacy.page_title']()}</title></svelte:head>
@@ -51,6 +58,13 @@
 			·
 			<a href={TURNSTILE_PRIVACY} rel="noopener noreferrer" target="_blank"
 				>{m['legal.privacy.turnstile_policy'](undefined, { locale })}</a
+			>
+		</p>
+
+		<p>
+			{m['legal.privacy.openfreemap_lead'](undefined, { locale })}
+			<a href={OPENFREEMAP_PRIVACY} rel="noopener noreferrer" target="_blank"
+				>{m['legal.privacy.openfreemap_policy'](undefined, { locale })}</a
 			>
 		</p>
 	</div>
