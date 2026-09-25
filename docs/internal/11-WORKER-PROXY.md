@@ -243,6 +243,14 @@ copes).
   `retry-after` of the seconds left, and spends nothing on a refusal it can
   predict. The minute trips no breaker and touches no budget: it says nothing
   about upstream's health or the day.
+- **A cold key can cost twice** (measured 2026-09-25). A MISS answers before
+  its KV write lands, because the write rides on `waitUntil` (§8), so a second
+  request for the same key inside that window — about a second — reads the
+  empty cache and goes upstream too. S3's first keyed run did exactly that from
+  HKG: four credits for two cold series (doc 22 §S3). It is a one-off cost per
+  cold key, not a steady-state one, and the 20 credits between 780 and 800
+  cover it; awaiting the write instead would put its latency on every miss to
+  save a credit only when two askers arrive within the second.
 
 ## 6. Circuit breaker (per upstream)
 

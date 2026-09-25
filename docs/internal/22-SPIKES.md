@@ -306,10 +306,30 @@ gives about every key: a URL is what ends up in a log.
   The guard had stopped every series until UTC midnight. doc 11 §5 has the rule
   that replaced it (#16), and this is the pass criterion above met by being
   proved wrong.
-- **The keyed run itself: not yet run.** It needs #16 deployed, and a day
-  whose counter was not inflated by the misreading — the next UTC date, or the
-  two KV keys cleared by the operator (`kv:st:budget:2026-09-23`,
-  `kv:brk:twelvedata`).
+- **The keyed run itself: passed on 2026-09-25, and its failed first attempt
+  is the finding.** Run by the operator against production, on the first UTC
+  date the misreading had not inflated:
+  - **An attempt that never reached the series.** `/api/stock/quote` answered
+    503. `/api/_health` then showed Finnhub's breaker closed with two failures,
+    both `timeout after 8000ms`: Finnhub was slower than the deadline from the
+    Worker for a while, and minutes later it was not. Worth watching in the
+    quota week, not a fault here.
+  - **Attempt one (colo HKG): failed, and correctly.** Quotes, series and
+    search all answered, but the **first warm request of each interval was a
+    MISS**, and the day's spend went **0 → 4** against the two the test allows.
+    The cold answer is sent before its KV write lands — `waitUntil`, doc 11 §8 —
+    and the harness asked again at once, so that request went upstream too.
+    doc 11 §5 now names that cost. The harness waits three seconds for the
+    write before it measures, because the claim is about the warm path.
+  - **Attempt two (colo SIN): passed.** All twenty warm requests HIT, and the
+    spend stayed **4 → 4**: the four credits were attempt one's. Its cold
+    requests were warm by then (KV had carried HKG's writes to SIN), so it
+    proves the warm path and not the cold one. The next run from a cold key,
+    with the wait, is what shows two credits exactly.
+
+  The operator's shell had no `pnpm` on its PATH, and `npm exec playwright …
+  -g keyed` ran the whole file: npm takes `-g` as its own `--global`. The file's
+  note now gives `npm exec -- playwright …`.
 
 Nothing found so far argues for the fallback (raising TTLs). The arithmetic
 model is asserted in the suite so a TTL edit cannot silently break it: 50 users

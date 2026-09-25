@@ -237,6 +237,14 @@ route from the Cloudflare edge into RFC 1918 space — is a property of the
 platform, so it is checked on production by probe (doc 19 §5), not asserted by
 a test.
 
+**Probed on production, 2026-09-25**, with the operator's bearer: two names
+that pass every rule above and resolve inward — `localtest.me` (loopback) and
+`10-0-0-1.nip.io` (RFC 1918). Both came back as the answer
+`{ kind: 'unavailable', reason: 'refused' }`: the edge answered the Worker's
+fetch with a 4xx of its own rather than connecting inward, and the endpoint
+passed on the reason and nothing of the body. The same session showed a real
+feed (VnExpress) arriving through the Worker's own egress.
+
 ## 6. Supply chain
 
 - `pnpm` with lockfile, `--frozen-lockfile` in CI; Renovate PRs only.
