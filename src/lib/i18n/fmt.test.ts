@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	changeDirection,
 	fmtDate,
+	fmtDistance,
 	fmtPercentChange,
 	fmtTime,
 	isValidZone,
@@ -131,5 +132,19 @@ describe('changeDirection', () => {
 		expect(changeDirection(-0.0154, 'vi')).toBe('down');
 		expect(changeDirection(0.0041, 'vi')).toBe('up');
 		expect(changeDirection(-0.000_01, 'vi')).toBe('flat');
+	});
+});
+
+describe('fmtDistance (doc 08 §5)', () => {
+	it('says metres to the nearest ten below a kilometre, and never zero', () => {
+		expect(fmtDistance(0.847, 'en')).toBe('850 m');
+		expect(fmtDistance(0.004, 'en')).toBe('10 m');
+	});
+
+	it('gives a decimal below ten kilometres and none above, in the reader’s own numbers', () => {
+		expect(fmtDistance(4.24, 'en')).toBe('4.2 km');
+		expect(fmtDistance(4.24, 'vi')).toBe('4,2 km');
+		expect(fmtDistance(96.4, 'en')).toBe('96 km');
+		expect(fmtDistance(1, 'vi')).toBe('1 km');
 	});
 });

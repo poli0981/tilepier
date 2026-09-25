@@ -110,6 +110,16 @@ above has promised it since Week 1, and until a bump happened nothing drew it.
 8. Data deletion = browser storage clear + the in-app "Xóa toàn bộ dữ liệu"
    button in Settings (wipes localStorage keys + Dexie db, with export
    offer first).
+9. **Maps — OpenFreeMap**, added 2026-09-25 with the map widget. A map is
+   drawn from `tiles.openfreemap.org` directly, the one request that does not
+   go through the proxy (map tiles are too many and too large to relay, and doc
+   15 §2's CSP names the host). Those requests show OpenFreeMap the reader's IP
+   address and the area on screen; OpenFreeMap states it sets no cookies and
+   logs without IP addresses except briefly during a security incident, and may
+   serve through Cloudflare (its policy, linked). **Nothing is fetched until the
+   reader chooses a place for the map**, and the tile says who draws it before
+   that — the in-place notice the owner chose over a new legal version (Week 6
+   plan S1), so `LEGAL_VERSION` stays 2.
 
 `/legal/privacy` is the human-readable version of the above in VI + EN.
 
@@ -152,6 +162,7 @@ unambiguous insertion point.
 | ExchangeRate-API open endpoint | free w/ attribution | visible link where rates shown |
 | OpenStreetMap data (tiles, geocoding) | ODbL | "© OpenStreetMap contributors" on map + licenses |
 | OpenFreeMap | free tiles | courtesy credit |
+| OpenMapTiles (the tiles' schema and styles) | CC BY 4.0 (design) · BSD-3 (code) | "© OpenMapTiles" on every map render + licenses (added 2026-09-25, plan S14) |
 | Photon (komoot) | Apache-2.0 service | credit on licenses |
 | Nominatim | policy: UA + caching | technical compliance (doc 10 §6) + credit |
 | Finnhub / Twelve Data / Binance.US | per ToS | credit lines in markets detail + licenses (Binance.US replaced Binance 2026-09-23, whose WAF refuses Cloudflare Workers — doc 10 §4) (Stooq left the register 2026-09-23 with the fallback it served, doc 10 §5) |

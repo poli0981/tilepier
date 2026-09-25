@@ -89,7 +89,7 @@ not having them: it reads as coverage.
 |---|---|---|
 | Pure-client (tier 1, and `quote`) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
 | Cached-data (weather, currency, markets, rss) | all seven | — |
-| Search-dependent empty state (map, geocode, symbol add) | all seven | — |
+| Search-dependent empty state (map, geocode, symbol add) | all seven — except `map`'s `stale` and `stale-error` (below) | — |
 | Music / media (FSA/blob, files are local) | `loading`, `ready`, `empty`, `error` | `stale`, `stale-error`, `offline` |
 
 A state can also be unreachable for a **single widget** rather than for its
@@ -108,6 +108,15 @@ were three states it could not reach, listed as required, which is the same
 contradiction this table was amended to fix for tier 1 in Week 2. It reaches all
 four of the pure-client states and does so genuinely: `loading` is real, because
 the 23 KB catalogue arrives on a dynamic import.
+
+**`map` has no `stale` or `stale-error`, decided 2026-09-25 (Week 6 plan S5)**
+when it was built, the same way `quote` left the cached-data row. Both states
+describe a payload `swr` holds, and the map holds none: its tiles are fetched by
+MapLibre as the view needs them and kept by the browser's HTTP cache. What the
+row still asks for is real — `offline` and `error` are the style failing to
+load (a card with the home's coordinates and an OpenStreetMap link), `loading`
+is MapLibre and the style on their way, and `empty` is no home. doc 08 §5's
+no-WebGL fallback is a state of its own on top.
 
 `permission-needed` is orthogonal to the class and is not counted in either
 column: it is required exactly when the manifest declares a `permissions`
@@ -344,7 +353,7 @@ gridstack's `minW`/`minH`/`maxW`/`maxH` for every tile it hands to the grid
 The array grows a row per widget as each lands (doc 23): `clock` in Week 1;
 `timer`, `calc`, `notes` and `todo` in Week 2; `calendar`, `toolbox` and `quote`
 in Week 3, `weather` and `currency` in Week 4, `markets` in Week 5a, `rss` in
-Week 6a, so **twelve of fifteen** are registered as of 2026-09-25. `core/registry.test.ts` asserts every *registered*
+Week 6a and `map` in Week 6b, so **thirteen of fifteen** are registered as of 2026-09-25. `core/registry.test.ts` asserts every *registered*
 manifest matches its row here, so the table stays authoritative without failing
 on rows whose widget has not been built yet — and it checks all fifteen rows
 parse, so a silent edit to an unbuilt row cannot pass either.

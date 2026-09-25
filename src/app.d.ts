@@ -37,6 +37,13 @@ declare global {
 	 * reference; there is no runtime import to infer it from.
 	 */
 	const __TP_BUILD__: { version: string; sha: string };
+
+	/**
+	 * Where MapLibre's main module is served from — same-origin, versioned,
+	 * under `_app/immutable/` — replaced at build time by the vendor plugin in
+	 * `scripts/vite-maplibre.ts`. Only `src/lib/map/maplibre.ts` reads it.
+	 */
+	const __TP_MAPLIBRE__: string;
 }
 
 export {};

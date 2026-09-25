@@ -14,8 +14,6 @@ import { expect, test } from '@playwright/test';
  * doc 06 §1 and doc 20 §7 without moving a single budget number.
  */
 
-const HEAVY = /echarts|maplibre|dexie/i;
-
 test.describe('S4 · lazy chunk loading', () => {
 	test('no heavy library is fetched on first paint', async ({ page }) => {
 		const requested: string[] = [];
@@ -58,11 +56,51 @@ test.describe('S4 · lazy chunk loading', () => {
 		await expect(page.locator('#s4-chart canvas').first()).toBeVisible();
 	});
 
-	test('maplibre and dexie load on demand', async ({ page }) => {
-		await page.goto('/spike/s4');
+	test('maplibre draws a map: its worker arrives as JS and runs under the CSP', async ({
+		page
+	}) => {
+		// Week 6 spike M0 (doc 22 §S6). This used to assert "maplibre: loaded"
+		// — true while the worker MapLibre asks for at runtime was never built,
+		// which leaves a blank canvas and a quiet 404. The style is inline and
+		// its GeoJSON is tiled by the worker, so `idle` means the worker ran.
+		const violations: string[] = [];
+		page.on('console', (message) => {
+			if (message.type() === 'error' && /Content Security Policy/i.test(message.text())) {
+				violations.push(message.text());
+			}
+		});
+		const worker = page.waitForResponse(/maplibre-[\d.]+\/maplibre-gl-worker\.mjs$/);
 
+		await page.goto('/spike/s4');
 		await page.getByTestId('load-map').click();
-		await expect(page.getByTestId('log')).toContainText('maplibre: loaded');
+		await expect(page.getByTestId('log')).toContainText(/maplibre [\d.]+: map rendered/, {
+			timeout: 15_000
+		});
+
+		const response = await worker;
+		expect(response.status()).toBe(200);
+		// `nosniff` is on (doc 15 §2): a module worker served as anything but
+		// JavaScript would be refused, whatever its bytes.
+		expect(response.headers()['content-type']).toMatch(/javascript/);
+
+		// Pixels, not a canvas element: the patch is beacon-coloured and the
+		// ground near-black, so a drawn frame shows the patch at the centre.
+		const colours = await page.evaluate(() => {
+			const canvas = document.querySelector<HTMLCanvasElement>('#s4-map canvas');
+			const gl = canvas?.getContext('webgl2');
+			if (!canvas || !gl) return null;
+			const pixel = new Uint8Array(4);
+			gl.readPixels(canvas.width >> 1, canvas.height >> 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+			return [...pixel];
+		});
+		expect(colours, 'the centre of the map, inside the patch').not.toBeNull();
+		expect(colours?.[1] ?? 0, 'green channel of the beacon patch').toBeGreaterThan(150);
+
+		expect(violations).toEqual([]);
+	});
+
+	test('dexie loads on demand', async ({ page }) => {
+		await page.goto('/spike/s4');
 
 		await page.getByTestId('load-db').click();
 		await expect(page.getByTestId('log')).toContainText('dexie: opened and deleted probe db');
@@ -85,6 +123,15 @@ test.describe('S4 · lazy chunk loading', () => {
 
 		const chunkLoads = urls.filter((u) => /_app\/immutable\/chunks\//.test(u));
 		expect(chunkLoads.length, 'expected lazy chunk requests after interaction').toBeGreaterThan(0);
-		expect(HEAVY.test('echarts'), 'sanity').toBe(true);
+		// The assertion that stood here was `HEAVY.test('echarts')`, which is true of
+		// the string and could not fail (Week 6 plan, 1a.5). MapLibre is not a
+		// bundler chunk any more — its modules are copied whole
+		// (scripts/vite-maplibre.ts) — so its loads are named instead. The worker
+		// is fetched by the map, not by this page, so it is not in the list yet.
+		const vendored = urls
+			.filter((u) => /_app\/immutable\/maplibre-[\d.]+\//.test(u))
+			.map((u) => u.split('/').at(-1))
+			.sort();
+		expect(vendored).toEqual(expect.arrayContaining(['maplibre-gl-shared.mjs', 'maplibre-gl.mjs']));
 	});
 });

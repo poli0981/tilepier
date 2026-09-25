@@ -1,4 +1,7 @@
 <script lang="ts">
+	// The app's trimmed MapLibre stylesheet, as the map widget uses it — the
+	// full one is 10.2 KB gz of icons for controls nothing here shows.
+	import '$lib/map/maplibre.css';
 	/**
 	 * Spike S4 harness — doc 22 §S4.
 	 *
@@ -52,11 +55,70 @@
 		}
 	}
 
+	/**
+	 * Week 6 spike M0 (doc 22 §S6): not "the module loaded" but **a map drew**.
+	 *
+	 * Until M0 this imported `maplibre-gl` through the bundler and checked that
+	 * `Map` was a function — which passed while the worker the module asks for
+	 * at runtime was never built. The style below needs no network, and its
+	 * GeoJSON is cut into tiles by the worker, so `idle` is only reached if the
+	 * worker loaded, ran under the CSP, and answered.
+	 */
 	async function loadMap() {
 		busy = true;
 		try {
-			const maplibre = await import('maplibre-gl');
-			note(`maplibre: ${typeof maplibre.Map === 'function' ? 'loaded' : 'unexpected shape'}`);
+			const { loadMapLibre, webgl2Available } = await import('$lib/map/maplibre');
+			if (!webgl2Available()) {
+				note('maplibre: no webgl2');
+				return;
+			}
+			const maplibre = await loadMapLibre();
+			const container = document.getElementById('s4-map');
+			if (!container) return;
+
+			const map = new maplibre.Map({
+				container,
+				center: [105.85, 21.03],
+				zoom: 9,
+				attributionControl: false,
+				// So the e2e can read the pixels back after the frame is presented.
+				canvasContextAttributes: { preserveDrawingBuffer: true },
+				style: {
+					version: 8,
+					sources: {
+						patch: {
+							type: 'geojson',
+							data: {
+								type: 'Feature',
+								properties: {},
+								geometry: {
+									type: 'Polygon',
+									coordinates: [
+										[
+											[105.7, 20.9],
+											[106.0, 20.9],
+											[106.0, 21.2],
+											[105.7, 21.2],
+											[105.7, 20.9]
+										]
+									]
+								}
+							}
+						}
+					},
+					layers: [
+						{ id: 'ground', type: 'background', paint: { 'background-color': 'rgb(11, 16, 22)' } },
+						{
+							id: 'patch',
+							type: 'fill',
+							source: 'patch',
+							paint: { 'fill-color': 'rgb(70, 213, 200)' }
+						}
+					]
+				}
+			});
+			map.once('idle', () => note(`maplibre ${maplibre.getVersion()}: map rendered`));
+			map.on('error', (event) => note(`maplibre: error ${String(event.error)}`));
 		} finally {
 			busy = false;
 		}
@@ -93,6 +155,7 @@
 	</div>
 
 	<div id="s4-chart" class="chart"></div>
+	<div id="s4-map" class="chart" data-testid="s4-map"></div>
 
 	<ul data-testid="log">
 		{#each log as line (line)}<li>{line}</li>{/each}
@@ -138,6 +201,7 @@
 
 	.chart {
 		height: 260px;
+		margin-bottom: 1rem;
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
 		background: var(--color-ink-900);

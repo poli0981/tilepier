@@ -306,3 +306,35 @@ export function changeDirection(fraction: number, locale: string): 'up' | 'down'
 	if (parts.some((part) => part.type === 'plusSign')) return 'up';
 	return 'flat';
 }
+
+/* ───────────────────────────────────────────────── distance (doc 08 §5) */
+
+/**
+ * A distance for the map's saved places — "850 m", "4.2 km", "96 km" — with the
+ * unit placed and spelt by `Intl` for the reader's locale.
+ *
+ * Metres below a kilometre, rounded to ten, because a haversine distance
+ * between two geocoded points is not good to the metre and "847 m" would claim
+ * otherwise. One decimal below ten kilometres, none above: past that the
+ * decimal is noise to anyone deciding whether to walk.
+ */
+export function fmtDistance(km: number, locale: string): string {
+	if (km < 1) {
+		const metres = Math.max(10, Math.round((km * 1000) / 10) * 10);
+		return numberFormatter(
+			`dm:${locale}`,
+			() =>
+				new Intl.NumberFormat(locale, { style: 'unit', unit: 'meter', maximumFractionDigits: 0 })
+		).format(metres);
+	}
+	const digits = km < 10 ? 1 : 0;
+	return numberFormatter(
+		`dk:${locale}:${String(digits)}`,
+		() =>
+			new Intl.NumberFormat(locale, {
+				style: 'unit',
+				unit: 'kilometer',
+				maximumFractionDigits: digits
+			})
+	).format(km);
+}

@@ -51,9 +51,15 @@ export default defineConfig({
 			// CI would report page views into production's analytics and depend
 			// on Cloudflare being up. Unresolvable hosts fail fast, and the CSP
 			// check still runs, because a violation is raised before any fetch.
+			//
+			// OpenFreeMap joined them with the map (Week 6 spike M0): a map spec
+			// that forgot its fixture would otherwise fetch real tiles. A spec that
+			// wants tiles serves them with `page.route`, which answers before DNS —
+			// and which sees the requests MapLibre makes from its worker, measured
+			// in M0 (doc 22 §S6).
 			args: [
 				'--ignore-certificate-errors',
-				'--host-resolver-rules=MAP static.cloudflareinsights.com ~NOTFOUND, MAP cloudflareinsights.com ~NOTFOUND, MAP challenges.cloudflare.com ~NOTFOUND'
+				'--host-resolver-rules=MAP static.cloudflareinsights.com ~NOTFOUND, MAP cloudflareinsights.com ~NOTFOUND, MAP challenges.cloudflare.com ~NOTFOUND, MAP tiles.openfreemap.org ~NOTFOUND'
 			]
 		}
 	},

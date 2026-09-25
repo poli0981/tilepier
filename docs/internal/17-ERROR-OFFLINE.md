@@ -31,6 +31,14 @@ gate has not been accepted.
   double-caching creates staleness confusion).
 - Update flow: SW `waiting` → quiet toast "phiên bản mới — tải lại"
   (skipWaiting only on user action; never reload under the user).
+- **Corrected 2026-09-25: every widget chunk *is* precached.**
+  `src/service-worker.ts` installs `[...build, ...files, ...prerendered]` —
+  all of Vite's hashed output, every widget's tile and detail chunk included,
+  in a cache named for the build version, so each deploy re-downloads it all.
+  The bullet below described the intent, not the code; narrowing the list is
+  the Week 8 PWA pass. MapLibre is the exception by construction: its modules
+  are copied beside the build rather than built (doc 22 §S6), so they are not
+  in `build` and arrive with the first map rather than the first visit.
 - **Widget chunks are not precached, and that has a visible consequence.**
   Found 2026-08-28 by journey #4: opening a widget's detail for the *first* time
   with no connection fails, because the chunk has never been fetched and
