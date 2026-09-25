@@ -115,6 +115,24 @@ async function send<T>(url: string, signal: AbortSignal | undefined): Promise<Se
 }
 
 /**
+ * A `retry-after` header as seconds, or `undefined` when it names none.
+ *
+ * **Absent is not zero.** `Number(null)` is `0`, and this used to be
+ * `Number(response.headers.get('retry-after'))` — so every failure whose
+ * envelope named no delay arrived as "retry in 0 s". The Worker's `fail(code)`
+ * sends the header only when it has a wait to name, which made that every
+ * `UPSTREAM_DOWN`: the scheduler honours a named delay over its exponential
+ * curve (doc 04 §3), so a tile whose upstream was down retried on every 5 s
+ * tick for as long as the outage lasted. Found 2026-09-25, by the rss pacer's
+ * test for a 429 that names nothing.
+ */
+function headerSeconds(value: string | null): number | undefined {
+	if (value === null || value.trim() === '') return undefined;
+	const seconds = Number(value);
+	return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
+}
+
+/**
  * `GET` an `/api/*` endpoint and unwrap the envelope, or throw a `TpApiError`.
  *
  * Every failure mode of doc 17 §4 arrives here as one of seven codes, so a
@@ -140,8 +158,7 @@ export async function fetchEnvelope<T>(url: string, signal?: AbortSignal): Promi
 	// An `ok: false` body carries the code; the header is the fallback for a
 	// 429 that reached us from the zone rule rather than from the Worker, which
 	// has no envelope at all (doc 11 §7).
-	const header = Number(response.headers.get('retry-after'));
-	const retryAfterS = body.error?.retryAfterS ?? (Number.isFinite(header) ? header : undefined);
+	const retryAfterS = body.error?.retryAfterS ?? headerSeconds(response.headers.get('retry-after'));
 	const code = body.error?.code;
 
 	if (code === undefined) {
