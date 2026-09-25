@@ -36,6 +36,10 @@ const PLACES = [
 
 const VIRTUAL_USERS = 50;
 
+/** Long enough for a `waitUntil` KV write to land after its response went out
+ *  (doc 11 §8); the keyed test below says why it has to wait at all. */
+const WRITE_SETTLE_MS = 3000;
+
 /**
  * Against a deployed Worker the Turnstile gate is on (doc 15 §3), so a script
  * needs the `DEV_DASH_TOKEN` bypass. Read from the environment and sent as a
@@ -278,6 +282,14 @@ test.describe('S3 · the stock half, keyed', () => {
 			expect(first.status(), interval).toBe(200);
 			const body = (await first.json()) as { data: { candles: unknown[] } };
 			expect(body.data.candles.length, interval).toBeGreaterThan(0);
+
+			// The cold answer is sent *before* its KV write lands: the endpoint
+			// writes in `waitUntil` (doc 11 §8), so a request right behind it can
+			// still miss and spend a credit. The first keyed run did exactly that
+			// (HKG, 2026-09-25): the first warm request of each interval a MISS, and
+			// four credits spent instead of two. What this measures is the warm
+			// path doc 11 §5 claims costs nothing, so the write lands first.
+			await new Promise((settle) => setTimeout(settle, WRITE_SETTLE_MS));
 
 			for (let i = 0; i < 10; i++) {
 				const again = await api.get(url());
