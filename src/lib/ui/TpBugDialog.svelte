@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { collectEnv, formatReport, issueUrl } from '$lib/core/bug-report';
+	import { copyText } from '$lib/core/clipboard';
 	import { m } from '$lib/paraglide/messages';
 	import { deck } from '$lib/stores/deck.svelte';
 	import { online } from '$lib/stores/online.svelte';
@@ -43,14 +44,9 @@
 	});
 
 	async function copyAndOpen(): Promise<void> {
-		try {
-			await navigator.clipboard.writeText(body);
-			copied = true;
-		} catch {
-			// Clipboard permission can be refused; the textarea is still right
-			// there and selectable, so this is a nicety failing, not the flow.
-			copied = false;
-		}
+		// A refused clipboard is a nicety failing, not the flow: the textarea is
+		// still right there and selectable.
+		copied = await copyText(body);
 		window.open(issueUrl(__TP_BUILD__.version), '_blank', 'noopener');
 	}
 
