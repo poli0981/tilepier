@@ -4,6 +4,7 @@
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
 	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
+	import { tileView } from '$lib/core/tile-view';
 	import type { TpWidgetProps } from '$lib/core/types';
 	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
@@ -27,7 +28,6 @@
 		symbolsOf,
 		tickerKey,
 		tileBadge,
-		tileView,
 		type TpSide,
 		type TpStockReading,
 		type TpTickerReading
@@ -54,7 +54,7 @@
 	 * would slow the coins down every time Finnhub had a bad minute.
 	 *
 	 * **States (doc 06 §3).** `markets` is doc 17 §3's cached-data class, so all
-	 * seven are required, and with two sources they are decided by `tileView`
+	 * seven are required, and with two sources they are decided by `core/tile-view`
 	 * rather than read off one handle: the list as soon as either side has
 	 * quotes, the skeleton while neither has and one is still asking, the most
 	 * telling failure after that. A side that has not answered says so in its own

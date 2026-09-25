@@ -25,7 +25,6 @@ import {
 	stockSeriesUrl,
 	stockSide,
 	tileBadge,
-	tileView,
 	windowOf,
 	type TpSide,
 	labelOf,
@@ -45,6 +44,7 @@ import {
 	moveInWatchlist,
 	suggestions
 } from './service';
+import { tileView } from '$lib/core/tile-view';
 import { CRYPTO_TOP_LIST, MARKETS_DEFAULTS, MAX_DISPLAY, MAX_WATCHLIST } from './types';
 
 /**
@@ -360,7 +360,7 @@ describe('rows', () => {
 	});
 });
 
-describe('the tile view (doc 06 §3)', () => {
+describe('the tile view (doc 06 §3, through core/tile-view)', () => {
 	it('lists as soon as either side has quotes', () => {
 		expect(tileView([side(CRYPTO), stockSide(handle(undefined, 'loading'))])).toBe('list');
 		expect(tileView([side(undefined, 'error'), stockSide(handle(STOCKS))])).toBe('list');
