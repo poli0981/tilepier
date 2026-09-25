@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { refusalText } from './labels';
 	import { addFeed, type TpFeedRefusal } from './service';
 
 	/**
@@ -25,27 +26,6 @@
 
 	let draft = $state('');
 	let refusal = $state<TpFeedRefusal | null>(null);
-
-	function refusalText(reason: TpFeedRefusal): string {
-		switch (reason) {
-			case 'invalid':
-				return m['widget.rss.refused_invalid']();
-			case 'scheme':
-				return m['widget.rss.refused_scheme']();
-			case 'credentials':
-				return m['widget.rss.refused_credentials']();
-			case 'port':
-				return m['widget.rss.refused_port']();
-			case 'address':
-				return m['widget.rss.refused_address']();
-			case 'host':
-				return m['widget.rss.refused_host']();
-			case 'duplicate':
-				return m['widget.rss.refused_duplicate']();
-			case 'full':
-				return m['widget.rss.refused_full']();
-		}
-	}
 
 	function submit(event: SubmitEvent): void {
 		event.preventDefault();

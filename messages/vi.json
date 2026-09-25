@@ -628,5 +628,12 @@
 	"widget.rss.open_original": "mở bài gốc",
 	"widget.rss.summary_label": "tóm tắt từ nguồn tin",
 	"widget.rss.no_summary": "nguồn tin không kèm tóm tắt — mở bài gốc để đọc",
-	"widget.rss.published_at": "{time}, {date}"
+	"widget.rss.published_at": "{time}, {date}",
+	"widget.rss.opml_import": "nhập OPML",
+	"widget.rss.opml_export": "xuất OPML",
+	"widget.rss.opml_title": "Nguồn tin TilePier",
+	"widget.rss.opml_result": "đã thêm {added}, bỏ qua {skipped}",
+	"widget.rss.opml_skip_line": "{url}: {reason}",
+	"widget.rss.opml_invalid": "tệp này không phải danh sách nguồn tin OPML",
+	"widget.rss.opml_too_large": "tệp này quá lớn để là một danh sách nguồn tin"
 }

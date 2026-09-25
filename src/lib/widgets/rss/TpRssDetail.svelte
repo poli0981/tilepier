@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { downloadText } from '$lib/core/download';
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { fmtDate, fmtRelative, fmtTime } from '$lib/i18n/fmt';
@@ -7,7 +8,8 @@
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpFeedHtml from '$lib/ui/TpFeedHtml.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import { problemText, troubleText } from './labels';
+	import { problemText, refusalText, troubleText } from './labels';
+	import { exportOpml, importOpml, OPML_MAX_BYTES, type TpOpmlSkip } from './opml';
 	import { TpFeedSources } from './sources.svelte';
 	import TpRssAddFeed from './TpRssAddFeed.svelte';
 	import TpRssFeedSource from './TpRssFeedSource.svelte';
@@ -130,6 +132,50 @@
 	function move(url: string, delta: -1 | 1): void {
 		onUpdateSettings?.({ feeds: moveFeed(prefs.feeds, url, delta) });
 	}
+
+	/* ─────────────────────────────────────────────────── OPML (doc 08 §4) */
+
+	type TpImportNote =
+		| { kind: 'done'; added: number; skipped: TpOpmlSkip[] }
+		| { kind: 'refused'; reason: 'not-opml' | 'too-large' };
+
+	let importNote = $state<TpImportNote | null>(null);
+
+	async function importFile(event: Event & { currentTarget: HTMLInputElement }): Promise<void> {
+		const input = event.currentTarget;
+		const file = input.files?.[0];
+		// Cleared, so choosing the same file again still fires `change`.
+		input.value = '';
+		if (file === undefined) return;
+
+		// Checked before reading: a large file is refused without being loaded.
+		if (file.size > OPML_MAX_BYTES) {
+			importNote = { kind: 'refused', reason: 'too-large' };
+			return;
+		}
+
+		const result = importOpml(await file.text(), prefs.feeds, location.hostname);
+		if (!result.ok) {
+			importNote = { kind: 'refused', reason: result.reason };
+			return;
+		}
+
+		importNote = { kind: 'done', added: result.added, skipped: result.skipped };
+		if (result.added > 0) add(result.feeds);
+	}
+
+	function exportFeeds(): void {
+		const feeds = prefs.feeds.map((url) => ({
+			url,
+			title: nameOf(url),
+			link: viewOf(url)?.feed?.link ?? null
+		}));
+		downloadText(
+			'tilepier-feeds.opml',
+			exportOpml(feeds, m['widget.rss.opml_title'](), new Date()),
+			'text/x-opml'
+		);
+	}
 </script>
 
 {#each prefs.feeds as url (url)}
@@ -250,6 +296,61 @@
 
 				{#if prefs.feeds.length < MAX_FEEDS}
 					<TpRssAddFeed feeds={prefs.feeds} onAdd={add} id="{instanceId}-rssd-add" />
+				{/if}
+
+				<div class="tp-rssd__opml">
+					<!-- A label around a clipped file input rather than `display: none`,
+					     so the input stays in the tab order and the label is its name. -->
+					<label class="tp-rssd__opml-action">
+						<input
+							class="tp-rssd__file"
+							type="file"
+							accept=".opml,.xml,text/x-opml,text/xml,application/xml"
+							onchange={importFile}
+							data-testid="rssd-opml-input"
+						/>
+						{m['widget.rss.opml_import']()}
+					</label>
+					<button
+						type="button"
+						class="tp-rssd__opml-action"
+						onclick={exportFeeds}
+						disabled={prefs.feeds.length === 0}
+						data-testid="rssd-opml-export"
+					>
+						{m['widget.rss.opml_export']()}
+					</button>
+				</div>
+
+				{#if importNote !== null}
+					<div class="tp-rssd__import" role="status" data-testid="rssd-opml-note">
+						{#if importNote.kind === 'refused'}
+							<p class="tp-rssd__note">
+								{importNote.reason === 'too-large'
+									? m['widget.rss.opml_too_large']()
+									: m['widget.rss.opml_invalid']()}
+							</p>
+						{:else}
+							<p class="tp-rssd__note">
+								{m['widget.rss.opml_result']({
+									added: importNote.added,
+									skipped: importNote.skipped.length
+								})}
+							</p>
+							{#if importNote.skipped.length > 0}
+								<ul class="tp-rssd__skipped">
+									{#each importNote.skipped as skip, index (index)}
+										<li>
+											{m['widget.rss.opml_skip_line']({
+												url: skip.url,
+												reason: refusalText(skip.reason)
+											})}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						{/if}
+					</div>
 				{/if}
 			</div>
 		</section>
@@ -611,6 +712,52 @@
 		font: inherit;
 		font-size: var(--text-xs);
 		padding: 0;
+	}
+
+	.tp-rssd__opml {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.tp-rssd__opml-action {
+		position: relative;
+		border: 0;
+		background: transparent;
+		color: var(--color-beacon);
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--text-xs);
+		padding: 0;
+	}
+
+	.tp-rssd__opml-action:disabled {
+		color: var(--color-fg-dim);
+		cursor: default;
+	}
+
+	.tp-rssd__opml-action:focus-visible,
+	.tp-rssd__opml-action:focus-within {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 2px;
+	}
+
+	/* Clipped, not hidden: still focusable, still named by its label. */
+	.tp-rssd__file {
+		position: absolute;
+		overflow: hidden;
+		width: 1px;
+		height: 1px;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.tp-rssd__skipped {
+		margin: 0.25rem 0 0;
+		padding-left: 1rem;
+		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
+		overflow-wrap: anywhere;
 	}
 
 	.tp-rssd__note {

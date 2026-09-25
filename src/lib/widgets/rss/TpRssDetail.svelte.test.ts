@@ -293,3 +293,79 @@ describe('the feed manager', () => {
 		).toBeNull();
 	});
 });
+
+describe('OPML (doc 08 §4)', () => {
+	function choose(text: string, name = 'feeds.opml'): Promise<void> {
+		const input = document.querySelector<HTMLInputElement>('[data-testid="rssd-opml-input"]');
+		if (input === null) throw new Error('no file input');
+		const files = new DataTransfer();
+		files.items.add(new File([text], name, { type: 'text/x-opml' }));
+		input.files = files.files;
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		return Promise.resolve();
+	}
+
+	it('imports what it can and says what it skipped, and why', async () => {
+		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
+		const onUpdateSettings = vi.fn();
+		const screen = render(
+			TpRssDetail,
+			props({ settings: { feeds: [VNE], lastOpenedAt: NOW - MINUTE }, onUpdateSettings })
+		);
+
+		await choose(
+			'<?xml version="1.0"?><opml version="2.0"><body>' +
+				`<outline xmlUrl="${VNE}"/><outline xmlUrl="http://feeds.bbci.co.uk/news/rss.xml"/>` +
+				'<outline xmlUrl="https://10.0.0.1/feed"/></body></opml>'
+		);
+
+		await expect
+			.element(screen.getByText(m['widget.rss.opml_result']({ added: 1, skipped: 2 })))
+			.toBeInTheDocument();
+		expect(onUpdateSettings).toHaveBeenLastCalledWith({
+			feeds: [VNE, BBC],
+			lastOpenedAt: NOW - MINUTE
+		});
+		const note = screen.getByTestId('rssd-opml-note');
+		await expect.element(note).toHaveTextContent(m['widget.rss.refused_duplicate']());
+		await expect.element(note).toHaveTextContent(m['widget.rss.refused_address']());
+	});
+
+	it('refuses a file that is not a feed list, and changes nothing', async () => {
+		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
+		const onUpdateSettings = vi.fn();
+		const screen = render(
+			TpRssDetail,
+			props({ settings: { feeds: [VNE], lastOpenedAt: NOW - MINUTE }, onUpdateSettings })
+		);
+		onUpdateSettings.mockClear();
+
+		await choose('<html><body>not a feed list</body></html>', 'page.html');
+
+		await expect.element(screen.getByText(m['widget.rss.opml_invalid']())).toBeInTheDocument();
+		expect(onUpdateSettings).not.toHaveBeenCalled();
+	});
+
+	it('exports every feed of the tile, named as the tile names it', async () => {
+		serveFeeds({
+			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
+			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
+		});
+		const create = vi.spyOn(URL, 'createObjectURL');
+		const names: string[] = [];
+		vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+			this: HTMLAnchorElement
+		) {
+			names.push(this.download);
+		});
+		const screen = render(TpRssDetail, props());
+		await ready(screen);
+
+		await screen.getByTestId('rssd-opml-export').click();
+
+		expect(names).toEqual(['tilepier-feeds.opml']);
+		const text = await (create.mock.calls[0]?.[0] as Blob).text();
+		expect(text).toContain(`xmlUrl="${VNE}"`);
+		expect(text).toContain('text="BBC News"');
+	});
+});

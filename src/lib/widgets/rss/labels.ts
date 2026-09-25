@@ -1,5 +1,5 @@
 import { m } from '$lib/paraglide/messages';
-import type { TpFeedTrouble } from './service';
+import type { TpFeedRefusal, TpFeedTrouble } from './service';
 
 /**
  * How a feed's trouble reads, shared by the tile's chips and the detail's
@@ -39,4 +39,29 @@ export function troubleText(
 		return m['widget.rss.trouble_behind_label']({ feed, age: ageOf(trouble.since) });
 	}
 	return m['widget.rss.trouble_label']({ feed, problem: problemText(trouble) });
+}
+
+/**
+ * Why a feed URL was not added — the box's refusal line, and an OPML import's
+ * list of what it skipped.
+ */
+export function refusalText(reason: TpFeedRefusal): string {
+	switch (reason) {
+		case 'invalid':
+			return m['widget.rss.refused_invalid']();
+		case 'scheme':
+			return m['widget.rss.refused_scheme']();
+		case 'credentials':
+			return m['widget.rss.refused_credentials']();
+		case 'port':
+			return m['widget.rss.refused_port']();
+		case 'address':
+			return m['widget.rss.refused_address']();
+		case 'host':
+			return m['widget.rss.refused_host']();
+		case 'duplicate':
+			return m['widget.rss.refused_duplicate']();
+		case 'full':
+			return m['widget.rss.refused_full']();
+	}
 }

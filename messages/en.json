@@ -628,5 +628,12 @@
 	"widget.rss.open_original": "open the original",
 	"widget.rss.summary_label": "summary from the feed",
 	"widget.rss.no_summary": "this feed gives no summary — open the original to read it",
-	"widget.rss.published_at": "{date}, {time}"
+	"widget.rss.published_at": "{date}, {time}",
+	"widget.rss.opml_import": "import OPML",
+	"widget.rss.opml_export": "export OPML",
+	"widget.rss.opml_title": "TilePier feeds",
+	"widget.rss.opml_result": "added {added}, skipped {skipped}",
+	"widget.rss.opml_skip_line": "{url}: {reason}",
+	"widget.rss.opml_invalid": "that file is not an OPML feed list",
+	"widget.rss.opml_too_large": "that file is too large to be a feed list"
 }
