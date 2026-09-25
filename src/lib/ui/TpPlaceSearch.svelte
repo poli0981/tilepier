@@ -1,37 +1,42 @@
 <script lang="ts">
 	import type { TpGeocodeResult } from '$lib/api-types';
 	import { TpApiError } from '$lib/core/api';
-	import { logEntry } from '$lib/core/log-buffer';
-	import { m } from '$lib/paraglide/messages';
-	import { online } from '$lib/stores/online.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import {
 		contextOf,
 		dedupeResults,
 		isSearchable,
 		SEARCH_DEBOUNCE_MS,
-		searchPlaces
-	} from './geocode';
-	import { browserPosition, coarsePosition, type TpPositionSource } from './geolocate';
-	import { roundCoord } from '$lib/shared-constants';
-	import type { TpWeatherPlace } from './types';
+		searchPlaces,
+		type TpPlacePick
+	} from '$lib/core/geocode';
+	import { browserPosition, coarsePosition, type TpPositionSource } from '$lib/core/geolocate';
+	import { logEntry } from '$lib/core/log-buffer';
+	import { m } from '$lib/paraglide/messages';
+	import { online } from '$lib/stores/online.svelte';
+	import { settings } from '$lib/stores/settings.svelte';
+	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 
 	/**
-	 * doc 08 §1's "default place picked at first add via search", and the
-	 * `permission-needed` card's search fallback — one component, because they
-	 * are the same question asked after two different answers.
+	 * Place search with "use my location" beside it — the weather tile's first
+	 * control since Week 4, and the map's search box since Week 6 (doc 03 §1:
+	 * graduated on its second consumer, as `TpPlaceSearch` from
+	 * `widgets/weather/TpWeatherPlacePicker`).
 	 *
-	 * It lives inside the tile rather than in the detail: doc 13 §9 seeds a
-	 * weather tile with no place, so the picker *is* the tile's `empty` state,
-	 * and a reader who has to open a panel to make their first-run tile do
-	 * anything has been given a chore rather than a dashboard.
+	 * **It hands back what the geocoder said, unrounded.** Rounding is the
+	 * caller's decision, because the two callers disagree for good reasons: a
+	 * weather place is stored at 2 dp (doc 08 §1) and only ever used at that
+	 * precision, while a saved map place is public data about a point and keeps
+	 * the geocoder's precision (Week 6 plan S6). The one coordinate that is never
+	 * precise is the reader's own: "use my location" comes back already coarse,
+	 * from `coarsePosition`, because doc 16 §3 requires that before it leaves
+	 * the module that received the fix.
 	 *
-	 * Search is a one-shot `fetchEnvelope`, never `swr` — see `geocode.ts` for
-	 * why a per-keystroke key does not belong in a cache keyed by data identity.
+	 * Search is a one-shot `fetchEnvelope`, never `swr` — see `core/geocode.ts`
+	 * for why a per-keystroke key does not belong in a cache keyed by data
+	 * identity.
 	 */
 	interface Props {
-		onPick: (place: TpWeatherPlace) => void;
+		onPick: (place: TpPlacePick) => void;
 		/** Test seam. In headless Chromium the real geolocation API exists and is
 		 *  auto-denied, so an unpatched test only ever sees the failure branch. */
 		positionSource?: TpPositionSource | undefined;
@@ -39,11 +44,13 @@
 
 	let { onPick, positionSource = browserPosition }: Props = $props();
 
-	type Phase = 'idle' | 'searching' | 'results' | 'empty' | 'offline' | 'error';
+	type Phase = 'idle' | 'searching' | 'results' | 'empty' | 'offline' | 'rate-limited' | 'error';
 
 	let query = $state('');
 	let phase = $state<Phase>('idle');
 	let results = $state.raw<readonly TpGeocodeResult[]>([]);
+	/** The wait a 429 named, in seconds, when it named one. */
+	let waitSeconds = $state<number | undefined>(undefined);
 	let locating = $state(false);
 	let locateFailed = $state(false);
 
@@ -99,7 +106,21 @@
 		} catch (error) {
 			if (own.signal.aborted || (error instanceof Error && error.name === 'AbortError')) return;
 			results = [];
-			phase = error instanceof TpApiError && error.code === 'NETWORK' ? 'offline' : 'error';
+			if (error instanceof TpApiError && error.code === 'NETWORK') {
+				phase = 'offline';
+			} else if (error instanceof TpApiError && error.code === 'RATE_LIMITED') {
+				// doc 08 §5's "geocode rate-limit 429 → inline retry-after message".
+				// Until Week 6 this read as the generic failure, which tells a reader
+				// who typed too fast that search is broken rather than to wait.
+				phase = 'rate-limited';
+				// "Try again in 0 s" tells a reader nothing, so a wait of nothing is
+				// said as "a moment". (It is also what an absent header used to read
+				// as — `Number(null)` is 0 — until #24.)
+				const named = error.retryAfterS;
+				waitSeconds = named !== undefined && named > 0 ? Math.ceil(named) : undefined;
+			} else {
+				phase = 'error';
+			}
 			logEntry('warn', 'place search failed', { src: 'widget', error });
 		} finally {
 			if (controller === own) controller = null;
@@ -107,17 +128,7 @@
 	}
 
 	function choose(result: TpGeocodeResult): void {
-		// **Rounded here**, and the comment this replaced said it was already
-		// done. It was not: `parseCoords` rounds the coordinates a *request*
-		// carries, but `normalizePhoton` passes a geocoder's own answer straight
-		// through — production returned `21.0283334, 105.854041` for Hà Nội, and
-		// that is what `tp.layout.v1` stored and the backup exported.
-		//
-		// Nothing precise ever left the device, because `weatherUrl` rounds and
-		// `readSettings` rounds again on the way out. But doc 08 §1 says 2 dp
-		// unconditionally, and storing more than is ever used is the part that
-		// was wrong — along with a comment that claimed otherwise.
-		onPick({ name: result.name, lat: roundCoord(result.lat), lon: roundCoord(result.lon) });
+		onPick({ name: result.name, context: contextOf(result), lat: result.lat, lon: result.lon });
 	}
 
 	async function locate(): Promise<void> {
@@ -125,12 +136,7 @@
 		locateFailed = false;
 		try {
 			const at = await coarsePosition(positionSource);
-			// An empty name, not a translated one: the string would be frozen in
-			// `tp.layout.v1` at the locale it was picked in, and there is no
-			// reverse-geocode endpoint to give it a real one (doc 10 §6 is forward
-			// search only). The tile renders "my location" from the live catalogue
-			// when the name is blank.
-			onPick({ name: '', lat: at.lat, lon: at.lon });
+			onPick({ name: '', context: '', lat: at.lat, lon: at.lon });
 		} catch (error) {
 			locateFailed = true;
 			logEntry('info', 'geolocation refused or unavailable', { src: 'widget', error });
@@ -147,9 +153,9 @@
 			type="search"
 			value={query}
 			oninput={onInput}
-			placeholder={m['widget.weather.search_placeholder']()}
-			aria-label={m['widget.weather.search_label']()}
-			data-testid="weather-search"
+			placeholder={m['common.place.search_placeholder']()}
+			aria-label={m['common.place.search_label']()}
+			data-testid="place-search"
 			autocomplete="off"
 			spellcheck="false"
 		/>
@@ -159,9 +165,9 @@
 	     reader hears the result rather than only seeing it. -->
 	<div class="tp-pick__body" role="status" aria-live="polite">
 		{#if phase === 'searching'}
-			<p class="tp-pick__note">{m['widget.weather.searching']()}</p>
+			<p class="tp-pick__note">{m['common.place.searching']()}</p>
 		{:else if phase === 'results'}
-			<ul class="tp-pick__list" data-testid="weather-results">
+			<ul class="tp-pick__list" data-testid="place-results">
 				{#each results as result (`${result.name}:${String(result.lat)}:${String(result.lon)}`)}
 					{@const context = contextOf(result)}
 					<li>
@@ -177,16 +183,22 @@
 				{/each}
 			</ul>
 		{:else if phase === 'empty'}
-			<p class="tp-pick__note" data-testid="weather-no-results">
-				{m['widget.weather.no_results']({ query })}
+			<p class="tp-pick__note" data-testid="place-no-results">
+				{m['common.place.no_results']({ query })}
 			</p>
 		{:else if phase === 'offline'}
-			<p class="tp-pick__note" data-testid="weather-search-offline">
-				{m['widget.weather.search_offline']()}
+			<p class="tp-pick__note" data-testid="place-search-offline">
+				{m['common.place.search_offline']()}
+			</p>
+		{:else if phase === 'rate-limited'}
+			<p class="tp-pick__note" data-testid="place-search-limited">
+				{waitSeconds === undefined
+					? m['common.place.rate_limited_soon']()
+					: m['common.place.rate_limited']({ seconds: waitSeconds })}
 			</p>
 		{:else if phase === 'error'}
-			<p class="tp-pick__note" data-testid="weather-search-error">
-				{m['widget.weather.search_failed']()}
+			<p class="tp-pick__note" data-testid="place-search-error">
+				{m['common.place.search_failed']()}
 			</p>
 		{/if}
 	</div>
@@ -197,14 +209,14 @@
 			class="tp-pick__locate"
 			onclick={locate}
 			disabled={locating}
-			data-testid="weather-locate"
+			data-testid="place-locate"
 		>
 			<TpIcon name="locate" size={13} />
-			{locating ? m['widget.weather.locating']() : m['widget.weather.use_my_location']()}
+			{locating ? m['common.place.locating']() : m['common.place.use_my_location']()}
 		</button>
 		{#if locateFailed}
-			<span class="tp-pick__note" role="alert" data-testid="weather-locate-failed">
-				{m['widget.weather.locate_failed']()}
+			<span class="tp-pick__note" role="alert" data-testid="place-locate-failed">
+				{m['common.place.locate_failed']()}
 			</span>
 		{/if}
 	</div>

@@ -2,7 +2,9 @@ import type { TpGeocodePayload, TpGeocodeResult } from '$lib/api-types';
 import { fetchEnvelope } from '$lib/core/api';
 
 /**
- * Place search for the weather tile (doc 08 §1, upstream doc 10 §6).
+ * Place search (doc 08 §1 and §5, upstream doc 10 §6) — the weather tile's
+ * since Week 4, moved to `core/` in Week 6 ahead of the map, its second
+ * consumer (doc 03 §1).
  *
  * **Deliberately not through `swr()`.** That primitive is built around a data
  * *key* that identifies a thing the deck keeps looking at — one place, one
@@ -15,6 +17,27 @@ import { fetchEnvelope } from '$lib/core/api';
  *
  * Pure but for the fetch, so the whole contract is node-testable.
  */
+
+/**
+ * One place, as `TpPlaceSearch` hands it to whoever asked (doc 08 §1, §5).
+ *
+ * **Unrounded** for a search result — rounding is the caller's decision: a
+ * weather place is stored at 2 dp, a saved map place keeps the geocoder's
+ * precision (Week 6 plan S6). The reader's own position arrives already coarse
+ * from `coarsePosition`, which is the one place that may ever hold a precise
+ * fix (doc 16 §3).
+ */
+export interface TpPlacePick {
+	/** The geocoder's name — or `''` for the reader's own position, which has
+	 *  none: a translated "my location" would freeze in whatever locale it was
+	 *  picked in, and there is no reverse geocoding (doc 10 §6). */
+	name: string;
+	/** The rest of the geocoder's display name, for a second line; `''` when
+	 *  there is none. */
+	context: string;
+	lat: number;
+	lon: number;
+}
 
 /**
  * Mirrors `QUERY_MIN` in `routes/api/_lib/geocode-query.ts`. Duplicated rather

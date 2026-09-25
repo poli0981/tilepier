@@ -88,6 +88,17 @@ Three more decisions worth having written down:
   the violation would be invisible from the outside. Both the node test and the
   component test were run against an unrounded build first.
 
+**The picker graduated in Week 6 (2026-09-25)** — to `ui/TpPlaceSearch`, with
+`geocode.ts` and `geolocate.ts` moving to `core/`, ahead of the map as its
+second consumer (doc 03's module boundaries: cross-widget reuse goes through
+`core` or `ui`). One contract changed on the way: **the search hands back the
+geocoder's own precision, and the weather tile rounds on pick.** A saved map
+place is public data about a point and keeps that precision (doc 08 §5), while
+this tile stores 2 dp as below. The reader's own position is unchanged — it
+still leaves `geolocate.ts` already coarse, for every caller. The search also
+gained doc 08 §5's rate-limited answer: a 429 says to wait, and for how long,
+instead of reading as the generic failure.
+
 **Two things the first production run found (2026-08-30).** Both had passed
 every test, because the geocode fixture was tidier than the real answer:
 
@@ -237,7 +248,9 @@ regardless of what its manifest says (tracked separately).
   geocoding via `/api/geocode` (Photon primary, Nominatim fallback).
 - **Tile:** static-feel mini map centered on home place (interactions
   disabled except click-to-open-detail); saved-places count chip.
-- **Detail:** full interactive map — search box (debounced 400 ms ≥3 chars),
+- **Detail:** full interactive map — search box (debounced 400 ms, from 2
+  chars — the weather search's gate, which `/api/geocode` enforces too; this
+  line said 3 until the search became shared in Week 6),
   result pins, save place (name editable → Dexie `savedPlaces`), saved list
   with fly-to, distance from home (haversine), coordinates copy,
   "open in OSM/Google Maps" external links, style toggle
