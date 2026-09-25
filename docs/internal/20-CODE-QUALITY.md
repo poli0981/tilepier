@@ -21,6 +21,22 @@
   `tokens-audit-ignore`, honoured on the offending line or the line above it;
   the only current use is the accent swatch list in `TpSettingsPanel.svelte`,
   which doc 12 §2 makes user-selectable data rather than styling.
+
+  **A second rule since 2026-09-25: every `var(--name)` must name one of
+  this project's tokens** — defined in `src/app.css`, in the same file (a
+  component-local property, including a Svelte `style:--name` directive), or
+  by a script's `setProperty`. A `var()` of an undefined property is not an
+  error anywhere: the declaration becomes invalid at computed-value time and
+  quietly falls back. Two tokens had never existed, and the browser showed
+  what that cost: `--color-accent` left every markets action in the
+  surrounding grey and dropped the `outline` declarations that named it, focus
+  rings included; `--color-ink-800` left the currency detail's table without
+  row rules. Three more — `--text-sm`, `--text-2xl`, `--text-3xl` — resolved
+  only because `app.css` imports Tailwind without clearing its default type
+  scale, a second scale beside doc 12's that nothing had chosen. They moved
+  onto doc 12's steps: `base` (15 px, from 14), `lg` (24 px, unchanged) and
+  `xl` (34 px, from 30 — the weather and currency hero figures, measured to
+  fit at 2×1, 2×2 and 3×2).
 - Widget ids: lowercase singular (`clock`, `markets`) — they appear in
   URLs, chunk names, i18n keys.
 

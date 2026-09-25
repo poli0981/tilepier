@@ -289,7 +289,7 @@
 	}
 
 	.tp-wxd__temp {
-		font-size: var(--text-2xl);
+		font-size: var(--text-lg);
 		line-height: 1.1;
 	}
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { copyText } from '$lib/core/clipboard';
+	import { downloadBlob } from '$lib/core/download';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import {
@@ -130,17 +131,7 @@
 		if (element === null || matrix === null) return;
 
 		element.toBlob((blob) => {
-			if (blob === null) return;
-			// An object URL rather than a data URL: a version-40 PNG at scale 12
-			// is megabytes of base64 in an href, and the browser has to hold all
-			// of it as a string. Revoked on the next frame, once the click has
-			// been dispatched.
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement('a');
-			link.href = url;
-			link.download = 'tilepier-qr.png';
-			link.click();
-			requestAnimationFrame(() => URL.revokeObjectURL(url));
+			if (blob !== null) downloadBlob('tilepier-qr.png', blob);
 		}, 'image/png');
 	}
 
@@ -523,7 +514,7 @@
 	.tp-tbd__value {
 		overflow-wrap: anywhere;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-tbd__hint,
@@ -592,7 +583,7 @@
 		gap: 0.5rem;
 		margin: 0;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-tbd__verdict {

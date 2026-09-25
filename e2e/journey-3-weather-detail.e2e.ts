@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedLayout } from './_lib/seed';
 import { WEATHER_OK } from '../src/lib/core/__fixtures__/weather';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #3 — "open weather detail (fixture data) → chart canvas
@@ -17,14 +18,6 @@ import { WEATHER_OK } from '../src/lib/core/__fixtures__/weather';
  */
 
 const HANOI = { name: 'Hà Nội', lat: 21.02, lon: 105.85 };
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 /** One weather tile, pinned to a place, with the recorded envelope behind it. */
 async function seedPlacedWeather(page: Page): Promise<void> {

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SEEDED_TILES } from './_lib/seed';
 import { readFile } from 'node:fs/promises';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #6: "Export backup → wipe → import → deck + notes
@@ -11,14 +12,6 @@ import { readFile } from 'node:fs/promises';
  * the file it is handed parses, and that a restore puts the deck and the notes
  * back where a person would look for them.
  */
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 /** Writes a note through the seeded notes tile, so there is user data worth
  *  round-tripping — which is the reason doc 23 moved this journey to Week 2. */

@@ -201,7 +201,7 @@
 	}
 
 	.tp-quote[data-tier='L'] .tp-quote__text {
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	/* The one-row tile. `[data-tier='S']` used to carry the smaller type here and

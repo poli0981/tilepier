@@ -11,6 +11,7 @@ import quote from '$lib/widgets/quote/manifest';
 import weather from '$lib/widgets/weather/manifest';
 import currency from '$lib/widgets/currency/manifest';
 import markets from '$lib/widgets/markets/manifest';
+import rss from '$lib/widgets/rss/manifest';
 import map from '$lib/widgets/map/manifest';
 import {
 	CATEGORY_ORDER,
@@ -58,7 +59,7 @@ export interface TpWidgetManifest {
 /**
  * Grows a row per widget as each lands (doc 23) — `clock` in Week 1, four more
  * through Week 2, `calendar`, `toolbox` and `quote` in Week 3, `weather` and
- * `currency` in Week 4, `markets` in Week 5, `map` in Week 6. `core/registry.test.ts` checks each *registered* manifest against its
+ * `currency` in Week 4, `markets` in Week 5, `rss` and `map` in Week 6. `core/registry.test.ts` checks each *registered* manifest against its
  * row in doc 06 §7, so the table stays authoritative without failing on widgets
  * that do not exist yet.
  */
@@ -74,6 +75,7 @@ export const MANIFESTS: readonly TpWidgetManifest[] = [
 	weather,
 	currency,
 	markets,
+	rss,
 	map
 ];
 

@@ -1058,6 +1058,71 @@ time the whole file ran against production (#23 skips them there).
 The quota week runs to 2026-09-30. The Binance.US probe from a US colo is
 still open.
 
+### Week 6a-2 — the rss widget (2026-09-25)
+
+The twelfth widget, in vertical commits: the tile, then the detail and the
+reader, then OPML, then its journey. What each part decided:
+
+- **One source per feed**, as doc 11 §3 designed the endpoint: a renderless
+  `TpRssFeedSource` per feed, keyed by URL and mounted once its SHA-256 exists,
+  each with its own `swr` entry and its own refresh registered under the
+  *instance* (`<instanceId>:rss:<hash>`, plan S12). Nothing names a feed by its
+  URL outside the feed list itself: a private feed's token lives in its URL and
+  the log buffer rides with a bug report, so keys, ids and labels carry the
+  hash, and a test holds the log to that.
+- **A pacer in front of every feed request** — two at a time, 500 ms apart, and
+  at most half of each doc 11 §7 window — because ten feeds a tile on a
+  `multiInstance` widget is the one request pattern in the app that can trip
+  the zone rule, which blocks *all* of `/api/*` for a minute. A 429 pauses the
+  whole queue for as long as it names. `ZONE_RATE_LIMIT` mirrors the dashboard
+  rule and a test holds it to doc 11 §7's wording.
+- **A badge rule of rss's own** (doc 13 §7). The markets rule — the worst side
+  wins — would let one flaky feed in ten hang `stale-error` over nine current
+  ones, so a feed's trouble goes to its chip and the header speaks for the tile:
+  offline, every feed failing, or every feed a whole cycle behind. That last
+  one also keeps the badge from flashing at every refresh, which `swr`'s own
+  `stale` would have done with its window equal to the cadence.
+- **The merged list** reads undated items at their feed's fetch time and never
+  as unread (plan S9), reads a future date as the fetch time, and lists an
+  article two feeds share once. The watermark starts with the first feed, not
+  the first opening, and opening the detail moves it.
+- **The reader is the second `{@html}`**, through `TpFeedHtml`, which takes the
+  raw summary and runs doc 15 §4's RSS profile inside itself — the same shape
+  as `TpMarkdown`. Week 3's "one `{@html}`, keep it that way" becomes "one per
+  profile", and `ui/at-html.test.ts` counts them. Each profile now owns its own
+  DOMPurify instance: the notes hook had been on the library's global one.
+- **Favicons were cut for monograms** (the plan's owner decision), and the map
+  style follows the theme; OPML and the three-pane reader were kept. OPML
+  parses with the browser's `DOMParser`, not the Worker's parser.
+
+**Three things graduated to shared homes** on the way, each at its second or
+fourth copy: `core/tile-view` (markets' several-sources view), `core/download`
+(three inline copies, already drifting), and `e2e/_lib/gate.ts` (eight copies
+of `acceptGate`). And the tests that used `rss` as "a widget this build does
+not have" now use a made-up id, which outlives Week 7 registering the last id
+in the union.
+
+**Two production bugs surfaced, and each went out as its own PR** so neither
+waits for the widget:
+
+- **#24 — every failure without a named delay retried every 5 s.**
+  `Number(null)` is 0, so an absent `retry-after` read as "retry in 0 s", which
+  the scheduler honours over its curve. Found by the pacer's test for a 429
+  that names nothing (doc 17 §5).
+- **#25 — two design tokens never existed.** `--color-accent` left every
+  markets action grey and dropped its focus rings; `--color-ink-800` left the
+  currency table without rules. Three off-scale Tailwind defaults moved onto
+  doc 12's steps. `tokens:audit` now refuses a `var()` of a token this project
+  does not define (doc 20 §1). An assumption was corrected by measuring: the
+  hero figures were *not* rendering at body size, as first thought — Tailwind's
+  default scale had been supplying 30 px all along.
+
+A standing oddity, not new: the browser test project prints
+`Cannot read properties of undefined (reading 'wrapDynamicImport')` from
+SvelteKit's dev handler once or twice a run. It predates this work (the markets
+suite prints it on `main`), fails nothing, and looks like a stray non-module
+request reaching the dev server; noted rather than chased.
+
 ### Week 6b — the map (2026-09-25)
 
 **Spike M0 came first, and found that a real map had never run here** (doc 22

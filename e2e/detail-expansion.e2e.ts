@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedLayout } from './_lib/seed';
+import { acceptGate } from './_lib/gate';
 
 /**
  * The detail-expansion handshake (doc 06 §6, doc 13 §5).
@@ -13,14 +14,6 @@ import { seedLayout } from './_lib/seed';
  */
 
 const LAYOUT_KEY = 'tp.layout.v1';
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 async function openClockDetail(page: Page): Promise<void> {
 	await page.getByRole('button', { name: 'mở chi tiết' }).first().click();

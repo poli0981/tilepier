@@ -3,6 +3,8 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+	RATE_LIMIT,
+	ZONE_RATE_LIMIT,
 	CACHE_POLICY,
 	FEED_URL_MAX_LENGTH,
 	STOCK_BUDGET,
@@ -268,6 +270,24 @@ describe('doc 11 §5 stock budget tiers', () => {
 	it('tiers are ordered and inside the daily ceiling', () => {
 		expect(STOCK_BUDGET.intradayStopAt).toBeLessThan(STOCK_BUDGET.dailySeriesStopAt);
 		expect(STOCK_BUDGET.dailySeriesStopAt).toBeLessThan(STOCK_BUDGET.dailyCredits);
+	});
+});
+
+describe('doc 11 §7 rate limits', () => {
+	const md = readFileSync(DOC, 'utf8');
+
+	it('holds the zone rule the client paces under to the doc that states it', () => {
+		// The rule lives in the Cloudflare dashboard, so nothing in code enforces
+		// ZONE_RATE_LIMIT — this is what stops the copy drifting from the doc.
+		const minutes = ZONE_RATE_LIMIT.windowMs / 60_000;
+		expect(md).toContain(
+			`${String(ZONE_RATE_LIMIT.maxPerWindow)} req / ${String(minutes)} min per IP`
+		);
+	});
+
+	it('holds the Worker limiter to the doc too', () => {
+		const seconds = RATE_LIMIT.bucketMs / 1000;
+		expect(md).toContain(`over ${String(RATE_LIMIT.maxPerBucket)}/${String(seconds)} s`);
 	});
 });
 

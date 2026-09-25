@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SEEDED_TILES } from './_lib/seed';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #4: "Offline emulation: toggle offline → stale badges
@@ -36,20 +37,6 @@ import { SEEDED_TILES } from './_lib/seed';
  * a precache-list decision, not a bug in any widget.
  */
 
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-
-	// doc 13 §9's one-time coach sits over the deck and intercepts every click
-	// aimed at a tile. Journey #1 asserts it appears; everything else has to get
-	// it out of the way first.
-	await page.getByTestId('coach-dismiss').click();
-	await expect(page.getByTestId('coach')).toBeHidden();
-}
-
 /**
  * doc 13 §7: a quiet amber chip in the top bar, `role="status"`.
  *
@@ -79,7 +66,7 @@ async function openCalendar(page: Page): Promise<void> {
 }
 
 test('the offline chip appears and clears with the connection', async ({ page, context }) => {
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 	await expect(offlineChip(page)).toBeHidden();
 
 	await context.setOffline(true);
@@ -90,7 +77,7 @@ test('the offline chip appears and clears with the connection', async ({ page, c
 });
 
 test('the whole seeded deck keeps rendering offline', async ({ page, context }) => {
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 	const tiles = page.locator('.grid-stack-item');
 	// Waited for rather than counted: `count()` on the frame after the gate can
 	// catch the grid mid-mount, and the assertion below would then be comparing
@@ -107,7 +94,7 @@ test('the whole seeded deck keeps rendering offline', async ({ page, context }) 
 });
 
 test('the calendar still takes an event with no connection', async ({ page, context }) => {
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 	// Opened first, so the detail chunk is in cache — see the note above.
 	await openCalendar(page);
 
@@ -126,7 +113,7 @@ test('the calendar still takes an event with no connection', async ({ page, cont
 test('the event written offline survives a reload once back online', async ({ page, context }) => {
 	// The claim doc 01 actually makes: the data is on the device, so a
 	// connection coming and going is not an event the data participates in.
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 	await openCalendar(page);
 	await context.setOffline(true);
 
@@ -148,7 +135,7 @@ test('the toolbox still generates offline, which is why it is local', async ({ p
 	// doc 07 §7's QR encoder is bundled precisely so this works. A QR generator
 	// that needed a server would be the wrong tool for the one moment a person
 	// most often wants one.
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 
 	// The toolbox is not on the seeded deck (doc 13 §9), so add it while the
 	// connection is still up — its tile chunk and the QR encoder are both lazy.
@@ -173,7 +160,7 @@ test('the quote of the day is there offline, because it was computed', async ({
 }) => {
 	// doc 08 §3: a deterministic pick from a bundled dataset. This is the
 	// assertion behind moving `quote` out of the cached-data class in doc 06 §3.
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 	await expect(page.getByTestId('quote-text')).toBeVisible();
 
 	// No reload: a cold load with the network down is the service worker's job
@@ -255,7 +242,7 @@ async function routeFx(page: Page, state: { mode: FxMode }): Promise<void> {
 /** Seeds a deck of exactly one currency tile and waits for it to have rates. */
 async function seedCurrency(page: Page, state: { mode: FxMode }): Promise<void> {
 	await routeFx(page, state);
-	await acceptGate(page);
+	await acceptGate(page, { dismissCoach: true });
 	await page.addInitScript(
 		([key, value, sentinel]) => {
 			if (sessionStorage.getItem(sentinel as string) !== null) return;

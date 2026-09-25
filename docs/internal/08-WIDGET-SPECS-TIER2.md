@@ -242,6 +242,42 @@ regardless of what its manifest says (tracked separately).
   mixed-date formats (RFC822/ISO) normalized server-side; feeds without
   dates → order by fetch time with an "undated" tag.
 
+### Built 2026-09-25 (Week 6a-2) — and where it differs from the lines above
+
+- **Favicon → monogram.** The "Worker-provided `icon`" line was cut in the
+  Week 6 plan (owner decision): an icon is a request to a stranger's host per
+  feed, which doc 15 §2's `img-src` refuses anyway. Each feed is shown by the
+  first letter or digit of its name on one neutral token, and the payload has
+  no `icon` field.
+- **Unread, precisely.** The watermark (`lastOpenedAt`, per instance) starts
+  when the *first feed is added* — a `null` one would mark a new feed's whole
+  back catalogue unread — and moves to now when the detail opens. The detail
+  keeps marking what was new when it opened. Undated items are never unread
+  (they would be new again on every refetch), and a date in the future is read
+  as the fetch time, for sorting and for unread alike.
+- **The same article in two feeds** is listed once, under the first feed.
+- **Per-feed chips, and a header badge of rss's own.** A feed's chip says what
+  is wrong with it — not a feed, too large, gone, refused, an unsafe or endless
+  redirect, could not load, or not updating (the Worker serving its held copy,
+  or this device failing to refresh it). The header badge speaks only for the
+  whole tile: offline, every feed failing, or every feed a whole refresh cycle
+  behind (`rssBadge`). The markets rule — the worst side wins — would have let
+  one flaky feed in ten hang `stale-error` over nine current ones.
+- **The empty state adds the first feed in place**; a bare host gains
+  `https://`, an `http://` URL is asked for over https, and a refusal names
+  the rule it broke — the same `parseFeedUrl` the Worker runs.
+- **The detail** is three panes above 760 px of its own width (a container
+  query), stacked below it, where the list and the reader take turns and the
+  feed manager folds away. The manager filters, reorders, removes, retries a
+  failing feed (not an answer that the URL is not a feed, which a retry cannot
+  change), and imports and exports OPML.
+- **OPML** reads every `xmlUrl` (and the lower-case `xmlurl` some exporters
+  write) through the same rules as the box, lists what it skipped and why, and
+  refuses a document that declares entities or passes 1 MB. It parses with the
+  browser's `DOMParser`.
+- **Every feed request waits in a pacer** (doc 11 §7): the feeds of a deck are
+  the one pattern in the app that could trip the zone rule by themselves.
+
 ## 5. `map` — Map & Places
 
 - **Source:** MapLibre GL JS + OpenFreeMap vector tiles (direct, doc 10 §6);
