@@ -14,6 +14,26 @@
  *   Everywhere else — every `.svelte` and every other `.css` — a hex literal
  *   is a finding, because the token it should have used already exists.
  *
+ * **And a second rule, since 2026-09-25: every `var(--name)` must name one of
+ * this project's tokens.** A `var()` of an undefined property is not an error
+ * in CSS — the declaration becomes invalid at computed-value time and falls
+ * back to inheriting, or to nothing at all — so an imagined token fails
+ * silently. Two had, measured in the browser:
+ *
+ * - `--color-accent` was never defined, so every markets action rendered in
+ *   the surrounding grey instead of the beacon, and every `outline` naming it
+ *   was dropped whole — the controls' focus rings with it.
+ * - `--color-ink-800` was never defined, so the currency detail's table had
+ *   no row rules at all.
+ *
+ * Three more resolved only by accident: `--text-sm`, `--text-2xl` and
+ * `--text-3xl` are Tailwind's defaults (14, 24 and 30 px), present because
+ * `app.css` imports Tailwind without clearing that namespace — a second type
+ * scale beside doc 12's, which nothing chose. So "defined" means defined *here*:
+ * in `src/app.css`, in the same file (a component-local property, set in its
+ * styles or through `style:--name`), or by a script's `setProperty`. The raw-hex
+ * rule could see none of this, because none of it was hex.
+ *
  * Deliberately line-based rather than AST-based, unlike `i18n-audit.mjs`. A
  * colour can appear in a `<style>` block, in an inline `style=` attribute, or
  * in a script constant, and the three would need three different walkers to
@@ -52,7 +72,27 @@ const IGNORE_COMMENT = 'tokens-audit-ignore';
 /** `--name:` — a custom-property definition, which is what a token is. */
 const DEFINES_TOKEN = /--[\w-]+\s*:/;
 
+/** Every way a file can give a custom property a value: a declaration, a
+ *  Svelte `style:--name` directive, or `setProperty('--name', …)`. */
+const DEFINITIONS = [
+	/(--[\w-]+)\s*:/g,
+	/style:(--[\w-]+)/g,
+	/setProperty\(\s*['"`](--[\w-]+)['"`]/g
+];
+
+/** A reference, with or without a fallback — `var(--a, …)` still names `--a`. */
+const REFERENCE = /var\(\s*(--[\w-]+)/g;
+
+function definedIn(source) {
+	const names = new Set();
+	for (const pattern of DEFINITIONS) {
+		for (const match of source.matchAll(pattern)) names.add(match[1]);
+	}
+	return names;
+}
+
 const findings = [];
+const undefinedRefs = [];
 
 /**
  * Blanks out comment bodies rather than deleting them, so line numbers survive.
@@ -77,6 +117,20 @@ const files = globSync(INCLUDE)
 	.filter((file) => !EXCLUDE.some((rx) => rx.test(file)))
 	.sort();
 
+/** What `app.css` defines, which every file may use. Read through
+ *  `stripComments` so a commented-out token is not a token. */
+const GLOBAL_TOKENS = definedIn(stripComments(readFileSync(TOKEN_SOURCE, 'utf8')));
+
+// Scripts too: a component can set a property from TypeScript, and the rule
+// has to see that before it can say a reference is dangling.
+const SCRIPT_TOKENS = definedIn(
+	globSync(['src/**/*.ts'])
+		.map((file) => file.split(sep).join('/'))
+		.filter((file) => !EXCLUDE.some((rx) => rx.test(file)))
+		.map((file) => stripComments(readFileSync(file, 'utf8')))
+		.join('\n')
+);
+
 for (const file of files) {
 	const isTokenSource = file === TOKEN_SOURCE;
 	const source = readFileSync(file, 'utf8');
@@ -87,6 +141,15 @@ for (const file of files) {
 	// text. Stripping first and then looking for the marker finds nothing, ever.
 	const raw = source.split('\n');
 	const stripped = stripComments(source).split('\n');
+
+	const local = definedIn(stripped.join('\n'));
+	stripped.forEach((line, index) => {
+		for (const match of line.matchAll(REFERENCE)) {
+			const name = match[1];
+			if (GLOBAL_TOKENS.has(name) || SCRIPT_TOKENS.has(name) || local.has(name)) continue;
+			undefinedRefs.push({ file, line: index + 1, text: name });
+		}
+	});
 
 	stripped.forEach((line, index) => {
 		if (isTokenSource && DEFINES_TOKEN.test(line)) return;
@@ -99,8 +162,10 @@ for (const file of files) {
 	});
 }
 
-if (findings.length === 0) {
-	console.log(`tokens:audit — ${files.length} files, no raw hex outside the token source.`);
+if (findings.length === 0 && undefinedRefs.length === 0) {
+	console.log(
+		`tokens:audit — ${files.length} files, no raw hex outside the token source, no undefined tokens.`
+	);
 	process.exit(0);
 }
 
@@ -111,6 +176,16 @@ for (const { file, line, text } of findings) {
 			: `  ${file}:${line}  ${text}`
 	);
 }
-console.error(`\ntokens:audit found ${findings.length} raw hex value(s).`);
+for (const { file, line, text } of undefinedRefs) {
+	console.error(
+		process.env['CI']
+			? `::error file=${file},line=${line}::tokens: var(${text}) names no token, so the property silently inherits (doc 20 §1)`
+			: `  ${file}:${line}  var(${text}) is not defined`
+	);
+}
+if (findings.length > 0) console.error(`\ntokens:audit found ${findings.length} raw hex value(s).`);
+if (undefinedRefs.length > 0) {
+	console.error(`\ntokens:audit found ${undefinedRefs.length} reference(s) to undefined tokens.`);
+}
 
 if (STRICT) process.exit(1);

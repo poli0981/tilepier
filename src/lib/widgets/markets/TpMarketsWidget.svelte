@@ -490,7 +490,7 @@
 	}
 
 	.tp-mk-row__remove:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 1px;
 	}
 
@@ -537,7 +537,7 @@
 		border: 0;
 		border-radius: var(--radius-ctl);
 		background: transparent;
-		color: var(--color-accent);
+		color: var(--color-beacon);
 		cursor: pointer;
 		font: inherit;
 		padding-block: 0.125rem;
@@ -547,7 +547,7 @@
 
 	.tp-mk-empty__action:focus-visible,
 	.tp-mk-error__retry:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 2px;
 	}
 </style>
