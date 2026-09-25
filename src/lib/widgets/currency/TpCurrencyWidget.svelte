@@ -375,7 +375,7 @@
 
 	/* doc 12 §3: a number the reader watches change is mono + tnum. */
 	.tp-cur__hero {
-		font-size: var(--text-3xl);
+		font-size: var(--text-xl);
 		line-height: 1.1;
 		overflow: hidden;
 		text-overflow: ellipsis;

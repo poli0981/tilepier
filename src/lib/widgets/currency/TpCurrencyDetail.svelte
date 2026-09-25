@@ -471,7 +471,7 @@
 
 	.tp-curd__table th,
 	.tp-curd__table td {
-		border-bottom: 1px solid var(--color-ink-800);
+		border-bottom: 1px solid var(--color-ink-700);
 		padding: 0.375rem 0.25rem;
 		text-align: left;
 	}
@@ -544,7 +544,7 @@
 		gap: 0.5rem;
 		margin: 0;
 		color: var(--color-fg-dim);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-curd__note p {

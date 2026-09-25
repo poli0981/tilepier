@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #5: "Notes: create, markdown preview renders, XSS string
@@ -10,14 +11,6 @@ import { expect, test, type Page } from '@playwright/test';
  * that the sanitised string is what actually reaches the DOM — that nothing
  * between `marked` and `{@html}` put the payload back.
  */
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 /** The notes tile from the seeded deck (doc 13 §9). */
 function notesTile(page: Page) {

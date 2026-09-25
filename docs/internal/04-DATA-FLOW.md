@@ -350,6 +350,17 @@ unmounts with its host — and `id` stays the caller's choice per the rule above
 which is now a choice something can actually make: `calendar` and `quote` pass
 their `instanceId`, and a networked widget will pass its data key.
 
+**A widget with a varying number of keys registers one entry per key, under its
+instance.** `rss` (2026-09-25) holds one to ten feeds, and a `useRefresh` call
+cannot be added or removed after initialisation — so each feed is a renderless
+child component, keyed by URL, that makes its own `swr` handle and its own
+registration as `<instanceId>:rss:<hash>` (markets registers
+`<instanceId>:stock` the same way). Under the instance rather than under the
+data key, so no tile's refresh rests on another tile's registration; two tiles
+reading one feed then both come due together, and that costs one request —
+`swr` shares the one in flight and the edge answers the rest. The id carries
+the hash and never the URL, which may hold a private feed's token.
+
 ## 4. Request lifecycle example — weather tile
 
 ```

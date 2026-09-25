@@ -2,7 +2,9 @@
 	import { logEntry } from '$lib/core/log-buffer';
 
 	/**
-	 * The **only** `{@html}` in the application.
+	 * One of the **two** `{@html}` in the application — the notes profile's.
+	 * `TpFeedHtml` is the other, for the RSS profile, built the same way;
+	 * `ui/at-html.test.ts` counts them, so a third cannot arrive quietly.
 	 *
 	 * It takes markdown *source*, never HTML. That is the point: a component
 	 * that accepted HTML would be one careless call site away from rendering

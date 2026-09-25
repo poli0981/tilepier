@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #7 — the language switch, plus the settings surfaces that
@@ -8,14 +9,6 @@ import { expect, test, type Page } from '@playwright/test';
  * message key. A missing key renders as its own name, which reads as a typo
  * rather than a failure unless something is watching for the shape.
  */
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 test('settings is reachable from the top bar', async ({ page }) => {
 	await acceptGate(page);

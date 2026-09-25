@@ -648,7 +648,7 @@
 
 	.tp-mkd__change {
 		color: var(--color-fg-mute);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-mkd__change--up {
@@ -692,12 +692,12 @@
 	}
 
 	.tp-mkd__range--on {
-		border-color: var(--color-accent);
-		color: var(--color-accent);
+		border-color: var(--color-beacon);
+		color: var(--color-beacon);
 	}
 
 	.tp-mkd__range:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 2px;
 	}
 
@@ -780,7 +780,7 @@
 	.tp-mkd__add-input:focus-visible,
 	.tp-mkd__add-kind:focus-visible,
 	.tp-mkd__result:focus-visible {
-		outline: 2px solid var(--color-accent);
+		outline: 2px solid var(--color-beacon);
 		outline-offset: 2px;
 	}
 

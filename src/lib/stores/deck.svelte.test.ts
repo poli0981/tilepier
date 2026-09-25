@@ -4,6 +4,10 @@ import { getManifest } from '$lib/core/registry';
 import { LOCAL_KEYS } from '$lib/shared-constants';
 import { LAYOUT_DEBOUNCE_MS, deck, seedDeck } from './deck.svelte';
 import type { TpTile } from '$lib/core/grid/layout';
+import type { TpWidgetId } from '$lib/core/types';
+
+/** A widget a later release removed — in no manifest and in no union. */
+const RETIRED = 'retired' as TpWidgetId;
 
 /**
  * Layout persistence (doc 05 §2/§5, doc 04 §6). Browser project: it needs real
@@ -90,23 +94,21 @@ describe('hydrate', () => {
 	});
 
 	it('drops a tile whose widget this build does not have, warning once', () => {
-		// `rss` took this role from `weather` when the weather tile landed in
-		// Week 4. The case is about the id union running ahead of the registry, so
-		// it moves to whichever id is still ahead of it.
-		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: 'rss' }]);
+		// A widget a later release removed. The role used to pass to whichever
+		// id was still ahead of the registry — `weather`, `markets`, `rss` — and
+		// a made-up id is the case that outlives every id in the union landing.
+		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: RETIRED }]);
 
 		deck.hydrate();
 
 		expect(deck.tiles.map((t) => t.instanceId)).toEqual(['wgt_keep']);
 		const warnings = readLog().filter((e) => e.src === 'layout');
 		expect(warnings).toHaveLength(1);
-		expect(warnings[0]?.msg).toContain('rss');
+		expect(warnings[0]?.msg).toContain(RETIRED);
 	});
 
 	it('rewrites immediately after dropping, so the warning does not repeat', () => {
-		// `markets` held this role until it was registered in Week 5a — the same
-		// hand-off the case above describes, arriving one widget later.
-		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: 'rss' }]);
+		store([{ instanceId: 'wgt_keep' }, { instanceId: 'wgt_gone', widgetId: RETIRED }]);
 
 		deck.hydrate();
 
@@ -115,7 +117,7 @@ describe('hydrate', () => {
 	});
 
 	it('treats an unknown widgetId as valid data, not corruption', () => {
-		store([{ instanceId: 'wgt_gone', widgetId: 'rss' }]);
+		store([{ instanceId: 'wgt_gone', widgetId: RETIRED }]);
 
 		deck.hydrate();
 
@@ -149,9 +151,7 @@ describe('add', () => {
 	it('refuses an unknown widget', () => {
 		deck.hydrate();
 
-		// Whichever id is still ahead of the registry; `markets` was it until
-		// Week 5a.
-		expect(deck.add('rss')).toBeNull();
+		expect(deck.add(RETIRED)).toBeNull();
 		expect(deck.tiles).toHaveLength(SEED_SIZE);
 	});
 

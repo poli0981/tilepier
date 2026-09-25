@@ -72,6 +72,12 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
    shapes.
 6. **Sanitizers:** DOMPurify configs (notes vs RSS) against an XSS corpus
    (script, event handlers, javascript: URLs, svg payloads, data: images).
+   Both halves exist since 2026-09-25: `sanitize.svelte.test.ts` (notes) and
+   `sanitize-rss.svelte.test.ts` (RSS — no image in any form, no relative
+   link), each rule mutation-checked, plus a test that the two profiles'
+   instances never share a hook. `ui/at-html.test.ts` counts the app's
+   `{@html}`: exactly two, one per profile, each inside the component that
+   runs its sanitiser.
 
 ## 4. Playwright smoke suite (fast, <3 min, every PR)
 
@@ -251,6 +257,11 @@ not assume the page is still there. (2026-08-30.)
 `SEEDED_TILES` lives in the same file for the same kind of reason: doc 13 §9's
 first-run deck grows as widgets land — 1 in Week 1, 2 in Week 2, 4 now — and six
 files each carried the number as a literal.
+
+`acceptGate` joined them in `e2e/_lib/gate.ts` on 2026-09-25, from eight
+copies, before the rss journey (`e2e/rss.e2e.ts`) became a ninth. Its
+`dismissCoach` option is journey #4's variant, which also clears doc 13 §9's
+coach before clicking a tile.
 
 ## 5. Manual test matrix (release gate)
 

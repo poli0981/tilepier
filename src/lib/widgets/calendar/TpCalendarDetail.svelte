@@ -619,7 +619,7 @@
 	h3 {
 		margin: 0 0 0.25rem;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 	}
 
@@ -755,7 +755,7 @@
 		flex: 1 1 100%;
 		margin: 0;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-cald__canchi {

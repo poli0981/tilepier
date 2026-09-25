@@ -69,7 +69,7 @@ describe('toGridStackWidget', () => {
 		// doc 05 §5: a layout naming an unbuilt or removed widget is valid data,
 		// and the deck store drops those tiles. Inventing a limit for one the
 		// registry cannot describe would be worse than having none.
-		const result = toGridStackWidget(tile({ widgetId: 'rss' }));
+		const result = toGridStackWidget(tile({ widgetId: 'retired' }));
 
 		expect(result).toEqual({ id: 'wgt_aaaa', x: 0, y: 0, w: 3, h: 2 });
 		expect(Object.keys(result)).not.toContain('minW');
@@ -118,7 +118,7 @@ describe('serialise', () => {
 	it('reads an omitted w or h as 1 for a widget this build does not have', () => {
 		// No manifest, no bounds — so gridstack only omits the field when it
 		// really is 1, and that is what it means.
-		const stored = new Map([['a', tile({ instanceId: 'a', widgetId: 'rss', w: 4, h: 3 })]]);
+		const stored = new Map([['a', tile({ instanceId: 'a', widgetId: 'retired', w: 4, h: 3 })]]);
 
 		expect(serialise([{ id: 'a', x: 0, y: 0 }], stored).grid[0]).toMatchObject({ w: 1, h: 1 });
 	});

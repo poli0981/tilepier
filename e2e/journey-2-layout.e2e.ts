@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SEEDED_TILES, seedLayout } from './_lib/seed';
+import { acceptGate } from './_lib/gate';
 
 /**
  * doc 19 §4 journey #2 — layout persistence.
@@ -13,16 +14,6 @@ import { SEEDED_TILES, seedLayout } from './_lib/seed';
  */
 
 const LAYOUT_KEY = 'tp.layout.v1';
-
-async function acceptGate(page: Page): Promise<void> {
-	await page.goto('/');
-	// Enabled only once hydration has attached the handler — see the gate's
-	// `ready` flag. Waiting on it is deterministic; a bare click races.
-	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
-	await expect(accept).toBeEnabled();
-	await accept.click();
-	await expect(page.getByRole('main')).toBeVisible();
-}
 
 async function storedLayout(
 	page: Page
@@ -194,15 +185,15 @@ test('a one-row tile leaves room for the controls its header floats above', asyn
 	);
 });
 
-test('a tile naming an unbuilt widget is dropped, not fatal', async ({ page }) => {
+test('a tile naming a removed widget is dropped, not fatal', async ({ page }) => {
 	await acceptGate(page);
 
-	// doc 05 §5. `rss` is in the id union and in doc 06 §7, but has no manifest
-	// yet — exactly the shape of a widget removed in a future release, seen from
-	// the other direction. It took this role from `weather` in Week 4.
+	// doc 05 §5: a widget a later release removed. The role used to pass to
+	// whichever id in the union was still unbuilt — `weather`, then `markets`,
+	// then `rss` — and a made-up id is the case that outlives the last of them.
 	await seedLayout(page, [
 		{ instanceId: 'wgt_keep', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} },
-		{ instanceId: 'wgt_gone', widgetId: 'rss', x: 3, y: 0, w: 3, h: 2, settings: {} }
+		{ instanceId: 'wgt_gone', widgetId: 'retired', x: 3, y: 0, w: 3, h: 2, settings: {} }
 	]);
 
 	await page.reload();
