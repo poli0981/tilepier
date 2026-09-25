@@ -462,6 +462,59 @@ they cache on first real use.
   which is always truthy, so the wait returns instantly and the next assertion
   runs against a worker that has not registered. Use `expect.poll`.
 
+## S6 · MapLibre 6 × Vite 8 × the CSP — Week 6 spike M0 (2026-09-25)
+
+Timeboxed at the start of Week 6b, because a real map had **never run** in this
+repo. Spike S4 imported `maplibre-gl` through the bundler and checked that
+`Map` was a function; MapLibre 6 then asks for its worker at runtime with
+`new URL('./maplibre-gl-worker.mjs', import.meta.url)`, which the bundler cannot
+see, so the worker was never emitted. The failure mode, confirmed by removing
+the worker from the new build: the map never becomes `idle`, the canvas stays
+blank, and **nothing is logged anywhere**.
+
+### Findings · **GREEN**, with one budget to watch
+
+1. **How the worker is served.** Three options were priced in the Week 6 plan:
+   (a) `?worker&url` and `setWorkerUrl`, which bundles the worker with a
+   second copy of `maplibre-gl-shared.mjs` (about 150 KB gz more per map
+   user); (b) self-hosting the three files under `static/`; (c) a small Vite
+   plugin copying them into `_app/immutable/maplibre-<version>/`. **(c) ships**
+   (`scripts/vite-maplibre.ts`): the main module is `import()`ed from its copy
+   (`src/lib/map/maplibre.ts`), so its own `import.meta.url` finds the worker
+   beside it, main and worker share one `shared` module, everything is
+   same-origin, and the versioned path makes the adapter's immutable cache
+   headers true. It is not in Vite's manifest, so the service worker does not
+   precache it.
+2. **Why same-origin is not optional.** Given a worker URL on another origin,
+   MapLibre wraps it in a `blob:` URL — and doc 15 §2's `worker-src 'self'`
+   refuses blobs. A CDN copy was never available (rule 3), and it would not
+   have worked anyway.
+3. **The CSP.** A same-origin module worker under `worker-src 'self'`: **0
+   violations**, and the worker served as `text/javascript` under `nosniff`
+   (`wrangler dev`; to be confirmed on production after the first deploy).
+4. **Headless WebGL2: no flag needed.** Playwright 1.62's Chromium drew the
+   map in the e2e — the centre pixel of a beacon-coloured GeoJSON patch reads
+   back beacon-coloured through `readPixels`. The `--enable-unsafe-swiftshader`
+   the plan expected to need was not.
+5. **`page.route` sees the worker's requests.** Six tile requests a vector
+   source made from inside the worker were intercepted by a page route, so map
+   specs can serve tile fixtures the same way journey #3 serves weather.
+   `tiles.openfreemap.org` is now in the e2e browser's unresolvable hosts, so a
+   spec that forgets its fixture fails rather than reaching the internet.
+6. **Bytes** (gzip level 9, KiB): main 145.0, shared 143.8, worker 5.9 —
+   **294.7 of 300 (98 %)**, now a `static-glob` budget row over the copied
+   files, relabelled: the map *tile* loads MapLibre too, so "map detail only"
+   was no longer true (plan S2). The stylesheet is bundled separately and
+   counts toward CSS total: **10.5 KB gz**, taking CSS total on `main` to
+   39.6 of 45 KB. With the map widget's own styles that is tight enough that
+   M1 trims MapLibre's stylesheet to the rules a map without controls needs,
+   rather than raising the CSS budget.
+
+The S4 e2e now asserts a map that **draws**, a worker that arrives as
+JavaScript and no CSP violation; and the assertion S4 carried since Week 0,
+`HEAVY.test('echarts')` — true of the string and unable to fail (plan 1a.5) —
+is replaced by naming the vendored files the page loaded.
+
 ## Exit review
 
 Half-day: update docs 06/09/11/17/20 with findings, adjust Week 1 backlog,

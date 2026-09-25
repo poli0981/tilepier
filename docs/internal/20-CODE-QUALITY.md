@@ -82,7 +82,7 @@ after it reshaped the entire Week 1 commit plan.)
 | Each widget tile chunk | ≤ 40 KB |
 | Detail chunks w/ ECharts (weather, currency, markets) | ≤ 350 KB each, excluding the shared echarts chunk |
 | Shared echarts core chunk (lazy, counted once) | ≤ 330 KB |
-| maplibre chunk (map detail only) | ≤ 300 KB |
+| maplibre (vendored modules: main, shared, worker — on first map mount) | ≤ 300 KB |
 | Fonts total (both families, subsets) | ≤ 220 KB |
 
 > Corrected 2026-08-10, two ways. `timer` was listed as an ECharts detail
@@ -105,6 +105,15 @@ bump is what would push it over.
 security fix (doc 02, rule 7): **274.1 KB gz, 91 %**. It fits, with 26 KB
 left rather than 36, and the map widget's own code lands in its detail chunk,
 not in this one.
+
+**Re-measured 2026-09-25, as three files (Week 6 spike M0, doc 22 §S6):
+294.7 KB gz, 98 %.** The 274.1 was a bundle that never included the worker —
+MapLibre finds it at runtime, and a real map had never run. The modules are now
+copied whole into `_app/immutable/maplibre-<version>/` and measured as a
+`static-glob` row; the 20 KB difference is the price of main and worker sharing
+one `maplibre-gl-shared.mjs` instead of bundling it twice. The row is no longer
+"map detail only": the map tile loads it too. Its stylesheet (10.5 KB gz)
+counts toward CSS total.
 
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit
