@@ -1029,6 +1029,35 @@ the edge caches, never an overwrite of a feed still held. On the way,
 `fetchUpstream` learned that a timeout while reading a body is a timeout. The
 fixtures are synthetic text in the shapes of feeds measured that day.
 
+### Week 6a-1 on production (2026-09-25)
+
+Merged as #20 beside #21 (the scheduler fix) and deployed within ten minutes.
+**Checked on production by the operator, with the bearer:**
+
+- **A real feed through the Worker's own egress**: VnExpress, which had
+  answered `curl`'s user agent with a 404 from a developer machine, answers
+  `TilePier/…` from Cloudflare with the feed.
+- **Both SSRF probes refused** — `localtest.me` (loopback) and
+  `10-0-0-1.nip.io` (RFC 1918), each passing every URL rule, each answered by
+  the edge with a 4xx of its own (doc 15 §5).
+- **S3, finally keyed** (carried item 1): the weather load model at 100 % KV
+  hits, and the keyed run passing on its second attempt. The first attempt is
+  the finding — a cold key costs twice when asked again inside its write window
+  (doc 11 §5, doc 22 §S3). Finnhub also timed out twice at eight seconds that
+  hour; that is for the quota week to watch.
+
+**Two things went wrong on the way, both in the harness rather than the
+product.** `ci` went red on `main` after the merge: the lunar cross-check, an
+exhaustive 73 414-day comparison, ran past the 5 s default once 112 files
+shared CI's runner (#22 gives it its own 30 s). And #22's own claim that the S3
+file only talks to a deployed Worker was wrong — checked against two of its
+eight tests — so four local checks failed on a refused connection the first
+time the whole file ran against production (#23 skips them there).
+
+**Carried items now:** S3 keyed — done. Dependabot and code scanning — 0 open.
+The quota week runs to 2026-09-30. The Binance.US probe from a US colo is
+still open.
+
 ## Week 7 — Music · Media
 FSA + fallback ingestion, worker tag parsing, playback + Media Session +
 playlists + resume · media player + subtitles + PiP. Visualizer only if
