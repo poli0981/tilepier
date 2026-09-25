@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { copyText } from '$lib/core/clipboard';
 	import type { TpWidgetProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import { parseHex, toHex } from './color';
@@ -56,8 +57,7 @@
 	}
 
 	async function copy(value: string): Promise<void> {
-		if (value === '') return;
-		await navigator.clipboard.writeText(value);
+		if (value === '' || !(await copyText(value))) return;
 		copied = true;
 		if (copyTimer !== null) clearTimeout(copyTimer);
 		// doc 13 §7: a copy is micro-feedback, not a toast.

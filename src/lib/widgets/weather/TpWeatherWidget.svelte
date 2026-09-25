@@ -1,17 +1,18 @@
 <script lang="ts">
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpWeatherPlacePicker from './TpWeatherPlacePicker.svelte';
-	import TpWeatherReadout from './TpWeatherReadout.svelte';
+	import type { TpPlacePick } from '$lib/core/geocode';
 	import {
 		browserGeoPermission,
 		type TpPermissionSource,
 		type TpPositionSource
-	} from './geolocate';
+	} from '$lib/core/geolocate';
+	import type { TpDb } from '$lib/core/storage/db';
+	import type { TpWidgetProps } from '$lib/core/types';
+	import { m } from '$lib/paraglide/messages';
+	import { roundCoord } from '$lib/shared-constants';
+	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import TpPlaceSearch from '$lib/ui/TpPlaceSearch.svelte';
+	import TpWeatherReadout from './TpWeatherReadout.svelte';
 	import { readSettings, weatherKey } from './service';
-	import type { TpWeatherPlace } from './types';
 
 	/**
 	 * doc 08 §1 — the weather tile, and the first widget in the app to consume
@@ -93,8 +94,18 @@
 	 * opted in — so `useMyLocation` is derived from the pick rather than tracked
 	 * separately and left to disagree with it.
 	 */
-	function pick(place: TpWeatherPlace): void {
-		onUpdateSettings?.({ place, useMyLocation: place.name === '' });
+	function pick(place: TpPlacePick): void {
+		// **Rounded here**, to doc 08 §1's 2 dp. `TpPlaceSearch` hands back what
+		// the geocoder said — production answered `21.0283334, 105.854041` for Hà
+		// Nội — because the map keeps that precision for a saved place. The
+		// weather tile never uses more than 2 dp (`weatherUrl` and `readSettings`
+		// both round), so storing more in `tp.layout.v1` and in every backup is
+		// the part that would be wrong. The reader's own position arrives coarse
+		// already, and rounding it again changes nothing.
+		onUpdateSettings?.({
+			place: { name: place.name, lat: roundCoord(place.lat), lon: roundCoord(place.lon) },
+			useMyLocation: place.name === ''
+		});
 	}
 </script>
 
@@ -107,7 +118,7 @@
 			<TpIcon name="locate" size={13} />
 			{m['widget.weather.permission_blocked']()}
 		</p>
-		<TpWeatherPlacePicker onPick={pick} {positionSource} />
+		<TpPlaceSearch onPick={pick} {positionSource} />
 	</div>
 {:else if prefs.place === null || dataKey === null}
 	<!-- doc 06 §3's `empty`, and the normal first-run state rather than a
@@ -115,7 +126,7 @@
 	     *is* this state — a first-run tile that explains itself and offers no
 	     control is a chore, not a dashboard. -->
 	<div class="tp-wx-card" data-testid="weather-empty">
-		<TpWeatherPlacePicker onPick={pick} {positionSource} />
+		<TpPlaceSearch onPick={pick} {positionSource} />
 	</div>
 {:else}
 	<!--

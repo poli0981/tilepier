@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { copyText } from '$lib/core/clipboard';
 	import { dateKeyOf } from '$lib/core/date-key';
 	import { logEntry } from '$lib/core/log-buffer';
 	import { useRefresh } from '$lib/core/refresh.svelte';
@@ -118,7 +119,9 @@
 
 	async function copy(): Promise<void> {
 		if (text === '') return;
-		await navigator.clipboard.writeText(attribution === '' ? text : `${text}\n— ${attribution}`);
+		// Until Week 6 a refused clipboard was an unhandled rejection from this
+		// click; now it is simply no "copied".
+		if (!(await copyText(attribution === '' ? text : `${text}\n— ${attribution}`))) return;
 		copied = true;
 		if (copyTimer !== null) clearTimeout(copyTimer);
 		copyTimer = setTimeout(() => (copied = false), 1400);

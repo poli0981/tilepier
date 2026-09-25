@@ -133,7 +133,11 @@ tilepier/
 
 1. `widgets/*` may import from `core`, `ui`, `charts`, `i18n`, `lunar` —
    never from another widget's folder. Cross-widget reuse graduates into
-   `core` or `ui` first.
+   `core` or `ui` first. Week 6 graduated `core/tile-view` (markets → rss),
+   `core/download` (three inline copies, already drifting), `core/clipboard`
+   (five inline copies, three without a `catch`) and `core/geocode` +
+   `core/geolocate` with `ui/TpPlaceSearch` (weather → map) — each on its second
+   consumer, or when an inline copy was about to become the next.
 2. `routes/api/*` never imports from `widgets/*` (server code must not pull
    component graphs). Shared request/response types live in
    `src/lib/api-types.ts`, imported by both sides.

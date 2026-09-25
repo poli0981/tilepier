@@ -6,13 +6,14 @@ import { tileStatus, tileStatusChannel } from '$lib/core/tile-status';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import type { TpTileSize } from '$lib/core/types';
 import type { TpApiMeta } from '$lib/api-types';
+import { GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
 import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from '$lib/core/__fixtures__/weather';
 import { m } from '$lib/paraglide/messages';
 import { online } from '$lib/stores/online.svelte';
 import { settings } from '$lib/stores/settings.svelte';
 import TpWeatherWidget from './TpWeatherWidget.svelte';
 import { weatherKey } from './service';
-import type { TpGeoPermission, TpPositionSource } from './geolocate';
+import type { TpGeoPermission, TpPositionSource } from '$lib/core/geolocate';
 
 /**
  * doc 08 §1's tile and doc 06 §3's states for it — the first widget in the app
@@ -287,12 +288,40 @@ describe('picking a place (doc 06 §2)', () => {
 		);
 
 		await expect.element(screen.getByTestId('weather-empty')).toBeInTheDocument();
-		await screen.getByTestId('weather-locate').click();
+		await screen.getByTestId('place-locate').click();
 
 		await vi.waitFor(() => {
 			expect(onUpdateSettings).toHaveBeenCalledWith({
 				place: { name: '', lat: 21.03, lon: 105.8 },
 				useMyLocation: true
+			});
+		});
+	});
+
+	it('stores a searched place at 2 dp, though the search hands it back whole', async () => {
+		// Moved here from the old picker's test in Week 6, with the rounding it
+		// checks: `TpPlaceSearch` now returns the geocoder's own precision, which
+		// the map keeps for a saved place, and doc 08 §1's 2 dp is this tile's to
+		// apply. Production answered `21.0283334, 105.854041` for Hà Nội.
+		const onUpdateSettings = vi.fn();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(
+				async () =>
+					new Response(JSON.stringify(GEOCODE_OK), {
+						headers: { 'content-type': 'application/json' }
+					})
+			)
+		);
+		const screen = render(TpWeatherWidget, props({ settings: {}, onUpdateSettings }));
+
+		await screen.getByTestId('place-search').fill('hà n');
+		await screen.getByText('Hà Nam').click();
+
+		await vi.waitFor(() => {
+			expect(onUpdateSettings).toHaveBeenCalledWith({
+				place: { name: 'Hà Nam', lat: 20.54, lon: 105.92 },
+				useMyLocation: false
 			});
 		});
 	});
@@ -308,7 +337,7 @@ describe('picking a place (doc 06 §2)', () => {
 		);
 
 		await expect.element(screen.getByTestId('weather-permission')).toBeInTheDocument();
-		await expect.element(screen.getByTestId('weather-search')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('place-search')).toBeInTheDocument();
 	});
 
 	it('a stored place labels itself, and a located one is named live', async () => {

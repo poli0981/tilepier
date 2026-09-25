@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { copyText } from '$lib/core/clipboard';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
@@ -66,15 +67,12 @@
 	}
 
 	async function copy(value: string): Promise<void> {
-		try {
-			await navigator.clipboard.writeText(value);
-			copied = value;
-			// doc 13 §7: copy confirmations are micro-feedback, not a toast.
-			setTimeout(() => (copied = copied === value ? null : copied), 1500);
-		} catch {
-			// A denied clipboard is not worth an error state for; the number is
-			// on screen and can be selected.
-		}
+		// A denied clipboard is not worth an error state for; the number is on
+		// screen and can be selected.
+		if (!(await copyText(value))) return;
+		copied = value;
+		// doc 13 §7: copy confirmations are micro-feedback, not a toast.
+		setTimeout(() => (copied = copied === value ? null : copied), 1500);
 	}
 
 	function categoryLabel(value: TpUnitCategory): string {

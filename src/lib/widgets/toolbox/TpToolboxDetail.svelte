@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { copyText } from '$lib/core/clipboard';
 	import { downloadBlob } from '$lib/core/download';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
@@ -80,8 +81,7 @@
 	}
 
 	async function copy(key: string, value: string): Promise<void> {
-		if (value === '') return;
-		await navigator.clipboard.writeText(value);
+		if (value === '' || !(await copyText(value))) return;
 		copied = key;
 		if (copyTimer !== null) clearTimeout(copyTimer);
 		copyTimer = setTimeout(() => (copied = null), 1400);
