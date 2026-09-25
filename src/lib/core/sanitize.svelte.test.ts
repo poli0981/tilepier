@@ -153,3 +153,16 @@ describe('what a note is allowed to be', () => {
 		expect(out).toContain('2 &lt; 3');
 	});
 });
+
+describe('one instance per profile', () => {
+	it('leaves the library instance without the notes hook', async () => {
+		// DOMPurify keeps hooks per instance. The notes hook used to sit on the
+		// global one, where it ran for every caller in the app — and would have
+		// run inside the RSS profile too. Seen red on the old module: the global
+		// instance put `target="_blank"` on a link it was never told about.
+		const { default: global } = await import('dompurify');
+		clean('<a href="https://example.com">x</a>');
+
+		expect(global.sanitize('<a href="https://example.com">x</a>')).not.toContain('target=');
+	});
+});
