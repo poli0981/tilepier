@@ -352,7 +352,7 @@
 	}
 
 	.tp-wx__temp {
-		font-size: var(--text-3xl);
+		font-size: var(--text-xl);
 		line-height: 1.1;
 		color: var(--color-fg);
 	}

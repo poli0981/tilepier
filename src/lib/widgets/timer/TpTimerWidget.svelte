@@ -264,7 +264,7 @@
 	.tp-timer__readout {
 		position: absolute;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 		font-weight: 600;
 	}
 
