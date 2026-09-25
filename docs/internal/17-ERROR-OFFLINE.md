@@ -127,6 +127,20 @@ section that states the policy:
   `online.noteFetchResult`, which is how a captive portal is noticed at all when
   the `online` event never fires.
 
+**"Respect server value" respected a value no server sent, until 2026-09-25.**
+`core/api.ts` read the header as `Number(response.headers.get('retry-after'))`,
+and `Number(null)` is `0`. The Worker's `fail(code)` sends `retry-after` only
+when it has a wait to name, so every `UPSTREAM_DOWN` — and every other refusal
+without one — reached the scheduler as a server-named delay of 0 s, which it
+honours over the curve. A tile whose upstream was down therefore retried on
+every 5 s scheduler tick for the length of the outage: twelve requests a minute
+per tile, against a zone rule that blocks all of `/api/*` at sixty. The curve
+the 2026-09-01 fix made reachable was unreachable again for everything except
+`NETWORK` and `MALFORMED`, which never read the header. An absent, blank or
+unreadable header now names nothing (`headerSeconds` in `core/api.ts`), and
+`api.test.ts` has the case that was missing: a failure with no delay anywhere.
+Found by the rss pacer's test for a 429 that names none.
+
 ## 6. Crash containment
 
 Each `TpWidgetHost` wraps its widget with `<svelte:boundary>` (Svelte 5
