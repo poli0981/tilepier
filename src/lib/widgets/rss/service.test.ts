@@ -293,9 +293,14 @@ describe('the source', () => {
 		);
 
 		for (let i = 0; i < 3; i += 1) {
-			const attempt = source(VNE).fetcher(new AbortController().signal);
+			// The expectation is attached before the clock moves: the rejection
+			// lands during the advance, and an unattached one is reported as
+			// unhandled even though the next line would have handled it.
+			const attempt = expect(
+				source(VNE).fetcher(new AbortController().signal)
+			).rejects.toMatchObject({ code: 'NETWORK' });
 			await vi.advanceTimersByTimeAsync(1_000);
-			await expect(attempt).rejects.toMatchObject({ code: 'NETWORK' });
+			await attempt;
 		}
 	});
 
