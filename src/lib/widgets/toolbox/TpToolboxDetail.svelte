@@ -523,7 +523,7 @@
 	.tp-tbd__value {
 		overflow-wrap: anywhere;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-tbd__hint,
@@ -592,7 +592,7 @@
 		gap: 0.5rem;
 		margin: 0;
 		color: var(--color-fg);
-		font-size: var(--text-sm);
+		font-size: var(--text-base);
 	}
 
 	.tp-tbd__verdict {
