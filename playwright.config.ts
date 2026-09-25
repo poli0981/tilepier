@@ -3,6 +3,17 @@ import { defineConfig } from '@playwright/test';
 const PORT = 4173;
 const BASE_URL = `https://localhost:${PORT}`;
 
+/**
+ * A run pointed at a deployed Worker — `e2e/s3-quota.e2e.ts`, doc 22 §S3 —
+ * talks to that origin through `playwright.request` and never opens a local
+ * page, so it builds nothing and starts no `wrangler dev`. Until 2026-09-25 it
+ * did both: the keyed run took a cold build first, and failed outright in a
+ * shell without `pnpm` on its PATH, because the web server command calls it.
+ * Every other spec needs the local server, so this variable is for that file
+ * alone.
+ */
+const DEPLOYED = process.env.S3_BASE_URL;
+
 export default defineConfig({
 	testDir: 'e2e',
 	testMatch: '**/*.e2e.{ts,js}',
@@ -40,23 +51,25 @@ export default defineConfig({
 			]
 		}
 	},
-	webServer: {
-		// `wrangler dev` against the built worker, so the suite exercises the real
-		// Cloudflare runtime: the _headers rules and the prerendered gate both
-		// need that to mean anything.
-		//
-		// HTTPS locally is not optional. The CSP SvelteKit emits from
-		// svelte.config.js ends with `upgrade-insecure-requests`, which over plain HTTP rewrites every
-		// subresource request to https on a port that is not listening — the app
-		// never hydrates, and only the tests that need JavaScript fail, which is
-		// a genuinely confusing way to find out.
-		command: `pnpm build && pnpm exec wrangler dev .svelte-kit/cloudflare/_worker.js --port ${PORT} --local-protocol https`,
-		url: BASE_URL,
-		ignoreHTTPSErrors: true,
-		reuseExistingServer: !process.env.CI,
-		// Cold build plus workerd start-up.
-		timeout: 180_000,
-		stdout: 'pipe',
-		stderr: 'pipe'
-	}
+	webServer: DEPLOYED
+		? undefined
+		: {
+				// `wrangler dev` against the built worker, so the suite exercises the
+				// real Cloudflare runtime: the _headers rules and the prerendered gate
+				// both need that to mean anything.
+				//
+				// HTTPS locally is not optional. The CSP SvelteKit emits from
+				// svelte.config.js ends with `upgrade-insecure-requests`, which over
+				// plain HTTP rewrites every subresource request to https on a port that
+				// is not listening — the app never hydrates, and only the tests that
+				// need JavaScript fail, which is a genuinely confusing way to find out.
+				command: `pnpm build && pnpm exec wrangler dev .svelte-kit/cloudflare/_worker.js --port ${PORT} --local-protocol https`,
+				url: BASE_URL,
+				ignoreHTTPSErrors: true,
+				reuseExistingServer: !process.env.CI,
+				// Cold build plus workerd start-up.
+				timeout: 180_000,
+				stdout: 'pipe',
+				stderr: 'pipe'
+			}
 });
