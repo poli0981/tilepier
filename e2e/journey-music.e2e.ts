@@ -3,92 +3,53 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { watchCsp } from './_lib/csp';
+import { fillOpfs, lapseGrant, stubPickers } from './_lib/fsa';
 import { acceptGate } from './_lib/gate';
-import { fillOpfs, lapseGrant, LIBRARY_SONGS, stubPicker } from './_lib/music';
 import { seedLayout } from './_lib/seed';
+import { clearSessionLog, recordSession, sessionLog } from './_lib/session';
 
 /**
  * The music widget end to end (doc 09 §2), on the built app under its real CSP
- * (doc 15 §2) — path A through the OPFS-backed picker of `_lib/music`, path B
+ * (doc 15 §2) — path A through the OPFS-backed picker of `_lib/fsa`, path B
  * through the detail's file input.
  *
  * **The audio really plays.** Playwright's browser is Chrome for Testing,
  * which has the codecs (doc 22 §S7), and a headless run is muted, not
  * stopped. What the OS would show is read where the OS reads it:
- * `navigator.mediaSession`. The fixture songs last a second each, so rather
- * than race them, an init script records every title and playback state the
- * page writes there, and the tests read that history.
+ * `navigator.mediaSession`, through `_lib/session`'s recording — the fixture
+ * songs last a second each, too short to race.
  */
 
 const MUSIC_TILE = [
 	{ instanceId: 'wgt_music', widgetId: 'music', x: 0, y: 0, w: 4, h: 2, settings: {} }
 ];
 
-interface TpSessionLog {
-	titles: (string | null)[];
-	states: string[];
-	/** What the session holds now. */
-	state: string;
-	title: string | null;
-}
+const LIBRARY = join(process.cwd(), 'src', 'lib', 'widgets', 'music', '__fixtures__', 'library');
 
-/** Records what the page writes to its Media Session, from before its first script. */
-async function recordSession(page: Page): Promise<void> {
-	await page.addInitScript(() => {
-		const log = { titles: [] as (string | null)[], states: [] as string[] };
-		(window as unknown as { __tpSession: typeof log }).__tpSession = log;
-		const proto = MediaSession.prototype;
-		for (const [name, into] of [
-			[
-				'metadata',
-				(value: unknown) => log.titles.push((value as MediaMetadata | null)?.title ?? null)
-			],
-			['playbackState', (value: unknown) => log.states.push(String(value))]
-		] as const) {
-			const real = Object.getOwnPropertyDescriptor(proto, name);
-			Object.defineProperty(proto, name, {
-				configurable: true,
-				get(this: MediaSession) {
-					return real?.get?.call(this);
-				},
-				set(this: MediaSession, value: unknown) {
-					into(value);
-					real?.set?.call(this, value);
-				}
-			});
-		}
-	});
-}
+/** The fixture library as the folder holds it, with what the walk must skip. */
+const LIBRARY_FILES = [
+	'Artist A/Album 1/01 One.mp3',
+	'Artist A/Album 1/02 Two.flac',
+	'Artist A/Album 1/cover.png',
+	'Artist A/Album 1/._01 One.mp3',
+	'Artist B/Three.ogg',
+	'.hidden/Skipped.mp3'
+];
 
-async function sessionLog(page: Page): Promise<TpSessionLog> {
-	return page.evaluate(() => {
-		const log = (window as unknown as { __tpSession: Omit<TpSessionLog, 'state' | 'title'> })
-			.__tpSession;
-		return {
-			titles: [...log.titles],
-			states: [...log.states],
-			state: navigator.mediaSession.playbackState,
-			title: navigator.mediaSession.metadata?.title ?? null
-		};
-	});
-}
-
-async function clearSessionLog(page: Page): Promise<void> {
-	await page.evaluate(() => {
-		const log = (window as unknown as { __tpSession: Omit<TpSessionLog, 'state' | 'title'> })
-			.__tpSession;
-		log.titles.length = 0;
-		log.states.length = 0;
-	});
-}
+/** The three songs in it, as a file input takes them. */
+const LIBRARY_SONGS = [
+	'Artist A/Album 1/01 One.mp3',
+	'Artist A/Album 1/02 Two.flac',
+	'Artist B/Three.ogg'
+].map((path) => join(LIBRARY, path));
 
 /** A deck with the music tile on it, and the fixture library picked from it. */
 async function pickFolder(page: Page): Promise<void> {
-	await stubPicker(page);
+	await stubPickers(page);
 	await recordSession(page);
 	await seedLayout(page, MUSIC_TILE);
 	await acceptGate(page, { dismissCoach: true });
-	await fillOpfs(page);
+	await fillOpfs(page, 'music', LIBRARY, LIBRARY_FILES);
 
 	await page.getByTestId('music-empty').getByTestId('music-pick').click();
 	await expect(page.getByTestId('music-tile')).toBeVisible({ timeout: 15_000 });

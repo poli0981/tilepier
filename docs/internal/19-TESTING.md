@@ -95,14 +95,16 @@ Markets E2E is a manual checklist in v1 (real APIs); its logic is
 unit/component-covered. ~~Music's too (real files).~~ **Music is automated
 since Week 7a** (doc 22 §S7): `showDirectoryPicker` is stubbed to return a
 real OPFS folder of generated fixtures, and a lapsed grant is simulated by
-every handle method throwing `NotAllowedError` (`e2e/_lib/music.ts`).
+every handle method throwing `NotAllowedError` (`e2e/_lib/fsa.ts`, shared with
+the video since Week 7b).
 `journey-music` picks a folder from the tile and plays it, imports files in
 the detail and finds one without its accents, resumes after a lapsed grant in
 one click, and resets the deck from Settings to prove the player stops with
 no deck page to tell it. The audio really plays — Chrome for Testing has the
 codecs and headless is muted, not stopped — and what the OS would show is
 read from `navigator.mediaSession`, through an init script that records every
-title and state written there, because the fixture songs last a second each.
+title and state written there (`e2e/_lib/session.ts`), because the fixture
+songs last a second each.
 Every one of those tests also asserts no CSP violation, collected by
 `_lib/csp.ts` from both `securitypolicyviolation` events and the console.
 What stays manual is what no stub can be — the OS dialog, the gesture, a
@@ -110,6 +112,21 @@ grant across a browser restart, the OS's own media controls. Since Week 7b-1
 it also holds spike S2's 200-file import guard: under ten seconds, and the page
 keeps drawing. That guard came over when `/spike/s2` and `e2e/s2-fsa` were
 removed.
+
+**`journey-media`** (Week 7b) does the same for the video. `showOpenFilePicker`
+returns a file from an OPFS folder of the generated fixtures (doc 22 §S8), and
+a second test deletes it, so the file input Brave and Firefox get is driven
+through Playwright's file chooser. It covers:
+- a picked video that plays, and the Media Session that sees it;
+- an MP4 through the input;
+- a file this browser cannot play, which says so and never takes the sound;
+- sound with no picture, which says so and offers no picture-in-picture;
+- the keys, from the focus the player takes when it loads;
+- Escape, which does not close the detail out of full screen but does after;
+- a reload in the middle of a video, then the same file picked again.
+
+The reload test is the one that found `pagehide` writes lost (doc 04 §6): it
+plays past the seek's own save, so only the closing page can keep the place.
 
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and
