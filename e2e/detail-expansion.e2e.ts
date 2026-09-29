@@ -30,17 +30,26 @@ test('the tile opens its detail, and the URL says which instance', async ({ page
 	await expect(page.getByText('múi giờ của bạn')).toBeVisible();
 });
 
-test('Escape closes it and returns to the deck URL', async ({ page }) => {
+test('Escape closes it, returns to the deck URL, and closes nothing else', async ({ page }) => {
 	await acceptGate(page);
+	// Edit mode first, so the deck has a layer of its own for Esc to close
+	// wrongly. Without it this test could not fail: until 2026-09-29 it only
+	// asserted that `main` was visible, and the same Esc that closed the panel
+	// was also dropping the deck out of edit mode.
+	await page.keyboard.press('e');
+	await expect(page.locator('main[data-edit="on"]')).toBeVisible();
 	await openClockDetail(page);
 
 	await page.keyboard.press('Escape');
 
 	await expect(page.getByTestId('detail-panel')).toBeHidden();
 	await expect(page).toHaveURL(/\/$/);
-	// doc 13 §8: Escape closes the topmost layer only. The deck must not have
-	// dropped out of view mode or done anything else on the same keystroke.
-	await expect(page.getByRole('main')).toBeVisible();
+	// doc 13 §8: Escape closes the topmost layer only.
+	await expect(page.locator('main[data-edit="on"]')).toBeVisible();
+
+	// And the next Esc, with no panel over it, reaches the layer underneath.
+	await page.keyboard.press('Escape');
+	await expect(page.locator('main[data-edit="off"]')).toBeVisible();
 });
 
 test('the scrim closes it', async ({ page }) => {
