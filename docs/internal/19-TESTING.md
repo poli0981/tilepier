@@ -106,7 +106,10 @@ title and state written there, because the fixture songs last a second each.
 Every one of those tests also asserts no CSP violation, collected by
 `_lib/csp.ts` from both `securitypolicyviolation` events and the console.
 What stays manual is what no stub can be — the OS dialog, the gesture, a
-grant across a browser restart, the OS's own media controls.
+grant across a browser restart, the OS's own media controls. Since Week 7b-1
+it also holds spike S2's 200-file import guard: under ten seconds, and the page
+keeps drawing. That guard came over when `/spike/s2` and `e2e/s2-fsa` were
+removed.
 
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and

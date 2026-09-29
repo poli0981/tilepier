@@ -1370,6 +1370,20 @@ reader.
 - The media half is measured at about 9.75 days. If the week runs hot, cut
   poster, then recents, then the `.srt` converter.
 
+### Week 7b-1 — a background tab keeps playing, and the S2 harness goes (2026-09-29)
+
+S23's answer, built: while the folder grant holds, the player keeps the next
+twenty folder tracks' `File`s. It reads a track from its held `File` only
+when a fresh read is refused, so an edited file is still read as it is now
+(doc 09 §2).
+- The test holds three tracks, makes every handle refuse, and plays on through
+  the next two.
+- It failed on the parent, whose player never looked ahead.
+
+`/spike/s2` and `e2e/s2-fsa` are removed. The 200-file import guard, the one
+thing the harness still asserted that nothing else did, moved into
+`journey-music` (doc 19 §4).
+
 ## Week 8 — Hardening & Release
 PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
 pass vs budgets · full manual matrix (doc 19 §5) · doc 10 §8 compliance

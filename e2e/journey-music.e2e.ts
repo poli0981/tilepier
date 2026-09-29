@@ -1,4 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { watchCsp } from './_lib/csp';
 import { acceptGate } from './_lib/gate';
 import { fillOpfs, lapseGrant, LIBRARY_SONGS, stubPicker } from './_lib/music';
@@ -170,4 +173,88 @@ test('songs added in the detail are listed, found without their accents, and pla
 	await expect.poll(async () => (await sessionLog(page)).states).toContain('playing');
 	expect((await sessionLog(page)).titles[0]).toBe('Một');
 	expect(await violations()).toEqual([]);
+});
+
+/**
+ * Spike S2's pass criterion, kept when its harness went (Week 7b-1): 200 files
+ * import in under ten seconds and the page keeps drawing throughout — doc 22
+ * §S2, measured at 806–863 ms in S7. The files are real WAVs, so the tag
+ * parser does real work; a frame counter that stops would mean a parse ran on
+ * the main thread.
+ */
+test.describe('a large import (doc 22 §S2)', () => {
+	const COUNT = 200;
+	let folder: string;
+	let paths: string[];
+
+	/** A minimal but valid 8-bit mono WAV, whose header music-metadata reads. */
+	function wav(seconds: number, sampleRate = 8000): Buffer {
+		const samples = Math.floor(seconds * sampleRate);
+		const data = Buffer.alloc(samples);
+		for (let i = 0; i < samples; i++) {
+			// A quiet sine, so the file is not one repeated byte.
+			data[i] = 128 + Math.round(40 * Math.sin((i / sampleRate) * 2 * Math.PI * 220));
+		}
+		const header = Buffer.alloc(44);
+		header.write('RIFF', 0);
+		header.writeUInt32LE(36 + data.length, 4);
+		header.write('WAVE', 8);
+		header.write('fmt ', 12);
+		header.writeUInt32LE(16, 16);
+		header.writeUInt16LE(1, 20);
+		header.writeUInt16LE(1, 22);
+		header.writeUInt32LE(sampleRate, 24);
+		header.writeUInt32LE(sampleRate, 28);
+		header.writeUInt16LE(1, 32);
+		header.writeUInt16LE(8, 34);
+		header.write('data', 36);
+		header.writeUInt32LE(data.length, 40);
+		return Buffer.concat([header, data]);
+	}
+
+	test.beforeAll(() => {
+		folder = mkdtempSync(join(tmpdir(), 'tp-music-200-'));
+		paths = Array.from({ length: COUNT }, (_, i) => {
+			const path = join(folder, `track-${String(i).padStart(3, '0')}.wav`);
+			writeFileSync(path, wav(0.25 + (i % 8) * 0.05));
+			return path;
+		});
+	});
+
+	test.afterAll(() => {
+		rmSync(folder, { recursive: true, force: true });
+	});
+
+	test(`imports ${String(COUNT)} files in under 10 s, and the page keeps drawing`, async ({
+		page
+	}) => {
+		const violations = await watchCsp(page);
+		await seedLayout(page, MUSIC_TILE);
+		await acceptGate(page, { dismissCoach: true });
+		await page.getByRole('button', { name: 'mở chi tiết' }).first().click();
+		const detail = page.getByTestId('music-detail');
+		await page.evaluate(() => {
+			const counter = window as unknown as { __tpFrames: number };
+			counter.__tpFrames = 0;
+			const tick = () => {
+				counter.__tpFrames += 1;
+				requestAnimationFrame(tick);
+			};
+			requestAnimationFrame(tick);
+		});
+
+		const started = Date.now();
+		await detail.getByTestId('music-add-files').setInputFiles(paths);
+		await expect(detail.getByText(`${String(COUNT)} bài`, { exact: true })).toBeVisible({
+			timeout: 60_000
+		});
+		const elapsed = Date.now() - started;
+
+		expect(elapsed, `the import took ${String(elapsed)} ms`).toBeLessThan(10_000);
+		const frames = await page.evaluate(
+			() => (window as unknown as { __tpFrames: number }).__tpFrames
+		);
+		expect(frames, 'the page stopped drawing during the import').toBeGreaterThan(10);
+		expect(await violations()).toEqual([]);
+	});
 });

@@ -23,6 +23,7 @@ import {
 	reshuffle,
 	RESTART_AFTER_MS,
 	stepIndex,
+	upcoming,
 	type TpQueue,
 	type TpQueueSource,
 	type TpRepeat,
@@ -64,6 +65,13 @@ import {
  *   player, or a library whose drive was unplugged would spin through every
  *   track, forever on repeat-all. `playing` resets the count.
  *
+ * **In a background tab it plays on past a lapsed folder grant** (plan S23):
+ * Chrome revokes "Allow this time" from a tab left in the background a while,
+ * and a `File` taken before that still reads (the owner's check, doc 22 §S7).
+ * So while the grant holds, the player keeps the next twenty folder tracks'
+ * `File`s, and reads a track from its held `File` only when a fresh read is
+ * refused.
+ *
  * **The OS's media keys and lock screen drive it through the Media Session**
  * (doc 09 §2) — written only while this player holds `core/playback`'s claim,
  * which every start takes, so the video player can have the session when it
@@ -91,6 +99,14 @@ export const SAVE_EVERY_MS = 10_000;
 
 /** Consecutive failures before the player gives up (plan S12). */
 const MAX_FAILURES = 3;
+
+/**
+ * Folder tracks whose `File` is held ahead of time (plan S23): enough for an
+ * hour or more of music in a background tab after Chrome has revoked an
+ * "Allow this time" grant. A `File` is a reference, not the bytes, so twenty
+ * cost a walk down twenty paths and nothing else.
+ */
+const HOLD_AHEAD = 20;
 
 const POSITION_KEY = 'music';
 const QUEUE_KEY = 'music:queue';
@@ -153,6 +169,8 @@ class TpPlayer {
 	#failures = 0;
 	#retried = false;
 	#pendingSeekMs: number | null = null;
+	/** The next folder tracks' Files, by track id, taken while the grant held. */
+	#held = new Map<string, File>();
 	/** The Media Session's artwork: one object URL, shared by an album's tracks. */
 	#cover: { id: string; src: string; type: string } | null = null;
 	#lastSaved = 0;
@@ -223,6 +241,7 @@ class TpPlayer {
 	playTracks(trackIds: readonly string[], startId: string, source: TpQueueSource): void {
 		if (trackIds.length === 0) return;
 		this.queue = buildQueue(trackIds, startId, source, this.shuffle, this.#seams.random);
+		this.#held.clear();
 		this.#failures = 0;
 		void this.#saveQueue();
 		void this.#load(currentId(this.queue), true);
@@ -307,6 +326,7 @@ class TpPlayer {
 		this.#token += 1;
 		this.#audio?.pause();
 		if (this.status !== 'idle') this.status = this.current === null ? 'idle' : 'paused';
+		this.#held.clear();
 		this.#leaveSession();
 		void this.#savePosition();
 	}
@@ -358,6 +378,7 @@ class TpPlayer {
 		if (token !== this.#token) return;
 
 		this.#setSource(blob);
+		void this.#holdAhead(token);
 		if (autoplay) await this.#start();
 		else this.status = 'paused';
 	}
@@ -373,7 +394,51 @@ class TpPlayer {
 		if (root === null || track.relPath === undefined) {
 			throw new DOMException('no folder', 'NotFoundError');
 		}
-		return fileAt(root, track.relPath);
+		try {
+			// A fresh read first, so a file edited since it was held is read as
+			// it is now.
+			return await fileAt(root, track.relPath);
+		} catch (error) {
+			// The grant lapsed, as Chrome's "Allow this time" does in a tab left
+			// in the background, but a File taken while it held still reads
+			// (doc 22 §S7). Without one, the tile asks again (plan S12).
+			const held = this.#held.get(track.id);
+			if (held !== undefined && named(error, 'NotAllowedError')) return held;
+			throw error;
+		}
+	}
+
+	/**
+	 * Takes the `File`s of the next `HOLD_AHEAD` folder tracks while the grant
+	 * holds, and lets go of any that left that window (plan S23). `token` is
+	 * the load that asked: a newer one stops this one.
+	 */
+	async #holdAhead(token: number): Promise<void> {
+		const ids = upcoming(this.queue, this.repeat, HOLD_AHEAD).map((entry) => entry.id);
+		const wanted = new Set(ids);
+		for (const id of this.#held.keys()) {
+			if (!wanted.has(id)) this.#held.delete(id);
+		}
+		let root: FileSystemDirectoryHandle | null;
+		let tracks: (TpTrack | undefined)[];
+		try {
+			root = await loadMusicRoot(this.#seams.target);
+			tracks = await this.#seams.target.tracks.bulkGet(ids.filter((id) => !this.#held.has(id)));
+		} catch {
+			return;
+		}
+		if (root === null) return;
+		for (const track of tracks) {
+			if (token !== this.#token) return;
+			if (track?.source !== 'fsa' || track.relPath === undefined) continue;
+			try {
+				this.#held.set(track.id, await fileAt(root, track.relPath));
+			} catch (error) {
+				// The grant is gone: keep what is held. Anything else — a file
+				// moved away — is that track's own read's to report.
+				if (named(error, 'NotAllowedError')) return;
+			}
+		}
 	}
 
 	#setSource(blob: Blob): void {
@@ -700,6 +765,7 @@ class TpPlayer {
 		this.#failures = 0;
 		this.#retried = false;
 		this.#pendingSeekMs = null;
+		this.#held.clear();
 		this.#lastSaved = 0;
 		this.#restoring = null;
 		this.#hadTile = false;
