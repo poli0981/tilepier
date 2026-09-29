@@ -2,7 +2,7 @@
 	"id": "/",
 	"name": "TilePier",
 	"short_name": "TilePier",
-	"description": "Bảng điều khiển widget cục bộ — không tài khoản, không cookie.",
+	"description": "Bảng điều khiển widget cục bộ — không tài khoản, không cookie theo dõi.",
 	"lang": "vi",
 	"start_url": "/",
 	"scope": "/",

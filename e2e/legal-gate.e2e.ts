@@ -94,7 +94,27 @@ test('a reader who agreed to an older version sees the gate again, with what cha
 	await expect(page.getByRole('dialog')).toBeHidden();
 	expect(
 		await page.evaluate(() => JSON.parse(localStorage.getItem('tp.legal.v1') ?? '{}'))
-	).toMatchObject({ acceptedVersion: 2 });
+	).toMatchObject({ acceptedVersion: 3 });
+});
+
+// LEGAL_VERSION 3: the cookie a version 2 reader was told did not exist. They
+// are asked again, and the one "what changed" line names it.
+test('a reader who agreed to version 2 is told about the cookie', async ({ page }) => {
+	await page.addInitScript(() => {
+		if (sessionStorage.getItem('tp.e2e.legal-v2') !== null) return;
+		sessionStorage.setItem('tp.e2e.legal-v2', '1');
+		localStorage.setItem(
+			'tp.legal.v1',
+			JSON.stringify({ acceptedVersion: 2, acceptedAt: '2026-09-24T00:00:00Z' })
+		);
+	});
+
+	await page.goto('/');
+
+	await expect(page.getByRole('dialog')).toBeVisible();
+	await expect(page.locator("[data-locale='vi'] [data-testid='gate-changed']")).toContainText(
+		'cf_clearance'
+	);
 });
 
 test('a first visit sees no "what changed" line — there is nothing it changed from', async ({
@@ -208,7 +228,9 @@ test('security headers are set on HTML responses', async ({ request }) => {
 	// meta one without SvelteKit's hash, and block hydration (see _headers).
 	expect(headers['content-security-policy']).toBe("frame-ancestors 'none'");
 
-	// doc 16 §3: no cookies at all.
+	// doc 16 §3: the app itself sets no cookie. The one cookie on the site,
+	// Cloudflare's cf_clearance, comes from the edge after a passed bot check
+	// (LEGAL_VERSION 3), never from a response of the app.
 	expect(headers['set-cookie']).toBeUndefined();
 });
 

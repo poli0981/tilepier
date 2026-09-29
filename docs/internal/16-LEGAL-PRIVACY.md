@@ -80,12 +80,22 @@ above has promised it since Week 1, and until a bump happened nothing drew it.
   from `previousLegalVersion()` whenever it re-derives `data-legal`, in case
   `boot.js` was dropped.
 - **Test.** `e2e/legal-gate.e2e.ts` seeds a version-1 acceptance, sees the gate
-  and the line, accepts, and finds version 2 stored.
+  and the line, accepts, and finds the current version stored.
+
+**`LEGAL_VERSION` 3 (2026-09-29): one line for every older version.** The
+line is a single message, so it has to tell each older reader what changed
+since *their* version:
+- a version 1 reader had heard of neither the analytics nor the bot check;
+- a version 2 reader had been told there were no cookies.
+
+It names both, and the e2e seeds a version 2 acceptance and expects the line
+to name `cf_clearance`.
 
 ## 3. Privacy stance (the actual policy, summarized)
 
-1. No accounts, no ads, no cookies, and nothing that follows a reader to
-   other sites.
+1. No accounts, no ads, no tracking cookies, and nothing that follows a
+   reader to other sites. TilePier's own code sets no cookie; the one cookie
+   on the site is Cloudflare's (point 10).
 2. All personal content (layout, notes, todos, events, playlists, files,
    saved places) stays in the browser's storage on the user's device.
 3. Network requests go to TilePier's own `/api` proxy; the proxy holds no
@@ -120,6 +130,20 @@ above has promised it since Week 1, and until a bump happened nothing drew it.
    reader chooses a place for the map**, and the tile says who draws it before
    that — the in-place notice the owner chose over a new legal version (Week 6
    plan S1), so `LEGAL_VERSION` stays 2.
+10. **One cookie — Cloudflare's `cf_clearance`**, added 2026-09-29 with
+    `LEGAL_VERSION` 3.
+    - When the bot check passes, Cloudflare stores it on this site
+      (Turnstile's pre-clearance), so its protection does not challenge the
+      browser again for the Challenge Passage time, 30 minutes.
+    - Cloudflare also sets it on the rare visit its protection challenges
+      before the page loads (Bot Fight Mode, Browser Integrity Check).
+    - It is `Secure`, `SameSite=None` and `Partitioned`. Cloudflare counts
+      it as strictly necessary.
+    - TilePier never reads it, and Workers Logs record the `Cookie` header as
+      `REDACTED` (doc 15 §7).
+    - The check's own frame, on challenges.cloudflare.com, keeps cookies and
+      storage of its own, which browsers partition by top-level site.
+    - `/legal/privacy` shows it right after the bot check.
 
 `/legal/privacy` is the human-readable version of the above in VI + EN.
 
@@ -131,6 +155,19 @@ week, and fixed here rather than carried forward. The bump re-gates everyone
 who agreed to version 1, with a line saying what changed (§2), because a
 reader who agreed to "no analytics" should be told rather than left to
 re-read a page.
+
+**Corrected 2026-09-29, with `LEGAL_VERSION` 3.** Point 1 said "no cookies",
+and from 2026-09-23 it was false.
+- Turnstile's pre-clearance was on for the widget from that date. With it,
+  Cloudflare stores `cf_clearance` on this site after every passed check,
+  through a request to its own `/cdn-cgi/` path, which `connect-src 'self'`
+  allows.
+- Nothing here asked for the cookie, and none of TilePier's own responses
+  set one, which the header e2e still asserts. That is why no test saw it.
+  The owner found it in DevTools, six days in.
+- The owner kept pre-clearance on. The cookie is disclosed rather than
+  switched off, and the bump re-gates every earlier reader with a line that
+  names it.
 
 ## 4. Disclaimers (surface in-product, not only in terms)
 

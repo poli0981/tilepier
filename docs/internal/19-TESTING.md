@@ -294,6 +294,11 @@ Cloudflare hosts to nowhere, and CI has no Turnstile secret):
 - **Beacon:** loads with no CSP console error, and a POST to
   `cloudflareinsights.com/cdn-cgi/rum` answers.
 - **localStorage** still holds exactly the three keys after both have run.
+- **Cookies** (added 2026-09-29, `LEGAL_VERSION` 3): on a fresh profile, after
+  the check, DevTools shows exactly one cookie for this site, `cf_clearance`,
+  `Secure` and `Partitioned`, and its expiry matches the privacy page. A profile
+  that had accepted version 2 sees the gate again, with the cookie in its
+  "what changed" line.
 - **curl** without a pass and with a cache-busting parameter gets `401`; with
   the operator's bearer it gets `200`.
 

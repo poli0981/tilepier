@@ -1342,7 +1342,7 @@ tag `v1.0.0` → release workflow → notify.
 - [ ] All widget DoDs checked (doc 19 §6) · zero P0/P1 bugs
 - [ ] Budgets green in CI · Lighthouse targets met (doc 01)
 - [ ] doc 10 §8 attribution/compliance all checked
-- [ ] Legal texts final (vi+en) · LEGAL_VERSION=2 (bumped 2026-09-23 for Web Analytics + Turnstile) · gate verified pre-JS
+- [ ] Legal texts final (vi+en) · LEGAL_VERSION=3 (2: 2026-09-23, Web Analytics + Turnstile; 3: 2026-09-29, the `cf_clearance` cookie) · gate verified pre-JS
 - [ ] Secrets grep clean (doc 21 §5) · headers verified in prod
 - [ ] Backup export/import round-trip on prod build
 - [ ] Rollback runbook tested once (deploy previous version)

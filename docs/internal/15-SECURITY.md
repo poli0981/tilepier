@@ -133,7 +133,9 @@ analytics or waits on Cloudflare.
      hostname) for `v1.<exp>.<nonce>.<d>.<mac>`: an HMAC under a key
      HKDF-derived from the Turnstile secret.
      - It lives an hour, in memory only, and travels as `x-tp-pass`.
-     - No cookie and no KV entry are involved.
+     - No cookie and no KV entry are involved. (Cloudflare's own
+       `cf_clearance`, set after the same check, is separate and never read
+       here — §7.)
      - It is not bound to an address, because phones change IP between
        towers. The cost: a lifted pass works elsewhere until it expires, so
        the rate limiter and the budget guard still stand behind it.
@@ -307,10 +309,31 @@ feed (VnExpress) arriving through the Worker's own egress.
   (`wrangler.jsonc` `observability`) and keep request metadata, the address
   included, for 7 days. `POST /api/verify` also forwards the address to
   siteverify as `remoteip`, as Turnstile asks.
-- No cookies at all. This is asserted by the header e2e on `/` against local
-  `wrangler dev`. It said "verify in CI: response header scan", and no such
-  scan exists. Neither Cloudflare service sets one on this origin: Web
-  Analytics uses no client state, and Turnstile runs in its own frame.
+- **TilePier's own responses set no cookie.** The header e2e asserts it on
+  `/` against local `wrangler dev`. (This line once said "verify in CI:
+  response header scan", and no such scan exists.)
+- **The site has one cookie, Cloudflare's `cf_clearance`** (doc 16 §3
+  point 10, `LEGAL_VERSION` 3). Until 2026-09-29 this line said "Neither
+  Cloudflare service sets one on this origin… Turnstile runs in its own
+  frame", which was wrong.
+  - Turnstile's pre-clearance sets the cookie on the site itself, through
+    `/cdn-cgi/`, after a passed check.
+  - A local test cannot see it, because the edge sets it and `wrangler dev`
+    has no edge. Doc 19 §5 checks it on production.
+  - The app never reads it. It does travel with every same-origin request,
+    `/api/*` included, and Workers Logs record the `Cookie` header as
+    `REDACTED`.
+- **Turnstile's console noise is known and is not ours.** In Brave and
+  Firefox the check's frame (`normal?lang=…`) and `api.js` log:
+  - "No available adapters", `document.write` violations and OTS/WOFF2
+    font errors;
+  - Feature Policy names Firefox does not know;
+  - deprecated `Window.fullScreen`, `InstallTrigger` and
+    `WEBGL_debug_renderer_info`;
+  - a 401 from a Private Access Token probe, and lost WebGL contexts.
+
+  Our CSP does not govern that frame's document, and none of it can be
+  silenced short of not loading Turnstile (2026-09-29 triage).
 - `<a>` external links: `rel="noopener noreferrer"`; Referrer-Policy above.
 
 ## 8. Security response

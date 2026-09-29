@@ -7,6 +7,11 @@
 	 * No preamble about "your privacy matters to us" — the claim is either true
 	 * of the code or it is not, and doc 16 §3 is what makes it true.
 	 *
+	 * Ten points since LEGAL_VERSION 3 (2026-09-29): the one cookie, Cloudflare's
+	 * cf_clearance, got a point of its own once it was found. Point 1 had said
+	 * "no cookies" since Week 1, true of TilePier's own code and not of the
+	 * site: Cloudflare set it after every passed bot check.
+	 *
 	 * Nine points since Week 6 (2026-09-25): the map's OpenFreeMap requests —
 	 * the one thing that leaves the browser without passing the proxy — got a
 	 * point of their own, and the tile names OpenFreeMap in place before its
@@ -26,6 +31,7 @@
 		'legal.privacy.proxy',
 		'legal.privacy.analytics',
 		'legal.privacy.botcheck',
+		'legal.privacy.cookie',
 		'legal.privacy.map',
 		'legal.privacy.coordinates',
 		'legal.privacy.bug_reports',
