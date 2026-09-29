@@ -4,13 +4,12 @@
 	import { fmtDuration } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
 	import { collection } from './collection.svelte';
 	import { marquee } from './marquee';
 	import { player } from './player.svelte';
 	import { upNextId } from './service';
 	import TpMusicCover from './TpMusicCover.svelte';
-	import TpMusicLibraryActions from './TpMusicLibraryActions.svelte';
+	import TpMusicTileState from './TpMusicTileState.svelte';
 	import TpMusicTransport from './TpMusicTransport.svelte';
 
 	/**
@@ -23,14 +22,8 @@
 	 * progress and the next track from `h = 2`; a larger cover at `h = 3`.
 	 *
 	 * **States (doc 06 §3, the music/media class, plus `permission-needed`
-	 * because the manifest declares `fsa`):**
-	 * - `loading` — the library is being read: a skeleton, never a spinner.
-	 * - `error` — it could not be: a card and a retry.
-	 * - `permission-needed` — a folder library the browser will not read until
-	 *   the reader allows it again; the card carries where playback was, and one
-	 *   click allows and resumes (Week 7 plan S11).
-	 * - `empty` — no music: how to add some, and that it never leaves the device.
-	 * - `ready` — the player.
+	 * because the manifest declares `fsa`):** `ready` is this component;
+	 * `loading`, `error`, `permission-needed` and `empty` are `TpMusicTileState`.
 	 * `stale`, `stale-error` and `offline` do not apply: nothing here is fetched.
 	 */
 	let { size, onOpenDetail }: TpWidgetProps = $props();
@@ -45,6 +38,15 @@
 	});
 
 	const track = $derived(player.current);
+
+	/** Anything but the player itself — see `TpMusicTileState`. */
+	const showsState = $derived(
+		!collection.loaded ||
+			collection.failed ||
+			collection.needsRelink ||
+			player.status === 'permission' ||
+			(collection.tracks.length === 0 && collection.scanning === null)
+	);
 	const flat = $derived(size.h <= 1);
 	const tiny = $derived(flat && size.w <= 2);
 	const coverSize = $derived(size.h >= 3 ? 88 : size.h >= 2 ? 52 : 30);
@@ -76,56 +78,8 @@
 	}
 </script>
 
-{#if !collection.loaded}
-	<div class="tp-music__state" aria-busy="true" aria-label={m['widget.music.loading']()}>
-		<TpTideGauge size={flat ? 20 : 32} animated level={0.35} />
-	</div>
-{:else if collection.failed}
-	<div class="tp-music__state" role="alert">
-		<p>{m['widget.music.error']()}</p>
-		<button type="button" class="tp-music__button" onclick={() => void collection.retry()}>
-			{m['common.retry']()}
-		</button>
-	</div>
-{:else if collection.needsRelink || player.status === 'permission'}
-	<div class="tp-music__card" class:tp-music__card--flat={flat} data-testid="music-permission">
-		<p class="tp-music__line">{m['widget.music.relink_title']()}</p>
-		{#if track !== null && !flat}
-			<p class="tp-music__resume tp-num">
-				{m['widget.music.resume']({
-					title: track.title,
-					position: fmtDuration(player.positionMs, settings.locale)
-				})}
-			</p>
-		{/if}
-		<button
-			type="button"
-			class="tp-music__button tp-music__button--primary"
-			onclick={() => void collection.relink()}
-			data-testid="music-relink"
-		>
-			{m['widget.music.relink']()}
-		</button>
-		{#if size.h >= 3}
-			<p class="tp-music__hint">{m['widget.music.relink_hint']()}</p>
-		{/if}
-	</div>
-{:else if collection.tracks.length === 0 && collection.scanning === null}
-	<div class="tp-music__card" class:tp-music__card--flat={flat} data-testid="music-empty">
-		{#if flat}
-			<!-- No room for two buttons and a note: the detail has all three. -->
-			<button
-				type="button"
-				class="tp-music__button tp-music__button--primary"
-				onclick={() => onOpenDetail?.()}
-			>
-				{m['widget.music.add_files']()}
-			</button>
-		{:else}
-			<p class="tp-music__line">{m['widget.music.empty']()}</p>
-			<TpMusicLibraryActions compact showNote={size.h >= 3} />
-		{/if}
-	</div>
+{#if showsState}
+	<TpMusicTileState {size} {onOpenDetail} />
 {:else}
 	<div class="tp-music" class:tp-music--flat={flat} data-testid="music-tile">
 		<div class="tp-music__main">
@@ -189,9 +143,7 @@
 	.tp-music__title,
 	.tp-music__subtitle,
 	.tp-music__next,
-	.tp-music__line,
-	.tp-music__hint,
-	.tp-music__resume {
+	.tp-music__hint {
 		margin: 0;
 	}
 
@@ -265,55 +217,5 @@
 		position: absolute;
 		inset: 0 auto 0 0;
 		background: var(--color-fg-mute);
-	}
-
-	.tp-music__state,
-	.tp-music__card {
-		display: flex;
-		height: 100%;
-		flex-direction: column;
-		align-items: flex-start;
-		justify-content: center;
-		gap: 0.5rem;
-		color: var(--color-fg-mute);
-		font-size: var(--text-xs);
-	}
-
-	.tp-music__state p {
-		margin: 0;
-	}
-
-	.tp-music__card--flat {
-		flex-direction: row;
-		align-items: center;
-	}
-
-	.tp-music__card--flat .tp-music__line {
-		overflow: hidden;
-		flex: 1;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.tp-music__button {
-		min-height: 36px;
-		border: 1px solid var(--color-ink-700);
-		border-radius: var(--radius-ctl);
-		background: none;
-		color: var(--color-fg);
-		cursor: pointer;
-		font: inherit;
-		font-size: var(--text-xs);
-		padding: 0 0.75rem;
-	}
-
-	.tp-music__button--primary {
-		border-color: var(--color-beacon);
-		color: var(--color-beacon);
-	}
-
-	.tp-music__button:focus-visible {
-		outline: 2px solid var(--color-beacon);
-		outline-offset: 1px;
 	}
 </style>
