@@ -83,7 +83,26 @@ db.version(1).stores({
   apiCache:   'key, cachedAt',                 // {key, cachedAt, payload}
   fxHistory:  'dateKey'                        // client mirror of daily fx snapshots
 });
+
+// Week 7 (2026-09-29). Only the new table — Dexie carries earlier stores forward.
+db.version(2).stores({
+  playback:   'id'                             // {id:'music'|'music:queue'|…, updatedAt, state} — where a player was
+});
 ```
+
+**`playback` (version 2, the owner's decision in the Week 7 plan, Q1).** doc 09
+first put the music position and queue, and media's resume points and poster, in
+"settings" — tile settings in `tp.layout.v1`. That key does not sync across tabs
+(doc 04 §7 says it does; nothing implements it), so a position written every ten
+seconds would overwrite another tab's layout edits within ten seconds; it would
+churn the bug report's `layoutHash`, vanish with the tile, and a 50 KB poster would
+be half of §1's localStorage budget. A row per key keeps the frequent small write
+(`'music'`: position) away from the rare large one (`'music:queue'`: thousands of
+ids). `state` is `unknown` in core — core imports no widget code — and each widget
+reads its rows through a validator that fails closed. **Not exported** (§6).
+`db.svelte.test.ts` builds a real v1 database first, because a brand-new one
+skips upgrade paths, and also checks that a version 1 build still opens a
+version 2 database — the rollback runbook deploys exactly that.
 
 Notes:
 - `FileSystemDirectoryHandle` is structured-cloneable → storable in IndexedDB.
@@ -210,7 +229,8 @@ createDebouncedWriter<T>(spec, delayMs): { schedule(v); flush(); dispose() }
   `{ meta:{app, version, exportedAt}, layout, settings, dexie:{notes, todos,
   todoLists, events, playlists, tracks(metadata only), savedPlaces} }`.
   Audio blobs and FSA handles are **never** exported (size / permission scope);
-  the import UI explains music must be re-linked.
+  the import UI explains music must be re-linked. Nor is `playback` (version 2):
+  where a player was is not something the reader made.
 - Import: dry-run validation (zod-lite hand validators, no runtime dep) →
   show a diff summary (counts per table) → user confirms → **non-destructive
   default**: merge-by-id with newer-`updatedAt` wins; "Replace all" requires a
