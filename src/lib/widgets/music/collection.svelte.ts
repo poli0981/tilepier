@@ -1,6 +1,7 @@
 import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
 import {
 	estimateQuota,
+	forgetTracks,
 	importFiles as importIntoLibrary,
 	loadMusicRoot,
 	queryRootPermission,
@@ -73,6 +74,18 @@ class TpCollection {
 
 	get hasFolderTracks(): boolean {
 		return this.tracks.some((track) => track.source === 'fsa');
+	}
+
+	get missingCount(): number {
+		return this.tracks.filter((track) => track.missing === true).length;
+	}
+
+	/** doc 09 §2's "Rescan reconciles" leaves missing tracks marked, never
+	 *  deleted; this is the reader deciding they are gone. */
+	async removeMissing(): Promise<void> {
+		const ids = this.tracks.filter((track) => track.missing === true).map((track) => track.id);
+		await forgetTracks(ids, this.#target);
+		await this.#refresh();
 	}
 
 	/** doc 06 §3's `permission-needed`: a folder library the browser will

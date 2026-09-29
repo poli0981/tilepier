@@ -6,6 +6,7 @@
 	import { collection } from './collection.svelte';
 	import { player } from './player.svelte';
 	import TpMusicCover from './TpMusicCover.svelte';
+	import TpMusicLibrary from './TpMusicLibrary.svelte';
 	import TpMusicLibraryActions from './TpMusicLibraryActions.svelte';
 	import TpMusicSeek from './TpMusicSeek.svelte';
 	import TpMusicTransport from './TpMusicTransport.svelte';
@@ -102,9 +103,12 @@
 		</div>
 	</section>
 
-	<section class="tp-mdetail__library">
+	<div class="tp-mdetail__library">
 		<TpMusicLibraryActions />
-	</section>
+		{#if collection.tracks.length > 0}
+			<TpMusicLibrary />
+		{/if}
+	</div>
 </div>
 
 <style>
@@ -209,6 +213,9 @@
 	}
 
 	.tp-mdetail__library {
+		display: flex;
 		min-width: 0;
+		flex-direction: column;
+		gap: 1rem;
 	}
 </style>

@@ -284,7 +284,8 @@ only module allowed to import music-metadata:
   and on pause → resume-where-left on reload.
 - **Tile:** cover, title/artist marquee-on-overflow, progress bar,
   prev/play/next; h≥2 adds queue-peek line.
-- **Detail:** library table (virtualized ≥ 500 rows — simple windowing,
+- **Detail:** library table (virtualized — always, since Week 7, through
+  `core/windowing.ts`: simple windowing,
   no dep), search, sort, playlists CRUD (drag to reorder), now-playing pane
   with large cover. ~~**Visualizer (Web Audio AnalyserNode) is the declared
   cut-line** — ship v1.0 without it if Week 7 runs hot (charter risk #2).~~

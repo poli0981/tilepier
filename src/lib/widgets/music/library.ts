@@ -424,6 +424,25 @@ export async function importFiles(
 	return summary;
 }
 
+/**
+ * Takes tracks out of the library — the detail's "remove missing": their rows,
+ * any imported bytes they still hold, and then the covers nothing points at
+ * any more. **Never the files on disk**: path A only ever reads the folder. A
+ * playlist naming a forgotten id keeps it; the player skips ids it cannot find
+ * (plan S25).
+ */
+export async function forgetTracks(
+	ids: readonly string[],
+	target: TpDb = defaultDb
+): Promise<void> {
+	if (ids.length === 0) return;
+	await target.transaction('rw', target.tracks, target.trackBlobs, async () => {
+		await target.tracks.bulkDelete([...ids]);
+		await target.trackBlobs.bulkDelete([...ids]);
+	});
+	await collectCovers(target);
+}
+
 /* ─────────────────────────────────────────────────────────────── helpers */
 
 /**

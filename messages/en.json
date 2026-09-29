@@ -717,5 +717,16 @@
 	"widget.music.track_count": "{count} songs",
 	"widget.music.now_playing": "Now playing",
 	"widget.music.rescan": "Scan the folder again",
-	"widget.music.change_folder": "Choose another folder"
+	"widget.music.change_folder": "Choose another folder",
+	"widget.music.library": "Library",
+	"widget.music.search": "Search the library",
+	"widget.music.sort": "Sort by",
+	"widget.music.sort_library": "Artist and album",
+	"widget.music.sort_title": "Title",
+	"widget.music.sort_added": "Recently added",
+	"widget.music.no_match": "No song matches “{query}”.",
+	"widget.music.mark_missing": "missing",
+	"widget.music.mark_unsupported": "can’t play here",
+	"widget.music.mark_unreadable": "unreadable",
+	"widget.music.remove_missing": "Remove {count} missing"
 }

@@ -3,6 +3,7 @@ import { installLogBuffer, readLog } from '$lib/core/log-buffer';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import {
 	createTagParser,
+	forgetTracks,
 	fileAt,
 	importFiles,
 	scanFolder,
@@ -454,5 +455,22 @@ describe('fileAt', () => {
 		await expect(fileAt(folder, 'Artist B/Gone.ogg')).rejects.toMatchObject({
 			name: 'NotFoundError'
 		});
+	});
+});
+
+describe('forgetTracks', () => {
+	it('takes tracks, their bytes and their lone covers out, and leaves the files alone', async () => {
+		await put('a.mp3', await bytes(taggedMp3Url));
+		await put('b.mp3', await bytes(untaggedUrl));
+		await scanFolder(folder, { target });
+		const [withCover] = await target.tracks.where('title').equals('Bài hát thử').toArray();
+		expect(withCover?.coverId).toBeDefined();
+
+		await forgetTracks([withCover?.id ?? ''], target);
+
+		expect(await target.tracks.count()).toBe(1);
+		expect(await target.trackBlobs.where(':id').startsWith('cover:').count()).toBe(0);
+		// Path A only ever reads: the file is still in the folder.
+		expect((await fileAt(folder, 'a.mp3')).size).toBeGreaterThan(0);
 	});
 });

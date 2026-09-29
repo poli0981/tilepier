@@ -717,5 +717,16 @@
 	"widget.music.track_count": "{count} bài",
 	"widget.music.now_playing": "Đang phát",
 	"widget.music.rescan": "Quét lại thư mục",
-	"widget.music.change_folder": "Chọn thư mục khác"
+	"widget.music.change_folder": "Chọn thư mục khác",
+	"widget.music.library": "Thư viện",
+	"widget.music.search": "Tìm trong thư viện",
+	"widget.music.sort": "Sắp theo",
+	"widget.music.sort_library": "Nghệ sĩ và album",
+	"widget.music.sort_title": "Tên bài",
+	"widget.music.sort_added": "Mới thêm",
+	"widget.music.no_match": "Không có bài nào khớp “{query}”.",
+	"widget.music.mark_missing": "thiếu",
+	"widget.music.mark_unsupported": "không phát được ở đây",
+	"widget.music.mark_unreadable": "hỏng",
+	"widget.music.remove_missing": "Gỡ {count} bài thiếu"
 }
