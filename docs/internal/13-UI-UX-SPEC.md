@@ -198,7 +198,7 @@ show "on deck" disabled state. Search filters by name.
     500 ms after it leaves. Chrome swallows that Escape; engines that pass it
     on would otherwise close the detail too. The layers underneath still never
     see it.
-- **The video player's keys** (doc 09 §3): Space or K, ← →, ↑ ↓, M and F. They
+- **The video player's keys** (doc 09 §3): Space or K, ← →, ↑ ↓, M, F and C. They
   work where the player has focus, which it takes when a video loads.
   - A key the player answers stops there.
   - A key a control already answers is left to it.

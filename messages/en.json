@@ -169,6 +169,7 @@
 	"common.shortcuts.video_volume": "volume down or up",
 	"common.shortcuts.video_mute": "mute",
 	"common.shortcuts.video_fullscreen": "full screen",
+	"common.shortcuts.video_captions": "subtitles on or off",
 	"settings.report.title": "Report a bug",
 	"settings.report.label": "Send a report",
 	"settings.report.open": "Report a bug",
@@ -786,5 +787,12 @@
 	"widget.media.start_over": "Start over",
 	"widget.media.loading": "Reading where you left off…",
 	"widget.media.error": "Couldn’t read where you left off.",
-	"widget.media.pick_again": "Open the same file again to continue from there."
+	"widget.media.pick_again": "Open the same file again to continue from there.",
+	"widget.media.subs_add": "Add subtitles",
+	"widget.media.subs_show": "Show subtitles",
+	"widget.media.subs_hide": "Hide subtitles",
+	"widget.media.subs_picker_label": "Subtitles",
+	"widget.media.subs_loaded": "Subtitles: {name}",
+	"widget.media.subs_change": "Change",
+	"widget.media.subs_unreadable": "No subtitles could be read from {name}."
 }

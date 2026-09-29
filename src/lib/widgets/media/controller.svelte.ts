@@ -17,6 +17,7 @@ import {
 	type TpResume
 } from './service';
 import { videoSession, type TpVideoSession } from './session';
+import { TpSubtitles } from './track.svelte';
 import { media, type TpMediaFile } from './store.svelte';
 
 type TpPhase = 'loading' | 'ready' | 'unsupported' | 'unreadable';
@@ -47,11 +48,14 @@ type TpPhase = 'loading' | 'ready' | 'unsupported' | 'unreadable';
  * play, and at once on a pause, a seek, the end (back to the start), a hidden
  * or closing page — and when the player goes.
  *
+ * **Subtitles** are `TpSubtitles`'s (`track.svelte.ts`): C shows and hides
+ * them, and they go with the player.
+ *
  * **The listeners are its own**, added here and removed in `dispose`. What
  * happens when the player goes — keep the place, pause, let go of the sound,
- * the Media Session and both screens, release the object URL — does not wait
- * on events Svelte may already have unhooked, and reads the place before the
- * element lets go of the file (Week 7 plan §3.1).
+ * the Media Session, the subtitles and both screens, release the object URL —
+ * does not wait on events Svelte may already have unhooked, and reads the place
+ * before the element lets go of the file (Week 7 plan §3.1).
  */
 export class TpVideoController {
 	phase = $state<TpPhase>('loading');
@@ -71,6 +75,8 @@ export class TpVideoController {
 	 *  reader moves it themselves. */
 	resumedFromMs = $state<number | null>(null);
 	readonly fullscreenAvailable: boolean;
+	/** The subtitles the reader added, if any (`track.svelte.ts`). */
+	readonly subtitles: TpSubtitles;
 
 	readonly #video: HTMLVideoElement;
 	readonly #box: HTMLElement;
@@ -96,6 +102,7 @@ export class TpVideoController {
 		this.#file = file;
 		this.#session = videoSession(video, file.name);
 		this.fullscreenAvailable = canFullscreen(video);
+		this.subtitles = new TpSubtitles(video);
 
 		this.#on(video, 'loadedmetadata', () => this.#onMetadata());
 		this.#on(video, 'playing', () => this.#onPlaying());
@@ -146,6 +153,7 @@ export class TpVideoController {
 		this.#listeners = [];
 		this.#video.pause();
 		this.#session.leave();
+		this.subtitles.dispose();
 		leaveScreens(this.#box, this.#video);
 		this.#video.removeAttribute('src');
 		this.#video.load();
@@ -309,6 +317,7 @@ export class TpVideoController {
 		else if (action.kind === 'seek') this.seekBy(action.bySeconds);
 		else if (action.kind === 'volume') this.setVolume(this.#video.volume + action.by);
 		else if (action.kind === 'mute') this.toggleMute();
+		else if (action.kind === 'captions') this.subtitles.toggle();
 		else this.toggleFullscreen();
 	}
 

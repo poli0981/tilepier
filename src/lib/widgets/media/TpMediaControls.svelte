@@ -8,7 +8,8 @@
 
 	/**
 	 * The video's own controls (doc 09 §3), drawn in tokens rather than the
-	 * browser's: play and pause, the shared seek bar, sound, and speed.
+	 * browser's: play and pause, the shared seek bar, sound, the two screens,
+	 * subtitles and speed.
 	 *
 	 * Props in, callbacks out — the element belongs to `TpMediaPlayer`, which
 	 * this never touches. Buttons are 40 px, doc 13 §8's size for a detail.
@@ -26,7 +27,14 @@
 		inPip: boolean;
 		fullscreenAvailable: boolean;
 		inFullscreen: boolean;
+		/** Subtitles are for a picture: none to add over sound alone. */
+		captionsAvailable: boolean;
+		/** Whether the reader has added subtitles, and whether they show. */
+		hasSubtitles: boolean;
+		captionsShowing: boolean;
 		onPip: () => void;
+		/** Adds subtitles when there are none, shows or hides them when there are. */
+		onCaptions: () => void;
 		onFullscreen: () => void;
 		onToggle: () => void;
 		onSeek: (ms: number) => void;
@@ -47,7 +55,11 @@
 		inPip,
 		fullscreenAvailable,
 		inFullscreen,
+		captionsAvailable,
+		hasSubtitles,
+		captionsShowing,
 		onPip,
+		onCaptions,
 		onFullscreen,
 		onToggle,
 		onSeek,
@@ -122,6 +134,22 @@
 				data-testid="media-fullscreen"
 			>
 				<TpMediaGlyph name={inFullscreen ? 'fullscreen-exit' : 'fullscreen'} />
+			</button>
+		{/if}
+		{#if captionsAvailable}
+			<button
+				type="button"
+				aria-label={!hasSubtitles
+					? m['widget.media.subs_add']()
+					: captionsShowing
+						? m['widget.media.subs_hide']()
+						: m['widget.media.subs_show']()}
+				aria-pressed={hasSubtitles ? captionsShowing : undefined}
+				{disabled}
+				onclick={onCaptions}
+				data-testid="media-captions"
+			>
+				<TpMediaGlyph name="captions" />
 			</button>
 		{/if}
 

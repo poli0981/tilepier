@@ -123,7 +123,8 @@ through Playwright's file chooser. It covers:
 - sound with no picture, which says so and offers no picture-in-picture;
 - the keys, from the focus the player takes when it loads;
 - Escape, which does not close the detail out of full screen but does after;
-- a reload in the middle of a video, then the same file picked again.
+- a reload in the middle of a video, then the same file picked again;
+- subtitles from a SubRip file with a byte-order mark and CRLF, and C.
 
 The reload test is the one that found `pagehide` writes lost (doc 04 §6): it
 plays past the seek's own save, so only the closing page can keep the place.

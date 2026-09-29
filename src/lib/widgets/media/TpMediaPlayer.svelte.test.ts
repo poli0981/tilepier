@@ -11,6 +11,7 @@ import TpMediaPlayer from './TpMediaPlayer.svelte';
 import clipUrl from './__fixtures__/clip.webm?url';
 import junkUrl from './__fixtures__/not-video.mp4?url';
 import soundUrl from './__fixtures__/sound-only.webm?url';
+import vttUrl from './__fixtures__/subs.vi.vtt?url';
 
 /**
  * The video player (doc 09 §3) against real files in the test browser, which
@@ -382,5 +383,133 @@ describe('TpMediaPlayer', () => {
 
 		expect(again.volume).toBeCloseTo(0.8, 5);
 		expect(again.playbackRate).toBe(1);
+	});
+});
+
+describe('subtitles', () => {
+	const SRT = [
+		'1',
+		'00:00:00,500 --> 00:00:04,000',
+		'{\\an8}<i>Xin chào</i> — phụ đề',
+		'',
+		'2',
+		'00:00:04,500 --> 00:00:09,000',
+		'Một & hai',
+		''
+	].join('\r\n');
+
+	/** The File System Access picker, answering with `file`. */
+	function offer(file: File): void {
+		window.showOpenFilePicker = async () => [
+			{ kind: 'file', name: file.name, getFile: async () => file } as FileSystemFileHandle
+		];
+	}
+
+	afterEach(() => {
+		Reflect.deleteProperty(window, 'showOpenFilePicker');
+	});
+
+	it('shows the subtitles the reader adds, and C hides and shows them', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
+		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
+		offer(new File([SRT], 'clip.vi.srt'));
+
+		await screen.getByTestId('media-captions').click();
+
+		await vi.waitFor(() => expect(video.textTracks[0]?.cues?.length).toBe(2), SLOW);
+		const track = video.querySelector('track');
+		expect(track?.srclang).toBe('vi');
+		expect(track?.label).toBe('clip.vi.srt');
+		expect(video.textTracks[0]?.mode).toBe('showing');
+		const first = video.textTracks[0]?.cues?.[0] as VTTCue;
+		expect(first.startTime).toBe(0.5);
+		expect(first.text).toBe('<i>Xin chào</i> — phụ đề');
+		expect((video.textTracks[0]?.cues?.[1] as VTTCue).getCueAsHTML().textContent).toBe('Một & hai');
+		await expect
+			.element(screen.getByText(m['widget.media.subs_loaded']({ name: 'clip.vi.srt' })), SLOW)
+			.toBeVisible();
+
+		video.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true }));
+
+		expect(video.textTracks[0]?.mode).toBe('hidden');
+		await expect
+			.element(screen.getByTestId('media-captions'), SLOW)
+			.toHaveAttribute('aria-label', m['widget.media.subs_show']());
+		await screen.getByTestId('media-captions').click();
+		expect(video.textTracks[0]?.mode).toBe('showing');
+	});
+
+	it('says so when a file holds no subtitles, and adds no track', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
+		offer(new File(['không phải phụ đề'], 'ghi chú.srt'));
+
+		await screen.getByTestId('media-captions').click();
+
+		await expect
+			.element(screen.getByText(m['widget.media.subs_unreadable']({ name: 'ghi chú.srt' })), SLOW)
+			.toBeVisible();
+		expect(screen.container.querySelector('track')).toBeNull();
+	});
+
+	it('lets go of the track and its URL when the player goes', async () => {
+		const revoke = vi.spyOn(URL, 'revokeObjectURL');
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
+		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
+		offer(new File([SRT], 'clip.vi.srt'));
+		await screen.getByTestId('media-captions').click();
+		await vi.waitFor(() => expect(video.querySelector('track')).not.toBeNull(), SLOW);
+		const url = video.querySelector('track')?.src;
+
+		cleanup();
+
+		expect(video.querySelector('track')).toBeNull();
+		expect(revoke).toHaveBeenCalledWith(url);
+	});
+
+	it('takes WebVTT as it is', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
+		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
+		const vtt = await (await fetch(vttUrl)).text();
+		offer(new File([vtt], 'subs.vi.vtt'));
+
+		await screen.getByTestId('media-captions').click();
+
+		await vi.waitFor(() => expect(video.textTracks[0]?.cues?.length).toBe(2), SLOW);
+		expect((video.textTracks[0]?.cues?.[1] as VTTCue).text).toBe('<b>Đậm</b> và thường.');
+	});
+
+	it('says so when the browser finds no cue in a WebVTT file, and takes the track away', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
+		// It says WEBVTT and has an arrow, so it goes to the browser, which
+		// finds no timing it can read.
+		offer(new File(['WEBVTT\n\nnot a time --> nor this\nchữ\n'], 'hỏng.vtt'));
+
+		await screen.getByTestId('media-captions').click();
+
+		await expect
+			.element(screen.getByText(m['widget.media.subs_unreadable']({ name: 'hỏng.vtt' })), SLOW)
+			.toBeVisible();
+		expect(screen.container.querySelector('track')).toBeNull();
+		await expect
+			.element(screen.getByTestId('media-captions'), SLOW)
+			.toHaveAttribute('aria-label', m['widget.media.subs_add']());
+	});
+
+	it('offers none for sound alone', async () => {
+		const file = await fixture(soundUrl, 'sound.webm', 'audio/webm');
+		const screen = render(TpMediaPlayer, { file });
+
+		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
+		expect(screen.container.querySelector('[data-testid="media-captions"]')).toBeNull();
 	});
 });

@@ -188,6 +188,7 @@ analytics or waits on Cloudflare.
 | RSS summaries | DOMPurify strict allowlist, **no img**, links `rel="noopener noreferrer" target="_blank"` — built 2026-09-25 as `sanitizeRssHtml`: `p br a ul ol li blockquote pre code em strong b i`, `href` and `title` only, absolute `http(s):`/`mailto:` links only (a relative one means the publisher's site), on its own DOMPurify instance, rendered only through `TpFeedHtml` |
 | ID3/metadata strings | rendered as text nodes only — never `{@html}` |
 | Geocode/place names | text nodes only |
+| Subtitle files (`.srt`, `.vtt`, Week 7b-3) | Never on the page as HTML. SubRip becomes WebVTT with only `b i u` kept and `& < >` escaped around them, so a stray `-->` cannot start a cue; WebVTT passes as it is. Either goes to the `<video>` as a `blob:` `<track>` (`media-src 'self' blob:`), and the browser's own WebVTT renderer draws the cues. The file name is a text node. |
 | Any `{@html}` | requires a `// SAFETY:` comment naming the sanitizer; ESLint `svelte/no-at-html-tags` set to error with per-line disable only |
 
 ## 5. RSS proxy SSRF guard (`/api/rss`)

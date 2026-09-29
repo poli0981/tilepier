@@ -381,10 +381,11 @@ only module allowed to import music-metadata:
 - **Controls** are drawn in tokens:
   - the seek bar shared with music (`ui/TpSeekBar`);
   - play, pause, mute and volume;
+  - picture-in-picture, full screen and subtitles;
   - speed from 0.5× to 2×.
 - **Keys** (Week 7 plan S16). The video takes focus when it loads, so they work
   without a click: Space or K plays, ← → move five seconds, ↑ ↓ change the
-  volume, M mutes, F goes full screen.
+  volume, M mutes, F goes full screen, C shows or hides subtitles.
   - A key the player answers stops there, so Space does not scroll the detail.
   - A key a control answers is left to it: Space on a button, the arrows on a
     range.
@@ -411,6 +412,21 @@ only module allowed to import music-metadata:
   on `/w/media`, not on the deck. The file itself is not kept, so "Continue"
   opens the picker, and the same file picked again finds its place. The tile's
   `loading` and `error` are that read, and an error still offers a video.
+- **Subtitles** (Week 7b-3; `subtitles.ts`, `track.svelte.ts`). The
+  captions button asks for a `.srt` or `.vtt` — in the folder the video came
+  from, since the two pickers share an `id` — and shows it; after that it
+  shows and hides them, as C does.
+  - The file is read as text (doc 14 §6), SubRip is converted to WebVTT, and
+    the result goes to the element as a `blob:` `<track>`, which `media-src`
+    already allows. Its language comes from the file name (`Phim.vi.srt` is
+    `vi`, anything else `und`), its label is the file name.
+  - The browser draws the cues, so the reader's own caption settings apply:
+    nothing styles `::cue`. Cue text is never HTML on the page (doc 15 §4).
+  - A file with nothing to show says so under the video, and the video plays
+    on. One over 2 MB is not read: that is a video picked by mistake.
+  - None for sound alone. Picture-in-picture shows them where the browser
+    does (Safari); Chrome's window does not.
+  - Not kept: a file opened again starts without them.
 - `TpVideoController` holds a video's state and adds its own listeners.
   `TpMediaPlayer` only draws it, which keeps the component under doc 20 §3's
   size.

@@ -17,6 +17,7 @@ describe('keyAction', () => {
 		expect(press('ArrowDown')).toEqual({ kind: 'volume', by: -VOLUME_STEP });
 		expect(press('M')).toEqual({ kind: 'mute' });
 		expect(press('f')).toEqual({ kind: 'fullscreen' });
+		expect(press('C')).toEqual({ kind: 'captions' });
 	});
 
 	it('leaves a key a control already answers to the control', () => {
@@ -29,6 +30,7 @@ describe('keyAction', () => {
 		expect(press(' ', 'range')).toEqual({ kind: 'toggle' });
 		// Nothing typed into a field is a player key.
 		expect(press('f', 'field')).toBeNull();
+		expect(press('c', 'field')).toBeNull();
 		expect(press(' ', 'field')).toBeNull();
 	});
 
