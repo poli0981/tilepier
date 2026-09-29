@@ -10,6 +10,7 @@
 	import TpMusicLibraryActions from './TpMusicLibraryActions.svelte';
 	import TpMusicOrphans from './TpMusicOrphans.svelte';
 	import TpMusicPlaylists from './TpMusicPlaylists.svelte';
+	import TpMusicQueue from './TpMusicQueue.svelte';
 	import TpMusicSeek from './TpMusicSeek.svelte';
 	import TpMusicTransport from './TpMusicTransport.svelte';
 
@@ -103,6 +104,8 @@
 				/>
 			</label>
 		</div>
+
+		<TpMusicQueue />
 	</section>
 
 	<div class="tp-mdetail__library">

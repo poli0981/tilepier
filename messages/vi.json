@@ -746,5 +746,6 @@
 	"widget.music.gone_from_library": "Không còn trong thư viện",
 	"widget.music.orphans": "{count} bài đã nhập ({size}) không còn trong thư viện: một lần khôi phục đã thay thư viện. Khôi phục tệp sao lưu được lưu ngay trước lần đó sẽ đưa chúng trở lại.",
 	"widget.music.orphans_delete": "Xoá khỏi trình duyệt này",
-	"widget.music.orphans_confirm": "Xoá hẳn {count} bài ({size})? Không thể hoàn tác."
+	"widget.music.orphans_confirm": "Xoá hẳn {count} bài ({size})? Không thể hoàn tác.",
+	"widget.music.coming_up": "Sắp phát"
 }

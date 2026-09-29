@@ -223,6 +223,22 @@ describe('the queue (doc 09 §2)', () => {
 		await playing('b');
 	});
 
+	it('jumps to a song further down the queue, and keeps the queue as it was', async () => {
+		await seed(['a', 'b', 'c', 'd']);
+		player.playTracks(['a', 'b', 'c', 'd'], 'a', { kind: 'library' });
+		await playing('a');
+
+		player.playAt(2);
+		await playing('c');
+		expect(player.queue.trackIds).toEqual(['a', 'b', 'c', 'd']);
+		audio.end();
+		await playing('d');
+
+		player.playAt(9);
+		player.playAt(-1);
+		expect(player.current?.id).toBe('d');
+	});
+
 	it('restarts the track past three seconds, and goes back before that', async () => {
 		await seed(['a', 'b']);
 		player.playTracks(['a', 'b'], 'b', { kind: 'library' });

@@ -119,6 +119,29 @@ export function upNextId(queue: TpQueue, repeat: TpRepeat): string | undefined {
 }
 
 /**
+ * Up to `count` entries after the current one, in play order — the detail's
+ * "coming up". Repeat-all carries on round the start, and stops short of the
+ * current track; without it the list ends where the queue does. Each entry
+ * keeps its `index` in the play order, which is what jumping to it needs.
+ */
+export function upcoming(
+	queue: TpQueue,
+	repeat: TpRepeat,
+	count: number
+): { index: number; id: string }[] {
+	const length = queue.order.length;
+	const entries: { index: number; id: string }[] = [];
+	for (let step = 1; step <= count && step < length; step += 1) {
+		const index = queue.index + step;
+		if (index >= length && repeat !== 'all') break;
+		const at = queue.order[index % length];
+		const id = at === undefined ? undefined : queue.trackIds[at];
+		if (id !== undefined) entries.push({ index: index % length, id });
+	}
+	return entries;
+}
+
+/**
  * Where a step of `by` (+1 or −1) lands, or `null` at an end that does not
  * wrap. Repeat-all wraps; repeat-one does not decide anything here — it
  * replays only when a track *ends* on its own, and a press of "next" still

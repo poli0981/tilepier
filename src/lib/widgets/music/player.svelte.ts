@@ -255,6 +255,14 @@ class TpPlayer {
 		this.#moveTo(index);
 	}
 
+	/** Plays the entry at `index` of the play order — a song chosen from the
+	 *  detail's "coming up" — and leaves the queue as it is. */
+	playAt(index: number): void {
+		if (!Number.isInteger(index) || index < 0 || index >= this.queue.order.length) return;
+		this.#failures = 0;
+		this.#moveTo(index);
+	}
+
 	/** Back to the start of the track past `RESTART_AFTER_MS`, else the one
 	 *  before — and the start of this one when there is nothing before. */
 	prev(): void {

@@ -298,7 +298,9 @@ only module allowed to import music-metadata:
   `core/windowing.ts`: simple windowing,
   no dep), search, sort, playlists CRUD (~~drag to reorder~~ up and down
   buttons — see Playlists), now-playing pane
-  with large cover.
+  with large cover, and under it the next eight songs in play order
+  ("coming up", Week 7) — choosing one plays it and keeps the queue, where a
+  library row starts a new one.
 - **Playlists** (Week 7). Made in the detail and chosen as chips; the chosen
   one opens below with its songs, and is what the library's "+" adds to — with
   none chosen there is no "+". Reordered with **up and down buttons, not

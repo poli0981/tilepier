@@ -12,6 +12,7 @@ import {
 	reshuffle,
 	shuffleRest,
 	stepIndex,
+	upcoming,
 	upNextId,
 	type TpQueue
 } from './service';
@@ -113,6 +114,34 @@ describe('queues', () => {
 		expect(upNextId(buildQueue(ids, 'b', { kind: 'library' }, false), 'off')).toBe('c');
 		expect(upNextId(buildQueue(ids, 'd', { kind: 'library' }, false), 'off')).toBeUndefined();
 		expect(upNextId(buildQueue(ids, 'd', { kind: 'library' }, false), 'all')).toBe('a');
+	});
+
+	it('lists what is coming up, round the start only on repeat-all, never the current track', () => {
+		const fromB = buildQueue(ids, 'b', { kind: 'library' }, false);
+		const fromD = buildQueue(ids, 'd', { kind: 'library' }, false);
+
+		expect(upcoming(fromB, 'off', 5)).toEqual([
+			{ index: 2, id: 'c' },
+			{ index: 3, id: 'd' }
+		]);
+		expect(upcoming(fromB, 'off', 1)).toEqual([{ index: 2, id: 'c' }]);
+		expect(upcoming(fromD, 'off', 5)).toEqual([]);
+		expect(upcoming(fromD, 'all', 5)).toEqual([
+			{ index: 0, id: 'a' },
+			{ index: 1, id: 'b' },
+			{ index: 2, id: 'c' }
+		]);
+		// Repeat-one still lists the queue: next still means the next track.
+		expect(upcoming(fromB, 'one', 5).map((entry) => entry.id)).toEqual(['c', 'd']);
+		expect(upcoming(EMPTY_QUEUE, 'all', 5)).toEqual([]);
+	});
+
+	it('lists the shuffled order, by its positions in play order', () => {
+		const queue = buildQueue(ids, 'c', { kind: 'library' }, true, lowest);
+		const listed = upcoming(queue, 'off', 5);
+
+		expect(listed.map((entry) => entry.index)).toEqual([1, 2, 3]);
+		expect(listed.map((entry) => entry.id)).toEqual(queue.order.slice(1).map((at) => ids[at]));
 	});
 });
 
