@@ -13,9 +13,14 @@ import { parseTags, type TpTagReply, type TpTagRequest } from './tags';
  * costs a timeout and a fresh worker instead of the rest of the scan.
  */
 
-/** music-metadata's names for "this is not something I can read as audio at
- *  all", set as strings in its source, so a minifier cannot rename them. */
-const NOT_AUDIO = new Set(['CouldNotDetermineFileTypeError', 'UnsupportedFileTypeError']);
+/** The names for "this is not something I can read as audio at all" —
+ *  music-metadata's two and `tags.ts`'s own, each set as a string in its
+ *  source, so a minifier cannot rename them. */
+const NOT_AUDIO = new Set([
+	'CouldNotDetermineFileTypeError',
+	'UnsupportedFileTypeError',
+	'TpNotAudioError'
+]);
 
 self.addEventListener('message', (event: MessageEvent<TpTagRequest>) => {
 	const { id, file } = event.data;

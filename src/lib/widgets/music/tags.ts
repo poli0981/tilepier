@@ -61,12 +61,30 @@ export type TpTagReply =
  */
 export const COVER_MAX_BYTES = 1024 * 1024;
 
+/**
+ * A file named like audio in which the parser found no audio at all.
+ *
+ * music-metadata only throws for that when it has to sniff the content. A file
+ * from a folder carries a MIME type guessed from its extension — every one an
+ * FSA handle or OPFS hands out does — and music-metadata trusts it: a text file
+ * called `fake.mp3` goes to the MPEG parser and comes back with an *empty*
+ * format rather than an error (doc 22 §S7). Sniffing everything instead would
+ * refuse the odd real MP3 with junk before its first frame, which the MPEG
+ * parser finds and plays; so the file is judged by what came back.
+ */
+export class TpNotAudioError extends Error {
+	override name = 'TpNotAudioError';
+}
+
 export async function parseTags(file: File): Promise<TpTags> {
 	// `duration: false` (doc 22 §S7): with `true`, music-metadata reads a VBR
 	// MP3 that has no Xing/Info/LAME header to the end to count its frames.
 	// Every other file measured gives a duration without it; that one is
 	// learned from the player's `loadedmetadata` instead.
 	const { common, format } = await parseBlob(file, { duration: false });
+	if (format.container === undefined && format.codec === undefined) {
+		throw new TpNotAudioError('no audio stream');
+	}
 
 	const tags: TpTags = {
 		title: text(common.title) || file.name.replace(/\.[^.]+$/, '').normalize('NFC'),

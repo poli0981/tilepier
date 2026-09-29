@@ -2,28 +2,42 @@
 	import { db } from '$lib/core/storage/db';
 	import {
 		estimateQuota,
-		ingest,
+		fileAt,
+		importFiles,
 		loadMusicRoot,
 		queryRootPermission,
 		requestRootPermission,
 		saveMusicRoot,
+		scanFolder,
 		supportsFsa,
-		walkAudioFiles,
 		willExceedQuota,
 		type FsaPermission,
-		type QuotaEstimate
+		type QuotaEstimate,
+		type TpLibrarySummary
 	} from '$lib/widgets/music/library';
 
 	/**
-	 * Spike S2 harness — doc 22 §S2.
+	 * Spike S2 harness — doc 22 §S2, and §S7's manual half.
 	 *
 	 * Path B (file import) is fully drivable from Playwright, so the timings and
 	 * counts below are asserted by e2e/s2-fsa.e2e.ts. Path A needs a real
-	 * directory picker, which no automation can operate — those controls are
-	 * here for the manual check the spike findings describe.
+	 * directory picker — `e2e/s2-fsa` drives it through an OPFS folder, and the
+	 * controls here are for the check on real hardware that S2 left open.
+	 *
+	 * "hold files" / "check held" measure plan S23: Chrome revokes an "Allow
+	 * this time" folder grant once a tab has sat in the background a while. Hold
+	 * the files, leave the tab for ten minutes, come back and check — the answer
+	 * says whether a `File` taken before the revocation can still be read.
+	 *
+	 * Goes in Week 7a-2, once the widget itself imports the library.
 	 */
 
 	let status = $state('idle');
+	let summary = $state<TpLibrarySummary | null>(null);
+	let held: { relPath: string; file: File }[] = [];
+	let heldAt: number | null = null;
+	let heldCount = $state(0);
+	let heldCheck = $state('—');
 	let trackCount = $state(0);
 	let parsed = $state(0);
 	let total = $state(0);
@@ -66,30 +80,25 @@
 		const picked = [...(input.files ?? [])];
 		if (!picked.length) return;
 
+		// doc 05 §7 says warn, and the spike used to refuse instead. The warning
+		// is a readout here; the widget turns it into a question.
 		const incoming = picked.reduce((sum, f) => sum + f.size, 0);
-		if (willExceedQuota(await estimateQuota(), incoming)) {
-			status = 'quota-warning';
-			return;
-		}
+		const warned = willExceedQuota(await estimateQuota(), incoming);
 
 		status = 'scanning';
 		parsed = 0;
 		total = picked.length;
 		const started = performance.now();
 
-		await ingest(
-			picked.map((file) => ({ relPath: file.name, file })),
-			{
-				source: 'blob',
-				storeBlobs: true,
-				onProgress: (p) => {
-					parsed = p.parsed;
-				}
+		summary = await importFiles(picked, {
+			onProgress: (p) => {
+				parsed = p.done;
+				total = p.total;
 			}
-		);
+		});
 
 		elapsedMs = Math.round(performance.now() - started);
-		status = 'done';
+		status = warned ? 'done-after-quota-warning' : 'done';
 		await refresh();
 	}
 
@@ -116,29 +125,74 @@
 		status = `permission-${permission}`;
 	}
 
-	async function scanFolder() {
+	async function scan() {
 		const handle = await loadMusicRoot();
 		if (!handle) return;
 
 		status = 'scanning';
 		parsed = 0;
+		total = 0;
 		const started = performance.now();
 
-		const found: { relPath: string; file: File }[] = [];
-		for await (const entry of walkAudioFiles(handle)) found.push(entry);
-		total = found.length;
-
-		await ingest(found, {
-			source: 'fsa',
-			storeBlobs: false,
-			onProgress: (p) => {
-				parsed = p.parsed;
-			}
-		});
+		try {
+			summary = await scanFolder(handle, {
+				onProgress: (p) => {
+					parsed = p.done;
+					total = p.total;
+				}
+			});
+			status = 'done';
+		} catch (error) {
+			// The root itself could not be read — permission lapsed, drive gone.
+			status = `scan-failed-${error instanceof Error ? error.name : 'unknown'}`;
+		}
 
 		elapsedMs = Math.round(performance.now() - started);
-		status = 'done';
 		await refresh();
+	}
+
+	async function holdFiles() {
+		const handle = await loadMusicRoot();
+		if (!handle) return;
+
+		const paths = (await db.tracks.toArray()).flatMap((track) =>
+			track.source === 'fsa' && track.relPath !== undefined ? [track.relPath] : []
+		);
+		held = [];
+		for (const relPath of paths.slice(0, 50)) {
+			try {
+				held.push({ relPath, file: await fileAt(handle, relPath) });
+			} catch {
+				// Not there now; it is not what this measures.
+			}
+		}
+		heldCount = held.length;
+		heldAt = Date.now();
+		status = 'held';
+	}
+
+	async function checkHeld() {
+		const handle = await loadMusicRoot();
+		if (!handle) return;
+
+		let heldReadable = 0;
+		let freshReadable = 0;
+		for (const { relPath, file } of held) {
+			try {
+				await file.slice(0, 1024).arrayBuffer();
+				heldReadable += 1;
+			} catch {
+				// Counted by omission.
+			}
+			try {
+				await (await fileAt(handle, relPath)).slice(0, 1024).arrayBuffer();
+				freshReadable += 1;
+			} catch {
+				// Counted by omission.
+			}
+		}
+		const minutes = heldAt === null ? 0 : Math.round((Date.now() - heldAt) / 60_000);
+		heldCheck = `held ${heldReadable}/${held.length} · fresh ${freshReadable}/${held.length} · ${minutes} min · ${await queryRootPermission(handle)}`;
 	}
 
 	async function wipe() {
@@ -157,6 +211,7 @@
 	<section>
 		<h2>Path B — import (every browser)</h2>
 		<input type="file" multiple accept="audio/*" data-testid="import" onchange={onImport} />
+		<input type="file" webkitdirectory data-testid="import-folder" onchange={onImport} />
 	</section>
 
 	<section>
@@ -168,9 +223,12 @@
 		<div class="controls">
 			<button type="button" data-testid="pick" onclick={pickFolder}>pick folder</button>
 			<button type="button" data-testid="relink" onclick={relink}>re-link</button>
-			<button type="button" data-testid="scan" onclick={scanFolder}>scan</button>
+			<button type="button" data-testid="scan" onclick={scan}>scan</button>
+			<button type="button" data-testid="hold" onclick={holdFiles}>hold files</button>
+			<button type="button" data-testid="check-held" onclick={checkHeld}>check held</button>
 			<button type="button" data-testid="wipe" onclick={wipe}>wipe library</button>
 		</div>
+		<p class="hint" data-testid="held">held {heldCount} · {heldCheck}</p>
 	</section>
 
 	<dl class="readout tp-num">
@@ -207,6 +265,12 @@
 			<dd data-testid="permission">{permission}</dd>
 		</div>
 	</dl>
+
+	<p class="readout tp-num" data-testid="summary">
+		{summary === null
+			? 'no scan yet'
+			: `added ${summary.added} · updated ${summary.updated} · unchanged ${summary.unchanged} · missing ${summary.missing} · failed ${summary.failed} · skipped dirs ${summary.skippedDirs}${summary.cancelled ? ' · cancelled' : ''}${summary.quotaExceeded ? ' · quota exceeded' : ''}`}
+	</p>
 
 	<p class="readout" data-testid="quota">
 		{quota

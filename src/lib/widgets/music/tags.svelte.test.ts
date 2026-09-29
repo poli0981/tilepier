@@ -1,6 +1,6 @@
 import type { IPicture } from 'music-metadata';
 import { describe, expect, it } from 'vitest';
-import { COVER_MAX_BYTES, coverOf, parseTags, text } from './tags';
+import { COVER_MAX_BYTES, coverOf, parseTags, text, TpNotAudioError } from './tags';
 import flacUrl from './__fixtures__/formats/tagged.flac?url';
 import m4aUrl from './__fixtures__/formats/tagged.m4a?url';
 import mp3Url from './__fixtures__/formats/tagged.mp3?url';
@@ -88,6 +88,16 @@ describe('parseTags', () => {
 		await expect(parseTags(await fixture(notAudioUrl, 'not-audio.mp3'))).rejects.toMatchObject({
 			name: 'CouldNotDetermineFileTypeError'
 		});
+	});
+
+	it('refuses it too when its MIME type claims audio, as a folder’s files do', async () => {
+		// An FSA or OPFS file's type comes from its extension, and music-metadata
+		// trusts it: this one reaches the MPEG parser and returns an empty format
+		// instead of throwing. Found by the library tests (doc 22 §S7).
+		const source = await fixture(notAudioUrl, 'fake.mp3');
+		const typed = new File([source], 'fake.mp3', { type: 'audio/mpeg' });
+
+		await expect(parseTags(typed)).rejects.toBeInstanceOf(TpNotAudioError);
 	});
 });
 
