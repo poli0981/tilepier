@@ -96,6 +96,76 @@ describe('dialog semantics', () => {
 	});
 });
 
+describe('the keyboard (doc 13 §8)', () => {
+	/** What Tab can reach inside the panel, in order. */
+	function focusables(panel: Element): HTMLElement[] {
+		return [
+			...panel.querySelectorAll<HTMLElement>(
+				'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+			)
+		].filter((element) => element.getClientRects().length > 0);
+	}
+
+	function tab(target: Element, shiftKey = false): void {
+		target.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true })
+		);
+	}
+
+	it('keeps Tab inside the panel, round from the last control to the first', async () => {
+		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const panel = screen.getByTestId('detail-panel').element();
+		// The clock's detail, loaded: more than the close button to walk through.
+		await vi.waitFor(() => expect(focusables(panel).length).toBeGreaterThan(1));
+		const all = focusables(panel);
+		const first = all[0];
+		const last = all.at(-1);
+		if (first === undefined || last === undefined) throw new Error('no controls');
+
+		last.focus();
+		tab(last);
+		expect(document.activeElement).toBe(first);
+
+		tab(first, true);
+		expect(document.activeElement).toBe(last);
+	});
+
+	it('leaves Escape to the browser while something is full screen', async () => {
+		const onClose = vi.fn();
+		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const panel = screen.getByTestId('detail-panel');
+		await expect.element(panel).toBeVisible();
+		const fullscreen = vi
+			.spyOn(Document.prototype, 'fullscreenElement', 'get')
+			.mockReturnValue(panel.element());
+
+		press(panel.element(), 'Escape');
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		expect(onClose).not.toHaveBeenCalled();
+		fullscreen.mockRestore();
+	});
+
+	it('and for a moment after it leaves full screen, then closes again', async () => {
+		const onClose = vi.fn();
+		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const panel = screen.getByTestId('detail-panel');
+		await expect.element(panel).toBeVisible();
+
+		// The browser has just left full screen — on the same Escape, in some
+		// engines, that it would also deliver to the page.
+		document.dispatchEvent(new Event('fullscreenchange'));
+		press(panel.element(), 'Escape');
+		// Past the 260 ms close animation, inside the 500 ms grace.
+		await new Promise((resolve) => setTimeout(resolve, 400));
+		expect(onClose).not.toHaveBeenCalled();
+
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		press(panel.element(), 'Escape');
+		await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+	});
+});
+
 describe('closing', () => {
 	it('closes on the × button', async () => {
 		const onClose = vi.fn();
