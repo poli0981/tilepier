@@ -406,6 +406,88 @@ describe('failures (Week 7 plan S12)', () => {
 	});
 });
 
+describe('a tab in the background (plan S23)', () => {
+	it('plays on past a lapsed grant with the files it held while it could', async () => {
+		// Chrome revokes an "Allow this time" folder grant once a tab has sat in
+		// the background a while; a File taken before that still reads (doc 22
+		// §S7, the owner's check). So the player holds the next tracks' Files.
+		const opfs = await navigator.storage.getDirectory();
+		const name = `tp-player-${crypto.randomUUID()}`;
+		const folder = await opfs.getDirectoryHandle(name, { create: true });
+		for (const file of ['one.wav', 'two.wav', 'three.wav']) {
+			const writable = await (await folder.getFileHandle(file, { create: true })).createWritable();
+			await writable.write(file);
+			await writable.close();
+		}
+		await saveMusicRoot(folder, target);
+		await target.tracks.bulkPut(
+			['one', 'two', 'three'].map((id, index) => ({
+				id,
+				source: 'fsa' as const,
+				relPath: `${id}.wav`,
+				title: id,
+				artist: '',
+				album: '',
+				addedAt: index
+			}))
+		);
+		const reads = vi.spyOn(FileSystemFileHandle.prototype, 'getFile');
+
+		try {
+			player.playTracks(['one', 'two', 'three'], 'one', { kind: 'library' });
+			await playing('one');
+			// The playing track, and the two after it.
+			await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(3));
+
+			const lapsed = vi
+				.spyOn(FileSystemDirectoryHandle.prototype, 'getFileHandle')
+				.mockRejectedValue(new DOMException('lapsed', 'NotAllowedError'));
+			audio.end();
+			await playing('two');
+			audio.end();
+			await playing('three');
+
+			expect(notices).toEqual([]);
+			lapsed.mockRestore();
+		} finally {
+			await opfs.removeEntry(name, { recursive: true });
+		}
+	});
+
+	it('still asks for the grant when it holds nothing for the track', async () => {
+		const opfs = await navigator.storage.getDirectory();
+		const name = `tp-player-${crypto.randomUUID()}`;
+		const folder = await opfs.getDirectoryHandle(name, { create: true });
+		const writable = await (
+			await folder.getFileHandle('one.wav', { create: true })
+		).createWritable();
+		await writable.write('x');
+		await writable.close();
+		await saveMusicRoot(folder, target);
+		await target.tracks.put({
+			id: 'one',
+			source: 'fsa',
+			relPath: 'one.wav',
+			title: 'One',
+			artist: '',
+			album: '',
+			addedAt: 1
+		});
+		const lapsed = vi
+			.spyOn(FileSystemDirectoryHandle.prototype, 'getFileHandle')
+			.mockRejectedValue(new DOMException('lapsed', 'NotAllowedError'));
+
+		try {
+			player.playTracks(['one'], 'one', { kind: 'library' });
+
+			await vi.waitFor(() => expect(player.status).toBe('permission'));
+		} finally {
+			lapsed.mockRestore();
+			await opfs.removeEntry(name, { recursive: true });
+		}
+	});
+});
+
 describe('what it learns while playing', () => {
 	it('keeps a duration the scan could not know', async () => {
 		await seed(['a']);

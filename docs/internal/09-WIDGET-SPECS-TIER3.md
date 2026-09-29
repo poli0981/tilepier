@@ -275,7 +275,16 @@ only module allowed to import music-metadata:
 ### Playback
 
 - Single `HTMLAudioElement` app-wide (survives detail close; mini controls
-  in the tile). Source: FSA → `getFile()` → object URL (revoke on track
+  in the tile).
+- **A background tab plays on past a lapsed folder grant** (Week 7b-1, plan
+  S23). Chrome revokes an "Allow this time" grant once a tab has sat in the
+  background a while, and a `File` taken before that still reads: the owner
+  checked it on production (doc 22 §S7).
+  - While the grant holds, the player keeps the next twenty folder tracks'
+    `File`s. These are references, not bytes.
+  - A track is read from its held `File` only when a fresh read is refused,
+    so an edited file is still read as it is now.
+  - Past the held window, the tile asks for the grant again. Source: FSA → `getFile()` → object URL (revoke on track
   change); blob path → object URL from Dexie blob.
 - **Media Session API:** metadata (title/artist/album/cover), handlers for
   play/pause/prev/next/seek → OS media keys + lockscreen. As built (Week 7):
