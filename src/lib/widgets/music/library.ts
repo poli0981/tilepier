@@ -1,5 +1,5 @@
 import { db, type TpTrack } from '$lib/core/storage/db';
-import type { TagResult } from './tag-worker';
+import type { TpTagReply, TpTagRequest } from './tags';
 
 /**
  * Music library ingestion — doc 09 §2, the target of spike S2.
@@ -112,64 +112,59 @@ export async function ingest(
 	if (files.length === 0) return [];
 
 	const worker = new Worker(new URL('./tag-worker.ts', import.meta.url), { type: 'module' });
-
-	const byId = new Map<string, { relPath: string; file: File }>();
-	const requests = await Promise.all(
-		files.map(async (entry) => {
-			const id = await trackId(`${entry.relPath}|${entry.file.size}`);
-			byId.set(id, entry);
-			return { id, file: entry.file };
-		})
-	);
-
 	const tracks: TpTrack[] = [];
 	const seenCovers = new Set<string>();
 
-	await new Promise<void>((resolve, reject) => {
-		worker.addEventListener('error', (e) => reject(new Error(e.message)));
-		worker.addEventListener('message', (event: MessageEvent<TagResult | { done: true }>) => {
-			const data = event.data;
-			if ('done' in data) {
-				resolve();
-				return;
-			}
+	// One file per request, one reply each (tag-worker.ts). Rewritten properly
+	// in the next commit; this keeps the spike page working in between.
+	function parse(request: TpTagRequest): Promise<TpTagReply> {
+		return new Promise((resolve, reject) => {
+			const onMessage = (event: MessageEvent<TpTagReply>) => {
+				if (event.data.id !== request.id) return;
+				worker.removeEventListener('message', onMessage);
+				resolve(event.data);
+			};
+			worker.addEventListener('message', onMessage);
+			worker.addEventListener('error', (e) => reject(new Error(e.message)), { once: true });
+			worker.postMessage(request);
+		});
+	}
 
-			const entry = byId.get(data.id);
-			if (!entry) return;
+	try {
+		for (const entry of files) {
+			const id = await trackId(`${entry.relPath}|${entry.file.size}`);
+			const reply = await parse({ id, file: entry.file });
+			if ('failed' in reply) continue;
 
+			const { tags } = reply;
 			const track: TpTrack = {
-				id: data.id,
+				id,
 				source: options.source,
-				title: data.title,
-				artist: data.artist,
-				album: data.album,
+				title: tags.title,
+				artist: tags.artist,
+				album: tags.album,
 				addedAt: Date.now()
 			};
 			if (options.source === 'fsa') track.relPath = entry.relPath;
-			if (data.durationMs != null) track.durationMs = data.durationMs;
-			if (data.trackNo != null) track.trackNo = data.trackNo;
-			if (data.year != null) track.year = data.year;
-			if (data.coverHash) track.coverId = `cover:${data.coverHash}`;
+			if (tags.durationMs !== undefined) track.durationMs = tags.durationMs;
+			if (tags.trackNo !== undefined) track.trackNo = tags.trackNo;
+			if (tags.year !== undefined) track.year = tags.year;
+			if (tags.cover !== undefined) {
+				track.coverId = `cover:${tags.cover.hash}`;
+				if (!seenCovers.has(tags.cover.hash)) {
+					seenCovers.add(tags.cover.hash);
+					await db.trackBlobs.put({ id: track.coverId, blob: tags.cover.blob });
+				}
+			}
+			if (options.storeBlobs) await db.trackBlobs.put({ id, blob: entry.file });
 
 			tracks.push(track);
-
-			void (async () => {
-				if (data.cover && data.coverHash && !seenCovers.has(data.coverHash)) {
-					seenCovers.add(data.coverHash);
-					await db.trackBlobs.put({ id: `cover:${data.coverHash}`, blob: data.cover });
-				}
-				if (options.storeBlobs) {
-					await db.trackBlobs.put({ id: data.id, blob: entry.file });
-				}
-			})();
-
 			options.onProgress?.({ parsed: tracks.length, total: files.length });
-		});
+		}
+	} finally {
+		worker.terminate();
+	}
 
-		worker.postMessage(requests);
-	});
-
-	worker.terminate();
 	await db.tracks.bulkPut(tracks);
 	return tracks;
 }

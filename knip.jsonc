@@ -62,5 +62,8 @@
 		"@inlang/plugin-message-format",
 		"@inlang/plugin-m-function-matcher"
 	],
-	"ignoreBinaries": ["wrangler"]
+	// `ffmpeg` is a system tool, not a package: scripts/gen-music-fixtures.mjs
+	// shells out to it to regenerate committed fixtures, and nothing in CI runs
+	// that script (doc 19 §3).
+	"ignoreBinaries": ["wrangler", "ffmpeg"]
 }
