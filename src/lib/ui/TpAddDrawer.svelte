@@ -36,7 +36,7 @@
 	/** doc 13 §4: search filters by name, with diacritics folded. */
 	function matches(manifest: TpWidgetManifest, q: string): boolean {
 		if (q.trim() === '') return true;
-		const title = widgetLabels(manifest.id)?.title() ?? manifest.id;
+		const title = widgetLabels(manifest.id).title();
 		return foldForSearch(title).includes(foldForSearch(q.trim()));
 	}
 
@@ -107,8 +107,8 @@
 					<article class="tp-card">
 						<TpIcon name={manifest.icon} size={20} />
 						<div class="tp-card__text">
-							<p class="tp-card__title">{labels?.title() ?? manifest.id}</p>
-							<p class="tp-card__blurb">{labels?.blurb() ?? ''}</p>
+							<p class="tp-card__title">{labels.title()}</p>
+							<p class="tp-card__blurb">{labels.blurb()}</p>
 						</div>
 
 						<!-- Size-footprint glyph: the default size against 12 columns. -->

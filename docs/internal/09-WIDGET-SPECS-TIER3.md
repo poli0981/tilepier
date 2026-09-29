@@ -352,3 +352,32 @@ only module allowed to import music-metadata:
 - **Edge cases:** codec unsupported (browser matrix varies for mkv/hevc) →
   explicit "codec not supported by this browser" state with a hint, not a
   silent black box; PiP unavailable → hide button.
+
+### As built (Week 7b)
+
+- **Opening.** The File System Access picker where the browser has one (Chrome,
+  Edge), which keeps a handle so the file is read again on every mount. An
+  `<input accept="video/*,.mkv">` everywhere else, Brave included, since it
+  ships the API switched off. From an empty tile it takes one click: the picker
+  runs in the click, and the detail that opens plays the file.
+- **One `<video>`, in the detail.** Picture-in-picture ends when the detail
+  closes (owner decision Q2). The tile never holds an element. What the player
+  reports goes to a module store the tile reads (`widgets/media/store`).
+- **Never a black box** (doc 17 §4a):
+  - a format this browser does not play says so, and names the formats that
+    play almost everywhere;
+  - a local file that fails to read or decode is read once more, then says it
+    changed or moved;
+  - a file with sound and no picture plays, and says so.
+- **One sound at a time** (`core/playback`). The video takes the sound when it
+  starts playing, not before `play()`, so a file this browser cannot play never
+  pauses the music. The music player taking it back pauses the video.
+- **The OS's keys** (`core/media-session`):
+  - the Media Session carries the file's name and answers play, pause, ±10 s
+    skips and seek;
+  - previous and next stay unset, which on iOS is what brings up the skips;
+  - the scrubber runs at the speed that plays.
+- **Controls** are drawn in tokens:
+  - the seek bar shared with music (`ui/TpSeekBar`);
+  - play, pause, mute and volume;
+  - speed from 0.5× to 2×.

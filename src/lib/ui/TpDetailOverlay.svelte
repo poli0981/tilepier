@@ -242,7 +242,7 @@
 		     before its chunk has arrived. Through `widgetLabels` rather than a
 		     computed `m[...]` key: doc 06 §1 puts the message references in one
 		     record precisely so a lookup by id stays typed. -->
-		<h2 id="tp-detail-title">{widgetLabels(detail.widgetId)?.title() ?? detail.widgetId}</h2>
+		<h2 id="tp-detail-title">{widgetLabels(detail.widgetId).title()}</h2>
 		<button
 			type="button"
 			class="tp-detail__close"

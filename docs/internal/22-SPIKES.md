@@ -628,6 +628,38 @@ controls.
 - A reader who used the harness keeps an orphaned `tp-spike-s2` database in
   their browser until site data is cleared. Nothing reads it.
 
+## S8 — the video player, headless (Week 7b, 2026-09-29)
+
+A throwaway browser test measured what the media widget would build on, in
+Playwright 1.62's Chrome for Testing 151, headless. The clips came from
+`scripts/gen-media-fixtures.mjs`: ffmpeg's test pattern at 160×90 over a sine
+tone.
+
+- **`canPlayType`:** VP9/Opus and H.264/AAC answer "probably". HEVC answers "",
+  MKV "maybe" and MPEG-2 "".
+- **What plays:**
+  - WebM and MP4 reach `loadedmetadata` in 3–16 ms.
+  - Sound-only WebM reports `videoWidth` 0, which is how the "no picture" state
+    is found.
+  - Junk named `.mp4`, HEVC and MPEG-2 in MKV all error with code 4. **The
+    "unsupported" fixture is junk bytes**, the one case every browser agrees on.
+    Real Chrome and Edge decode HEVC with hardware, so HEVC belongs to the
+    production matrix, not to CI.
+- **Picture-in-picture and full screen** are both enabled headless. Without a
+  gesture, `requestPictureInPicture` throws `NotAllowedError` and
+  `requestFullscreen` a `TypeError`, so component tests stub them and the e2e
+  clicks.
+- **A `<video>` removed from the page still draws** into a canvas, and the
+  canvas is not tainted: the source is a same-origin `blob:`. So the poster
+  can be captured in the detail's teardown, after Svelte has removed the
+  element, as long as `src` is released only afterwards.
+- **JPEG sizes:** the test pattern at 320 px wide is 7.4 / 6.2 / 5.2 KB at quality
+  0.7 / 0.55 / 0.4. The 50 KB ceiling leaves room for real frames.
+- **Not measurable here:** whether a real browser hands Escape to the page in
+  full screen. Chrome does not, and Playwright's `keyboard.press` always does,
+  so the detail's guard is unit-tested and the real behaviour is a hand check
+  (doc 19 §5).
+
 ## Exit review
 
 Half-day: update docs 06/09/11/17/20 with findings, adjust Week 1 backlog,
