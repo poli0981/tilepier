@@ -97,7 +97,11 @@ to name `cf_clearance`.
    reader to other sites. TilePier's own code sets no cookie; the one cookie
    on the site is Cloudflare's (point 10).
 2. All personal content (layout, notes, todos, events, playlists, files,
-   saved places) stays in the browser's storage on the user's device.
+   saved places) stays in the browser's storage on the user's device. Since
+   Week 7b that includes where each video was left, a small still from it,
+   and the videos opened lately — a way back to each file, never the file.
+   An editorial widening of point 2's list: nothing new leaves the device, so
+   it is not a material change, and `LEGAL_VERSION` stays (§2).
 3. Network requests go to TilePier's own `/api` proxy; the proxy holds no
    user identifiers and caches only the public data payloads themselves.
    Cloudflare, which runs it, keeps request logs — the address included —

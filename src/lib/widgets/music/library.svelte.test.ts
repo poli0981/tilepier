@@ -9,7 +9,9 @@ import {
 	forgetTracks,
 	fileAt,
 	importFiles,
+	loadMusicRoot,
 	readLibrary,
+	saveMusicRoot,
 	scanFolder,
 	TpTagWorkerError,
 	type TpTagParser
@@ -448,6 +450,32 @@ describe('createTagParser', () => {
 		worker.dispatchEvent(new Event('error'));
 		await expect(broken).rejects.toBeInstanceOf(TpTagWorkerError);
 		expect(worker.terminate).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('the library root', () => {
+	it('comes back as the folder it was saved as', async () => {
+		await saveMusicRoot(folder, target);
+
+		const root = await loadMusicRoot(target);
+		expect(root?.kind).toBe('directory');
+		expect(root?.name).toBe(folderName);
+	});
+
+	it('is never a file, whatever its row is called', async () => {
+		// The table holds the video player's file handles too (Week 7b), and a
+		// file handed to the scanner as a folder would throw on its first walk.
+		await put('film.webm', 'frames');
+		const file = await folder.getFileHandle('film.webm');
+		await target.fsaHandles.put({
+			id: 'musicRoot',
+			handle: file,
+			name: 'film.webm',
+			size: 6,
+			openedAt: 1
+		});
+
+		expect(await loadMusicRoot(target)).toBeNull();
 	});
 });
 

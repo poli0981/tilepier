@@ -8,6 +8,7 @@
 	import { pickVideo } from './picker';
 	import { media } from './store.svelte';
 	import TpMediaPlayer from './TpMediaPlayer.svelte';
+	import TpMediaRecents from './TpMediaRecents.svelte';
 
 	/**
 	 * doc 09 §3's detail: the video, large, with its controls — or, with none
@@ -18,14 +19,16 @@
 	 * picture-in-picture with it (owner decision Q2).
 	 *
 	 * **A reload lands here**, on `/w/media`, with the file gone from memory. So
-	 * with nothing open the detail offers the last video worth coming back to,
-	 * as the tile does: the same file picked again finds its place.
+	 * with nothing open the detail offers what the tile does: the videos opened
+	 * lately through the picker (`TpMediaRecents`), which open again from their
+	 * handles, and the last video worth coming back to when it is not one of
+	 * them — picked again, it finds its place.
 	 */
 	let { instanceId: _instanceId }: TpDetailProps = $props();
 
 	$effect(() => {
 		// Read once per page and shared with the tile; this page may have none.
-		untrack(() => void media.loadLast());
+		untrack(() => void media.loadShelf());
 	});
 
 	async function open(): Promise<void> {
@@ -38,8 +41,10 @@
 	{#if media.current === null}
 		<div class="tp-vdetail__empty" data-testid="media-nothing">
 			<TpIcon name="film" size={40} />
-			{#if media.last === null}
-				<p>{m['widget.media.empty']()}</p>
+			{#if media.last === null || media.last.handle !== null}
+				{#if media.recents.length === 0}
+					<p>{m['widget.media.empty']()}</p>
+				{/if}
 				<button
 					type="button"
 					class="tp-vdetail__open"
@@ -73,6 +78,9 @@
 						{m['widget.media.open_another']()}
 					</button>
 				</div>
+			{/if}
+			{#if media.recents.length > 0}
+				<TpMediaRecents />
 			{/if}
 			<p class="tp-vdetail__note">{m['widget.media.local_note']()}</p>
 		</div>

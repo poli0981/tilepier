@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDb, type TpDb } from '$lib/core/storage/db';
-import { latestResume, loadPrefs, loadResume, resumeKey, savePrefs, saveResume } from './resume';
+import {
+	loadPoster,
+	loadPrefs,
+	loadResume,
+	readPoster,
+	resumeKey,
+	savePoster,
+	savePrefs,
+	saveResume
+} from './resume';
 
 /**
  * Media's rows in the `playback` table (doc 09 §3), against real IndexedDB in
@@ -68,19 +77,30 @@ describe('saveResume', () => {
 	});
 });
 
-describe('latestResume', () => {
-	it('is the newest place worth coming back to', async () => {
-		const target = freshDb();
-		await saveResume('old', place('Cũ.mp4'), 1, target);
-		await saveResume('mid', place('Giữa.mp4'), 2, target);
-		// Finished — put back to the start — so not worth offering.
-		await saveResume('new', place('Mới.mp4', 0), 3, target);
+describe('stills', () => {
+	const jpeg = () => new Blob([new Uint8Array([0xff, 0xd8, 0xff])], { type: 'image/jpeg' });
 
-		expect((await latestResume(target))?.name).toBe('Giữa.mp4');
+	it('round-trip, and anything this build did not write reads as none', async () => {
+		const target = freshDb();
+		await savePoster('abc', jpeg(), 1, target);
+
+		expect((await loadPoster('abc', target))?.type).toBe('image/jpeg');
+		expect(await loadPoster('none', target)).toBeNull();
+		expect(readPoster({ blob: new Blob(['x'], { type: 'text/plain' }) })).toBeNull();
+		expect(readPoster({ blob: 'data:image/jpeg;base64,' })).toBeNull();
+		expect(readPoster(null)).toBeNull();
 	});
 
-	it('is nothing on a fresh profile', async () => {
-		expect(await latestResume(freshDb())).toBeNull();
+	it('go when their place goes, and only then', async () => {
+		const target = freshDb();
+		for (let index = 0; index < 21; index += 1) {
+			await savePoster(`key${String(index)}`, jpeg(), 100 + index, target);
+			await saveResume(`key${String(index)}`, place(`${String(index)}.mp4`), 100 + index, target);
+		}
+
+		expect(await loadPoster('key0', target)).toBeNull();
+		expect(await loadPoster('key1', target)).not.toBeNull();
+		expect(await loadPoster('key20', target)).not.toBeNull();
 	});
 });
 

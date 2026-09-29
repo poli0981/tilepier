@@ -4,7 +4,8 @@ import { claimPlayback, playbackOwner, resetPlayback } from '$lib/core/playback'
 import { db } from '$lib/core/storage/db';
 import { m } from '$lib/paraglide/messages';
 import { settings } from '$lib/stores/settings.svelte';
-import { loadPrefs, loadResume, resumeKey, saveResume } from './resume';
+import { POSTER_MAX_BYTES } from './poster';
+import { loadPoster, loadPrefs, loadResume, resumeKey, saveResume } from './resume';
 import { media, type TpMediaFile } from './store.svelte';
 import TpMediaPlayer from './TpMediaPlayer.svelte';
 import clipUrl from './__fixtures__/clip.webm?url';
@@ -37,6 +38,7 @@ async function fixture(url: string, name: string, type: string): Promise<TpMedia
 /** Media's rows only: music's, in the same table, belong to other tests. */
 async function forgetMedia(): Promise<void> {
 	await db.playback.where('id').startsWith('media:').delete();
+	await db.fsaHandles.where('id').startsWith('media:').delete();
 }
 
 beforeEach(async () => {
@@ -465,5 +467,89 @@ describe('subtitles', () => {
 
 		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
 		expect(screen.container.querySelector('[data-testid="media-captions"]')).toBeNull();
+	});
+});
+
+describe('the shelf', () => {
+	async function keyOf(file: TpMediaFile): Promise<string> {
+		const key = await resumeKey(file.name, file.size);
+		if (key === null) throw new Error('the test browser hashes');
+		return key;
+	}
+
+	// Each with a name of its own: a player's last still is written after its
+	// teardown, and could land under the next test's key if they shared one.
+	it('keeps a small JPEG still of where it paused', async () => {
+		const file = await fixture(clipUrl, 'dừng.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		const video = await playing(screen);
+		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(0.5), SLOW);
+
+		await screen.getByTestId('media-toggle').click();
+
+		const key = await keyOf(file);
+		await vi.waitFor(async () => expect(await loadPoster(key)).not.toBeNull(), SLOW);
+		const still = await loadPoster(key);
+		expect(still?.type).toBe('image/jpeg');
+		expect(still?.size).toBeLessThanOrEqual(POSTER_MAX_BYTES);
+	});
+
+	it('keeps a still when it goes, and none of the end', async () => {
+		const file = await fixture(clipUrl, 'hết.webm', 'video/webm');
+		const first = render(TpMediaPlayer, { file });
+		const video = await playing(first);
+		video.currentTime = 13.4;
+		await vi.waitFor(() => expect(video.ended).toBe(true), SLOW);
+		await vi.waitFor(async () => expect(await kept(file)).toBe(0), SLOW);
+		const key = await keyOf(file);
+		expect(await loadPoster(key)).toBeNull();
+
+		cleanup();
+		const again = render(TpMediaPlayer, { file });
+		const replay = await playing(again);
+		await vi.waitFor(() => expect(replay.currentTime).toBeGreaterThan(0.5), SLOW);
+		cleanup();
+
+		await vi.waitFor(async () => expect(await loadPoster(key)).not.toBeNull(), SLOW);
+	});
+
+	it('remembers a video opened through the picker, and not one from the input', async () => {
+		const bytes = await (await fetch(clipUrl)).arrayBuffer();
+		const folder = await (
+			await navigator.storage.getDirectory()
+		).getDirectoryHandle('tp-media-player', { create: true });
+		try {
+			const handle = await folder.getFileHandle('từ picker.webm', { create: true });
+			const writable = await handle.createWritable();
+			await writable.write(bytes);
+			await writable.close();
+			const picked = await handle.getFile();
+			const fromPicker: TpMediaFile = {
+				name: picked.name,
+				size: picked.size,
+				file: picked,
+				handle
+			};
+			const fromInput = await fixture(clipUrl, 'từ input.webm', 'video/webm');
+
+			const one = render(TpMediaPlayer, { file: fromPicker });
+			await vi.waitFor(() => expect(phase(one.container)).toBe('ready'), SLOW);
+			cleanup();
+			const two = render(TpMediaPlayer, { file: fromInput });
+			await vi.waitFor(() => expect(phase(two.container)).toBe('ready'), SLOW);
+
+			const pickedKey = await keyOf(fromPicker);
+			await vi.waitFor(async () => {
+				const row = await db.fsaHandles.get(`media:${pickedKey}`);
+				expect(row !== undefined && 'name' in row ? row.name : null).toBe('từ picker.webm');
+			}, SLOW);
+			expect(await db.fsaHandles.get(`media:${await keyOf(fromInput)}`)).toBeUndefined();
+		} finally {
+			await (
+				await navigator.storage.getDirectory()
+			).removeEntry('tp-media-player', {
+				recursive: true
+			});
+		}
 	});
 });

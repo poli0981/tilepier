@@ -77,7 +77,7 @@ db.version(1).stores({
   playlists:  'id, order',                     // {id, name, order, trackIds[]}
   tracks:     'id, addedAt, title, artist',    // metadata only (see §4)
   trackBlobs: 'id',                            // {id === track id, blob} on path B; {id:'cover:<hash>', blob} on both
-  fsaHandles: 'id',                            // {id:'musicRoot', handle: FileSystemDirectoryHandle}
+  fsaHandles: 'id',                            // {id:'musicRoot', handle: FileSystemDirectoryHandle} | {id:'media:<key>', handle: FileSystemFileHandle, name, size, openedAt}
   savedPlaces:'id, name',                      // map widget favorites
   focusSessions:'id, dateKey',                 // pomodoro history {id, dateKey, focusMs}
   apiCache:   'key, cachedAt',                 // {key, cachedAt, payload}
@@ -108,7 +108,17 @@ Media's rows (Week 7b, doc 09 §3):
 - `media:pos:<key>`: `{name, size, positionMs, durationMs}`, one per video. The
   newest twenty are kept, trimmed in the same transaction as the write and only
   among `media:pos:` rows — music's rows share the table and are never touched.
+- `media:poster:<key>`: `{blob}`, that video's still, a JPEG of at most 50 KB
+  (Week 7b-4). It goes when its place does, in the same transaction.
 - `media:prefs`: `{volume, muted}`, one row.
+- In `fsaHandles`, `media:<key>`: a video opened through the picker —
+  `{handle, name, size, openedAt}`, the newest five. **The table holds a union**
+  since Week 7b-4, so a reader checks `handle.kind` before trusting a row:
+  `loadMusicRoot` returns a folder or nothing, and the recents take files. The
+  `EntityTable` spells out its insert type, because Dexie's default is an
+  `Omit` over the union, which is not distributive and refuses a recent.
+- Forgetting one video takes its recent, place and still in one transaction
+  over both tables; forgetting all takes every `media:` row but the volume.
 - `<key>` is `sha256Hex(NFC(name) + '|' + size, 12)` (`core/hash`, §4). With no
   `crypto.subtle` there is no key, and nothing is kept.
 - A closing page writes its row with `putPlaybackNow`, which commits inside the

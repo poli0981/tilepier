@@ -5,15 +5,16 @@ import {
 	readPrefs,
 	readResume,
 	RESUME_KEEP,
-	shouldResume,
 	type TpMediaPrefs,
 	type TpResume
 } from './service';
 
 /**
- * Where each video was left, and the reader's volume (doc 09 §3) — media's rows
- * in the `playback` table music shares (owner decision Q1):
+ * Where each video was left, a still from it, and the reader's volume (doc 09
+ * §3) — media's rows in the `playback` table music shares (owner decision Q1):
  * - `media:pos:<key>`, a {@link TpResume} per video, the newest twenty kept;
+ * - `media:poster:<key>`, that video's still (`poster.ts`), which goes when its
+ *   place does;
  * - `media:prefs`, one {@link TpMediaPrefs}. Speed is not kept: every file
  *   starts at 1×.
  *
@@ -30,7 +31,8 @@ import {
  * they return (`putPlaybackNow`). `target` is the test seam.
  */
 
-const POS_PREFIX = 'media:pos:';
+export const POS_PREFIX = 'media:pos:';
+export const POSTER_PREFIX = 'media:poster:';
 const PREFS_ID = 'media:prefs';
 
 export async function resumeKey(name: string, size: number): Promise<string | null> {
@@ -51,23 +53,9 @@ export async function loadResume(key: string, target: TpDb = db): Promise<TpResu
 }
 
 /**
- * The newest place worth coming back to, for a page with no video open — the
- * tile after a reload. **Throws** when the table cannot be read, so the tile can
- * say so rather than claim there is nothing.
- */
-export async function latestResume(target: TpDb = db): Promise<TpResume | null> {
-	const rows = await target.playback.where('id').startsWith(POS_PREFIX).toArray();
-	rows.sort((a, b) => b.updatedAt - a.updatedAt);
-	for (const row of rows) {
-		const resume = readResume(row.state);
-		if (resume !== null && shouldResume(resume.positionMs, resume.durationMs)) return resume;
-	}
-	return null;
-}
-
-/**
  * Keeps where the video under `key` is, and drops the places past the newest
- * twenty — in one transaction, so no reader of the table sees twenty-one.
+ * twenty, with their stills — in one transaction, so no reader of the table
+ * sees twenty-one.
  */
 export async function saveResume(
 	key: string,
@@ -80,7 +68,9 @@ export async function saveResume(
 			await target.playback.put({ id: POS_PREFIX + key, updatedAt: now, state: resume });
 			const rows = await target.playback.where('id').startsWith(POS_PREFIX).toArray();
 			const victims = lruVictims(rows, RESUME_KEEP);
-			if (victims.length > 0) await target.playback.bulkDelete(victims);
+			if (victims.length === 0) return;
+			const stills = victims.map((id) => POSTER_PREFIX + id.slice(POS_PREFIX.length));
+			await target.playback.bulkDelete([...victims, ...stills]);
 		});
 	} catch {
 		// A full disk costs the place, nothing else.
@@ -96,6 +86,34 @@ export function saveResumeNow(
 	target: TpDb = db
 ): void {
 	putPlaybackNow({ id: POS_PREFIX + key, updatedAt: now, state: resume }, target);
+}
+
+/** A still as this build wrote it, or `null` — fail closed (doc 05 §5). */
+export function readPoster(state: unknown): Blob | null {
+	if (typeof state !== 'object' || state === null) return null;
+	const { blob } = state as { blob?: unknown };
+	return blob instanceof Blob && blob.type === 'image/jpeg' ? blob : null;
+}
+
+export async function loadPoster(key: string, target: TpDb = db): Promise<Blob | null> {
+	try {
+		return readPoster((await target.playback.get(POSTER_PREFIX + key))?.state);
+	} catch {
+		return null;
+	}
+}
+
+export async function savePoster(
+	key: string,
+	blob: Blob,
+	now: number = Date.now(),
+	target: TpDb = db
+): Promise<void> {
+	try {
+		await target.playback.put({ id: POSTER_PREFIX + key, updatedAt: now, state: { blob } });
+	} catch {
+		// A still is a courtesy to the tile, not something to fail over.
+	}
 }
 
 export async function loadPrefs(target: TpDb = db): Promise<TpMediaPrefs | null> {
