@@ -258,17 +258,6 @@ export function feedName(view: Pick<TpFeedView, 'url' | 'feed'>): string {
 }
 
 /**
- * The letter a feed is shown by (doc 08 §4, cut from a favicon in the Week 6
- * plan): the first letter or digit of its name, upper-cased for the reader's
- * locale. A favicon would have been a request to a stranger's host for every
- * feed on every deck, which is exactly what doc 15 §2's `img-src` forbids.
- */
-export function monogramOf(name: string, locale: string): string {
-	const first = Array.from(name.replace(/^[^\p{L}\p{N}]+/u, ''))[0];
-	return first === undefined ? '#' : first.toLocaleUpperCase(locale);
-}
-
-/**
  * A link a browser may be sent to, or `null`.
  *
  * The Worker already keeps only http(s) (`feed-parse.ts`), and this checks

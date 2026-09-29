@@ -4,6 +4,7 @@
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { fmtDate, fmtRelative, fmtTime } from '$lib/i18n/fmt';
+	import { monogramOf } from '$lib/i18n/monogram';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpFeedHtml from '$lib/ui/TpFeedHtml.svelte';
@@ -17,7 +18,6 @@
 		feedName,
 		hostOf,
 		mergeItems,
-		monogramOf,
 		moveFeed,
 		readSettings,
 		removeFeed,
