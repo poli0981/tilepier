@@ -166,7 +166,11 @@ Lighthouse pass (doc 01), which measures what a reader actually downloads.
 
 - Lazy: detail components, echarts, maplibre, music-metadata worker —
   never in entry. `import()` inside manifests only (doc 06 §1).
-- Lists ≥ 200 rows use the internal windowing helper (music library).
+- Lists ≥ 200 rows use the internal windowing helper (music library). It is
+  `core/windowing.ts` (Week 7): fixed-height rows, pure arithmetic, tested
+  without a DOM. The music library windows **always** rather than past a
+  threshold — this said 200 and doc 09 §2 said 500, and a list that is always
+  windowed has no second code path to be wrong in (Week 7 plan S13).
 - Images: none remote (CSP); local assets pre-optimized; icon sprite
   inlined SVG symbols.
 - No layout thrash: ResizeObserver batched in the host; charts resize via

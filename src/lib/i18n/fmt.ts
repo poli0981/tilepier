@@ -338,3 +338,64 @@ export function fmtDistance(km: number, locale: string): string {
 			})
 	).format(km);
 }
+
+/* ────────────────────────────────────────── playback time (doc 09 §2–§3) */
+
+/**
+ * A position or a length in a track — "3:07", "1:02:03" — for the players.
+ * Mono and tabular where it is shown (doc 12 §3: a number the reader watches
+ * change).
+ *
+ * **Rounded down**, unlike the timer's `formatRemaining`, which rounds up: a
+ * countdown must not reach "0:00" while time is left, and elapsed time must not
+ * reach "0:01" before a second has passed — or a track would say it ended a
+ * second before it did. Hours appear only when the track has them. The digits
+ * go through `Intl.NumberFormat` for the reader's locale, as doc 14 §3 asks,
+ * although both of this app's locales write them the same way.
+ */
+export function fmtDuration(ms: number, locale: string): string {
+	const whole = Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 1000) : 0;
+	const hours = Math.floor(whole / 3600);
+	const minutes = Math.floor((whole % 3600) / 60);
+	const seconds = whole % 60;
+
+	const plain = numberFormatter(
+		`dur:${locale}`,
+		() => new Intl.NumberFormat(locale, { useGrouping: false })
+	);
+	const padded = numberFormatter(
+		`dur2:${locale}`,
+		() => new Intl.NumberFormat(locale, { minimumIntegerDigits: 2, useGrouping: false })
+	);
+
+	return hours > 0
+		? `${plain.format(hours)}:${padded.format(minutes)}:${padded.format(seconds)}`
+		: `${plain.format(minutes)}:${padded.format(seconds)}`;
+}
+
+/* ─────────────────────────────────────────────── sizes on disk (doc 05 §7) */
+
+const BYTE_UNITS = [
+	['gigabyte', 1024 ** 3],
+	['megabyte', 1024 ** 2],
+	['kilobyte', 1024]
+] as const;
+
+/**
+ * A size on disk — "3.4 MB", or "3,4 MB" in Vietnamese — in the largest unit
+ * it reaches, to one decimal. Multiples of 1024, the way the browser's own
+ * storage estimate is read against them; whole bytes below a kilobyte.
+ */
+export function fmtBytes(bytes: number, locale: string): string {
+	const safe = Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
+	const [unit, size] = BYTE_UNITS.find(([, step]) => safe >= step) ?? (['byte', 1] as const);
+	return numberFormatter(
+		`bytes:${locale}:${unit}`,
+		() =>
+			new Intl.NumberFormat(locale, {
+				style: 'unit',
+				unit,
+				maximumFractionDigits: unit === 'byte' ? 0 : 1
+			})
+	).format(safe / size);
+}

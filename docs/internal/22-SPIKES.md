@@ -600,6 +600,13 @@ At `/spike/s2`, in real Chrome, with a real music folder:
 4. Firefox: import ~50 files → quota readout → they are listed;
 5. "wipe library" at the end.
 
+**From Week 7a-2 the harness keeps its own database**, `tp-spike-s2`. The
+widget's library lives in the app's, and a "wipe library" here — or a folder
+picked here, which would have replaced the widget's — must not reach a
+reader's music. The page goes once this half has run: "hold files" and
+"check held" are the only way to answer S23, and the widget has no such
+controls.
+
 *(Results go here.)*
 
 ## Exit review

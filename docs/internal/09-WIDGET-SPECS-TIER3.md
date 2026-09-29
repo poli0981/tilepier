@@ -278,15 +278,42 @@ only module allowed to import music-metadata:
   in the tile). Source: FSA → `getFile()` → object URL (revoke on track
   change); blob path → object URL from Dexie blob.
 - **Media Session API:** metadata (title/artist/album/cover), handlers for
-  play/pause/prev/next/seek → OS media keys + lockscreen.
+  play/pause/prev/next/seek → OS media keys + lockscreen. As built (Week 7):
+  written only while the music player holds `core/playback`'s claim, so it
+  never writes over the video player's session; cleared when the player
+  stops, so a media key cannot start music for a tile that has left the deck.
+  `seekbackward` and `seekforward` stay unset: iOS shows ±10 s buttons
+  *instead of* previous and next while either exists. Every write goes
+  through `core/media-session.ts`'s guards — older Safari throws for an
+  action it does not know, and `setPositionState` throws for the `NaN`
+  duration an element reports before its metadata. The artwork is the
+  cover's object URL, one per cover and shared by an album's tracks; Firefox
+  on Windows does not show `blob:` artwork, which is accepted.
 - Queue model: current playlist or ad-hoc queue; shuffle (Fisher–Yates over
   remaining), repeat off/all/one. Position persisted (settings) every 10 s
   and on pause → resume-where-left on reload.
 - **Tile:** cover, title/artist marquee-on-overflow, progress bar,
   prev/play/next; h≥2 adds queue-peek line.
-- **Detail:** library table (virtualized ≥ 500 rows — simple windowing,
-  no dep), search, sort, playlists CRUD (drag to reorder), now-playing pane
-  with large cover. ~~**Visualizer (Web Audio AnalyserNode) is the declared
+- **Detail:** library table (virtualized — always, since Week 7, through
+  `core/windowing.ts`: simple windowing,
+  no dep), search, sort, playlists CRUD (~~drag to reorder~~ up and down
+  buttons — see Playlists), now-playing pane
+  with large cover, and under it the next eight songs in play order
+  ("coming up", Week 7) — choosing one plays it and keeps the queue, where a
+  library row starts a new one.
+- **Playlists** (Week 7). Made in the detail and chosen as chips; the chosen
+  one opens below with its songs, and is what the library's "+" adds to — with
+  none chosen there is no "+". Reordered with **up and down buttons, not
+  drag**: they work from a keyboard as they are, the currency detail already
+  uses them, and drag would bring a library the budget has to carry. Deleting
+  asks first, inline, and says the songs stay; it never touches them. A song
+  since removed from the library keeps its place, greyed, until the reader
+  takes it off, and the player skips it. **Written through, one row per
+  action** — not through doc 04 §6's 300 ms writer, which keeps only the last
+  record in its window and would drop one of two quick edits to two playlists;
+  nothing here is keystroke-level (a rename is kept on Enter or on leaving the
+  field). The in-memory list changes before the write, so two presses a few
+  milliseconds apart both count. ~~**Visualizer (Web Audio AnalyserNode) is the declared
   cut-line** — ship v1.0 without it if Week 7 runs hot (charter risk #2).~~
   **Cut 2026-09-29**, before Week 7 started (doc 23): the week measured
   5.55×, and `createMediaElementSource` binds the one audio element to an
@@ -295,7 +322,9 @@ only module allowed to import music-metadata:
 - **Edge cases:** file moved/deleted since scan → play error toast + mark
   track missing (don't auto-delete; Rescan reconciles); unsupported codec →
   skip-next with per-track error mark; autoplay policy → first play always
-  from user gesture (never autoplay on load).
+  from user gesture (never autoplay on load). Imported audio a replacing
+  restore left without tracks → shown in the detail with its size, deleted
+  only when the reader asks (doc 05 §6, Week 7 plan S25).
 
 ## 3. `media` — Local Video Player
 

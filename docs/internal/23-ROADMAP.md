@@ -1283,6 +1283,53 @@ round trip cost nothing measurable against S2's 857 ms.
 real Chrome, a real folder, a browser restart, and S23's background-tab check,
 which decides whether the 7a-2 player pre-fetches its queue's files.
 
+### Week 7a-2 — the player, the tile and the detail (2026-09-29)
+
+`music` is the fourteenth widget registered. Schema version 2 adds `playback`
+(doc 05 §3), where the player keeps where it was and its queue — out of
+backups, and out of `tp.layout.v1`, whose ten-second writes would have
+clobbered other tabs. The player is one `<audio>` in a module singleton,
+never replaced; it stops itself when its tile leaves the deck, including a
+reset from `/settings`, where no deck page is mounted to tell it. The tile is
+laid out by `w` and `h`; the detail holds the library (always windowed,
+searched without diacritics), playlists, and the now-playing controls. The
+OS's media keys and lock screen drive it through `core/media-session.ts`,
+written only while the player holds `core/playback`'s claim so 7b's video
+player can take the session over.
+
+**Found while building it, each with a test that failed first:**
+
+- **A restored track played from 0:00.** `#load` cleared the pending seek it
+  had just been handed. The unit test for resume was red before the fix.
+- **Two quick "+" presses on two songs kept only the last.** Each playlist
+  action read the list, awaited its write, and only then updated the list, so
+  the second built on a list without the first. The list now changes first;
+  IndexedDB applies the writes in the order they were made.
+- **During a first scan the tile showed a player with nothing to play.** The
+  library's tracks arrive when a scan finishes, and the tile left its empty
+  state as soon as a scan began: a Play button that did nothing for as long
+  as a large folder takes. `journey-music` found it — its first run clicked
+  Play mid-scan — and the tile now keeps its empty state, with the scan's
+  progress and a cancel, until there is something to play.
+- Imported audio orphaned by a replacing restore (plan S25) is kept, shown
+  with its size, and deleted only when asked; the backup note, which said
+  music is "re-linked after an import", now says what a restore on another
+  device needs (doc 05 §6).
+
+**`/spike/s2` stays, on its own database.** The plan deleted it here, but the
+owner's manual S7 check has not run yet, and its "hold files" / "check held"
+controls are the only way to answer S23 — which decides whether the player
+pre-fetches its queue's files, and so is not built in 7a-2. Keeping the page
+on the app's database would have let its "wipe library" delete a reader's
+music, so it now keeps `tp-spike-s2` (doc 22 §S7). It goes, with
+`e2e/s2-fsa`'s spike half, once the check has run.
+
+**`journey-music`** drives both ingestion paths, real playback, the Media
+Session as the OS sees it, a lapsed grant resumed in one click, and the
+Settings reset, each under the real CSP with violations collected from
+events and the console (doc 19 §4). The reset test was run against a player
+with its deck watcher removed, and failed.
+
 ## Week 8 — Hardening & Release
 PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
 pass vs budgets · full manual matrix (doc 19 §5) · doc 10 §8 compliance

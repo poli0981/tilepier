@@ -410,6 +410,18 @@ straight to Dexie with a 300 ms debounce for keystroke-level edits, and an
 immediate flush on `visibilitychange → hidden` and `pagehide`. Layout writes
 to localStorage are debounced 500 ms after gridstack `change` events settle.
 
+Two writers added in Week 7 do not debounce, each for a reason:
+
+- **Playlists write through, one row per action** (doc 09 §2). Nothing there
+  is keystroke-level, and the debounced writer keeps only the last record in
+  its window, so two quick edits to two playlists would lose one.
+- **The music player's position** is written at most every 10 s from the
+  element's own `timeupdate` — an event, not a timer, so §3's one
+  `setInterval` stands — and at once on pause, `pagehide` and
+  `visibilitychange → hidden`, to the `playback` table (doc 05 §3). A
+  debounce would never fire while `timeupdate` keeps arriving, which is the
+  whole time music plays.
+
 ## 7. Cross-tab behavior
 
 Two TilePier tabs are legal. `storage` events sync layout/settings changes;

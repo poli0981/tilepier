@@ -25,6 +25,16 @@ export type TpIconName =
 	| 'chart'
 	| 'music'
 	| 'play'
+	| 'pause'
+	| 'prev'
+	| 'next'
+	| 'shuffle'
+	| 'repeat'
+	| 'repeat-one'
+	| 'volume'
+	| 'mute'
+	| 'folder'
+	| 'upload'
 	| 'plus'
 	| 'close'
 	| 'expand'
@@ -66,6 +76,34 @@ export const ICON_PATHS: Record<TpIconName, readonly string[]> = {
 		'M20 16a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z'
 	],
 	play: ['M7 4l13 8-13 8z'],
+	// The music player's transport (Week 7). Drawn to sit beside `play`: the
+	// same 4–20 vertical extent, the same weight, no fills.
+	pause: ['M7 5h3v14H7z', 'M14 5h3v14h-3z'],
+	prev: ['M18 5 9 12l9 7z', 'M6 5v14'],
+	next: ['M6 5l9 7-9 7z', 'M18 5v14'],
+	// Two lanes that cross, each ending in an arrowhead.
+	shuffle: ['M3 7h4l10 10h4', 'M3 17h4l10-10h4', 'M18 4l3 3-3 3', 'M18 14l3 3-3 3'],
+	repeat: [
+		'M4 11V9a3 3 0 0 1 3-3h13',
+		'M17 3l3 3-3 3',
+		'M20 13v2a3 3 0 0 1-3 3H4',
+		'M7 21l-3-3 3-3'
+	],
+	// `repeat` with a small 1 in its middle — a second glyph rather than a badge,
+	// because the state has to read at 16 px with no colour (doc 12 §4.2).
+	'repeat-one': [
+		'M4 11V9a3 3 0 0 1 3-3h13',
+		'M17 3l3 3-3 3',
+		'M20 13v2a3 3 0 0 1-3 3H4',
+		'M7 21l-3-3 3-3',
+		'M11 10.5l1.2-.8v4.6'
+	],
+	volume: ['M4 9h3l5-4v14l-5-4H4z', 'M16 9a4 4 0 0 1 0 6', 'M19 6a8 8 0 0 1 0 12'],
+	mute: ['M4 9h3l5-4v14l-5-4H4z', 'M16 9l5 6', 'M21 9l-5 6'],
+	folder: [
+		'M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2h8.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z'
+	],
+	upload: ['M12 15V4', 'M8 8l4-4 4 4', 'M4 15v4h16v-4'],
 	plus: ['M12 5v14', 'M5 12h14'],
 	close: ['M6 6l12 12', 'M18 6L6 18'],
 	expand: ['M14 4h6v6', 'M20 4l-7 7', 'M10 20H4v-6', 'M4 20l7-7'],

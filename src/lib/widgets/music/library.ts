@@ -424,6 +424,81 @@ export async function importFiles(
 	return summary;
 }
 
+/**
+ * Takes tracks out of the library — the detail's "remove missing": their rows,
+ * any imported bytes they still hold, and then the covers nothing points at
+ * any more. **Never the files on disk**: path A only ever reads the folder. A
+ * playlist naming a forgotten id keeps it; the player skips ids it cannot find
+ * (plan S25).
+ */
+export async function forgetTracks(
+	ids: readonly string[],
+	target: TpDb = defaultDb
+): Promise<void> {
+	if (ids.length === 0) return;
+	await target.transaction('rw', target.tracks, target.trackBlobs, async () => {
+		await target.tracks.bulkDelete([...ids]);
+		await target.trackBlobs.bulkDelete([...ids]);
+	});
+	await collectCovers(target);
+}
+
+/** Imported audio no track points at any more, and what it weighs. */
+export interface TpOrphans {
+	ids: readonly string[];
+	bytes: number;
+}
+
+/**
+ * The library as it stands, in one read: the tracks, and the imported audio
+ * no track points at.
+ *
+ * **Orphans are kept on purpose** (plan S25). A restore that replaces the
+ * library leaves them behind, and the backup it saved first carries the
+ * tracks and never the audio — so these bytes are what makes restoring that
+ * file an undo. The reader sees them and deletes them; nothing else does.
+ *
+ * The other way round, an imported track whose audio is not in this browser
+ * — restored from a backup made on another device — comes back marked
+ * `missing`, here and not in the database: importing the same file again
+ * gives it its audio back under the same id.
+ */
+export async function readLibrary(
+	target: TpDb = defaultDb
+): Promise<{ tracks: TpTrack[]; orphans: TpOrphans }> {
+	return target.transaction('r', target.tracks, target.trackBlobs, async () => {
+		const rows = await target.tracks.toArray();
+		const stored = await target.trackBlobs.toCollection().primaryKeys();
+		const audio = new Set(stored);
+		const known = new Set(rows.map((track) => track.id));
+		const ids = stored.filter((id) => !id.startsWith('cover:') && !known.has(id));
+		const orphans = await target.trackBlobs.bulkGet(ids);
+		return {
+			tracks: rows.map((track) =>
+				track.source === 'blob' && track.missing !== true && !audio.has(track.id)
+					? { ...track, missing: true as const }
+					: track
+			),
+			orphans: { ids, bytes: orphans.reduce((sum, row) => sum + (row?.blob.size ?? 0), 0) }
+		};
+	});
+}
+
+/** Deletes the orphans named — any a restore has since given a track back
+ *  keep their audio, because the check and the delete are one transaction. */
+export async function deleteOrphans(
+	ids: readonly string[],
+	target: TpDb = defaultDb
+): Promise<void> {
+	if (ids.length === 0) return;
+	await target.transaction('rw', target.tracks, target.trackBlobs, async () => {
+		const back = await target.tracks.bulkGet([...ids]);
+		await target.trackBlobs.bulkDelete(
+			ids.filter((id, at) => back[at] === undefined && !id.startsWith('cover:'))
+		);
+	});
+}
+
 /* ─────────────────────────────────────────────────────────────── helpers */
 
 /**

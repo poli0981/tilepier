@@ -10,7 +10,7 @@
 	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
 	import TpBotCheck from '$lib/ui/TpBotCheck.svelte';
 	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
-	import TpRateLimitToast from '$lib/ui/TpRateLimitToast.svelte';
+	import TpToast from '$lib/ui/TpToast.svelte';
 	import TpShortcutsSheet from '$lib/ui/TpShortcutsSheet.svelte';
 	import TpTopBar from '$lib/ui/TpTopBar.svelte';
 	import type { TpWidgetId } from '$lib/core/types';
@@ -135,7 +135,7 @@
 	<TpCoachOverlay />
 	<TpShortcutsSheet />
 	<!-- doc 13 §7: inside the gate, because only a networked widget can raise it. -->
-	<TpRateLimitToast />
+	<TpToast />
 	<!-- doc 15 §3: the bot check starts on entry — and not before the reader has
 	     agreed to terms that describe it (doc 16 §3). -->
 	{#if legalGate.accepted}

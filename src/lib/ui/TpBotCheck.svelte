@@ -158,7 +158,7 @@
 		font-size: var(--text-xs);
 	}
 
-	/* doc 13 §7's one toast shape — the same block as TpRateLimitToast's. */
+	/* doc 13 §7's one toast shape — the same block as TpToast's. */
 	.tp-toast {
 		position: fixed;
 		bottom: 1.25rem;

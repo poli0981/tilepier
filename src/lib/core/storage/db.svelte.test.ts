@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDb, pruneApiCache, type TpDb } from './db';
 
@@ -24,11 +25,12 @@ afterEach(async () => {
 	}
 });
 
-describe('schema v1', () => {
-	it('opens and declares the doc 05 §3 tables', async () => {
+describe('schema', () => {
+	it('opens at version 2 and declares the doc 05 §3 tables', async () => {
 		const db = freshDb();
 		await db.open();
 
+		expect(db.verno).toBe(2);
 		const names = db.tables.map((t) => t.name).sort();
 		expect(names).toEqual(
 			[
@@ -38,6 +40,7 @@ describe('schema v1', () => {
 				'fsaHandles',
 				'fxHistory',
 				'notes',
+				'playback',
 				'playlists',
 				'savedPlaces',
 				'todoLists',
@@ -53,6 +56,73 @@ describe('schema v1', () => {
 		await db.notes.put({ id: 'n1', title: 'a', body: 'b', updatedAt: 1, pinned: false });
 
 		expect((await db.notes.get('n1'))?.title).toBe('a');
+	});
+});
+
+/**
+ * The version 1 schema exactly as it shipped (doc 05 §3), copied rather than
+ * imported: these tests are about the database a reader *already has*, and a
+ * later edit to `db.ts` must not quietly change what they start from.
+ */
+const V1 = {
+	notes: 'id, updatedAt',
+	todos: 'id, listId, done, updatedAt',
+	todoLists: 'id, order',
+	events: 'id, dateKey',
+	playlists: 'id, order',
+	tracks: 'id, addedAt, title, artist',
+	trackBlobs: 'id',
+	fsaHandles: 'id',
+	savedPlaces: 'id, name',
+	focusSessions: 'id, dateKey',
+	apiCache: 'key, cachedAt',
+	fxHistory: 'dateKey'
+};
+
+describe('migrations (doc 19 §3.3)', () => {
+	it('v1 → v2 adds `playback` and keeps every row', async () => {
+		// A brand-new database skips upgrade paths entirely, so the v1 database
+		// has to be built by a v1-only Dexie first, the way a reader's was.
+		const name = `tilepier-test-${crypto.randomUUID()}`;
+		const old = new Dexie(name);
+		old.version(1).stores(V1);
+		await old.table('notes').put({ id: 'n1', title: 'kept', body: '', updatedAt: 1 });
+		await old.table('tracks').put({
+			id: 't1',
+			source: 'fsa',
+			title: 'Bài cũ',
+			artist: '',
+			album: '',
+			addedAt: 1
+		});
+		old.close();
+
+		const db = createDb(name);
+		created.push(db);
+		await db.open();
+
+		expect(db.verno).toBe(2);
+		expect((await db.notes.get('n1'))?.title).toBe('kept');
+		expect((await db.tracks.get('t1'))?.title).toBe('Bài cũ');
+		await db.playback.put({ id: 'music', updatedAt: 1, state: { positionMs: 0 } });
+		expect(await db.playback.count()).toBe(1);
+	});
+
+	it('still opens under a version 1 build, for a rollback', async () => {
+		// The release checklist's rollback runbook deploys the previous build,
+		// whose Dexie knows only version 1. It has to open the upgraded
+		// database and read what it knows, rather than fail the whole app.
+		const name = `tilepier-test-${crypto.randomUUID()}`;
+		const db = createDb(name);
+		created.push(db);
+		await db.notes.put({ id: 'n1', title: 'kept', body: '', updatedAt: 1 });
+		await db.playback.put({ id: 'music', updatedAt: 1, state: {} });
+		db.close();
+
+		const old = new Dexie(name);
+		old.version(1).stores(V1);
+		expect((await old.table('notes').get('n1'))?.title).toBe('kept');
+		old.close();
 	});
 });
 

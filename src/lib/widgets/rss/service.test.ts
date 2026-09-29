@@ -15,7 +15,6 @@ import {
 	feedView,
 	hostOf,
 	mergeItems,
-	monogramOf,
 	moveFeed,
 	openableLink,
 	readSettings,
@@ -396,14 +395,6 @@ describe('names and letters', () => {
 		);
 		expect(feedName({ url: VNE, feed: null })).toBe('vnexpress.net');
 		expect(hostOf('not a url')).toBe('not a url');
-	});
-
-	it('shows a feed by its first letter or digit, in the reader’s case', () => {
-		expect(monogramOf('vnexpress.net', 'vi')).toBe('V');
-		expect(monogramOf('«Đời sống»', 'vi')).toBe('Đ');
-		expect(monogramOf('9to5Mac', 'en')).toBe('9');
-		expect(monogramOf('ıstanbul', 'tr')).toBe('I');
-		expect(monogramOf('— ', 'en')).toBe('#');
 	});
 
 	it('only lets a browser follow http and https', () => {

@@ -205,6 +205,10 @@ the whole WMO range onto the seven, so nothing upstream sends falls through to
 - `prefers-reduced-motion` (or setting): FLIP → crossfade, pulses → none,
   gauge animations static. Enforced centrally via a `motionOK()` helper —
   components never read the media query directly.
+- Marquee (the music tile's title lines, Week 7): a line slides only when it
+  does not fit **and** motion is welcome (`:root[data-motion='ok']`);
+  otherwise it ends in an ellipsis, and the song's line carries the whole
+  title in its `title` attribute.
 
 ## 8. Voice
 

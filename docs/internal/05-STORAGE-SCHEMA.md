@@ -83,7 +83,26 @@ db.version(1).stores({
   apiCache:   'key, cachedAt',                 // {key, cachedAt, payload}
   fxHistory:  'dateKey'                        // client mirror of daily fx snapshots
 });
+
+// Week 7 (2026-09-29). Only the new table — Dexie carries earlier stores forward.
+db.version(2).stores({
+  playback:   'id'                             // {id:'music'|'music:queue'|…, updatedAt, state} — where a player was
+});
 ```
+
+**`playback` (version 2, the owner's decision in the Week 7 plan, Q1).** doc 09
+first put the music position and queue, and media's resume points and poster, in
+"settings" — tile settings in `tp.layout.v1`. That key does not sync across tabs
+(doc 04 §7 says it does; nothing implements it), so a position written every ten
+seconds would overwrite another tab's layout edits within ten seconds; it would
+churn the bug report's `layoutHash`, vanish with the tile, and a 50 KB poster would
+be half of §1's localStorage budget. A row per key keeps the frequent small write
+(`'music'`: position) away from the rare large one (`'music:queue'`: thousands of
+ids). `state` is `unknown` in core — core imports no widget code — and each widget
+reads its rows through a validator that fails closed. **Not exported** (§6).
+`db.svelte.test.ts` builds a real v1 database first, because a brand-new one
+skips upgrade paths, and also checks that a version 1 build still opens a
+version 2 database — the rollback runbook deploys exactly that.
 
 Notes:
 - `FileSystemDirectoryHandle` is structured-cloneable → storable in IndexedDB.
@@ -210,7 +229,12 @@ createDebouncedWriter<T>(spec, delayMs): { schedule(v); flush(); dispose() }
   `{ meta:{app, version, exportedAt}, layout, settings, dexie:{notes, todos,
   todoLists, events, playlists, tracks(metadata only), savedPlaces} }`.
   Audio blobs and FSA handles are **never** exported (size / permission scope);
-  the import UI explains music must be re-linked.
+  the export note says where music stays — in this browser — and what a restore
+  on another device needs: the folder chosen again, imported songs imported
+  again (their ids come back the same, §4, so playlists hold). Corrected
+  2026-09-29: it said music is "re-linked after an import", true only of the
+  folder, and only on the same device. Nor is `playback` (version 2): where a
+  player was is not something the reader made.
 - Import: dry-run validation (zod-lite hand validators, no runtime dep) →
   show a diff summary (counts per table) → user confirms → **non-destructive
   default**: merge-by-id with newer-`updatedAt` wins; "Replace all" requires a
@@ -246,6 +270,18 @@ corruption, and refusing a whole file over one would fail exactly the person
 who needs this — someone restoring after something already went wrong. A file
 from a *newer* build is refused, the same call §5 makes for a downgraded
 localStorage key.
+
+**What a replace leaves in `trackBlobs` is kept (Week 7, plan S25).** A replace
+clears `tracks`; imported audio whose track the file does not carry stays,
+with no row pointing at it. Deleting it on the spot would be the one
+irreversible step in a restore: the pre-import export never holds audio, so
+those bytes are what makes restoring that file an undo. The music detail
+shows them instead — how many, what they weigh, and why they were kept — and
+deletes them only when the reader asks, twice, in one transaction that spares
+any a restore has since given a track back. The other way round, a restored
+imported track whose audio is not in this browser reads as `missing` (in
+memory, not stored), and "Remove missing" takes it out like any other. A merge
+never deletes anything.
 
 **One bug worth recording, because it would have shipped as "import does
 nothing".** The parsed backup was held in a Svelte `$state`, which deep-proxies

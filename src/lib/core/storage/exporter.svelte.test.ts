@@ -92,6 +92,8 @@ describe('the file', () => {
 		expect(tables).not.toContain('fsaHandles');
 		expect(tables).not.toContain('apiCache');
 		expect(tables).not.toContain('fxHistory');
+		// Where a player was is not something the reader made (doc 05 §6).
+		expect(tables).not.toContain('playback');
 	});
 
 	it('survives a round trip through JSON', async () => {

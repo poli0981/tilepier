@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installLogBuffer, readLog } from '$lib/core/log-buffer';
 import { createDb, type TpDb } from '$lib/core/storage/db';
+import { applyImport, buildBackup } from '$lib/core/storage/exporter';
+import { defaultSettings } from '$lib/stores/settings.svelte';
 import {
 	createTagParser,
+	deleteOrphans,
+	forgetTracks,
 	fileAt,
 	importFiles,
+	readLibrary,
 	scanFolder,
 	TpTagWorkerError,
 	type TpTagParser
@@ -454,5 +459,88 @@ describe('fileAt', () => {
 		await expect(fileAt(folder, 'Artist B/Gone.ogg')).rejects.toMatchObject({
 			name: 'NotFoundError'
 		});
+	});
+});
+
+describe('forgetTracks', () => {
+	it('takes tracks, their bytes and their lone covers out, and leaves the files alone', async () => {
+		await put('a.mp3', await bytes(taggedMp3Url));
+		await put('b.mp3', await bytes(untaggedUrl));
+		await scanFolder(folder, { target });
+		const [withCover] = await target.tracks.where('title').equals('Bài hát thử').toArray();
+		expect(withCover?.coverId).toBeDefined();
+
+		await forgetTracks([withCover?.id ?? ''], target);
+
+		expect(await target.tracks.count()).toBe(1);
+		expect(await target.trackBlobs.where(':id').startsWith('cover:').count()).toBe(0);
+		// Path A only ever reads: the file is still in the folder.
+		expect((await fileAt(folder, 'a.mp3')).size).toBeGreaterThan(0);
+	});
+});
+
+describe('orphaned imports (plan S25)', () => {
+	const row = (id: string) =>
+		({ id, source: 'blob', title: id, artist: '', album: '', addedAt: 1 }) as const;
+
+	it('finds imported audio no track points at, and what it weighs — never a cover', async () => {
+		await target.tracks.put(row('kept'));
+		await target.trackBlobs.bulkPut([
+			{ id: 'kept', blob: new Blob(['1234']) },
+			{ id: 'left', blob: new Blob(['123456']) },
+			{ id: 'also-left', blob: new Blob(['12']) },
+			{ id: 'cover:abc', blob: new Blob(['cover'], { type: 'image/png' }) }
+		]);
+
+		const { tracks, orphans } = await readLibrary(target);
+
+		expect(tracks.map((track) => track.id)).toEqual(['kept']);
+		expect(tracks[0]?.missing).toBeUndefined();
+		expect([...orphans.ids].sort()).toEqual(['also-left', 'left']);
+		expect(orphans.bytes).toBe(8);
+	});
+
+	it('reads an imported track with no audio in this browser as missing, and stores nothing', async () => {
+		// Restored from a backup made on another device.
+		await target.tracks.bulkPut([row('elsewhere'), { ...row('folder'), source: 'fsa' }]);
+
+		const { tracks } = await readLibrary(target);
+
+		expect(tracks.find((track) => track.id === 'elsewhere')?.missing).toBe(true);
+		// A folder track is the folder's to answer for (re-link, or rescan).
+		expect(tracks.find((track) => track.id === 'folder')?.missing).toBeUndefined();
+		expect((await target.tracks.get('elsewhere'))?.missing).toBeUndefined();
+	});
+
+	it('deletes the named ones still orphaned, and never a cover', async () => {
+		await target.trackBlobs.bulkPut([
+			{ id: 'left', blob: new Blob(['1']) },
+			{ id: 'back', blob: new Blob(['2']) },
+			{ id: 'cover:abc', blob: new Blob(['3']) }
+		]);
+		// A restore in another tab gave this one its track again after the count.
+		await target.tracks.put(row('back'));
+
+		await deleteOrphans(['left', 'back', 'cover:abc'], target);
+
+		const left = await target.trackBlobs.toCollection().primaryKeys();
+		expect([...left].sort()).toEqual(['back', 'cover:abc']);
+	});
+
+	it('keeps what a replacing restore orphans, so restoring the backup before it is an undo', async () => {
+		const files = [new File([await bytes(taggedMp3Url)], 'a.mp3', { type: 'audio/mpeg' })];
+		await importFiles(files, { target });
+		const before = await buildBackup({ schemaVersion: 1, grid: [] }, defaultSettings(), target);
+		const [imported] = await target.tracks.toArray();
+
+		// A backup from a device that never had the song replaces the library.
+		const other = { ...before, dexie: { ...before.dexie, tracks: [] } };
+		await applyImport(other, 'replace', target);
+		expect((await readLibrary(target)).orphans.ids).toEqual([imported?.id]);
+
+		// The file the restore saved first, restored: the song plays again.
+		await applyImport(before, 'replace', target);
+		expect((await readLibrary(target)).orphans.ids).toEqual([]);
+		expect(await target.trackBlobs.get(imported?.id ?? '')).toBeDefined();
 	});
 });

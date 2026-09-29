@@ -3,18 +3,23 @@
 	import { toasts } from '$lib/stores/toast.svelte';
 
 	/**
-	 * doc 13 §7's rate-limit toast: bottom-centre, one at a time, four seconds.
+	 * doc 13 §7's toast: bottom-centre, one at a time, four seconds — the 429
+	 * notice, and since Week 7 the music player's notices too (`stores/toast`).
 	 *
-	 * Mounted inside `(app)` rather than in the root layout, because the only
-	 * thing that can raise it is a networked widget and those live behind the
-	 * legal gate. Styled to match `TpUpdateToast` deliberately — two notices in
-	 * the same corner that look like two different apps is worse than either.
+	 * Mounted inside `(app)` rather than in the root layout, because everything
+	 * that can raise one lives behind the legal gate. That also means a notice
+	 * raised while the reader is on `/about` or `/legal/*` — the player keeps
+	 * playing there — is not shown; the track's own mark in the library still
+	 * says what happened. Styled to match `TpUpdateToast` deliberately: two
+	 * notices in the same corner that look like two different apps is worse than
+	 * either.
 	 */
 </script>
 
 {#if toasts.current !== null}
-	<div class="tp-toast" role="status" data-testid="rate-limit-toast">
-		<span>{m['common.toast.rate_limited']()}</span>
+	{@const toast = toasts.current}
+	<div class="tp-toast" role="status" data-testid="toast" data-kind={toast.kind}>
+		<span>{toast.kind === 'notice' ? toast.message() : m['common.toast.rate_limited']()}</span>
 		<button
 			type="button"
 			class="tp-toast__dismiss"

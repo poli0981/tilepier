@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BACKOFF } from '$lib/shared-constants';
 import { TOAST_MS, toasts } from './toast.svelte';
 
+const RATE = { kind: 'rate-limited' } as const;
+
 /**
  * doc 13 §7's toast, minus the markup.
  *
@@ -25,11 +27,11 @@ describe('showing', () => {
 	});
 
 	it('shows, and takes itself away after four seconds', () => {
-		toasts.show('rate-limited');
-		expect(toasts.current).toBe('rate-limited');
+		toasts.show(RATE);
+		expect(toasts.current).toEqual(RATE);
 
 		vi.advanceTimersByTime(TOAST_MS - 1);
-		expect(toasts.current).toBe('rate-limited');
+		expect(toasts.current).toEqual(RATE);
 
 		vi.advanceTimersByTime(1);
 		expect(toasts.current).toBeNull();
@@ -39,12 +41,12 @@ describe('showing', () => {
 		// doc 13 §7's "max 1 visible", stated as behaviour: a second notice does
 		// not wait its turn, and it does not inherit the first one's remaining
 		// time either — which is what a naive replace would do.
-		toasts.show('rate-limited');
+		toasts.show(RATE);
 		vi.advanceTimersByTime(TOAST_MS - 100);
 
-		toasts.show('rate-limited');
+		toasts.show(RATE);
 		vi.advanceTimersByTime(TOAST_MS - 100);
-		expect(toasts.current).toBe('rate-limited');
+		expect(toasts.current).toEqual(RATE);
 
 		vi.advanceTimersByTime(100);
 		expect(toasts.current).toBeNull();
@@ -53,7 +55,7 @@ describe('showing', () => {
 
 describe('dismissing', () => {
 	it('goes immediately when the reader asks', () => {
-		toasts.show('rate-limited');
+		toasts.show(RATE);
 		toasts.dismiss();
 		expect(toasts.current).toBeNull();
 	});
@@ -61,12 +63,12 @@ describe('dismissing', () => {
 	it('does not come back when the timer it outran finally fires', () => {
 		// The bug a bare `#current = null` would leave: dismiss, show again inside
 		// four seconds, and the first timer clears the second toast early.
-		toasts.show('rate-limited');
+		toasts.show(RATE);
 		toasts.dismiss();
-		toasts.show('rate-limited');
+		toasts.show(RATE);
 
 		vi.advanceTimersByTime(TOAST_MS - 1);
-		expect(toasts.current).toBe('rate-limited');
+		expect(toasts.current).toEqual(RATE);
 	});
 });
 

@@ -123,6 +123,28 @@ export interface TpFxSnapshot {
 	rates: Record<string, number>;
 }
 
+/**
+ * Where a player was, between visits (`db.version(2)`, 2026-09-29) — the
+ * music queue and position, and later media's per-file resume points.
+ *
+ * Its own table rather than tile settings, which is where doc 09 first put it
+ * (the owner's decision, Week 7 plan Q1): `tp.layout.v1` does not sync across
+ * tabs, so a position written into it every ten seconds would overwrite
+ * another tab's layout edits, churn the bug report's `layoutHash`, and vanish
+ * with the tile. A row per key (`'music'`, `'music:queue'`, …) keeps the
+ * frequent small write away from the rare large one.
+ *
+ * `state` is `unknown` on purpose: core imports no widget code (doc 03), so
+ * each widget reads its own rows through a validator that fails closed, the
+ * way it reads its settings. **Not in backups** (doc 05 §6) — it is where the
+ * reader was, not something they made.
+ */
+export interface TpPlaybackRow {
+	id: string;
+	updatedAt: number;
+	state: unknown;
+}
+
 export type TpDb = Dexie & {
 	notes: EntityTable<TpNote, 'id'>;
 	todos: EntityTable<TpTodo, 'id'>;
@@ -136,6 +158,7 @@ export type TpDb = Dexie & {
 	focusSessions: EntityTable<TpFocusSession, 'id'>;
 	apiCache: EntityTable<TpApiCacheRow, 'key'>;
 	fxHistory: EntityTable<TpFxSnapshot, 'dateKey'>;
+	playback: EntityTable<TpPlaybackRow, 'id'>;
 };
 
 export function createDb(name = 'tilepier'): TpDb {
@@ -156,6 +179,13 @@ export function createDb(name = 'tilepier'): TpDb {
 		focusSessions: 'id, dateKey',
 		apiCache: 'key, cachedAt',
 		fxHistory: 'dateKey'
+	});
+
+	// Week 7 (doc 05 §3). Only the new table: Dexie carries every earlier
+	// version's stores forward, and listing one here with `null` would delete it.
+	// No upgrade function — nothing existing changes shape.
+	db.version(2).stores({
+		playback: 'id'
 	});
 
 	return db;
