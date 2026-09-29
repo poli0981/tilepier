@@ -22,7 +22,8 @@ import { join } from 'node:path';
  * (which survives the reload), and while the flag says `prompt` every handle
  * method the app uses throws `NotAllowedError`, as the real ones do. A stub that
  * only changed `queryPermission` would pass code that never looks past it.
- * `lapseGrant` sets the flag.
+ * `lapseGrant` sets the flag, and `refuseGrant` makes the reader answer
+ * "Block" when asked again.
  */
 
 export async function stubPickers(page: Page): Promise<void> {
@@ -41,6 +42,7 @@ export async function stubPickers(page: Page): Promise<void> {
 
 		FileSystemHandle.prototype.queryPermission = async () => state() as PermissionState;
 		FileSystemHandle.prototype.requestPermission = async () => {
+			if (sessionStorage.getItem('tp-test-refuse') !== null) return 'denied';
 			sessionStorage.setItem('tp-test-permission', 'granted');
 			return 'granted';
 		};
@@ -68,6 +70,16 @@ export async function stubPickers(page: Page): Promise<void> {
 /** The next load finds every grant lapsed, as after a browser restart. */
 export async function lapseGrant(page: Page): Promise<void> {
 	await page.evaluate(() => sessionStorage.setItem('tp-test-permission', 'prompt'));
+}
+
+/** From now on the reader refuses when the browser asks for a grant again. */
+export async function refuseGrant(page: Page): Promise<void> {
+	await page.evaluate(() => sessionStorage.setItem('tp-test-refuse', '1'));
+}
+
+/** And from now on allows it. */
+export async function allowGrant(page: Page): Promise<void> {
+	await page.evaluate(() => sessionStorage.removeItem('tp-test-refuse'));
 }
 
 /** What the stubbed file picker returns from now on — a file in OPFS `media/`. */
