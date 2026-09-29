@@ -27,6 +27,14 @@ import soundUrl from './__fixtures__/sound-only.webm?url';
  */
 const SLOW = { timeout: 5_000 };
 
+/**
+ * The first sound the test browser plays. A CI runner has no audio device, and
+ * on two of #35's runs the file's first video had still not started after five
+ * seconds, while every later one started at once — a cost paid once, by
+ * whichever test plays first. That test waits up to twenty.
+ */
+const FIRST = { timeout: 20_000 };
+
 async function fixture(url: string, name: string, type: string): Promise<TpMediaFile> {
 	const bytes = await (await fetch(url)).arrayBuffer();
 	const file = new File([bytes], name, { type });
@@ -85,11 +93,11 @@ describe('TpMediaPlayer', () => {
 		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
 			await toggle.click();
 		}
-		await expect.element(toggle, SLOW).toHaveAttribute('aria-label', m['widget.media.pause']());
+		await expect.element(toggle, FIRST).toHaveAttribute('aria-label', m['widget.media.pause']());
 		await vi.waitFor(() => expect(media.playing).toBe(true), SLOW);
 		expect(media.durationMs).toBe(14_008);
 		await vi.waitFor(() => expect(media.positionMs).toBeGreaterThan(0), SLOW);
-	});
+	}, 30_000);
 
 	it('plays on a press of "Play" even while a start is still on its way', async () => {
 		// Between play() and `playing` the element is no longer paused while the
