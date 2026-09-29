@@ -110,6 +110,16 @@ Density tiers from grid size (host computes, passes in `size`):
 - **L** (≥4×3 or ≥3×4): header + content + secondary row (sparkline,
   extra rows). Widgets must implement all tiers they allow via `sizes`.
 
+**What the host actually computes is broader, and it is the rule six weeks of
+widgets were tuned against** (recorded 2026-09-29): `TpWidgetHost.svelte`
+gives **L** whenever `w >= 4 || h >= 4`, so 4×1, 4×2 and 2×4 are L too, not
+M. rss and markets read `size.tier === 'L'` as "roomy" and were checked on
+screen at those sizes. The doc follows the code here rather than the reverse;
+whether to narrow the host's rule to the one above is a question for Week 8's
+visual pass, where every widget can be looked at together. Until then a
+layout that needs a particular *shape* keys on `size.w` / `size.h` rather than
+on the tier — as quote and weather already do, and as music and media will.
+
 ## 4. Add-widget drawer
 
 Right-side sheet (mobile: bottom sheet). Manifest cards grouped by
