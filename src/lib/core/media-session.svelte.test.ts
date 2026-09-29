@@ -147,6 +147,17 @@ describe('writeSessionPosition', () => {
 		]);
 	});
 
+	it('runs the scrubber at the playing speed, and at 1 for one it cannot use', () => {
+		// A video at 1.5×: at 1 the lock screen would fall behind every second.
+		const session = new FakeSession();
+
+		writeSessionPosition(session, 60_000, 30_000, 1.5);
+		writeSessionPosition(session, 60_000, 30_000, 0);
+		writeSessionPosition(session, 60_000, 30_000, Number.NaN);
+
+		expect(session.positions.map((state) => state?.playbackRate)).toEqual([1.5, 1, 1]);
+	});
+
 	it('does nothing where the browser predates it, and survives one that throws', () => {
 		const old: TpMediaSession = {
 			metadata: null,
