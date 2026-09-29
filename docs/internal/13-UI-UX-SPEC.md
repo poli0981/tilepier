@@ -166,7 +166,16 @@ show "on deck" disabled state. Search filters by name.
   (429 backoff, import done, copy confirmations use micro-feedback
   instead). Built in Week 4b as `ui/TpRateLimitToast.svelte`
   over `stores/toast.svelte.ts`, once `currency` gave the 429 path a widget
-  that could reach it. **No queue** — the doc 17 §5 throttle already allows one
+  that could reach it. **Week 7 gave it a second kind** and a new name,
+  `ui/TpToast.svelte`: a `notice` carrying its own words, for the music
+  player's "skipped" and "stopped" (doc 09 §2). Those are global in the sense
+  this bullet means — the player outlives every surface that could say them,
+  so a skip can happen with neither tile nor detail on screen. The text is a
+  thunk resolved at render, so it follows a locale switch. The slot still
+  replaces rather than queues: a 429 can take it from a player notice inside
+  four seconds and the reverse, and the track's own mark in the library says
+  what happened either way. The toast lives in the `(app)` layout, so a notice
+  raised while the reader is on `/about` or `/legal/*` is not shown. **No queue** — the doc 17 §5 throttle already allows one
   notice a minute, so “max 1 visible” is a replace rather than a policy about
   what to drop, and the four seconds are asserted to be shorter than that
   window so two can never overlap. `TpUpdateToast` keeps the root layout and

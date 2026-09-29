@@ -15,10 +15,22 @@
  * update is not transient and carries no timer, so the two never contend for
  * the slot the way two auto-dismissing toasts would.
  */
-/** Not exported: callers reach it through `show()`’s parameter and `current`,
- *  and knip is CI-blocking on an export nothing imports. A second kind will
- *  arrive with doc 13 §7’s “import done” notice. */
-type TpToastKind = 'rate-limited';
+/**
+ * What a toast says. Not exported: callers reach it through `show()`’s
+ * parameter and `current`, and knip is CI-blocking on an export nothing
+ * imports.
+ *
+ * - `rate-limited` — doc 17 §5's 429 notice, throttled upstream in `swr`.
+ * - `notice` — anything else global enough for the one slot (Week 7): the music
+ *   player's "skipped" and "stopped", which outlive every surface that could
+ *   have said them. Its text is a thunk resolved when the toast renders, so a
+ *   locale switch mid-toast re-renders it in the new language.
+ *
+ * Replacing is still the policy for both: a 429 can take the slot from a
+ * player notice inside its four seconds, and the reverse. Neither is urgent
+ * enough to queue behind the other (doc 13 §7).
+ */
+type TpToast = { kind: 'rate-limited' } | { kind: 'notice'; message: () => string };
 
 /**
  * doc 13 §7's four seconds. Long enough to read six words, short enough that a
@@ -31,17 +43,17 @@ type TpToastKind = 'rate-limited';
 export const TOAST_MS = 4_000;
 
 class ToastStore {
-	#current = $state<TpToastKind | null>(null);
+	#current = $state.raw<TpToast | null>(null);
 	#timer: ReturnType<typeof setTimeout> | null = null;
 
-	get current(): TpToastKind | null {
+	get current(): TpToast | null {
 		return this.#current;
 	}
 
 	/** Replaces whatever is showing and restarts the clock. */
-	show(kind: TpToastKind): void {
+	show(toast: TpToast): void {
 		this.#clearTimer();
-		this.#current = kind;
+		this.#current = toast;
 		this.#timer = setTimeout(() => {
 			this.#current = null;
 			this.#timer = null;

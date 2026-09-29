@@ -111,6 +111,29 @@ rather than to the raw `online` event, so one module owns the definition
   global notice is `TpBotCheck`'s ("this browser could not be verified…",
   with a retry), in doc 13 §7's toast shape — not one per tile.
 
+### 4a. Local media errors (Week 7, doc 09 §2)
+
+The players fetch nothing, so none of the above reaches them; their failures
+come from the File System Access API, IndexedDB and the media element. The
+music player's rules, as the Week 7 review corrected them:
+
+| Where | Error | Meaning | What happens |
+|---|---|---|---|
+| reading the folder (`getFile`, `getFileHandle`, `entries`) | `NotAllowedError` | the grant lapsed | tile → `permission-needed`; nothing marked, nothing skipped |
+| reading the folder | `NotFoundError` | the file moved or went | track marked `missing`; skip; notice |
+| `trackBlobs` (path B) | row absent | the imported bytes are gone | as `NotFoundError` |
+| `play()` | `NotAllowedError` | autoplay refused without a gesture | "press play"; nothing marked |
+| `play()` | `AbortError` | a newer source took over | nothing — not a failure |
+| media element | `MEDIA_ERR_SRC_NOT_SUPPORTED` (4) | a format this browser cannot decode | marked `unsupported`; skip; notice |
+| media element | `MEDIA_ERR_DECODE` (3) | the bytes broke, or the file changed under a snapshot | read once more; then marked `unreadable`; skip; notice |
+| any of the skipping rows, three in a row | — | a library that is not there | stop; one notice. `playing` resets the count |
+| scanning, the root | any | an unplugged drive, a lapsed grant | the scan stops before marking anything missing (doc 09 §2) |
+| importing | `QuotaExceededError` | the disk is full | the import stops where it is and says how many were added (doc 05 §7) |
+| picking a folder | `AbortError` | the reader closed the picker | nothing |
+
+Notices go to doc 13 §7's toast. Nothing about a file — name, path, title —
+goes to the log (doc 18).
+
 ## 5. Backoff policy (client)
 
 Per data key: on 429/`retryAfterS` respect server value; else exponential

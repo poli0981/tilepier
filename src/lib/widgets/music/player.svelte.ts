@@ -1,7 +1,9 @@
 import { untrack } from 'svelte';
 import { claimPlayback, releasePlayback } from '$lib/core/playback';
 import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
+import { m } from '$lib/paraglide/messages';
 import { deck } from '$lib/stores/deck.svelte';
+import { toasts } from '$lib/stores/toast.svelte';
 import { fileAt, loadMusicRoot } from './library';
 import {
 	buildQueue,
@@ -86,13 +88,29 @@ interface TpSeams {
 	notify: (notice: TpPlayerNotice) => void;
 }
 
+/**
+ * The player's notices go to the app's one toast (doc 13 §7): it outlives the
+ * tile and the detail, so a skip can happen with neither on screen, and the
+ * toast is the one place that is always there. The text is resolved when the
+ * toast renders, in whatever language the reader has then.
+ */
+function toast(notice: TpPlayerNotice): void {
+	toasts.show({
+		kind: 'notice',
+		message: () =>
+			notice.kind === 'skipped'
+				? m['common.toast.music_skipped']({ title: notice.title })
+				: m['common.toast.music_stopped']()
+	});
+}
+
 function defaultSeams(): TpSeams {
 	return {
 		target: defaultDb,
 		createAudio: () => new Audio(),
 		now: () => Date.now(),
 		random: Math.random,
-		notify: () => {}
+		notify: toast
 	};
 }
 

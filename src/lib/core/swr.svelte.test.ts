@@ -552,7 +552,7 @@ describe('the rate-limit coordinator (doc 17 §5)', () => {
 		const db = freshDb();
 		await trip('rl:1', db);
 
-		expect(toasts.current).toBe('rate-limited');
+		expect(toasts.current).toEqual({ kind: 'rate-limited' });
 	});
 
 	it('stays silent for a second widget tripping inside the window', async () => {
@@ -575,7 +575,7 @@ describe('the rate-limit coordinator (doc 17 §5)', () => {
 		vi.setSystemTime(Date.now() + BACKOFF.toastThrottleMs + 1);
 		await trip('rl:5', db);
 
-		expect(toasts.current).toBe('rate-limited');
+		expect(toasts.current).toEqual({ kind: 'rate-limited' });
 	});
 
 	it('says nothing at all for a failure that is not a 429', async () => {

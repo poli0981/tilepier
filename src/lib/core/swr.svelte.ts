@@ -214,7 +214,7 @@ async function run<T>(entry: Entry<T>, target: TpDb): Promise<void> {
 
 			// doc 17 §5: the coordinator decides *whether*, the store decides *how long*.
 			if (code === 'RATE_LIMITED' && noteRateLimited(entry.key, Date.now())) {
-				toasts.show('rate-limited');
+				toasts.show({ kind: 'rate-limited' });
 			}
 			if (!isRetryable(code)) {
 				// doc 17 §4: a `BAD_REQUEST` is this build asking wrongly. Loud,

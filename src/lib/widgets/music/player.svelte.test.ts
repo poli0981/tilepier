@@ -2,7 +2,9 @@ import { flushSync } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { claimPlayback, resetPlayback } from '$lib/core/playback';
 import { createDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
+import { m } from '$lib/paraglide/messages';
 import { deck } from '$lib/stores/deck.svelte';
+import { toasts } from '$lib/stores/toast.svelte';
 import { saveMusicRoot } from './library';
 import { player, SAVE_EVERY_MS, type TpPlayerNotice } from './player.svelte';
 
@@ -469,5 +471,23 @@ describe('one sound at a time (plan S4)', () => {
 
 		expect(audio.paused).toBe(true);
 		await vi.waitFor(() => expect(player.status).toBe('paused'));
+	});
+});
+
+describe('what it says, and where (doc 13 §7)', () => {
+	it('puts a skip in the app’s toast, in words resolved when it shows', async () => {
+		toasts.reset();
+		player.reset({ target, createAudio: () => audio as unknown as HTMLAudioElement });
+		await seed(['a', 'b']);
+		audio.script = ['unsupported'];
+
+		player.playTracks(['a', 'b'], 'a', { kind: 'library' });
+
+		await vi.waitFor(() => expect(toasts.current?.kind).toBe('notice'));
+		const shown = toasts.current;
+		expect(shown?.kind === 'notice' ? shown.message() : '').toBe(
+			m['common.toast.music_skipped']({ title: 'Song a' })
+		);
+		toasts.reset();
 	});
 });

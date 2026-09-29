@@ -40,6 +40,8 @@
 	"common.tile.offline_short": "mất mạng",
 	"common.tile.offline_hint": "đang hiện bản đã lưu — ô này cần mạng để cập nhật",
 	"common.toast.rate_limited": "vừa có quá nhiều yêu cầu — bàn làm việc sẽ bắt kịp sau ít phút",
+	"common.toast.music_skipped": "Không phát được “{title}” nên đã bỏ qua.",
+	"common.toast.music_stopped": "Ba bài liên tiếp không phát được nên nhạc đã dừng.",
 	"common.botcheck.title": "Kiểm tra nhanh: bạn có phải người thật?",
 	"common.botcheck.failed": "Chưa xác minh được trình duyệt này, nên dữ liệu trực tuyến đang tạm dừng.",
 	"common.botcheck.retry": "Thử lại",
