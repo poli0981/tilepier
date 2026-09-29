@@ -12,6 +12,16 @@
 		{ key: 'Esc', label: 'common.shortcuts.escape' },
 		{ key: '?', label: 'common.shortcuts.help' }
 	] as const;
+
+	/** The video player's keys (doc 09 §3), which work while it has focus —
+	 *  which it takes when a video loads. */
+	const VIDEO_KEYS = [
+		{ key: () => `${m['common.shortcuts.space']()} · K`, label: 'common.shortcuts.video_toggle' },
+		{ key: () => '← →', label: 'common.shortcuts.video_seek' },
+		{ key: () => '↑ ↓', label: 'common.shortcuts.video_volume' },
+		{ key: () => 'M', label: 'common.shortcuts.video_mute' },
+		{ key: () => 'F', label: 'common.shortcuts.video_fullscreen' }
+	] as const;
 </script>
 
 {#if ui.shortcutsOpen}
@@ -38,6 +48,13 @@
 		<dl>
 			{#each KEYS as entry (entry.key)}
 				<dt><kbd>{entry.key}</kbd></dt>
+				<dd>{m[entry.label]()}</dd>
+			{/each}
+		</dl>
+		<h3>{m['common.shortcuts.video']()}</h3>
+		<dl data-testid="shortcuts-video">
+			{#each VIDEO_KEYS as entry (entry.label)}
+				<dt><kbd>{entry.key()}</kbd></dt>
 				<dd>{m[entry.label]()}</dd>
 			{/each}
 		</dl>
@@ -90,6 +107,13 @@
 		background: none;
 		color: var(--color-fg-mute);
 		cursor: pointer;
+	}
+
+	h3 {
+		margin: 1rem 0 0.5rem;
+		color: var(--color-fg);
+		font-size: var(--text-xs);
+		font-weight: 600;
 	}
 
 	dl {

@@ -118,6 +118,84 @@ describe('TpMediaPlayer', () => {
 		expect(media.playing).toBe(false);
 	});
 
+	it('takes focus when it loads, and answers the keys where the reader is', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
+		expect(document.activeElement).toBe(video);
+		const heard = vi.fn();
+		document.addEventListener('keydown', heard);
+
+		try {
+			const before = video.currentTime;
+			const seek = new KeyboardEvent('keydown', {
+				key: 'ArrowRight',
+				bubbles: true,
+				cancelable: true
+			});
+			video.dispatchEvent(seek);
+			expect(video.currentTime).toBeCloseTo(before + 5, 0);
+			// Answered at the player: the detail does not scroll, and nothing
+			// underneath hears it.
+			expect(seek.defaultPrevented).toBe(true);
+			expect(heard).not.toHaveBeenCalled();
+
+			video.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
+			await vi.waitFor(() => expect(video.muted).toBe(true));
+
+			// Escape is the detail's, and goes on up.
+			video.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+			expect(heard).toHaveBeenCalledOnce();
+		} finally {
+			document.removeEventListener('keydown', heard);
+		}
+	});
+
+	it('offers picture-in-picture for a picture, and ends it when the player goes', async () => {
+		const requested = vi
+			.spyOn(HTMLVideoElement.prototype, 'requestPictureInPicture')
+			.mockResolvedValue({} as PictureInPictureWindow);
+		const exited = vi.spyOn(Document.prototype, 'exitPictureInPicture').mockResolvedValue();
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+
+		await screen.getByTestId('media-pip').click();
+		expect(requested).toHaveBeenCalledOnce();
+
+		const video = screen.getByTestId('media-video').element();
+		vi.spyOn(Document.prototype, 'pictureInPictureElement', 'get').mockReturnValue(video);
+		cleanup();
+		expect(exited).toHaveBeenCalledOnce();
+	});
+
+	it('offers no picture-in-picture for sound alone', async () => {
+		const file = await fixture(soundUrl, 'sound.webm', 'audio/webm');
+		const screen = render(TpMediaPlayer, { file });
+
+		await expect.element(screen.getByTestId('media-audio-only')).toBeVisible();
+		expect(screen.container.querySelector('[data-testid="media-pip"]')).toBeNull();
+	});
+
+	it('goes full screen with the player, controls and all, from the button or F', async () => {
+		const requested = vi.spyOn(Element.prototype, 'requestFullscreen').mockResolvedValue();
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		const box = screen.getByTestId('media-player').element();
+
+		await screen.getByTestId('media-fullscreen').click();
+		expect(requested).toHaveBeenCalledOnce();
+		expect(requested.mock.contexts[0]).toBe(box);
+
+		screen
+			.getByTestId('media-video')
+			.element()
+			.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', bubbles: true }));
+		expect(requested).toHaveBeenCalledTimes(2);
+	});
+
 	it('pauses when the music player takes the sound back', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });

@@ -198,6 +198,12 @@ show "on deck" disabled state. Search filters by name.
     500 ms after it leaves. Chrome swallows that Escape; engines that pass it
     on would otherwise close the detail too. The layers underneath still never
     see it.
+- **The video player's keys** (doc 09 §3): Space or K, ← →, ↑ ↓, M and F. They
+  work where the player has focus, which it takes when a video loads.
+  - A key the player answers stops there.
+  - A key a control already answers is left to it.
+  - Escape and modified keys pass on.
+  - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).

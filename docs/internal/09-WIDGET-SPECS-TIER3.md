@@ -381,3 +381,19 @@ only module allowed to import music-metadata:
   - the seek bar shared with music (`ui/TpSeekBar`);
   - play, pause, mute and volume;
   - speed from 0.5× to 2×.
+- **Keys** (Week 7 plan S16). The video takes focus when it loads, so they work
+  without a click: Space or K plays, ← → move five seconds, ↑ ↓ change the
+  volume, M mutes, F goes full screen.
+  - A key the player answers stops there, so Space does not scroll the detail.
+  - A key a control answers is left to it: Space on a button, the arrows on a
+    range.
+  - Modified keys and Escape pass on.
+  - The shortcuts sheet lists them.
+- **Picture-in-picture** only where `document.pictureInPictureEnabled` says so,
+  and only for a video with a picture. It is ended when the player goes.
+- **Full screen** on the player's box, so the controls come along. An iPhone
+  has no element full screen, so there `webkitEnterFullscreen` hands the video
+  to Safari's player. Escape in full screen stays the browser's (doc 13 §8).
+- `TpVideoController` holds a video's state and adds its own listeners.
+  `TpMediaPlayer` only draws it, which keeps the component under doc 20 §3's
+  size.

@@ -4,6 +4,7 @@
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import TpSeekBar from '$lib/ui/TpSeekBar.svelte';
 	import { SPEEDS } from './service';
+	import TpMediaGlyph from './TpMediaGlyph.svelte';
 
 	/**
 	 * The video's own controls (doc 09 §3), drawn in tokens rather than the
@@ -20,6 +21,13 @@
 		volume: number;
 		muted: boolean;
 		disabled: boolean;
+		/** Picture-in-picture, where the browser has it and the video a picture. */
+		pipAvailable: boolean;
+		inPip: boolean;
+		fullscreenAvailable: boolean;
+		inFullscreen: boolean;
+		onPip: () => void;
+		onFullscreen: () => void;
 		onToggle: () => void;
 		onSeek: (ms: number) => void;
 		onRate: (rate: number) => void;
@@ -35,6 +43,12 @@
 		volume,
 		muted,
 		disabled,
+		pipAvailable,
+		inPip,
+		fullscreenAvailable,
+		inFullscreen,
+		onPip,
+		onFullscreen,
 		onToggle,
 		onSeek,
 		onRate,
@@ -85,6 +99,31 @@
 			aria-label={m['widget.media.volume']()}
 			oninput={(event) => onVolume(Number(event.currentTarget.value))}
 		/>
+
+		{#if pipAvailable}
+			<button
+				type="button"
+				aria-label={m['widget.media.pip']()}
+				aria-pressed={inPip}
+				onclick={onPip}
+				data-testid="media-pip"
+			>
+				<TpMediaGlyph name="pip" />
+			</button>
+		{/if}
+		{#if fullscreenAvailable}
+			<button
+				type="button"
+				aria-label={inFullscreen
+					? m['widget.media.exit_fullscreen']()
+					: m['widget.media.fullscreen']()}
+				{disabled}
+				onclick={onFullscreen}
+				data-testid="media-fullscreen"
+			>
+				<TpMediaGlyph name={inFullscreen ? 'fullscreen-exit' : 'fullscreen'} />
+			</button>
+		{/if}
 
 		<label class="tp-mctl__speed">
 			<span>{m['widget.media.speed']()}</span>
