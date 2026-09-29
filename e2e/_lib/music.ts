@@ -21,15 +21,7 @@ import { join } from 'node:path';
  * past it. `lapseGrant` sets the flag.
  */
 
-export const LIBRARY = join(
-	process.cwd(),
-	'src',
-	'lib',
-	'widgets',
-	'music',
-	'__fixtures__',
-	'library'
-);
+const LIBRARY = join(process.cwd(), 'src', 'lib', 'widgets', 'music', '__fixtures__', 'library');
 
 const LIBRARY_FILES = [
 	'Artist A/Album 1/01 One.mp3',

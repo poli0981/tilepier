@@ -94,7 +94,8 @@ manual inspection.
 
 Harness at `src/routes/spike/s2/`, ingestion in
 `src/lib/widgets/music/{library,tag-worker}.ts`, six assertions in
-`e2e/s2-fsa.e2e.ts`.
+`e2e/s2-fsa.e2e.ts`. (Both removed in Week 7b-1, 2026-09-29, once S7's manual half had
+run. The 200-file guard lives on in `e2e/journey-music`.)
 
 **Measured (path B, import):** 200 WAV files parsed and written to Dexie in
 **857 ms** against a 10 s budget, with **82 requestAnimationFrame ticks
@@ -617,6 +618,15 @@ controls.
 - **Firefox:** imported and played, with no errors.
 - **Not reported:** the Chrome real-folder scan timing and the browser-restart
   re-link (steps 1–2). They stay on doc 19 §5's release matrix.
+
+**The harness is gone** (Week 7b-1). `/spike/s2`, its `tp-spike-s2` database and
+`e2e/s2-fsa` were removed once S23 was answered.
+- The OPFS-driven tests were already in `e2e/journey-music`, through the real
+  widget.
+- The 200-file guard moved there too: under ten seconds, the page drawing
+  throughout.
+- A reader who used the harness keeps an orphaned `tp-spike-s2` database in
+  their browser until site data is cleared. Nothing reads it.
 
 ## Exit review
 
