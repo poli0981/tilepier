@@ -23,8 +23,15 @@ import type { TpCryptoInterval, TpFeedUrlRejection, TpStockInterval } from './ap
  * stopped being true, so everyone who agreed to 1 is asked again — with a line
  * saying why — rather than finding out from a page they have no reason to
  * re-read.
+ *
+ * **3 (2026-09-29):** the cookie. After a passed bot check Cloudflare keeps
+ * one, `cf_clearance`, on this site (Turnstile's pre-clearance, which the
+ * owner keeps on). Every text since version 1 said "no cookies" — true of
+ * TilePier's own code, not of the site — so version 2 readers are asked
+ * again too, and the "what changed" line covers both changes, because a
+ * version 1 reader sees only the newest line.
  */
-export const LEGAL_VERSION = 2;
+export const LEGAL_VERSION = 3;
 
 /* ─────────────────────────────────────────────────────────────── durations */
 

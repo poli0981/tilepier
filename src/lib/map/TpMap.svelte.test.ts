@@ -59,6 +59,50 @@ describe('TpMap', () => {
 		expect(document.querySelector('[data-testid="map"] canvas')).not.toBeNull();
 	});
 
+	it('paints an image its sprite lacks as nothing, without a warning (doc 08 §5)', async () => {
+		// OpenFreeMap's dark style, in miniature: woodland filled with a pattern
+		// its sprite does not have.
+		const maplibre = await loadMapLibre();
+		const added = vi.spyOn(maplibre.Map.prototype, 'addImage');
+		const warn = vi.spyOn(console, 'warn');
+		mapStyleOverride.set({
+			version: 8,
+			sources: {
+				wood: {
+					type: 'geojson',
+					data: {
+						type: 'Feature',
+						properties: {},
+						geometry: {
+							type: 'Polygon',
+							coordinates: [
+								[
+									[105.7, 20.9],
+									[106.0, 20.9],
+									[106.0, 21.2],
+									[105.7, 21.2],
+									[105.7, 20.9]
+								]
+							]
+						}
+					}
+				}
+			},
+			layers: [
+				...STYLE.layers,
+				{ id: 'wood', type: 'fill', source: 'wood', paint: { 'fill-pattern': 'wood-pattern' } }
+			]
+		});
+		const { statuses } = mount();
+
+		await vi.waitFor(() => expect(statuses.at(-1)).toBe('ready'), { timeout: 10_000 });
+		await vi.waitFor(
+			() => expect(added.mock.calls.some(([id]) => id === 'wood-pattern')).toBe(true),
+			{ timeout: 10_000 }
+		);
+		expect(warn.mock.calls.flat().join(' ')).not.toContain('wood-pattern');
+	});
+
 	it('names the map region for a screen reader', async () => {
 		const { screen } = mount();
 

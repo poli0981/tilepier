@@ -24,7 +24,7 @@
 	import { logEntry } from '$lib/core/log-buffer';
 	import { online } from '$lib/stores/online.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
-	import { loadMapLibre, webgl2Available, type TpMapLibre } from './maplibre';
+	import { blankMissingImages, loadMapLibre, webgl2Available, type TpMapLibre } from './maplibre';
 	import { mapStyle } from './styles';
 	import './maplibre.css';
 
@@ -129,6 +129,7 @@
 						attributionControl: { compact: false }
 					});
 					map = created;
+					blankMissingImages(created);
 
 					created.on('load', () => {
 						ready = true;

@@ -33,6 +33,22 @@ export function loadMapLibre(): Promise<TpMapLibre> {
 }
 
 /**
+ * An image the style asks for and its sprite lacks becomes one transparent
+ * pixel, quietly (doc 08 §5).
+ *
+ * OpenFreeMap's `dark` style fills woodland with a `wood-pattern` that its
+ * sprite does not have (2026-09-29). MapLibre warned about it for every tile
+ * that drew wood, in the reader's console and in the bug-report log, which
+ * copies warnings. The woodland stays unpainted, as it already looked. Set
+ * once on the map, the resolver outlives a theme's `setStyle`.
+ */
+export function blankMissingImages(map: InstanceType<TpMapLibre['Map']>): void {
+	map.setMissingStyleImageResolver((id) => {
+		if (!map.hasImage(id)) map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) });
+	});
+}
+
+/**
  * MapLibre 6 requires WebGL2 and throws without it. Asked *before* the
  * 300 KB of map arrive (doc 08 §5: "feature-detect, don't crash"), on a canvas
  * nobody sees, whose context is released at once.

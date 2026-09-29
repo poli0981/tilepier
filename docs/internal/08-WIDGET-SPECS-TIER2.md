@@ -312,6 +312,12 @@ regardless of what its manifest says (tracked separately).
   without a new legal version. `/legal/privacy` carries the long form.
 - **The style follows the app theme; the toggle was cut** (owner decision) —
   Liberty for light, OpenFreeMap's dark style for dark, swapped live.
+- **An image a style names and its sprite lacks is one transparent pixel**
+  (`blankMissingImages`, 2026-09-29). OpenFreeMap's dark style fills
+  woodland with a `wood-pattern` its sprite does not have, and MapLibre
+  warned for every tile that drew wood — in the reader's console and in the
+  bug-report log, which copies warnings. The woodland stays unpainted, as
+  it already looked.
 - **The attribution is never compact.** MapLibre's default folds it into an "i"
   whenever the map moves, programmatic moves included, and doc 10 §8 requires it
   on every render; it names OpenMapTiles and OpenStreetMap as OpenFreeMap's

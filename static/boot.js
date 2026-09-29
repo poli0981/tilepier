@@ -27,7 +27,7 @@
 	 * MUST equal LEGAL_VERSION in src/lib/shared-constants.ts.
 	 * A test asserts the two agree, because this file cannot import it.
 	 */
-	var LEGAL_VERSION = 2;
+	var LEGAL_VERSION = 3;
 
 	var root = document.documentElement;
 

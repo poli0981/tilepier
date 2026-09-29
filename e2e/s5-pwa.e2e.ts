@@ -211,3 +211,58 @@ test.describe('S5 · the hand-rolled service worker', () => {
 		expect(purposes).toContain('maskable');
 	});
 });
+
+/**
+ * doc 17 §2's install icons, fetched rather than read.
+ *
+ * The test above only read the manifest's JSON, so it passed for months while
+ * both icons pointed at a `/favicon.svg` that answered with the 404 page
+ * (2026-09-29, Brave's console). Every icon the manifest or the head names is
+ * now requested, and a PNG must be the size its entry claims.
+ */
+test.describe('the icons (doc 12 §5, doc 17 §2)', () => {
+	interface TpIcon {
+		src: string;
+		sizes: string;
+		type: string;
+		purpose?: string;
+	}
+
+	/** Width and height from a PNG's IHDR chunk. */
+	function pngSize(bytes: Buffer): string {
+		return `${String(bytes.readUInt32BE(16))}x${String(bytes.readUInt32BE(20))}`;
+	}
+
+	test('every manifest icon is an image of the size it claims', async ({ request }) => {
+		const manifest = (await (await request.get('/manifest.webmanifest')).json()) as {
+			icons: TpIcon[];
+		};
+
+		for (const icon of manifest.icons) {
+			const response = await request.get(icon.src);
+			expect(response.status(), icon.src).toBe(200);
+			expect(response.headers()['content-type'], icon.src).toMatch(/^image\//);
+			if (icon.type === 'image/png') {
+				expect(pngSize(await response.body()), icon.src).toBe(icon.sizes);
+			}
+		}
+
+		const any = manifest.icons.filter((icon) => (icon.purpose ?? 'any').includes('any'));
+		expect(any.map((icon) => icon.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']));
+		expect(manifest.icons.some((icon) => icon.purpose?.includes('maskable'))).toBe(true);
+	});
+
+	test('every icon the page links to is an image', async ({ page, request }) => {
+		await page.goto('/');
+		const hrefs = await page
+			.locator('link[rel~="icon"], link[rel="apple-touch-icon"]')
+			.evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
+
+		expect(hrefs.length).toBeGreaterThanOrEqual(3);
+		for (const href of hrefs) {
+			const response = await request.get(href);
+			expect(response.status(), href).toBe(200);
+			expect(response.headers()['content-type'], href).toMatch(/^image\//);
+		}
+	});
+});

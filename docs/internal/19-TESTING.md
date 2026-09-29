@@ -280,7 +280,10 @@ coach before clicking a tile.
 ## 5. Manual test matrix (release gate)
 
 Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android
-Chrome. Music FSA path: Chromium only + fallback verified on Firefox.
+Chrome. Music FSA path: Chromium only + fallback verified on Firefox. Brave is
+Chromium without File System Access (switched off by default), so it is a
+fallback browser too: 100+ songs imported and played there, and in Firefox, on
+production on 2026-09-29 (doc 22 §S7).
 Reduced-motion, 200 % zoom, keyboard-only pass, screen-reader spot check
 (NVDA) on dashboard + one detail.
 
@@ -294,6 +297,11 @@ Cloudflare hosts to nowhere, and CI has no Turnstile secret):
 - **Beacon:** loads with no CSP console error, and a POST to
   `cloudflareinsights.com/cdn-cgi/rum` answers.
 - **localStorage** still holds exactly the three keys after both have run.
+- **Cookies** (added 2026-09-29, `LEGAL_VERSION` 3): on a fresh profile, after
+  the check, DevTools shows exactly one cookie for this site, `cf_clearance`,
+  `Secure` and `Partitioned`, and its expiry matches the privacy page. A profile
+  that had accepted version 2 sees the gate again, with the cookie in its
+  "what changed" line.
 - **curl** without a pass and with a cache-busting parameter gets `401`; with
   the operator's bearer it gets `200`.
 

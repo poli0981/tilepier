@@ -1330,6 +1330,46 @@ Settings reset, each under the real CSP with violations collected from
 events and the console (doc 19 §4). The reset test was run against a player
 with its deck watcher removed, and failed.
 
+**On production (the owner, 2026-09-29):**
+- Brave imported 100+ songs through the import path (it ships without File
+  System Access), and Firefox imported and played them.
+- S23 answered: held `File`s stay readable after Chrome revokes the grant
+  (doc 22 §S7).
+
+### Week 7b — measured before it was started (2026-09-29)
+
+The owner asked for three things: the 7b plan, a triage of the production
+console in Brave and Firefox, and the privacy text about a `cf_clearance`
+cookie seen after the bot check.
+
+**The console: three of thirteen lines were ours.**
+- Both manifest icons pointed at a `/favicon.svg` that answered with the 404
+  page. The favicon was SvelteKit's stock logo, inlined as a `data:` URI.
+- That 404's preload `Link` header made Chromium preload the error page's CSS
+  into the deck.
+- OpenFreeMap's dark style asks for a `wood-pattern` its sprite lacks.
+- The other ten lines come from Turnstile's frame and are known (doc 15 §7).
+
+**The cookie was Turnstile's pre-clearance** (doc 16 §3, point 10). The owner
+kept it on, so it is disclosed, and `LEGAL_VERSION` 3 re-gates every earlier
+reader.
+
+**Owner decisions:**
+- S23's result means music pre-fetches the queue's `File`s, and the spike
+  goes.
+- Media recents are automatic: up to five, each with "forget".
+- The mark is drawn to doc 12 §5.
+
+**Plan:**
+- **7b-0** (`fix:`): icons, 404s without preload hints, the map's missing
+  image, the cookie at version 3, and these notes.
+- **7b-1** (`feat(music)`): the queue's `File`s held for the background, and
+  `/spike/s2` gone.
+- **7b-2/3/4** (`feat(media)`): open, play and resume; subtitles; recents,
+  poster and M7.
+- The media half is measured at about 9.75 days. If the week runs hot, cut
+  poster, then recents, then the `.srt` converter.
+
 ## Week 8 — Hardening & Release
 PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
 pass vs budgets · full manual matrix (doc 19 §5) · doc 10 §8 compliance
@@ -1342,7 +1382,7 @@ tag `v1.0.0` → release workflow → notify.
 - [ ] All widget DoDs checked (doc 19 §6) · zero P0/P1 bugs
 - [ ] Budgets green in CI · Lighthouse targets met (doc 01)
 - [ ] doc 10 §8 attribution/compliance all checked
-- [ ] Legal texts final (vi+en) · LEGAL_VERSION=2 (bumped 2026-09-23 for Web Analytics + Turnstile) · gate verified pre-JS
+- [ ] Legal texts final (vi+en) · LEGAL_VERSION=3 (2: 2026-09-23, Web Analytics + Turnstile; 3: 2026-09-29, the `cf_clearance` cookie) · gate verified pre-JS
 - [ ] Secrets grep clean (doc 21 §5) · headers verified in prod
 - [ ] Backup export/import round-trip on prod build
 - [ ] Rollback runbook tested once (deploy previous version)

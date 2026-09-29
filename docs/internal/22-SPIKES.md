@@ -607,7 +607,16 @@ reader's music. The page goes once this half has run: "hold files" and
 "check held" are the only way to answer S23, and the widget has no such
 controls.
 
-*(Results go here.)*
+**Results (the owner, on production, 2026-09-29):**
+- **S23: a `File` taken while the grant held can still be read after Chrome
+  revokes it.** The owner held the files, left the tab in the background past
+  the revocation, and checked: the held files read. So the player keeps the
+  next twenty tracks' `File`s while it can (Week 7b-1), and `/spike/s2` goes.
+- **Brave:** 100+ songs imported. Brave ships File System Access switched off,
+  so this was the file-import path (path B), as `supportsFsa()` expects.
+- **Firefox:** imported and played, with no errors.
+- **Not reported:** the Chrome real-folder scan timing and the browser-restart
+  re-link (steps 1–2). They stay on doc 19 §5's release matrix.
 
 ## Exit review
 

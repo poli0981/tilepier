@@ -180,6 +180,23 @@ small gauge illustration. Implementation: one inline SVG component
 `TpTideGauge` with `level` and `animated` props — CSS-animatable,
 respects reduced-motion.
 
+**The logo, as drawn (2026-09-29).** `scripts/gen-icons.mjs` (`pnpm
+icons:gen`) draws the mark from the tokens in `app.css`:
+- the tile in ink-900 with an ink-700 hairline;
+- the gauge's ticks engraved along its left edge, short, short, long;
+- the waterline in beacon across them at half height, so it covers one tick
+  rather than half-crossing two.
+
+The script then renders, in Playwright's Chromium:
+- `favicon.svg` and `favicon.ico` (16 and 32 px);
+- `apple-touch-icon.png` (180 px, opaque);
+- the manifest's 192/512 PNGs;
+- a 512 maskable with the tile inside the safe circle.
+
+Until then, the tab showed SvelteKit's stock Svelte logo (an inlined `data:`
+URI), and the manifest named a `/favicon.svg` that answered with the 404
+page.
+
 ## 6. Iconography
 
 Single internal set (`lib/ui/icons`, tree-shaken Svelte components):
