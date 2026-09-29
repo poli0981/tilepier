@@ -728,5 +728,20 @@
 	"widget.music.mark_missing": "thiếu",
 	"widget.music.mark_unsupported": "không phát được ở đây",
 	"widget.music.mark_unreadable": "hỏng",
-	"widget.music.remove_missing": "Gỡ {count} bài thiếu"
+	"widget.music.remove_missing": "Gỡ {count} bài thiếu",
+	"widget.music.playlists": "Danh sách phát",
+	"widget.music.playlist_new": "Danh sách mới",
+	"widget.music.playlist_create": "Tạo",
+	"widget.music.playlist_name": "Tên danh sách",
+	"widget.music.playlist_play": "Phát danh sách này",
+	"widget.music.playlist_delete": "Xoá danh sách này",
+	"widget.music.playlist_delete_confirm": "Xoá “{name}”? Các bài vẫn ở lại trong thư viện.",
+	"widget.music.delete": "Xoá",
+	"widget.music.keep": "Giữ lại",
+	"widget.music.playlist_empty": "Chưa có bài nào. Thêm bằng nút + trong thư viện.",
+	"widget.music.move_up": "Đưa “{title}” lên",
+	"widget.music.move_down": "Đưa “{title}” xuống",
+	"widget.music.remove_from_playlist": "Bỏ “{title}” khỏi danh sách",
+	"widget.music.add_to_playlist": "Thêm “{title}” vào {playlist}",
+	"widget.music.gone_from_library": "Không còn trong thư viện"
 }

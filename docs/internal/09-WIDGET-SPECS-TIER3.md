@@ -286,8 +286,22 @@ only module allowed to import music-metadata:
   prev/play/next; h≥2 adds queue-peek line.
 - **Detail:** library table (virtualized — always, since Week 7, through
   `core/windowing.ts`: simple windowing,
-  no dep), search, sort, playlists CRUD (drag to reorder), now-playing pane
-  with large cover. ~~**Visualizer (Web Audio AnalyserNode) is the declared
+  no dep), search, sort, playlists CRUD (~~drag to reorder~~ up and down
+  buttons — see Playlists), now-playing pane
+  with large cover.
+- **Playlists** (Week 7). Made in the detail and chosen as chips; the chosen
+  one opens below with its songs, and is what the library's "+" adds to — with
+  none chosen there is no "+". Reordered with **up and down buttons, not
+  drag**: they work from a keyboard as they are, the currency detail already
+  uses them, and drag would bring a library the budget has to carry. Deleting
+  asks first, inline, and says the songs stay; it never touches them. A song
+  since removed from the library keeps its place, greyed, until the reader
+  takes it off, and the player skips it. **Written through, one row per
+  action** — not through doc 04 §6's 300 ms writer, which keeps only the last
+  record in its window and would drop one of two quick edits to two playlists;
+  nothing here is keystroke-level (a rename is kept on Enter or on leaving the
+  field). The in-memory list changes before the write, so two presses a few
+  milliseconds apart both count. ~~**Visualizer (Web Audio AnalyserNode) is the declared
   cut-line** — ship v1.0 without it if Week 7 runs hot (charter risk #2).~~
   **Cut 2026-09-29**, before Week 7 started (doc 23): the week measured
   5.55×, and `createMediaElementSource` binds the one audio element to an

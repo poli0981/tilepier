@@ -1,4 +1,4 @@
-import type { TpTrack } from '$lib/core/storage/db';
+import type { TpPlaylist, TpTrack } from '$lib/core/storage/db';
 
 /**
  * The music widget's pure parts (doc 09 §2): the queue, what "next" and
@@ -185,4 +185,35 @@ export function readQueue(state: unknown): TpQueue | null {
 		order: order as number[],
 		index: index as number
 	};
+}
+
+/* ───────────────────────────────────────── playlists (db `playlists`, v1) */
+
+/** A playlist name, trimmed to this many characters. */
+export const PLAYLIST_NAME_MAX = 80;
+
+/**
+ * A playlist row as this build will trust it, or `null` — fail closed (doc 05
+ * §5). The table is in backups (doc 05 §6), so a row can arrive from a file
+ * the importer checked only for a string `id`.
+ */
+export function readPlaylist(row: unknown): TpPlaylist | null {
+	if (!isRecord(row)) return null;
+	const { id, name, order, trackIds } = row;
+	if (typeof id !== 'string' || id === '') return null;
+	if (typeof name !== 'string') return null;
+	if (typeof order !== 'number' || !Number.isFinite(order)) return null;
+	if (!Array.isArray(trackIds) || !trackIds.every((entry) => typeof entry === 'string'))
+		return null;
+	return { id, name: name.slice(0, PLAYLIST_NAME_MAX), order, trackIds: trackIds as string[] };
+}
+
+/** `trackIds` with the entry at `index` moved `by` places, or unchanged at an end. */
+export function moved(trackIds: readonly string[], index: number, by: -1 | 1): string[] {
+	const to = index + by;
+	if (index < 0 || index >= trackIds.length || to < 0 || to >= trackIds.length)
+		return [...trackIds];
+	const next = [...trackIds];
+	[next[index], next[to]] = [next[to] as string, next[index] as string];
+	return next;
 }

@@ -1,24 +1,23 @@
 <script lang="ts">
 	import type { TpTrack } from '$lib/core/storage/db';
 	import { windowOf } from '$lib/core/windowing';
-	import { fmtDuration } from '$lib/i18n/fmt';
 	import { foldForSearch } from '$lib/i18n/fold';
 	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
 	import { collection } from './collection.svelte';
 	import { player } from './player.svelte';
+	import { playlists } from './playlists.svelte';
+	import TpMusicTrackRow from './TpMusicTrackRow.svelte';
 
 	/**
 	 * The library, in the detail (doc 09 §2): searchable, sortable, and windowed
 	 * whatever its length — doc 09 said from 500 rows and doc 20 §7 from 200; the
 	 * list is always windowed, which is simpler than a threshold and never
-	 * wrong (Week 7 plan S13). Rows are a fixed 44 px, which is what lets
-	 * `core/windowing` be arithmetic.
+	 * wrong (Week 7 plan S13). Rows are a fixed 44 px (`TpMusicTrackRow`), which
+	 * is what lets `core/windowing` be arithmetic.
 	 *
 	 * Search folds diacritics on both sides (`i18n/fold`), so "son tung" finds
-	 * "Sơn Tùng". Every string from a file's tags is a text node (CLAUDE.md rule
-	 * 7). Choosing a row plays from it, with the list as it stands — filtered and
-	 * sorted — as the queue.
+	 * "Sơn Tùng". Choosing a row plays from it, with the list as it stands —
+	 * filtered and sorted — as the queue.
 	 */
 
 	const ROW_PX = 44;
@@ -66,11 +65,9 @@
 		);
 	}
 
-	function markOf(track: TpTrack): string | null {
-		if (track.missing === true) return m['widget.music.mark_missing']();
-		if (track.error === 'unsupported') return m['widget.music.mark_unsupported']();
-		if (track.error === 'unreadable') return m['widget.music.mark_unreadable']();
-		return null;
+	function add(track: TpTrack): void {
+		const target = playlists.active;
+		if (target !== null) void playlists.add(target.id, track.id);
 	}
 
 	function searchKeydown(event: KeyboardEvent): void {
@@ -94,13 +91,13 @@
 			onkeydown={searchKeydown}
 			data-testid="music-search"
 		/>
-		<label class="tp-mlist__sort" for="tp-mlist-sort">{m['widget.music.sort']()}</label>
+		<label class="tp-mlist__muted" for="tp-mlist-sort">{m['widget.music.sort']()}</label>
 		<select id="tp-mlist-sort" bind:value={sort} data-testid="music-sort">
 			<option value="library">{m['widget.music.sort_library']()}</option>
 			<option value="title">{m['widget.music.sort_title']()}</option>
 			<option value="added">{m['widget.music.sort_added']()}</option>
 		</select>
-		<span class="tp-mlist__count tp-num">
+		<span class="tp-mlist__muted tp-num">
 			{m['widget.music.track_count']({ count: visible.length })}
 		</span>
 		{#if collection.missingCount > 0}
@@ -116,7 +113,7 @@
 	</div>
 
 	{#if visible.length === 0 && query.trim() !== ''}
-		<p class="tp-mlist__empty" role="status">
+		<p class="tp-mlist__muted" role="status">
 			{m['widget.music.no_match']({ query: query.trim() })}
 		</p>
 	{/if}
@@ -129,29 +126,15 @@
 	>
 		<ul style:padding-top={padTop} style:padding-bottom={padBottom}>
 			{#each rows as track, offset (track.id)}
-				{@const mark = markOf(track)}
-				{@const current = track.id === player.current?.id}
-				<li aria-setsize={visible.length} aria-posinset={view.start + offset + 1}>
-					<button
-						type="button"
-						class="tp-mlist__row"
-						class:tp-mlist__row--current={current}
-						class:tp-mlist__row--marked={mark !== null}
-						aria-current={current ? 'true' : undefined}
-						onclick={() => play(track)}
-					>
-						<span class="tp-mlist__title">{track.title}</span>
-						<span class="tp-mlist__artist"
-							>{track.artist || m['widget.music.unknown_artist']()}</span
-						>
-						{#if mark !== null}
-							<span class="tp-mlist__mark">{mark}</span>
-						{/if}
-						<span class="tp-mlist__time tp-num">
-							{track.durationMs === undefined ? '' : fmtDuration(track.durationMs, settings.locale)}
-						</span>
-					</button>
-				</li>
+				<TpMusicTrackRow
+					{track}
+					current={track.id === player.current?.id}
+					setsize={visible.length}
+					posinset={view.start + offset + 1}
+					addTo={playlists.active}
+					onPlay={() => play(track)}
+					onAdd={() => add(track)}
+				/>
 			{/each}
 		</ul>
 	</div>
@@ -189,9 +172,10 @@
 		flex: 1 1 12rem;
 	}
 
-	.tp-mlist__sort,
-	.tp-mlist__count {
+	.tp-mlist__muted {
+		margin: 0;
 		color: var(--color-fg-mute);
+		font-size: var(--text-xs);
 	}
 
 	.tp-mlist__remove {
@@ -203,12 +187,6 @@
 		padding: 0.25rem 0;
 		text-decoration: underline;
 		text-underline-offset: 3px;
-	}
-
-	.tp-mlist__empty {
-		margin: 0;
-		color: var(--color-fg-mute);
-		font-size: var(--text-xs);
 	}
 
 	.tp-mlist__scroll {
@@ -223,69 +201,5 @@
 		padding-right: 0;
 		padding-left: 0;
 		list-style: none;
-	}
-
-	li {
-		height: 44px;
-	}
-
-	.tp-mlist__row {
-		display: grid;
-		width: 100%;
-		height: 100%;
-		align-items: center;
-		gap: 0.75rem;
-		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto auto;
-		border: 0;
-		border-bottom: 1px solid var(--color-ink-700);
-		background: none;
-		color: var(--color-fg);
-		cursor: pointer;
-		font: inherit;
-		font-size: var(--text-xs);
-		padding: 0 0.75rem;
-		text-align: left;
-	}
-
-	.tp-mlist__row:hover {
-		background: var(--color-ink-900);
-	}
-
-	.tp-mlist__row:focus-visible {
-		outline: 2px solid var(--color-beacon);
-		outline-offset: -2px;
-	}
-
-	.tp-mlist__row--current .tp-mlist__title {
-		color: var(--color-beacon);
-	}
-
-	.tp-mlist__row--marked {
-		color: var(--color-fg-dim);
-	}
-
-	.tp-mlist__title,
-	.tp-mlist__artist {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.tp-mlist__artist,
-	.tp-mlist__time {
-		color: var(--color-fg-mute);
-	}
-
-	.tp-mlist__time {
-		grid-column: 4;
-	}
-
-	.tp-mlist__mark {
-		grid-column: 3;
-		border: 1px solid var(--color-ink-700);
-		border-radius: 999px;
-		color: var(--color-fg-mute);
-		font-size: var(--text-2xs);
-		padding: 0 0.375rem;
 	}
 </style>

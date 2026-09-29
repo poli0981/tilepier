@@ -728,5 +728,20 @@
 	"widget.music.mark_missing": "missing",
 	"widget.music.mark_unsupported": "can’t play here",
 	"widget.music.mark_unreadable": "unreadable",
-	"widget.music.remove_missing": "Remove {count} missing"
+	"widget.music.remove_missing": "Remove {count} missing",
+	"widget.music.playlists": "Playlists",
+	"widget.music.playlist_new": "New playlist",
+	"widget.music.playlist_create": "Create",
+	"widget.music.playlist_name": "Playlist name",
+	"widget.music.playlist_play": "Play this playlist",
+	"widget.music.playlist_delete": "Delete this playlist",
+	"widget.music.playlist_delete_confirm": "Delete “{name}”? Its songs stay in the library.",
+	"widget.music.delete": "Delete",
+	"widget.music.keep": "Keep it",
+	"widget.music.playlist_empty": "Nothing here yet. Add songs with + in the library.",
+	"widget.music.move_up": "Move “{title}” up",
+	"widget.music.move_down": "Move “{title}” down",
+	"widget.music.remove_from_playlist": "Take “{title}” off the playlist",
+	"widget.music.add_to_playlist": "Add “{title}” to {playlist}",
+	"widget.music.gone_from_library": "No longer in the library"
 }

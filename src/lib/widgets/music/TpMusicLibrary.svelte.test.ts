@@ -43,7 +43,7 @@ async function load(tracks: TpTrack[]): Promise<void> {
 }
 
 function titles(container: HTMLElement): string[] {
-	return [...container.querySelectorAll('.tp-mlist__title')].map((node) => node.textContent ?? '');
+	return [...container.querySelectorAll('.tp-mrow__title')].map((node) => node.textContent ?? '');
 }
 
 describe('TpMusicLibrary', () => {

@@ -5,6 +5,8 @@ import {
 	currentId,
 	EMPTY_QUEUE,
 	libraryOrder,
+	moved,
+	readPlaylist,
 	readPosition,
 	readQueue,
 	reshuffle,
@@ -167,5 +169,40 @@ describe('reading the saved rows back', () => {
 		]) {
 			expect(readQueue(bad)).toBeNull();
 		}
+	});
+});
+
+describe('playlists', () => {
+	it('reads a well-formed row, and trims a name that is too long', () => {
+		expect(readPlaylist({ id: 'p', name: 'Chạy bộ', order: 0, trackIds: ['a'] })).toEqual({
+			id: 'p',
+			name: 'Chạy bộ',
+			order: 0,
+			trackIds: ['a']
+		});
+		expect(
+			readPlaylist({ id: 'p', name: 'x'.repeat(200), order: 0, trackIds: [] })?.name
+		).toHaveLength(80);
+	});
+
+	it('refuses a row a backup could have carried in broken', () => {
+		for (const bad of [
+			null,
+			{ id: '', name: 'x', order: 0, trackIds: [] },
+			{ id: 'p', name: 3, order: 0, trackIds: [] },
+			{ id: 'p', name: 'x', order: Number.NaN, trackIds: [] },
+			{ id: 'p', name: 'x', order: 0, trackIds: ['a', 2] },
+			{ id: 'p', name: 'x', order: 0 }
+		]) {
+			expect(readPlaylist(bad)).toBeNull();
+		}
+	});
+
+	it('moves an entry up and down, and not past either end', () => {
+		expect(moved(['a', 'b', 'c'], 1, -1)).toEqual(['b', 'a', 'c']);
+		expect(moved(['a', 'b', 'c'], 1, 1)).toEqual(['a', 'c', 'b']);
+		expect(moved(['a', 'b', 'c'], 0, -1)).toEqual(['a', 'b', 'c']);
+		expect(moved(['a', 'b', 'c'], 2, 1)).toEqual(['a', 'b', 'c']);
+		expect(moved(['a', 'b', 'c'], 9, 1)).toEqual(['a', 'b', 'c']);
 	});
 });

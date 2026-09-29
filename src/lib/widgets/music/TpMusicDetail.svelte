@@ -8,6 +8,7 @@
 	import TpMusicCover from './TpMusicCover.svelte';
 	import TpMusicLibrary from './TpMusicLibrary.svelte';
 	import TpMusicLibraryActions from './TpMusicLibraryActions.svelte';
+	import TpMusicPlaylists from './TpMusicPlaylists.svelte';
 	import TpMusicSeek from './TpMusicSeek.svelte';
 	import TpMusicTransport from './TpMusicTransport.svelte';
 
@@ -106,6 +107,7 @@
 	<div class="tp-mdetail__library">
 		<TpMusicLibraryActions />
 		{#if collection.tracks.length > 0}
+			<TpMusicPlaylists />
 			<TpMusicLibrary />
 		{/if}
 	</div>
