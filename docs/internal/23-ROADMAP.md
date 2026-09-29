@@ -1400,13 +1400,15 @@ OS's keys and the keyboard's work from the moment a video loads (doc 09 §3).
   since 7a, uses it too (doc 04 §6). The notes writer had the same gap since
   Week 2 — a note's last 300 ms of typing lost on a reload — and #38 fixes
   it the same way.
-- **CI found a test race and an environment gap.** A tick before swr's cache
-  write had landed joined the in-flight request (weather, and rss's twin),
-  reproduced with a 300 ms write. And the test browser's first video never
-  started on CI — not in five seconds, not in twenty — while every later one
-  did at once. A warm-up playback, started by a click before the player's
-  tests, now absorbs it, and reports what the page looked like if it ever
-  stalls again.
+- **CI found two test races.** A tick before swr's cache write had landed
+  joined the in-flight request (weather, and rss's twin), reproduced with a
+  300 ms write. And the player tests read the button's label, then pressed
+  it: a press that could land just after playback began, and pause it. That
+  failed three runs across #35 and #37 — the first two on the file's first
+  test, misread at first as a video that never starts, with waits of five and
+  then twenty seconds that could not help. The tests now press only when the
+  browser has refused to start ("press play"), and a clicked warm-up gives the
+  page a reader's activation before any of them.
 
 ### Week 7b-3 — subtitles (2026-09-29)
 

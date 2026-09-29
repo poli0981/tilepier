@@ -30,14 +30,6 @@ import vttUrl from './__fixtures__/subs.vi.vtt?url';
  */
 const SLOW = { timeout: 5_000 };
 
-/**
- * The first sound the test browser plays. A CI runner has no audio device, and
- * on two of #35's runs the file's first video had still not started after five
- * seconds, while every later one started at once — a cost paid once, by
- * whichever test plays first. That test waits up to twenty.
- */
-const FIRST = { timeout: 20_000 };
-
 async function fixture(url: string, name: string, type: string): Promise<TpMediaFile> {
 	const bytes = await (await fetch(url)).arrayBuffer();
 	const file = new File([bytes], name, { type });
@@ -51,12 +43,12 @@ async function forgetMedia(): Promise<void> {
 }
 
 /**
- * The test browser's first video, played before any test. On CI the first
- * video a fresh test browser played did not start at all — not in five
- * seconds, not in twenty (#35's runs) — while every later one started at once.
- * Whatever that first start waits on is paid here, outside any test, and a
- * start that never comes is reported with what the page looked like. A click
- * starts it, as the reader's would, in case the browser wants a gesture.
+ * One video, started by a click, before any test: the page then has the
+ * activation a reader's first press gives it, and every player after it starts
+ * on its own — so no test depends on whether the browser allows sound before a
+ * gesture. A start that never comes is reported with what the page looked
+ * like. (Added for #35's CI, whose first test kept failing with the video
+ * paused; the cause was the tests' own check-then-press, fixed in `playing`.)
  */
 beforeAll(async () => {
 	const video = document.createElement('video');
@@ -114,12 +106,21 @@ async function kept(file: TpMediaFile): Promise<number | undefined> {
 	return key === null ? undefined : (await loadResume(key))?.positionMs;
 }
 
+/**
+ * Waits until the player's video plays. It starts on its own; a press is only
+ * for a start the browser refused, which the player says ("press play").
+ *
+ * **Not "if the button says Play, press it".** Between reading the label and
+ * the press landing, playback can begin — and then the press pauses it, and
+ * the video never plays. On CI that race failed a test three times, twice on
+ * the file's first test and once on a later one (#35, #37; 2026-09-29).
+ */
 async function playing(screen: ReturnType<typeof render>): Promise<HTMLVideoElement> {
 	await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
-	const toggle = screen.getByTestId('media-toggle');
-	if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
-		await toggle.click();
-	}
+	const refused = () =>
+		screen.container.textContent?.includes(m['widget.media.press_play']()) === true;
+	await vi.waitFor(() => expect(media.playing || refused()).toBe(true), SLOW);
+	if (!media.playing) await screen.getByTestId('media-toggle').click();
 	await vi.waitFor(() => expect(media.playing).toBe(true), SLOW);
 	return screen.getByTestId('media-video').element() as HTMLVideoElement;
 }
@@ -129,16 +130,14 @@ describe('TpMediaPlayer', () => {
 		const file = await fixture(clipUrl, 'Phim thử.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
 
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
-		const toggle = screen.getByTestId('media-toggle');
-		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
-			await toggle.click();
-		}
-		await expect.element(toggle, FIRST).toHaveAttribute('aria-label', m['widget.media.pause']());
-		await vi.waitFor(() => expect(media.playing).toBe(true), SLOW);
+		await playing(screen);
+
+		await expect
+			.element(screen.getByTestId('media-toggle'))
+			.toHaveAttribute('aria-label', m['widget.media.pause']());
 		expect(media.durationMs).toBe(14_008);
 		await vi.waitFor(() => expect(media.positionMs).toBeGreaterThan(0), SLOW);
-	}, 30_000);
+	});
 
 	it('plays on a press of "Play" even while a start is still on its way', async () => {
 		// Between play() and `playing` the element is no longer paused while the
@@ -185,13 +184,9 @@ describe('TpMediaPlayer', () => {
 		claimPlayback('music', musicYielded);
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
-		const toggle = screen.getByTestId('media-toggle');
-		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
-			await toggle.click();
-		}
+		await playing(screen);
 
-		await vi.waitFor(() => expect(playbackOwner()).toBe('media'), SLOW);
+		expect(playbackOwner()).toBe('media');
 		expect(musicYielded).toHaveBeenCalledOnce();
 
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
@@ -284,12 +279,9 @@ describe('TpMediaPlayer', () => {
 	it('pauses when the music player takes the sound back', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
+		await playing(screen);
+		expect(playbackOwner()).toBe('media');
 		const toggle = screen.getByTestId('media-toggle');
-		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
-			await toggle.click();
-		}
-		await vi.waitFor(() => expect(playbackOwner()).toBe('media'), SLOW);
 
 		claimPlayback('music', () => {});
 
