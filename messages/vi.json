@@ -430,7 +430,7 @@
 	"settings.backup.title": "Sao lưu",
 	"settings.backup.export": "Lưu mọi thứ ra một tệp",
 	"settings.backup.export_action": "Xuất tệp",
-	"settings.backup.export_note": "Một tệp JSON chứa bàn làm việc, cài đặt và mọi thứ bạn đã viết. Tệp nhạc và quyền truy cập thư mục không nằm trong đó — chúng ở lại trên máy và được nối lại sau khi nhập.",
+	"settings.backup.export_note": "Một tệp JSON chứa bàn làm việc, cài đặt và mọi thứ bạn đã viết. Bài hát và quyền truy cập thư mục không nằm trong đó: chúng ở lại trong trình duyệt này. Khôi phục trên máy khác? Hãy chọn lại thư mục nhạc ở đó, và thêm lại các bài đã nhập.",
 	"settings.backup.import": "Khôi phục từ tệp",
 	"settings.backup.import_action": "Chọn tệp",
 	"settings.backup.invalid": "Tệp này không phải bản sao lưu TilePier, hoặc được tạo bởi phiên bản mới hơn.",
@@ -743,5 +743,8 @@
 	"widget.music.move_down": "Đưa “{title}” xuống",
 	"widget.music.remove_from_playlist": "Bỏ “{title}” khỏi danh sách",
 	"widget.music.add_to_playlist": "Thêm “{title}” vào {playlist}",
-	"widget.music.gone_from_library": "Không còn trong thư viện"
+	"widget.music.gone_from_library": "Không còn trong thư viện",
+	"widget.music.orphans": "{count} bài đã nhập ({size}) không còn trong thư viện: một lần khôi phục đã thay thư viện. Khôi phục tệp sao lưu được lưu ngay trước lần đó sẽ đưa chúng trở lại.",
+	"widget.music.orphans_delete": "Xoá khỏi trình duyệt này",
+	"widget.music.orphans_confirm": "Xoá hẳn {count} bài ({size})? Không thể hoàn tác."
 }

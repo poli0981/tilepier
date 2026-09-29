@@ -320,7 +320,9 @@ only module allowed to import music-metadata:
 - **Edge cases:** file moved/deleted since scan → play error toast + mark
   track missing (don't auto-delete; Rescan reconciles); unsupported codec →
   skip-next with per-track error mark; autoplay policy → first play always
-  from user gesture (never autoplay on load).
+  from user gesture (never autoplay on load). Imported audio a replacing
+  restore left without tracks → shown in the detail with its size, deleted
+  only when the reader asks (doc 05 §6, Week 7 plan S25).
 
 ## 3. `media` — Local Video Player
 

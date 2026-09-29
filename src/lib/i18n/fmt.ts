@@ -372,3 +372,30 @@ export function fmtDuration(ms: number, locale: string): string {
 		? `${plain.format(hours)}:${padded.format(minutes)}:${padded.format(seconds)}`
 		: `${plain.format(minutes)}:${padded.format(seconds)}`;
 }
+
+/* ─────────────────────────────────────────────── sizes on disk (doc 05 §7) */
+
+const BYTE_UNITS = [
+	['gigabyte', 1024 ** 3],
+	['megabyte', 1024 ** 2],
+	['kilobyte', 1024]
+] as const;
+
+/**
+ * A size on disk — "3.4 MB", or "3,4 MB" in Vietnamese — in the largest unit
+ * it reaches, to one decimal. Multiples of 1024, the way the browser's own
+ * storage estimate is read against them; whole bytes below a kilobyte.
+ */
+export function fmtBytes(bytes: number, locale: string): string {
+	const safe = Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
+	const [unit, size] = BYTE_UNITS.find(([, step]) => safe >= step) ?? (['byte', 1] as const);
+	return numberFormatter(
+		`bytes:${locale}:${unit}`,
+		() =>
+			new Intl.NumberFormat(locale, {
+				style: 'unit',
+				unit,
+				maximumFractionDigits: unit === 'byte' ? 0 : 1
+			})
+	).format(safe / size);
+}

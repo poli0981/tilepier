@@ -1,16 +1,19 @@
 import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
 import {
+	deleteOrphans as deleteOrphanedAudio,
 	estimateQuota,
 	forgetTracks,
 	importFiles as importIntoLibrary,
 	loadMusicRoot,
 	queryRootPermission,
+	readLibrary,
 	requestRootPermission,
 	saveMusicRoot,
 	scanFolder,
 	willExceedQuota,
 	type FsaPermission,
-	type TpLibrarySummary
+	type TpLibrarySummary,
+	type TpOrphans
 } from './library';
 import { player } from './player.svelte';
 import { libraryOrder } from './service';
@@ -29,6 +32,8 @@ import { libraryOrder } from './service';
  * start them: the tile's empty state picks the first folder, the detail
  * rescans.
  */
+
+const NO_ORPHANS: TpOrphans = { ids: [], bytes: 0 };
 
 /** A scan or import in progress, for the progress line. */
 interface TpScanProgress {
@@ -60,6 +65,8 @@ class TpCollection {
 	scanFailed = $state(false);
 	/** Files held back at doc 05 §7's 80 % line until the reader says go. */
 	pendingImport = $state.raw<readonly File[] | null>(null);
+	/** Imported audio a replacing restore left without tracks (plan S25). */
+	orphans = $state.raw<TpOrphans>(NO_ORPHANS);
 
 	#target: TpDb = defaultDb;
 	#root: FileSystemDirectoryHandle | null = null;
@@ -121,7 +128,15 @@ class TpCollection {
 	}
 
 	async #refresh(): Promise<void> {
-		this.tracks = libraryOrder(await this.#target.tracks.toArray());
+		const { tracks, orphans } = await readLibrary(this.#target);
+		this.tracks = libraryOrder(tracks);
+		this.orphans = orphans;
+	}
+
+	/** Plan S25: the reader, and only the reader, deletes orphaned audio. */
+	async deleteOrphans(): Promise<void> {
+		await deleteOrphanedAudio(this.orphans.ids, this.#target);
+		await this.#refresh();
 	}
 
 	/** Path A. Call from the click: the picker needs the gesture. */
@@ -244,6 +259,7 @@ class TpCollection {
 		this.summary = null;
 		this.scanFailed = false;
 		this.pendingImport = null;
+		this.orphans = NO_ORPHANS;
 	}
 }
 

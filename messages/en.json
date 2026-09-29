@@ -430,7 +430,7 @@
 	"settings.backup.title": "Backup",
 	"settings.backup.export": "Save everything to a file",
 	"settings.backup.export_action": "Export",
-	"settings.backup.export_note": "One JSON file with your deck, your settings, and everything you have written. Music files and folder access are not included — they stay on your device and are re-linked after an import.",
+	"settings.backup.export_note": "One JSON file with your deck, your settings, and everything you have written. Songs and folder access are not in it: they stay in this browser. Restoring on another device? Choose the music folder again there, and add imported songs again.",
 	"settings.backup.import": "Restore from a file",
 	"settings.backup.import_action": "Choose a file",
 	"settings.backup.invalid": "That file is not a TilePier backup, or was written by a newer version.",
@@ -743,5 +743,8 @@
 	"widget.music.move_down": "Move “{title}” down",
 	"widget.music.remove_from_playlist": "Take “{title}” off the playlist",
 	"widget.music.add_to_playlist": "Add “{title}” to {playlist}",
-	"widget.music.gone_from_library": "No longer in the library"
+	"widget.music.gone_from_library": "No longer in the library",
+	"widget.music.orphans": "{count} imported songs ({size}) are no longer in the library: a restore replaced it. Restoring the backup file saved just before that brings them back.",
+	"widget.music.orphans_delete": "Delete them from this browser",
+	"widget.music.orphans_confirm": "Delete {count} songs ({size}) for good? This cannot be undone."
 }

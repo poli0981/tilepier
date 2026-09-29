@@ -3,6 +3,7 @@ import {
 	changeDirection,
 	fmtDate,
 	fmtDistance,
+	fmtBytes,
 	fmtDuration,
 	fmtPercentChange,
 	fmtTime,
@@ -168,5 +169,20 @@ describe('fmtDuration (doc 09 §2–§3)', () => {
 		expect(fmtDuration(Number.NaN, 'en')).toBe('0:00');
 		expect(fmtDuration(Number.POSITIVE_INFINITY, 'en')).toBe('0:00');
 		expect(fmtDuration(-5_000, 'en')).toBe('0:00');
+	});
+});
+
+describe('fmtBytes (doc 05 §7)', () => {
+	it('writes the largest unit reached, to one decimal, in the reader’s language', () => {
+		expect(fmtBytes(3.4 * 1024 ** 2, 'en')).toBe('3.4 MB');
+		expect(fmtBytes(3.4 * 1024 ** 2, 'vi')).toBe('3,4 MB');
+		expect(fmtBytes(12.25 * 1024 ** 3, 'en')).toBe('12.3 GB');
+		expect(fmtBytes(512 * 1024, 'en')).toBe('512 kB');
+		expect(fmtBytes(900, 'en')).toBe('900 byte');
+	});
+
+	it('reads nothing sensible as zero', () => {
+		expect(fmtBytes(Number.NaN, 'en')).toBe('0 byte');
+		expect(fmtBytes(-5, 'vi')).toBe('0 byte');
 	});
 });

@@ -39,6 +39,10 @@ function track(id: string, fields: Partial<TpTrack> = {}): TpTrack {
 
 async function load(tracks: TpTrack[]): Promise<void> {
 	await target.tracks.bulkPut(tracks);
+	// Imported tracks with their audio: one without reads as missing (plan S25).
+	await target.trackBlobs.bulkPut(
+		tracks.map((entry) => ({ id: entry.id, blob: new Blob([entry.id]) }))
+	);
 	await collection.load();
 }
 

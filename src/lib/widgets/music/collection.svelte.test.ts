@@ -208,3 +208,48 @@ describe('what the player learns', () => {
 		await vi.waitFor(() => expect(collection.tracks[0]?.missing).toBe(true));
 	});
 });
+
+describe('orphaned imports (plan S25)', () => {
+	it('shows audio a restore left without tracks, and deletes it only when asked', async () => {
+		await target.tracks.put({
+			id: 'kept',
+			source: 'blob',
+			title: 'Kept',
+			artist: '',
+			album: '',
+			addedAt: 1
+		});
+		await target.trackBlobs.bulkPut([
+			{ id: 'kept', blob: new Blob(['1']) },
+			{ id: 'left', blob: new Blob(['123']) }
+		]);
+
+		await collection.load();
+		expect(collection.orphans).toEqual({ ids: ['left'], bytes: 3 });
+		// Loading reads; it never deletes.
+		expect(await target.trackBlobs.count()).toBe(2);
+
+		await collection.deleteOrphans();
+
+		expect(collection.orphans.ids).toEqual([]);
+		expect(await target.trackBlobs.get('left')).toBeUndefined();
+		expect(await target.trackBlobs.get('kept')).toBeDefined();
+	});
+
+	it('reads an imported track with no audio here as missing, removable like the rest', async () => {
+		await target.tracks.put({
+			id: 'elsewhere',
+			source: 'blob',
+			title: 'Elsewhere',
+			artist: '',
+			album: '',
+			addedAt: 1
+		});
+
+		await collection.load();
+		expect(collection.missingCount).toBe(1);
+
+		await collection.removeMissing();
+		expect(await target.tracks.count()).toBe(0);
+	});
+});

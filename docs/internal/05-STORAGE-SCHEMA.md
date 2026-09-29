@@ -229,8 +229,12 @@ createDebouncedWriter<T>(spec, delayMs): { schedule(v); flush(); dispose() }
   `{ meta:{app, version, exportedAt}, layout, settings, dexie:{notes, todos,
   todoLists, events, playlists, tracks(metadata only), savedPlaces} }`.
   Audio blobs and FSA handles are **never** exported (size / permission scope);
-  the import UI explains music must be re-linked. Nor is `playback` (version 2):
-  where a player was is not something the reader made.
+  the export note says where music stays — in this browser — and what a restore
+  on another device needs: the folder chosen again, imported songs imported
+  again (their ids come back the same, §4, so playlists hold). Corrected
+  2026-09-29: it said music is "re-linked after an import", true only of the
+  folder, and only on the same device. Nor is `playback` (version 2): where a
+  player was is not something the reader made.
 - Import: dry-run validation (zod-lite hand validators, no runtime dep) →
   show a diff summary (counts per table) → user confirms → **non-destructive
   default**: merge-by-id with newer-`updatedAt` wins; "Replace all" requires a
@@ -266,6 +270,18 @@ corruption, and refusing a whole file over one would fail exactly the person
 who needs this — someone restoring after something already went wrong. A file
 from a *newer* build is refused, the same call §5 makes for a downgraded
 localStorage key.
+
+**What a replace leaves in `trackBlobs` is kept (Week 7, plan S25).** A replace
+clears `tracks`; imported audio whose track the file does not carry stays,
+with no row pointing at it. Deleting it on the spot would be the one
+irreversible step in a restore: the pre-import export never holds audio, so
+those bytes are what makes restoring that file an undo. The music detail
+shows them instead — how many, what they weigh, and why they were kept — and
+deletes them only when the reader asks, twice, in one transaction that spares
+any a restore has since given a track back. The other way round, a restored
+imported track whose audio is not in this browser reads as `missing` (in
+memory, not stored), and "Remove missing" takes it out like any other. A merge
+never deletes anything.
 
 **One bug worth recording, because it would have shipped as "import does
 nothing".** The parsed backup was held in a Svelte `$state`, which deep-proxies
