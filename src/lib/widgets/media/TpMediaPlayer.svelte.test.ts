@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { claimPlayback, playbackOwner, resetPlayback } from '$lib/core/playback';
 import { db } from '$lib/core/storage/db';
@@ -45,6 +46,43 @@ async function fixture(url: string, name: string, type: string): Promise<TpMedia
 async function forgetMedia(): Promise<void> {
 	await db.playback.where('id').startsWith('media:').delete();
 }
+
+/**
+ * The test browser's first video, played before any test. On CI the first
+ * video a fresh test browser played did not start at all — not in five
+ * seconds, not in twenty (#35's runs) — while every later one started at once.
+ * Whatever that first start waits on is paid here, outside any test, and a
+ * start that never comes is reported with what the page looked like. A click
+ * starts it, as the reader's would, in case the browser wants a gesture.
+ */
+beforeAll(async () => {
+	const video = document.createElement('video');
+	const start = document.createElement('button');
+	start.textContent = 'start';
+	start.addEventListener('click', () => void video.play().catch(() => undefined));
+	video.src = clipUrl;
+	document.body.appendChild(video);
+	document.body.appendChild(start);
+	try {
+		await page.elementLocator(start).click();
+		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(0), {
+			timeout: 25_000,
+			interval: 250
+		});
+	} catch {
+		console.warn(
+			`media warm-up: no start in 25 s — visibility ${document.visibilityState}, ` +
+				`readyState ${String(video.readyState)}, paused ${String(video.paused)}, ` +
+				`error ${String(video.error?.code ?? 'none')}`
+		);
+	} finally {
+		video.pause();
+		video.removeAttribute('src');
+		video.load();
+		video.remove();
+		start.remove();
+	}
+}, 30_000);
 
 beforeEach(async () => {
 	settings.dispose();
