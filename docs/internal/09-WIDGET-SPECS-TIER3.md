@@ -227,6 +227,51 @@ call rather than per candle — and a few kilobytes on a 1M view.
   metadata + audio blob into `trackBlobs`. Quota warning per doc 05 §7.
   Feature-detect chooses the default path; both can coexist.
 
+### How a scan decides (Week 7a-1, spike S7 — doc 22 §S7)
+
+`widgets/music/library.ts` (`scanFolder`, `importFiles`) and `tags.ts`, the
+only module allowed to import music-metadata:
+
+- **Resolves only once written.** Each file is one transaction — its cover,
+  its bytes on path B, its row — and the promise settles after the last one.
+  The spike's `ingest()` returned with its writes in flight, so a full disk
+  surfaced nowhere; now a full disk stops an import where it is, keeps what
+  came before, and says so.
+- **A rescan diffs, it does not rewrite.** Same size and modification time:
+  untouched, `addedAt` and all, and not parsed again. Changed: parsed again and
+  updated in place, under the same id (doc 05 §4). Gone: marked `missing`,
+  never deleted — and **only when the folder that held it was read**. A
+  subfolder that cannot be listed is skipped and recorded; a root that cannot
+  be listed throws before anything is marked, so an unplugged drive or a lapsed
+  grant never turns the whole library "missing". A cancelled scan marks
+  nothing. A track that comes back is unmarked.
+- **What is not listed:** hidden entries (dot-folders, macOS `._` files, which
+  carry audio extensions), and a file the parser finds no audio in at all.
+  music-metadata only throws for the latter when it sniffs; a folder's files
+  carry a MIME type guessed from their extension, which it trusts, so a text
+  file called `fake.mp3` came back with an empty format — an empty format now
+  counts as not-audio. A file whose tags merely fail to parse **is** listed,
+  under its own name: broken tags often play.
+- **Tags.** A missing value is `''`, rendered as "Unknown artist" in the
+  reader's language; the spike wrote the Vietnamese `'không rõ'` into Dexie.
+  The title falls back to the file name. Values are NFC-normalised, and a WAV
+  file's RIFF INFO, which music-metadata reads as Latin-1 although the tools
+  that write it write UTF-8, is read as UTF-8 when its bytes are valid UTF-8.
+- **Cover.** The picture typed "Cover (front)", else the first (music-metadata's
+  own `selectCover()` returns the first whatever it is, and an MP4 `covr` has
+  no type); none above 1 MB. Stored once per image by SHA-256, and collected
+  when no track points at it. Imported audio is never deleted automatically.
+- **Duration.** Parsed with `duration: false`. With `true` a VBR MP3 with no
+  Xing/Info/LAME header is read to its end to count frames; every other
+  container gives a duration without it. That one file's duration comes from
+  the player's `loadedmetadata`.
+- **The worker** takes one file per request. One that hangs is answered
+  "unreadable" after 20 s and the worker is replaced; a worker that fails on its
+  own — its script would not load — stops the scan rather than filing every
+  track as unreadable. Failures travel as a category, never as the parser's
+  message, and nothing about a reader's files — name, path, title — is ever
+  logged (doc 18).
+
 ### Playback
 
 - Single `HTMLAudioElement` app-wide (survives detail close; mini controls

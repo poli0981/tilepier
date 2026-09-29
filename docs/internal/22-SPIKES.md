@@ -522,6 +522,86 @@ JavaScript and no CSP violation; and the assertion S4 carried since Week 0,
 `HEAVY.test('echarts')` — true of the string and unable to fail (plan 1a.5) —
 is replaced by naming the vendored files the page loaded.
 
+## S7 — music ingestion, for real (Week 7a-1, 2026-09-29)
+
+S2 left two things open: the path A walk on real hardware, and any evidence
+at all for the Firefox half. It also left its code in `widgets/music/`, live
+on production behind `/spike/s2`. S7 measured what Week 7 builds on before
+building. The automated half is below; the manual half is at the end.
+
+### Findings · **GREEN**, with two parser surprises fixed in code
+
+1. **Tags, through music-metadata 11.16.1** (upgraded from 11.14.0 for
+   11.16.0's allocation checks on crafted MP4, APEv2, EBML and ID3v2 files).
+   The fixtures are sine tones tagged in Vietnamese by
+   `scripts/gen-music-fixtures.mjs`.
+   - mp3, m4a, flac, ogg and opus read title, artist, album, track and year
+     intact.
+   - **WAV did not.** RIFF INFO is read as Latin-1 while the tools that write
+     it write UTF-8, so "Bài hát thử" came back as "BÃ i hÃ¡t thá»­". `tags.ts`
+     now re-reads a value as UTF-8 when its bytes are valid UTF-8.
+2. **A folder's files carry a MIME type from their extension, and
+   music-metadata trusts it.** A text file called `fake.mp3` threw
+   `CouldNotDetermineFileTypeError` when constructed bare, as `tags.ts`'s own
+   test did. From OPFS, typed `audio/mpeg`, it reached the MPEG parser and
+   returned an **empty format**, no error. The library tests found it. An
+   empty format now counts as not-audio. Sniffing every file instead would
+   refuse the odd real MP3 with junk before its first frame.
+3. **Covers.** music-metadata's `selectCover()` returns the first picture,
+   and with the back cover first that is the back of the sleeve. An MP4
+   `covr` carries no picture type at all. The front cover is now chosen
+   explicitly, falling back to the first.
+4. **Duration.** With `duration: false`, every fixture reports its length
+   except a VBR MP3 with no Xing/Info/LAME header. `duration: true` reads
+   that file to its end. Headless Chrome's `loadedmetadata` gives it
+   (2.011 s), so the player fills it in.
+5. **Playback, in Playwright 1.62's browser.** That browser is Chrome for
+   Testing 151 since 1.57, not open-source Chromium.
+   - `canPlayType` says "probably" for mp3, AAC, flac, vorbis, opus, **H.264**
+     and VP9, "maybe" for wav, and "" for HEVC.
+   - All nine real fixtures played to `ended` from `blob:` URLs. The text
+     file errored with code 4.
+   - So an "unsupported codec" fixture for Week 7b must be something no
+     browser plays, not H.264. HEVC is the candidate.
+   - Media Session, `setPositionState` and `document.pictureInPictureEnabled`
+     are all present headless.
+6. **The worker.** Vite 8 builds `new Worker(new URL(…))` on its own, outside
+   the client manifest, and inlines all thirteen lazy parsers with the
+   default `iife` format.
+   - Size: **66.0 KB gz**, now a `static-glob` budget row at 80 (doc 20 §6).
+   - Until Week 7a-0 it was cached nowhere (doc 17 §2).
+   - Nothing kept music-metadata off the main thread. `eslint.config.js` now
+     refuses the import anywhere but `tags.ts`.
+   - `optimizeDeps.include` names the package, so the dev server does not
+     reload a browser test run mid-way on discovering it.
+7. **Speed.** 200 WAV files import in **806–863 ms**, with the UI thread
+   ticking throughout (81 animation frames). That is the same as S2's
+   857 ms, even though every file is now its own worker round trip and its
+   own transaction.
+8. **Path A, automated after all.** `showDirectoryPicker` is stubbed to
+   return a real OPFS folder, so everything after the dialog is real code.
+   - A lapsed grant is simulated by making every handle method throw
+     `NotAllowedError`, not only by making `queryPermission` say `prompt`.
+   - `e2e/s2-fsa`'s S7 block covers the scan, a reload, a lapsed grant with
+     re-link, and a folder import through `setInputFiles(<dir>)`.
+
+### The manual half — for the owner, on production after 7a-1 deploys
+
+At `/spike/s2`, in real Chrome, with a real music folder:
+
+1. pick → scan (note N files and the elapsed time) → rescan (expect
+   "unchanged N");
+2. quit the browser completely → reopen → `permission` reads `prompt` →
+   re-link is one click → scan;
+3. **S23:** "hold files", leave the tab in the background for ten minutes,
+   come back, "check held". The readout says whether a `File` taken before
+   Chrome revoked an "Allow this time" grant can still be read. That decides
+   whether the player pre-fetches the queue's files.
+4. Firefox: import ~50 files → quota readout → they are listed;
+5. "wipe library" at the end.
+
+*(Results go here.)*
+
 ## Exit review
 
 Half-day: update docs 06/09/11/17/20 with findings, adjust Week 1 backlog,
