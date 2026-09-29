@@ -87,7 +87,8 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
    closes → Back/forward behave.
 4. Offline emulation: toggle offline → stale badges appear → tier-1
    widgets still work → online → refresh clears badges.
-5. Notes: create, markdown preview renders, XSS string stays inert.
+5. Notes: create, markdown preview renders, XSS string stays inert — and
+   (2026-09-29) what was typed just before a reload is kept.
 6. Export backup → wipe → import → deck + notes restored.
 7. i18n: switch vi↔en → gate/labels/lunar footer switch, no missing-key
    text.

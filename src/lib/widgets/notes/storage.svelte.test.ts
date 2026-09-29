@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDb, type TpDb } from '$lib/core/storage/db';
-import { createNote, deleteNote, listNotes, saveNote, setPinned } from './service';
+import { createNote, deleteNote, listNotes, saveNote, saveNoteNow, setPinned } from './service';
 
 /**
  * The Dexie half of doc 07 §4. Browser project — the `.svelte.` infix selects
@@ -111,5 +111,28 @@ describe('the note lifecycle', () => {
 
 	it('starts empty', async () => {
 		expect(await listNotes(freshDb())).toEqual([]);
+	});
+});
+
+describe('a page on its way out (doc 04 §6)', () => {
+	it('writes the whole note, committed before the call returns', async () => {
+		const db = freshDb();
+		const note = await createNote('# Draft\nfirst words', db);
+		await db.open();
+		const commit = vi.spyOn(IDBTransaction.prototype, 'commit');
+
+		try {
+			saveNoteNow({ ...note, pinned: true }, '# Kept\nlast words', db);
+			// Asked for inside the call: a Dexie update reads the row first, a
+			// turn a closing page never gets.
+			expect(commit).toHaveBeenCalledOnce();
+		} finally {
+			commit.mockRestore();
+		}
+		await expect.poll(async () => (await db.notes.get(note.id))?.body).toBe('# Kept\nlast words');
+		const kept = await db.notes.get(note.id);
+		expect(kept?.title).toBe('Kept');
+		expect(kept?.pinned).toBe(true);
+		expect(kept?.updatedAt).toBeGreaterThanOrEqual(note.updatedAt);
 	});
 });

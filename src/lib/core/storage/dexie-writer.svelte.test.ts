@@ -15,9 +15,10 @@ const writers: TpDexieWriter<string>[] = [];
 function writer(
 	write: (value: string) => Promise<unknown>,
 	onError?: (error: unknown) => void,
-	delayMs = 20
+	delayMs = 20,
+	exit?: (value: string) => void
 ): TpDexieWriter<string> {
-	const made = createDexieWriter(write, onError, delayMs);
+	const made = createDexieWriter(write, onError, delayMs, exit);
 	writers.push(made);
 	return made;
 }
@@ -174,5 +175,51 @@ describe('failure', () => {
 
 		// Nothing to assert but the absence of a crash; reaching here is the test.
 		expect(true).toBe(true);
+	});
+});
+
+describe('a page on its way out (doc 04 §6)', () => {
+	// A Dexie write started while the page unloads never commits (measured
+	// 2026-09-29): a caller that hands in `exit` gets it instead, in the
+	// handler, and the ordinary write is not also made.
+	it('writes through exit when the page goes, and not through write', () => {
+		const write = vi.fn(() => Promise.resolve());
+		const exit = vi.fn();
+		const subject = writer(write, undefined, 10_000, exit);
+		subject.schedule('last words');
+
+		window.dispatchEvent(new Event('pagehide'));
+
+		expect(exit).toHaveBeenCalledExactlyOnceWith('last words');
+		expect(write).not.toHaveBeenCalled();
+	});
+
+	it('writes through exit when the tab hides, once, however many events follow', () => {
+		const write = vi.fn(() => Promise.resolve());
+		const exit = vi.fn();
+		const subject = writer(write, undefined, 10_000, exit);
+		subject.schedule('switching away');
+
+		vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+		document.dispatchEvent(new Event('visibilitychange'));
+		window.dispatchEvent(new Event('pagehide'));
+
+		expect(exit).toHaveBeenCalledTimes(1);
+		expect(write).not.toHaveBeenCalled();
+	});
+
+	it('keeps the ordinary write for the timer, a flush, and dispose', async () => {
+		const write = vi.fn(() => Promise.resolve());
+		const exit = vi.fn();
+		const subject = writer(write, undefined, 20, exit);
+		subject.schedule('typed');
+		await settle(60);
+		subject.schedule('flushed');
+		subject.flush();
+		subject.schedule('disposed');
+		subject.dispose();
+
+		expect(write.mock.calls).toEqual([['typed'], ['flushed'], ['disposed']]);
+		expect(exit).not.toHaveBeenCalled();
 	});
 });
