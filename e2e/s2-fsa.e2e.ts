@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { expect, test, type Page } from '@playwright/test';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -8,11 +8,14 @@ import { join } from 'node:path';
  *
  * **What is automated and what is not.** Path B (file import) is driven end to
  * end here, including the 200-file scan and its timing. Path A (File System
- * Access) cannot be: `showDirectoryPicker()` opens an OS folder dialog that no
- * automation can operate, and there is no headless equivalent. Handle
- * persistence across a browser restart is therefore a manual check, and the
- * harness at /spike/s2 exists to make it a one-minute one. Saying so plainly
- * beats a green suite that quietly tested neither.
+ * Access) is driven from the moment the picker returns: `showDirectoryPicker()`
+ * opens an OS folder dialog that no automation can operate, so since Week 7
+ * (spike S7) it is stubbed to hand back a real OPFS folder — see the S7 block
+ * below. What stays manual is exactly what that stub cannot be: the dialog
+ * itself, the user gesture `requestPermission` needs, a grant surviving a
+ * browser restart, and Chrome revoking one in a background tab. The harness at
+ * /spike/s2 exists to make those a few minutes' work on real hardware. Saying
+ * so plainly beats a green suite that quietly tested neither.
  *
  * The fixtures are real WAV files rather than random bytes, because the point
  * is to exercise music-metadata's parser: a scan of 200 unparseable files
@@ -191,5 +194,174 @@ test.describe('S2 · File System Access availability', () => {
 
 		expect(result.isHandle, 'a directory handle did not survive IndexedDB').toBe(true);
 		expect(result.kind).toBe('directory');
+	});
+});
+
+/**
+ * Path A, driven after all (doc 22 §S7, plan S22).
+ *
+ * The picker opens an OS dialog no automation can operate, but what it returns
+ * is an ordinary `FileSystemDirectoryHandle` — and OPFS hands out real ones.
+ * So `showDirectoryPicker` is stubbed to return an OPFS folder filled with the
+ * fixture library, and everything after the dialog is the real code: the walk,
+ * `getFile()`, the worker, the handle kept in IndexedDB across a reload.
+ *
+ * OPFS always answers `granted`, so a grant that lapsed — a browser restart
+ * without "Allow on every visit", or Chrome revoking it from a tab left in the
+ * background — is simulated: `queryPermission` reads a flag in sessionStorage
+ * (which survives the reload), and while the flag says `prompt` every handle
+ * method the library uses throws `NotAllowedError`, as the real ones do. A
+ * stub that only changed `queryPermission` would pass code that never looks
+ * past it.
+ */
+const LIBRARY = join(process.cwd(), 'src', 'lib', 'widgets', 'music', '__fixtures__', 'library');
+const LIBRARY_FILES = [
+	'Artist A/Album 1/01 One.mp3',
+	'Artist A/Album 1/02 Two.flac',
+	'Artist A/Album 1/cover.png',
+	'Artist A/Album 1/._01 One.mp3',
+	'Artist B/Three.ogg',
+	'.hidden/Skipped.mp3'
+];
+
+async function stubPicker(page: Page): Promise<void> {
+	await page.addInitScript(() => {
+		const state = () => sessionStorage.getItem('tp-test-permission') ?? 'granted';
+		const lapsed = () => new DOMException('The grant has lapsed.', 'NotAllowedError');
+
+		window.showDirectoryPicker = async () =>
+			(await navigator.storage.getDirectory()).getDirectoryHandle('music', { create: true });
+
+		FileSystemHandle.prototype.queryPermission = async () => state() as PermissionState;
+		FileSystemHandle.prototype.requestPermission = async () => {
+			sessionStorage.setItem('tp-test-permission', 'granted');
+			return 'granted';
+		};
+
+		const dir = FileSystemDirectoryHandle.prototype;
+		const file = FileSystemFileHandle.prototype;
+		for (const [proto, name] of [
+			[dir, 'entries'],
+			[dir, 'getDirectoryHandle'],
+			[dir, 'getFileHandle'],
+			[file, 'getFile']
+		] as const) {
+			const real = (proto as unknown as Record<string, (...args: unknown[]) => unknown>)[name];
+			Object.defineProperty(proto, name, {
+				configurable: true,
+				value(this: unknown, ...args: unknown[]) {
+					if (state() !== 'granted') throw lapsed();
+					return real?.apply(this, args);
+				}
+			});
+		}
+	});
+}
+
+/** Fills the OPFS folder the stubbed picker returns with the fixture library. */
+async function fillOpfs(page: Page): Promise<void> {
+	const files = LIBRARY_FILES.map((path) => ({
+		path,
+		base64: readFileSync(join(LIBRARY, path)).toString('base64')
+	}));
+	await page.evaluate(async (entries) => {
+		const root = await (
+			await navigator.storage.getDirectory()
+		).getDirectoryHandle('music', {
+			create: true
+		});
+		for (const { path, base64 } of entries) {
+			const parts = path.split('/');
+			const name = parts.pop() ?? '';
+			let dir = root;
+			for (const part of parts) dir = await dir.getDirectoryHandle(part, { create: true });
+			const writable = await (await dir.getFileHandle(name, { create: true })).createWritable();
+			await writable.write(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
+			await writable.close();
+		}
+	}, files);
+}
+
+async function storedTracks(page: Page): Promise<{ title: string; missing?: boolean }[]> {
+	return page.evaluate(async () => {
+		const request = indexedDB.open('tilepier');
+		const dbHandle = await new Promise<IDBDatabase>((resolve, reject) => {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		const rows = await new Promise<unknown[]>((resolve, reject) => {
+			const req = dbHandle.transaction('tracks', 'readonly').objectStore('tracks').getAll();
+			req.onsuccess = () => resolve(req.result);
+			req.onerror = () => reject(req.error);
+		});
+		dbHandle.close();
+		return rows as { title: string; missing?: boolean }[];
+	});
+}
+
+test.describe('S7 · path A through an OPFS folder', () => {
+	test('a picked folder is scanned, and its handle outlives a reload', async ({ page }) => {
+		await stubPicker(page);
+		await page.goto('/spike/s2');
+		await fillOpfs(page);
+
+		await page.getByTestId('pick').click();
+		await expect(page.getByTestId('status')).toHaveText('folder-saved');
+		await page.getByTestId('scan').click();
+		await expect(page.getByTestId('status')).toHaveText('done');
+
+		// Three tracks: the image, the AppleDouble file and the hidden folder are
+		// passed over, and none of them counts as a failure.
+		await expect(page.getByTestId('summary')).toContainText(
+			'added 3 · updated 0 · unchanged 0 · missing 0 · failed 0 · skipped dirs 0'
+		);
+		expect((await storedTracks(page)).map((track) => track.title).sort()).toEqual([
+			'Ba',
+			'Hai',
+			'Một'
+		]);
+
+		await page.reload();
+		await expect(page.getByTestId('has-handle')).toHaveText('yes');
+		await expect(page.getByTestId('permission')).toHaveText('granted');
+		await page.getByTestId('scan').click();
+		await expect(page.getByTestId('summary')).toContainText('added 0 · updated 0 · unchanged 3');
+	});
+
+	test('a lapsed grant fails the scan at the root and marks nothing missing', async ({ page }) => {
+		await stubPicker(page);
+		await page.goto('/spike/s2');
+		await fillOpfs(page);
+		await page.getByTestId('pick').click();
+		await page.getByTestId('scan').click();
+		await expect(page.getByTestId('summary')).toContainText('added 3');
+
+		await page.evaluate(() => sessionStorage.setItem('tp-test-permission', 'prompt'));
+		await page.reload();
+		await expect(page.getByTestId('permission')).toHaveText('prompt');
+
+		await page.getByTestId('scan').click();
+		await expect(page.getByTestId('status')).toHaveText('scan-failed-NotAllowedError');
+		// An unreadable root must not turn the library "missing" (plan S9).
+		expect((await storedTracks(page)).every((track) => track.missing !== true)).toBe(true);
+
+		// Re-link — one click in real life — and the library is whole again.
+		await page.getByTestId('relink').click();
+		await expect(page.getByTestId('status')).toHaveText('permission-granted');
+		await page.getByTestId('scan').click();
+		await expect(page.getByTestId('summary')).toContainText('unchanged 3');
+	});
+});
+
+test.describe('S7 · path B from a picked folder', () => {
+	test('a folder import skips what is not music and keeps its paths', async ({ page }) => {
+		await page.goto('/spike/s2');
+
+		// Playwright fills `webkitRelativePath` itself for a directory (≥ 1.45).
+		await page.getByTestId('import-folder').setInputFiles(LIBRARY);
+		await expect(page.getByTestId('status')).toHaveText('done', { timeout: 60_000 });
+
+		await expect(page.getByTestId('summary')).toContainText('added 3 · updated 0 · unchanged 0');
+		await expect(page.getByTestId('summary')).toContainText('failed 0');
 	});
 });
