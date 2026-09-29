@@ -169,6 +169,7 @@
 	"common.shortcuts.video_volume": "giảm hoặc tăng âm lượng",
 	"common.shortcuts.video_mute": "tắt tiếng",
 	"common.shortcuts.video_fullscreen": "toàn màn hình",
+	"common.shortcuts.video_captions": "bật hoặc tắt phụ đề",
 	"settings.report.title": "Báo lỗi",
 	"settings.report.label": "Gửi một báo cáo",
 	"settings.report.open": "Báo lỗi",
@@ -786,5 +787,12 @@
 	"widget.media.start_over": "Xem từ đầu",
 	"widget.media.loading": "Đang đọc chỗ bạn xem dở…",
 	"widget.media.error": "Không đọc được chỗ bạn xem dở.",
-	"widget.media.pick_again": "Mở lại đúng tệp đó để xem tiếp từ chỗ cũ."
+	"widget.media.pick_again": "Mở lại đúng tệp đó để xem tiếp từ chỗ cũ.",
+	"widget.media.subs_add": "Thêm phụ đề",
+	"widget.media.subs_show": "Hiện phụ đề",
+	"widget.media.subs_hide": "Ẩn phụ đề",
+	"widget.media.subs_picker_label": "Phụ đề",
+	"widget.media.subs_loaded": "Phụ đề: {name}",
+	"widget.media.subs_change": "Đổi",
+	"widget.media.subs_unreadable": "Không đọc được phụ đề từ {name}."
 }

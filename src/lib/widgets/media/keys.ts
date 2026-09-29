@@ -4,7 +4,7 @@
  * page.
  *
  * - Space or K plays and pauses; ← → move five seconds; ↑ ↓ change the volume
- *   by a tenth; M mutes; F goes full screen.
+ *   by a tenth; M mutes; F goes full screen; C shows or hides subtitles.
  * - **A key a control already answers is left to it.** Space on a button
  *   presses the button, so the player must not also toggle, or one press would
  *   do it twice. The arrows on a range move the range. Nothing typed into a
@@ -20,7 +20,8 @@ export type TpKeyAction =
 	| { kind: 'seek'; bySeconds: number }
 	| { kind: 'volume'; by: number }
 	| { kind: 'mute' }
-	| { kind: 'fullscreen' };
+	| { kind: 'fullscreen' }
+	| { kind: 'captions' };
 
 /** What a key landed on, as far as these rules care. */
 export type TpKeyTarget = 'button' | 'range' | 'field' | 'other';
@@ -57,6 +58,9 @@ export function keyAction(event: TpKey, target: TpKeyTarget): TpKeyAction | null
 		case 'f':
 		case 'F':
 			return { kind: 'fullscreen' };
+		case 'c':
+		case 'C':
+			return { kind: 'captions' };
 		default:
 			return null;
 	}

@@ -12,6 +12,14 @@
 # the next branch switch.
 * text=auto eol=lf
 
-# The only binary in the repository (doc 12 §3's self-hosted subsets). `binary`
-# is shorthand for `-text -diff`, so git neither converts nor tries to diff it.
+# Doc 12 §3's self-hosted font subsets. `binary` is shorthand for
+# `-text -diff`, so git neither converts nor tries to diff them. (The music and
+# video fixtures are binary as well, and git tells so from their bytes.)
 *.woff2 binary
+
+# Subtitle fixtures are bytes as a reader's disk holds them, line endings
+# included: the SubRip one is CRLF with a byte-order mark on purpose, and
+# `subtitles.ts` has to read past both (doc 09 §3). Normalising it to LF would
+# quietly test the easy case.
+src/lib/widgets/media/__fixtures__/*.srt -text
+src/lib/widgets/media/__fixtures__/*.vtt -text

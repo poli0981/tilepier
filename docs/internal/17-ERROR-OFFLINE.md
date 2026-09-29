@@ -145,6 +145,7 @@ music player's rules, as the Week 7 review corrected them:
 | video: `play()` | `NotAllowedError` | autoplay refused without a gesture | "press play" |
 | video: reading where it was left (IndexedDB) | any | the table will not open | the tile says so, with a retry — and still opens a video; the player starts at 0:00 |
 | video: keeping its place (IndexedDB) | any | a full disk, a closed table | nothing: the place is lost, the video plays on |
+| video: subtitles | no cue in the file, over 2 MB, or WebVTT the browser will not parse | not subtitles, or a video picked by mistake | "no subtitles could be read from {name}" under the video; no track; the video plays on |
 
 Notices go to doc 13 §7's toast. Nothing about a file — name, path, title —
 goes to the log (doc 18).

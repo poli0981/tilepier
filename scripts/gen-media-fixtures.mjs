@@ -112,4 +112,45 @@ ffmpeg([...TONE(3), '-c:a', 'libopus', '-b:a', '16k', '-ac', '1', ...EXACT], 'so
 // Named like a video, is not one: the codec state, in every browser alike.
 writeFileSync(join(OUT, 'not-video.mp4'), 'This file is named like a video and is not a video.\n');
 
+// Subtitles for clip.webm, as older SubRip files come: a byte-order mark, CRLF,
+// an override block, a font tag, an ampersand and angle brackets, a one-digit
+// hour, short milliseconds, a position after the timing, and a blank line
+// inside a cue. Each is something `subtitles.ts` has to read past.
+writeFileSync(
+	join(OUT, 'subs.vi.srt'),
+	'﻿' +
+		[
+			'1',
+			'00:00:00,500 --> 00:00:04,000',
+			'{\\an8}Xin chào — đây là <i>phụ đề</i> thử.',
+			'',
+			'2',
+			'0:00:04,5 --> 00:00:08,000 X1:100 X2:500 Y1:10 Y2:50',
+			'<font color="yellow">Dòng hai</font> & dòng ba',
+			'có dấu < và >',
+			'',
+			'3',
+			'00:00:08,500 --> 00:00:13,000',
+			'Dòng một',
+			'',
+			'sau một dòng trống',
+			''
+		].join('\r\n')
+);
+
+// The same video's subtitles as WebVTT, which is taken as it is.
+writeFileSync(
+	join(OUT, 'subs.vi.vtt'),
+	[
+		'WEBVTT',
+		'',
+		'00:00:00.500 --> 00:00:04.000',
+		'Xin chào từ WebVTT.',
+		'',
+		'00:00:04.500 --> 00:00:09.000',
+		'<b>Đậm</b> và thường.',
+		''
+	].join('\n')
+);
+
 console.log(`media fixtures written to ${OUT}`);
