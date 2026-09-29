@@ -1,5 +1,5 @@
 import { newId } from '$lib/core/ids';
-import { db, type TpDb, type TpNote } from '$lib/core/storage/db';
+import { db, putNow, type TpDb, type TpNote } from '$lib/core/storage/db';
 import { foldForSearch } from '$lib/i18n/fold';
 
 /**
@@ -61,6 +61,16 @@ export async function saveNote(id: string, body: string, target: TpDb = db): Pro
 		title: titleOf(body),
 		updatedAt: Date.now()
 	});
+}
+
+/**
+ * `saveNote` for a page on its way out (`createDexieWriter`'s `exit`):
+ * the whole note, from what the page holds, written and committed before the
+ * handler returns (`putNow`). A Dexie update reads the row first, a turn a
+ * closing page never gets.
+ */
+export function saveNoteNow(note: TpNote, body: string, target: TpDb = db): void {
+	putNow('notes', { ...note, body, title: titleOf(body), updatedAt: Date.now() }, target);
 }
 
 export async function deleteNote(id: string, target: TpDb = db): Promise<void> {

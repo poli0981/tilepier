@@ -10,11 +10,14 @@
  * the write is asynchronous, which brings its own problem.
  *
  * **The flush must not be lost to the page going away.** `visibilitychange →
- * hidden` and `pagehide` are the last moments a tab reliably gets, and an
- * IndexedDB write started there is not guaranteed to finish. That is not a
- * reason to skip it: the transaction usually does complete, and the
- * alternative is losing the last 300 ms of typing every single time someone
- * switches tabs mid-sentence. It *is* a reason not to await anything after it.
+ * hidden` and `pagehide` are the last moments a tab reliably gets, and a
+ * Dexie write started there **does not finish** on a reload: Dexie commits
+ * only once its request has succeeded, a turn an unloading page never gets,
+ * so the transaction goes with the document (measured 2026-09-29, doc 04 §6).
+ * This comment used to say the transaction "usually does complete". So a
+ * caller whose last keystrokes matter hands in `exit`: a synchronous write,
+ * committed before the handler returns (`putNow`), which those two moments use
+ * instead of `write`. Without it the old flush stands, and is a courtesy.
  */
 
 export interface TpDexieWriter<T> {
@@ -33,34 +36,49 @@ const DEXIE_DEBOUNCE_MS = 300;
 export function createDexieWriter<T>(
 	write: (value: T) => Promise<unknown>,
 	onError?: (error: unknown) => void,
-	delayMs: number = DEXIE_DEBOUNCE_MS
+	delayMs: number = DEXIE_DEBOUNCE_MS,
+	exit?: (value: T) => void
 ): TpDexieWriter<T> {
 	let pending: T | null = null;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	function flush(): void {
-		if (timer !== null) {
-			clearTimeout(timer);
-			timer = null;
-		}
-		if (pending === null) return;
-
-		const value = pending;
-		pending = null;
+		const value = take();
+		if (value === null) return;
 		// Not awaited, and no caller may await it: `flush` is called from a
 		// `pagehide` handler, where returning a promise buys nothing and delaying
 		// the handler is not allowed.
 		void write(value).catch((error: unknown) => onError?.(error));
 	}
 
+	/** The page is hiding or going: the committed write, when there is one. */
+	function leave(): void {
+		if (exit === undefined) {
+			flush();
+			return;
+		}
+		const value = take();
+		if (value !== null) exit(value);
+	}
+
+	function take(): T | null {
+		if (timer !== null) {
+			clearTimeout(timer);
+			timer = null;
+		}
+		const value = pending;
+		pending = null;
+		return value;
+	}
+
 	function onVisibilityChange(): void {
-		if (document.visibilityState === 'hidden') flush();
+		if (document.visibilityState === 'hidden') leave();
 	}
 
 	const attached = typeof window !== 'undefined';
 	if (attached) {
 		document.addEventListener('visibilitychange', onVisibilityChange);
-		window.addEventListener('pagehide', flush);
+		window.addEventListener('pagehide', leave);
 	}
 
 	return {
@@ -74,7 +92,7 @@ export function createDexieWriter<T>(
 			flush();
 			if (!attached) return;
 			document.removeEventListener('visibilitychange', onVisibilityChange);
-			window.removeEventListener('pagehide', flush);
+			window.removeEventListener('pagehide', leave);
 		}
 	};
 }

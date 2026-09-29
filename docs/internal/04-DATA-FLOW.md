@@ -428,11 +428,16 @@ Two writers added in Week 7 do not debounce, each for a reason:
 succeeded, and a page being unloaded never sees that turn: the transaction is
 aborted with the document, and the write is lost on every reload. The trace
 showed the put leave at `pagehide` and nothing kept after it.
-`putPlaybackNow` (`core/storage/db.ts`) issues the put and `commit()` before
-the handler returns. The video's position uses it, and so does the music
-player's, whose flush had been lost on every reload since Week 7a. The 300 ms
-writer above flushes through Dexie the same way, which is a known gap (Week 7b
-follow-up).
+`putNow` (`core/storage/db.ts`) issues the put and `commit()` before the
+handler returns. The video's position uses it, and so does the music player's,
+whose flush had been lost on every reload since Week 7a.
+
+**The 300 ms writer had the same gap, since Week 2** (fixed 2026-09-29): a note's
+words typed within 300 ms of a reload were lost, and journey #5 now types and
+reloads at once to prove they are not. Its flush on a hidden or closing page
+calls the caller's `exit` instead of the Dexie write — for notes, the whole
+note from what the page holds, through `putNow`. A Dexie update reads the row
+before it writes, which is two turns an unloading page never gets.
 
 ## 7. Cross-tab behavior
 

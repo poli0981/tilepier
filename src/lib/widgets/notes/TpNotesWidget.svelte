@@ -8,7 +8,7 @@
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpMarkdown from '$lib/ui/TpMarkdown.svelte';
 	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
-	import { createNote, listNotes, resolveVisible, saveNote } from './service';
+	import { createNote, listNotes, resolveVisible, saveNote, saveNoteNow } from './service';
 
 	/**
 	 * doc 07 §4 — the tile: one note, rendered as markdown, editable in place.
@@ -58,10 +58,16 @@
 
 	$effect(() => {
 		// doc 04 §6: a 300 ms debounce on keystroke-level edits, flushed when the
-		// tab hides and on pagehide — the writer owns both of those listeners.
+		// tab hides and on pagehide — the writer owns both of those listeners, and
+		// those two write the whole note at once, committed before the page goes.
 		writer = createDexieWriter<{ id: string; body: string }>(
 			({ id, body }) => saveNote(id, body),
-			(error) => logEntry('warn', 'could not save a note', { src: 'widget', error })
+			(error) => logEntry('warn', 'could not save a note', { src: 'widget', error }),
+			undefined,
+			({ id, body }) => {
+				const held = notes?.find((entry) => entry.id === id);
+				if (held !== undefined) saveNoteNow(held, body);
+			}
 		);
 		return () => {
 			writer?.dispose();
