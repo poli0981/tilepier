@@ -280,7 +280,10 @@ coach before clicking a tile.
 ## 5. Manual test matrix (release gate)
 
 Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android
-Chrome. Music FSA path: Chromium only + fallback verified on Firefox.
+Chrome. Music FSA path: Chromium only + fallback verified on Firefox. Brave is
+Chromium without File System Access (switched off by default), so it is a
+fallback browser too: 100+ songs imported and played there, and in Firefox, on
+production on 2026-09-29 (doc 22 §S7).
 Reduced-motion, 200 % zoom, keyboard-only pass, screen-reader spot check
 (NVDA) on dashboard + one detail.
 
