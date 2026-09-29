@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { TpDetailProps } from '$lib/core/types';
+	import { fmtDuration } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
+	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import { pickVideo } from './picker';
 	import { media } from './store.svelte';
@@ -13,8 +16,17 @@
 	 * One player per file (`{#key}`): a new file is a new element, with no state
 	 * of the last one's left over, and closing the detail ends the video and its
 	 * picture-in-picture with it (owner decision Q2).
+	 *
+	 * **A reload lands here**, on `/w/media`, with the file gone from memory. So
+	 * with nothing open the detail offers the last video worth coming back to,
+	 * as the tile does: the same file picked again finds its place.
 	 */
 	let { instanceId: _instanceId }: TpDetailProps = $props();
+
+	$effect(() => {
+		// Read once per page and shared with the tile; this page may have none.
+		untrack(() => void media.loadLast());
+	});
 
 	async function open(): Promise<void> {
 		const picked = await pickVideo(m['widget.media.picker_label']());
@@ -26,15 +38,42 @@
 	{#if media.current === null}
 		<div class="tp-vdetail__empty" data-testid="media-nothing">
 			<TpIcon name="film" size={40} />
-			<p>{m['widget.media.empty']()}</p>
-			<button
-				type="button"
-				class="tp-vdetail__open"
-				onclick={() => void open()}
-				data-testid="media-open"
-			>
-				{m['widget.media.open']()}
-			</button>
+			{#if media.last === null}
+				<p>{m['widget.media.empty']()}</p>
+				<button
+					type="button"
+					class="tp-vdetail__open"
+					onclick={() => void open()}
+					data-testid="media-open"
+				>
+					{m['widget.media.open']()}
+				</button>
+			{:else}
+				<div class="tp-vdetail__last" data-testid="media-last">
+					<!-- A file's name is text, never markup (CLAUDE.md rule 7). -->
+					<p class="tp-vdetail__title" title={media.last.name}>{media.last.name}</p>
+					<p class="tp-num">
+						{m['widget.media.time']({
+							position: fmtDuration(media.last.positionMs, settings.locale),
+							duration: fmtDuration(media.last.durationMs, settings.locale)
+						})}
+					</p>
+				</div>
+				<p class="tp-vdetail__note">{m['widget.media.pick_again']()}</p>
+				<div class="tp-vdetail__actions">
+					<button
+						type="button"
+						class="tp-vdetail__open"
+						onclick={() => void open()}
+						data-testid="media-last-continue"
+					>
+						{m['widget.media.continue']()}
+					</button>
+					<button type="button" onclick={() => void open()} data-testid="media-open">
+						{m['widget.media.open_another']()}
+					</button>
+				</div>
+			{/if}
 			<p class="tp-vdetail__note">{m['widget.media.local_note']()}</p>
 		</div>
 	{:else}
@@ -75,6 +114,35 @@
 
 	.tp-vdetail__note {
 		font-size: var(--text-xs);
+	}
+
+	.tp-vdetail__last {
+		display: flex;
+		max-width: 100%;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.tp-vdetail__last p {
+		margin: 0;
+	}
+
+	/* Not the bar's name: in a column, `flex: 1` with `overflow: hidden`
+	   would let it shrink to nothing. */
+	.tp-vdetail__title {
+		overflow: hidden;
+		max-width: 100%;
+		color: var(--color-fg);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.tp-vdetail__actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.5rem;
 	}
 
 	.tp-vdetail__bar {

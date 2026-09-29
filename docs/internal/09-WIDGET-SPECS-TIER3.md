@@ -348,7 +348,8 @@ only module allowed to import music-metadata:
   keyboard map (space, ←→ 5 s, ↑↓ volume, F, M). Subtitle support: sideload
   `.vtt` via file picker (`<track>`); `.srt` converted client-side
   (tiny internal converter).
-- **Resume:** per-file position keyed by name+size hash in settings (cap 20).
+- **Resume:** per-file position keyed by name+size hash ~~in settings~~ in
+  the `playback` table (Week 7 plan Q1, doc 05 §3) (cap 20).
 - **Edge cases:** codec unsupported (browser matrix varies for mkv/hevc) →
   explicit "codec not supported by this browser" state with a hint, not a
   silent black box; PiP unavailable → hide button.
@@ -394,6 +395,22 @@ only module allowed to import music-metadata:
 - **Full screen** on the player's box, so the controls come along. An iPhone
   has no element full screen, so there `webkitEnterFullscreen` hands the video
   to Safari's player. Escape in full screen stays the browser's (doc 13 §8).
+- **Resume** (`widgets/media/resume`). A video picks up where it was left,
+  past its first five seconds and short of its last five, and "Start over" is
+  one press. One watched to the end starts at the start next time.
+  - Where it is gets written every ten seconds of play, and at once on a
+    pause, a seek, a hidden or closing page, and when the player goes — read
+    before the element lets go of the file (Week 7 plan §3.1).
+  - The key is the name and size, hashed — never the content, which would take
+    longer to read than the film takes to open. Two files alike in both share a
+    place. With no `crypto.subtle` (plain http) nothing is kept.
+  - The volume and mute are the reader's, one row for every video. Speed goes
+    back to 1× with each file.
+- **After a reload** the tile shows the last video worth coming back to, and
+  so does the detail with nothing open — a reload with the detail open lands
+  on `/w/media`, not on the deck. The file itself is not kept, so "Continue"
+  opens the picker, and the same file picked again finds its place. The tile's
+  `loading` and `error` are that read, and an error still offers a video.
 - `TpVideoController` holds a video's state and adds its own listeners.
   `TpMediaPlayer` only draws it, which keeps the component under doc 20 §3's
   size.

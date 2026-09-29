@@ -143,6 +143,8 @@ music player's rules, as the Week 7 review corrected them:
 | video: media element | `MEDIA_ERR_NETWORK` (2), `MEDIA_ERR_DECODE` (3) | a local file changed or moved | read once more (again from its handle); then "changed or moved — open it again" |
 | video: `loadedmetadata` | `videoWidth` 0 | no picture this browser can show | plays the sound, and says so |
 | video: `play()` | `NotAllowedError` | autoplay refused without a gesture | "press play" |
+| video: reading where it was left (IndexedDB) | any | the table will not open | the tile says so, with a retry — and still opens a video; the player starts at 0:00 |
+| video: keeping its place (IndexedDB) | any | a full disk, a closed table | nothing: the place is lost, the video plays on |
 
 Notices go to doc 13 §7's toast. Nothing about a file — name, path, title —
 goes to the log (doc 18).

@@ -104,6 +104,16 @@ reads its rows through a validator that fails closed. **Not exported** (§6).
 skips upgrade paths, and also checks that a version 1 build still opens a
 version 2 database — the rollback runbook deploys exactly that.
 
+Media's rows (Week 7b, doc 09 §3):
+- `media:pos:<key>`: `{name, size, positionMs, durationMs}`, one per video. The
+  newest twenty are kept, trimmed in the same transaction as the write and only
+  among `media:pos:` rows — music's rows share the table and are never touched.
+- `media:prefs`: `{volume, muted}`, one row.
+- `<key>` is `sha256Hex(NFC(name) + '|' + size, 12)` (`core/hash`, §4). With no
+  `crypto.subtle` there is no key, and nothing is kept.
+- A closing page writes its row with `putPlaybackNow`, which commits inside the
+  `pagehide` handler — a Dexie put would go with the page (doc 04 §6).
+
 Notes:
 - `FileSystemDirectoryHandle` is structured-cloneable → storable in IndexedDB.
   Re-access requires `queryPermission`/`requestPermission` per session (doc 09 §2).

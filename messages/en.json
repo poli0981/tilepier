@@ -781,5 +781,10 @@
 	"widget.media.region": "Video player: {name}",
 	"widget.media.pip": "Picture in picture",
 	"widget.media.fullscreen": "Full screen",
-	"widget.media.exit_fullscreen": "Exit full screen"
+	"widget.media.exit_fullscreen": "Exit full screen",
+	"widget.media.resumed": "Picked up at {position}.",
+	"widget.media.start_over": "Start over",
+	"widget.media.loading": "Reading where you left off…",
+	"widget.media.error": "Couldn’t read where you left off.",
+	"widget.media.pick_again": "Open the same file again to continue from there."
 }

@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import { claimPlayback, playbackOwner, resetPlayback } from '$lib/core/playback';
+import { db } from '$lib/core/storage/db';
 import { m } from '$lib/paraglide/messages';
 import { settings } from '$lib/stores/settings.svelte';
+import { loadPrefs, loadResume, resumeKey, saveResume } from './resume';
 import { media, type TpMediaFile } from './store.svelte';
 import TpMediaPlayer from './TpMediaPlayer.svelte';
 import clipUrl from './__fixtures__/clip.webm?url';
@@ -12,8 +14,9 @@ import soundUrl from './__fixtures__/sound-only.webm?url';
 /**
  * The video player (doc 09 §3) against real files in the test browser, which
  * decodes VP9 and Opus (doc 22 §S8): it plays, it says what it cannot play, it
- * says when there is no picture, it takes the sound from the music player, and
- * it lets go of everything when it goes.
+ * says when there is no picture, it takes the sound from the music player, it
+ * picks a video up where it was left, and it lets go of everything when it goes
+ * — keeping its place first.
  */
 
 async function fixture(url: string, name: string, type: string): Promise<TpMediaFile> {
@@ -22,23 +25,46 @@ async function fixture(url: string, name: string, type: string): Promise<TpMedia
 	return { name, size: file.size, file };
 }
 
-beforeEach(() => {
+/** Media's rows only: music's, in the same table, belong to other tests. */
+async function forgetMedia(): Promise<void> {
+	await db.playback.where('id').startsWith('media:').delete();
+}
+
+beforeEach(async () => {
 	settings.dispose();
 	settings.hydrate();
 	media.reset();
 	resetPlayback();
+	await forgetMedia();
 });
 
-afterEach(() => {
+afterEach(async () => {
 	cleanup();
 	media.reset();
 	resetPlayback();
 	settings.dispose();
 	vi.restoreAllMocks();
+	await forgetMedia();
 });
 
 function phase(container: HTMLElement): string | undefined {
 	return container.querySelector<HTMLElement>('[data-testid="media-player"]')?.dataset['phase'];
+}
+
+/** Where the player last kept `file`, as the next page would read it. */
+async function kept(file: TpMediaFile): Promise<number | undefined> {
+	const key = await resumeKey(file.name, file.size);
+	return key === null ? undefined : (await loadResume(key))?.positionMs;
+}
+
+async function playing(screen: ReturnType<typeof render>): Promise<HTMLVideoElement> {
+	await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+	const toggle = screen.getByTestId('media-toggle');
+	if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
+		await toggle.click();
+	}
+	await vi.waitFor(() => expect(media.playing).toBe(true));
+	return screen.getByTestId('media-video').element() as HTMLVideoElement;
 }
 
 describe('TpMediaPlayer', () => {
@@ -210,5 +236,92 @@ describe('TpMediaPlayer', () => {
 
 		await expect.element(toggle).toHaveAttribute('aria-label', m['widget.media.play']());
 		expect(media.playing).toBe(false);
+	});
+	it('keeps its place when it goes mid-play, read before the element lets go of the file', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		const video = await playing(screen);
+		video.currentTime = 8;
+		// The seek is kept as well; playing on past it is what only the
+		// teardown can keep.
+		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.6));
+
+		const at = video.currentTime * 1000;
+		cleanup();
+
+		await vi.waitFor(async () => expect(await kept(file)).toBeCloseTo(at, -2));
+	});
+
+	it('keeps its place when the page closes, committed before the page can go', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		const video = await playing(screen);
+		video.currentTime = 8;
+		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.3));
+		const commit = vi.spyOn(IDBTransaction.prototype, 'commit');
+
+		window.dispatchEvent(new PageTransitionEvent('pagehide'));
+
+		// Inside the handler: after it, a closing page runs nothing more.
+		expect(commit).toHaveBeenCalled();
+		commit.mockRestore();
+		await vi.waitFor(async () => expect(await kept(file)).toBeGreaterThan(8_300));
+	});
+
+	it('picks a video up where it was left, and starts over on request', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const key = await resumeKey(file.name, file.size);
+		if (key === null) throw new Error('the test browser hashes');
+		await saveResume(key, {
+			name: file.name,
+			size: file.size,
+			positionMs: 9_000,
+			durationMs: 14_008
+		});
+		const screen = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
+
+		expect(video.currentTime).toBeCloseTo(9, 1);
+		await expect
+			.element(screen.getByText(m['widget.media.resumed']({ position: '0:09' })))
+			.toBeVisible();
+
+		await screen.getByTestId('media-start-over').click();
+
+		expect(video.currentTime).toBeLessThan(1);
+		expect(screen.container.querySelector('[data-testid="media-resumed"]')).toBeNull();
+		await vi.waitFor(async () => expect(await kept(file)).toBeLessThan(1_000));
+	});
+
+	it('puts a video watched to the end back to its start', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const screen = render(TpMediaPlayer, { file });
+		const video = await playing(screen);
+		video.currentTime = 13.4;
+		await vi.waitFor(() => expect(video.ended).toBe(true), { timeout: 5_000 });
+
+		await vi.waitFor(async () => expect(await kept(file)).toBe(0));
+	});
+
+	it('keeps the reader’s volume from one video to the next, and not the speed', async () => {
+		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
+		const first = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(first.container)).toBe('ready'));
+		const video = first.getByTestId('media-video').element() as HTMLVideoElement;
+		for (const key of ['ArrowDown', 'ArrowDown']) {
+			video.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+		}
+		await first.getByTestId('media-speed').selectOptions('1.5');
+		await vi.waitFor(() => expect(video.playbackRate).toBe(1.5));
+		cleanup();
+		await vi.waitFor(async () => expect(await loadPrefs()).toEqual({ volume: 0.8, muted: false }));
+
+		const next = render(TpMediaPlayer, { file });
+		await vi.waitFor(() => expect(phase(next.container)).toBe('ready'));
+		const again = next.getByTestId('media-video').element() as HTMLVideoElement;
+
+		expect(again.volume).toBeCloseTo(0.8, 5);
+		expect(again.playbackRate).toBe(1);
 	});
 });

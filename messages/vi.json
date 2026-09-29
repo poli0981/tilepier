@@ -781,5 +781,10 @@
 	"widget.media.region": "Trình phát video: {name}",
 	"widget.media.pip": "Hình trong hình",
 	"widget.media.fullscreen": "Toàn màn hình",
-	"widget.media.exit_fullscreen": "Thoát toàn màn hình"
+	"widget.media.exit_fullscreen": "Thoát toàn màn hình",
+	"widget.media.resumed": "Xem tiếp từ {position}.",
+	"widget.media.start_over": "Xem từ đầu",
+	"widget.media.loading": "Đang đọc chỗ bạn xem dở…",
+	"widget.media.error": "Không đọc được chỗ bạn xem dở.",
+	"widget.media.pick_again": "Mở lại đúng tệp đó để xem tiếp từ chỗ cũ."
 }

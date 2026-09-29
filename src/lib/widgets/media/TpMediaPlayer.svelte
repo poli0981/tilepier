@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { fmtDuration } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
+	import { settings } from '$lib/stores/settings.svelte';
 	import { TpVideoController } from './controller.svelte';
 	import type { TpMediaFile } from './store.svelte';
 	import TpMediaControls from './TpMediaControls.svelte';
@@ -66,6 +68,18 @@
 		{/if}
 		{#if player.blocked}
 			<p class="tp-player__note" role="status">{m['widget.media.press_play']()}</p>
+		{/if}
+		{#if player.resumedFromMs !== null}
+			<div class="tp-player__resumed" data-testid="media-resumed">
+				<p class="tp-player__note tp-num" role="status">
+					{m['widget.media.resumed']({
+						position: fmtDuration(player.resumedFromMs, settings.locale)
+					})}
+				</p>
+				<button type="button" onclick={() => player?.startOver()} data-testid="media-start-over">
+					{m['widget.media.start_over']()}
+				</button>
+			</div>
 		{/if}
 		<TpMediaControls
 			playing={player.playing}
@@ -147,5 +161,28 @@
 	.tp-player__note {
 		color: var(--color-fg-mute);
 		font-size: var(--text-xs);
+	}
+
+	.tp-player__resumed {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.tp-player__resumed button {
+		min-height: 40px;
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		background: none;
+		color: var(--color-fg);
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--text-xs);
+		padding: 0 0.75rem;
+	}
+
+	.tp-player__resumed button:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 1px;
 	}
 </style>
