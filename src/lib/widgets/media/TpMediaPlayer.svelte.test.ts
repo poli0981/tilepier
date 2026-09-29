@@ -20,6 +20,14 @@ import vttUrl from './__fixtures__/subs.vi.vtt?url';
  * — keeping its place first.
  */
 
+/**
+ * A real decoder and real IndexedDB in a browser the whole suite shares: on
+ * CI's two cores a video's first frames, and a write under load, have come
+ * later than the default second (#35, 2026-09-29). The waits on either get
+ * five; nothing here is about how fast they come.
+ */
+const SLOW = { timeout: 5_000 };
+
 async function fixture(url: string, name: string, type: string): Promise<TpMediaFile> {
 	const bytes = await (await fetch(url)).arrayBuffer();
 	const file = new File([bytes], name, { type });
@@ -59,12 +67,12 @@ async function kept(file: TpMediaFile): Promise<number | undefined> {
 }
 
 async function playing(screen: ReturnType<typeof render>): Promise<HTMLVideoElement> {
-	await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+	await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 	const toggle = screen.getByTestId('media-toggle');
 	if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
 		await toggle.click();
 	}
-	await vi.waitFor(() => expect(media.playing).toBe(true));
+	await vi.waitFor(() => expect(media.playing).toBe(true), SLOW);
 	return screen.getByTestId('media-video').element() as HTMLVideoElement;
 }
 
@@ -73,15 +81,15 @@ describe('TpMediaPlayer', () => {
 		const file = await fixture(clipUrl, 'Phim thử.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
 
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const toggle = screen.getByTestId('media-toggle');
 		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
 			await toggle.click();
 		}
-		await expect.element(toggle).toHaveAttribute('aria-label', m['widget.media.pause']());
-		await vi.waitFor(() => expect(media.playing).toBe(true));
+		await expect.element(toggle, SLOW).toHaveAttribute('aria-label', m['widget.media.pause']());
+		await vi.waitFor(() => expect(media.playing).toBe(true), SLOW);
 		expect(media.durationMs).toBe(14_008);
-		await vi.waitFor(() => expect(media.positionMs).toBeGreaterThan(0));
+		await vi.waitFor(() => expect(media.positionMs).toBeGreaterThan(0), SLOW);
 	});
 
 	it('plays on a press of "Play" even while a start is still on its way', async () => {
@@ -92,10 +100,10 @@ describe('TpMediaPlayer', () => {
 		const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause');
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false);
 		const toggle = screen.getByTestId('media-toggle');
-		await expect.element(toggle).toHaveAttribute('aria-label', m['widget.media.play']());
+		await expect.element(toggle, SLOW).toHaveAttribute('aria-label', m['widget.media.play']());
 
 		await toggle.click();
 
@@ -107,8 +115,10 @@ describe('TpMediaPlayer', () => {
 		const file = await fixture(junkUrl, 'không phải video.mp4', 'video/mp4');
 		const screen = render(TpMediaPlayer, { file });
 
-		await expect.element(screen.getByTestId('media-unsupported')).toBeVisible();
-		await expect.element(screen.getByText(m['widget.media.unsupported_hint']())).toBeVisible();
+		await expect.element(screen.getByTestId('media-unsupported'), SLOW).toBeVisible();
+		await expect
+			.element(screen.getByText(m['widget.media.unsupported_hint']()), SLOW)
+			.toBeVisible();
 		expect(screen.container.querySelector('[data-testid="media-controls"]')).toBeNull();
 		// A file it cannot play never took the sound from anything.
 		expect(playbackOwner()).toBeNull();
@@ -118,7 +128,7 @@ describe('TpMediaPlayer', () => {
 		const file = await fixture(soundUrl, 'chỉ có tiếng.webm', 'audio/webm');
 		const screen = render(TpMediaPlayer, { file });
 
-		await expect.element(screen.getByTestId('media-audio-only')).toBeVisible();
+		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
 		expect(phase(screen.container)).toBe('ready');
 	});
 
@@ -127,13 +137,13 @@ describe('TpMediaPlayer', () => {
 		claimPlayback('music', musicYielded);
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const toggle = screen.getByTestId('media-toggle');
 		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
 			await toggle.click();
 		}
 
-		await vi.waitFor(() => expect(playbackOwner()).toBe('media'));
+		await vi.waitFor(() => expect(playbackOwner()).toBe('media'), SLOW);
 		expect(musicYielded).toHaveBeenCalledOnce();
 
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
@@ -148,7 +158,7 @@ describe('TpMediaPlayer', () => {
 	it('takes focus when it loads, and answers the keys where the reader is', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 		expect(document.activeElement).toBe(video);
 		const heard = vi.fn();
@@ -169,7 +179,7 @@ describe('TpMediaPlayer', () => {
 			expect(heard).not.toHaveBeenCalled();
 
 			video.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
-			await vi.waitFor(() => expect(video.muted).toBe(true));
+			await vi.waitFor(() => expect(video.muted).toBe(true), SLOW);
 
 			// Escape is the detail's, and goes on up.
 			video.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -186,7 +196,7 @@ describe('TpMediaPlayer', () => {
 		const exited = vi.spyOn(Document.prototype, 'exitPictureInPicture').mockResolvedValue();
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 
 		await screen.getByTestId('media-pip').click();
 		expect(requested).toHaveBeenCalledOnce();
@@ -201,7 +211,7 @@ describe('TpMediaPlayer', () => {
 		const file = await fixture(soundUrl, 'sound.webm', 'audio/webm');
 		const screen = render(TpMediaPlayer, { file });
 
-		await expect.element(screen.getByTestId('media-audio-only')).toBeVisible();
+		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
 		expect(screen.container.querySelector('[data-testid="media-pip"]')).toBeNull();
 	});
 
@@ -209,7 +219,7 @@ describe('TpMediaPlayer', () => {
 		const requested = vi.spyOn(Element.prototype, 'requestFullscreen').mockResolvedValue();
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const box = screen.getByTestId('media-player').element();
 
 		await screen.getByTestId('media-fullscreen').click();
@@ -226,16 +236,16 @@ describe('TpMediaPlayer', () => {
 	it('pauses when the music player takes the sound back', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const toggle = screen.getByTestId('media-toggle');
 		if (toggle.element().getAttribute('aria-label') === m['widget.media.play']()) {
 			await toggle.click();
 		}
-		await vi.waitFor(() => expect(playbackOwner()).toBe('media'));
+		await vi.waitFor(() => expect(playbackOwner()).toBe('media'), SLOW);
 
 		claimPlayback('music', () => {});
 
-		await expect.element(toggle).toHaveAttribute('aria-label', m['widget.media.play']());
+		await expect.element(toggle, SLOW).toHaveAttribute('aria-label', m['widget.media.play']());
 		expect(media.playing).toBe(false);
 	});
 	it('keeps its place when it goes mid-play, read before the element lets go of the file', async () => {
@@ -245,12 +255,12 @@ describe('TpMediaPlayer', () => {
 		video.currentTime = 8;
 		// The seek is kept as well; playing on past it is what only the
 		// teardown can keep.
-		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.6));
+		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.6), SLOW);
 
 		const at = video.currentTime * 1000;
 		cleanup();
 
-		await vi.waitFor(async () => expect(await kept(file)).toBeCloseTo(at, -2));
+		await vi.waitFor(async () => expect(await kept(file)).toBeCloseTo(at, -2), SLOW);
 	});
 
 	it('keeps its place when the page closes, committed before the page can go', async () => {
@@ -258,7 +268,7 @@ describe('TpMediaPlayer', () => {
 		const screen = render(TpMediaPlayer, { file });
 		const video = await playing(screen);
 		video.currentTime = 8;
-		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.3));
+		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.3), SLOW);
 		const commit = vi.spyOn(IDBTransaction.prototype, 'commit');
 
 		window.dispatchEvent(new PageTransitionEvent('pagehide'));
@@ -266,7 +276,7 @@ describe('TpMediaPlayer', () => {
 		// Inside the handler: after it, a closing page runs nothing more.
 		expect(commit).toHaveBeenCalled();
 		commit.mockRestore();
-		await vi.waitFor(async () => expect(await kept(file)).toBeGreaterThan(8_300));
+		await vi.waitFor(async () => expect(await kept(file)).toBeGreaterThan(8_300), SLOW);
 	});
 
 	it('picks a video up where it was left, and starts over on request', async () => {
@@ -280,19 +290,19 @@ describe('TpMediaPlayer', () => {
 			durationMs: 14_008
 		});
 		const screen = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 
 		expect(video.currentTime).toBeCloseTo(9, 1);
 		await expect
-			.element(screen.getByText(m['widget.media.resumed']({ position: '0:09' })))
+			.element(screen.getByText(m['widget.media.resumed']({ position: '0:09' })), SLOW)
 			.toBeVisible();
 
 		await screen.getByTestId('media-start-over').click();
 
 		expect(video.currentTime).toBeLessThan(1);
 		expect(screen.container.querySelector('[data-testid="media-resumed"]')).toBeNull();
-		await vi.waitFor(async () => expect(await kept(file)).toBeLessThan(1_000));
+		await vi.waitFor(async () => expect(await kept(file)).toBeLessThan(1_000), SLOW);
 	});
 
 	it('puts a video watched to the end back to its start', async () => {
@@ -302,24 +312,27 @@ describe('TpMediaPlayer', () => {
 		video.currentTime = 13.4;
 		await vi.waitFor(() => expect(video.ended).toBe(true), { timeout: 5_000 });
 
-		await vi.waitFor(async () => expect(await kept(file)).toBe(0));
+		await vi.waitFor(async () => expect(await kept(file)).toBe(0), SLOW);
 	});
 
 	it('keeps the reader’s volume from one video to the next, and not the speed', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
 		const first = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(first.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(first.container)).toBe('ready'), SLOW);
 		const video = first.getByTestId('media-video').element() as HTMLVideoElement;
 		for (const key of ['ArrowDown', 'ArrowDown']) {
 			video.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
 		}
 		await first.getByTestId('media-speed').selectOptions('1.5');
-		await vi.waitFor(() => expect(video.playbackRate).toBe(1.5));
+		await vi.waitFor(() => expect(video.playbackRate).toBe(1.5), SLOW);
 		cleanup();
-		await vi.waitFor(async () => expect(await loadPrefs()).toEqual({ volume: 0.8, muted: false }));
+		await vi.waitFor(
+			async () => expect(await loadPrefs()).toEqual({ volume: 0.8, muted: false }),
+			SLOW
+		);
 
 		const next = render(TpMediaPlayer, { file });
-		await vi.waitFor(() => expect(phase(next.container)).toBe('ready'));
+		await vi.waitFor(() => expect(phase(next.container)).toBe('ready'), SLOW);
 		const again = next.getByTestId('media-video').element() as HTMLVideoElement;
 
 		expect(again.volume).toBeCloseTo(0.8, 5);

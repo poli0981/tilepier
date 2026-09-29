@@ -412,6 +412,12 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 		// The headless browser can report itself hidden, which stops the ticker
 		// (doc 19 §4, the seventh rule); this test is about whose work runs.
 		vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+		// The first load draws before its cache write finishes, and until it has
+		// the request is still in flight — so the tick's run joins it rather than
+		// fetching (doc 04 §2.5's de-dupe). On a busy CI runner that write
+		// outlasted the render, and the count stayed at one (#35, 2026-09-29; a
+		// 300 ms write reproduces it).
+		await vi.waitFor(() => expect(swrCache.inspect().some((entry) => entry.inFlight)).toBe(false));
 		scheduler.tick(Date.now() + 601_000);
 
 		await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
