@@ -48,6 +48,14 @@
 			"note": "Week 6 spike M0 (doc 22 §S6): MapLibre is copied, not bundled, so its three modules are measured as files. The map tile loads them too, so this is no longer detail-only."
 		},
 		{
+			"id": "music-tag-worker",
+			"label": "music tag worker (music-metadata, one file — scans only)",
+			"kind": "static-glob",
+			"glob": "_app/immutable/workers/tag-worker-*.js",
+			"maxGzipBytes": 81920,
+			"note": "Week 7 spike S7 (doc 22 §S7): Vite builds workers on their own, outside the client manifest, so the worker is measured as a file. 66.0 KB gz with music-metadata 11.16.1, every parser inlined into one file (worker.format iife)."
+		},
+		{
 			"id": "widget-tile",
 			"label": "Each widget tile chunk",
 			"kind": "module-each",

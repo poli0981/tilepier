@@ -76,7 +76,7 @@ db.version(1).stores({
   events:     'id, dateKey',                   // {id, dateKey:"2026-08-30", title, note?, lunarPinned?}
   playlists:  'id, order',                     // {id, name, order, trackIds[]}
   tracks:     'id, addedAt, title, artist',    // metadata only (see §4)
-  trackBlobs: 'id',                            // {id === track id, blob} — fallback path only
+  trackBlobs: 'id',                            // {id === track id, blob} on path B; {id:'cover:<hash>', blob} on both
   fsaHandles: 'id',                            // {id:'musicRoot', handle: FileSystemDirectoryHandle}
   savedPlaces:'id, name',                      // map widget favorites
   focusSessions:'id, dateKey',                 // pomodoro history {id, dateKey, focusMs}
@@ -97,22 +97,47 @@ Notes:
   `MIRROR_MAX_DAYS` in `widgets/currency/service.ts` keeps 400 daily tables, a
   year plus slack and one more than the longest range `/api/fx/history` answers
   for. At roughly 5 KB a day that is about 2 MB at the ceiling.
-- `trackBlobs` only exists on the fallback path (Firefox/Safari or user chose
-  file-import). FSA path stores no audio bytes — files stay on disk.
+- **Audio** is in `trackBlobs` only on the fallback path (Firefox/Safari, or a
+  reader who chose file import). The FSA path stores no audio bytes — files stay
+  on disk. **Covers** are stored there on both paths, once per image, as
+  `cover:<hash>` (corrected 2026-09-29: this note said "fallback path only",
+  and the spike S2 code already wrote FSA covers there). A cover no track
+  points at is deleted at the end of a scan, in one transaction over both
+  tables; imported *audio* never is, behind the reader's back (doc 09 §2).
 
 ## 4. Track record
 
 ```ts
 interface TpTrack {
-  id: string;               // hash(path|name+size) — stable across sessions
+  id: string;               // SHA-256 prefix of 'fsa|<path>' or 'blob|<path>|<size>|<mtime>', NFC
   source: 'fsa' | 'blob';
-  relPath?: string;         // fsa: path relative to musicRoot
-  title: string; artist: string; album: string;
+  relPath?: string;         // fsa: path under musicRoot; blob: the picked file's relative path or name
+  title: string;            // the file name when the tags have none
+  artist: string; album: string;   // '' when the file does not say — never a word
   durationMs?: number; trackNo?: number; year?: number;
   coverId?: string;         // covers deduped into trackBlobs as cover:<hash>
-  addedAt: number;
+  addedAt: number;          // first scan only; a rescan keeps it
+  size?: number; mtime?: number;   // at the last scan — what a rescan compares
+  missing?: true;           // gone from a folder the last scan read; never deleted for it
+  error?: 'unreadable' | 'unsupported';   // set by the player (doc 09 §2)
 }
 ```
+
+**The id, amended 2026-09-29 (Week 7a-1).** It was `hash(path|name+size)`.
+With the size in it, editing a track's tags — which changes the file's size —
+gave the track a new id and orphaned it from every playlist; and on the import
+path, `name+size` made two different "01 Intro.mp3"s one track. So:
+
+- **path A** hashes the path alone. A tag edit keeps the id, and a library
+  folder moved elsewhere and picked again finds every track where it was.
+  `size` and `mtime` are what a rescan compares instead.
+- **path B** hashes path, size and modification time: an imported file has no
+  folder to be stable in, and the same file imported twice is still one track.
+
+Paths are NFC-normalised before hashing, because macOS hands out decomposed
+names. The fields after `addedAt` are not indexed, so they needed no
+`version()` bump; the few rows spike S2 wrote on production lack them, and a
+rescan reads that as "changed".
 
 ## 5. Migrations
 

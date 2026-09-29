@@ -71,6 +71,12 @@ export default defineConfig({
 	define: {
 		__TP_BUILD__: JSON.stringify(buildInfo())
 	},
+	optimizeDeps: {
+		// Reached only through the tag worker, so the dev server discovers it
+		// mid-run and re-optimises — which reloads a browser-mode test run halfway
+		// through (doc 22 §S7). Naming it up front removes the reload.
+		include: ['music-metadata']
+	},
 	test: {
 		expect: { requireAssertions: true },
 		coverage: {
@@ -101,11 +107,12 @@ export default defineConfig({
 				'src/lib/core/pwa.svelte.ts',
 				// Harnesses, not product.
 				'src/routes/spike/**',
-				// Week 0 spike code that landed in the real repo (doc 22 §Exit
-				// review) ahead of the widget that will use it. `lib/charts/**`
-				// came off this list in Week 4 when the weather detail became its
-				// consumer; the music library re-enters in Week 7.
-				'src/lib/widgets/music/**'
+				// The tag worker's message loop, and nothing else of the music
+				// widget. v8's browser coverage cannot see inside a worker, so the
+				// file is kept to a loop and everything worth measuring lives in
+				// tags.ts, which the tests run directly. The rest of widgets/music
+				// came back under the thresholds in Week 7a-1 (doc 19 §2).
+				'src/lib/widgets/music/tag-worker.ts'
 			],
 			thresholds: {
 				lines: 75,

@@ -8,7 +8,7 @@
 | Component | Vitest 4 browser mode (`@vitest/browser-playwright` + `vitest-browser-svelte`) | widget states (loading/empty/stale/error), settings round-trips, a11y roles |
 | API (Worker) | Vitest + adapter platform-proxy (miniflare-backed) | endpoint validation, KV cache hit/miss/stale, breaker transitions, envelope shapes |
 | Mocked network | MSW 2 | upstream fixtures per API (recorded, trimmed) |
-| E2E | Playwright (Chromium + Firefox + WebKit) | smoke journeys (§4) |
+| E2E | Playwright — **Chromium only** (corrected 2026-09-29: `playwright.config.ts` has never defined `projects`, although `e2e.yml` installs all three; Firefox and Safari are §5's manual matrix) | smoke journeys (§4) |
 
 Test files co-located: `foo.ts` + `foo.test.ts`; fixtures in
 `src/lib/**/__fixtures__`. Vitest runs two projects (`vite.config.ts`): browser
@@ -42,7 +42,7 @@ just a lower number:
 | `lib/core/grid/**/*.svelte` | `e2e/s1-grid.e2e.ts` — the contract is an invariant across fifty add/remove cycles (wrapper, host and tile counts agreeing) that line coverage cannot see |
 | `lib/core/pwa.svelte.ts` | `e2e/s5-pwa.e2e.ts`, against a real service worker: registers, activates, serves `/offline`, never reloads under the user |
 | `lib/ui/**/*.svelte` | component tests and journeys #1/#2/#7. Same judgment this section already made for widget UI: shared chrome is markup and wiring, and line coverage of markup is weak signal. The `.ts` logic underneath stays inside the thresholds |
-| `lib/widgets/music/**` | nothing yet — Week 0 spike code that landed in the real repo ahead of its consumer (doc 22 §Exit review). Re-enters with the music library in Week 7. **`lib/charts/**` came off this row on 2026-08-30**, when the weather detail became its consumer; it now sits in the global 75/75 bucket, and the split into `echarts.ts` / `options.ts` / `theme.ts` is partly what makes that reachable — the half worth asserting is pure |
+| `lib/widgets/music/tag-worker.ts` | the worker's message loop only — v8's browser coverage cannot see inside a worker, so the loop is all the file holds and `tags.ts` carries the logic the tests run directly. **The rest of `lib/widgets/music/**` re-entered on 2026-09-29** (Week 7a-1), in the global 75/75 bucket. **`lib/charts/**` came off this row on 2026-08-30**, when the weather detail became its consumer; it now sits in the global 75/75 bucket, and the split into `echarts.ts` / `options.ts` / `theme.ts` is partly what makes that reachable — the half worth asserting is pure |
 | `routes/spike/**` | harnesses, not product |
 
 Coverage runs via `pnpm test:cov` (`@vitest/coverage-v8`); plain `pnpm test`
@@ -92,7 +92,11 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
 7. i18n: switch vi↔en → gate/labels/lunar footer switch, no missing-key
    text.
 Markets/music E2E are manual-checklist in v1 (real APIs / real files);
-their logic is unit/component-covered.
+their logic is unit/component-covered. **Music's folder path is automated
+since Week 7a-1** (doc 22 §S7): `showDirectoryPicker` is stubbed to return a
+real OPFS folder of generated fixtures, and a lapsed grant is simulated by
+every handle method throwing `NotAllowedError`. What stays manual is what no
+stub can be — the OS dialog, the gesture, a grant across a browser restart.
 
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and

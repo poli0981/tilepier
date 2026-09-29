@@ -47,26 +47,47 @@ export interface TpPlaylist {
 	trackIds: string[];
 }
 
-/** Track metadata only — audio bytes live in `trackBlobs` or stay on disk (doc 05 §4). */
+/**
+ * Track metadata only — audio bytes live in `trackBlobs` or stay on disk (doc
+ * 05 §4).
+ *
+ * The fields after `addedAt` arrived in Week 7a-1 and are not indexed, so they
+ * needed no `version()` bump — and a row written before them (spike S2 wrote a
+ * few on production) simply lacks them, which a rescan reads as "changed".
+ */
 export interface TpTrack {
-	/** hash(path|name+size) — stable across sessions. */
+	/**
+	 * SHA-256 prefix of `fsa|<relPath>` or `blob|<relPath>|<size>|<mtime>`,
+	 * NFC-normalised (doc 05 §4). The folder path alone, so a tag edit — which
+	 * changes the size — keeps a track's id and its place in every playlist.
+	 */
 	id: string;
 	source: 'fsa' | 'blob';
-	/** fsa: path relative to musicRoot. */
+	/** fsa: the path under musicRoot; blob: the picked file's relative path or name. */
 	relPath?: string;
 	title: string;
+	/** `''` when the file does not say — never a word in any language. */
 	artist: string;
+	/** `''` when the file does not say. */
 	album: string;
 	durationMs?: number;
 	trackNo?: number;
 	year?: number;
-	/** Covers are deduped into trackBlobs as `cover:<hash>`. */
+	/** Covers are deduped into trackBlobs as `cover:<hash>`, on both paths. */
 	coverId?: string;
 	addedAt: number;
+	/** Bytes and last-modified time at the last scan — what a rescan compares. */
+	size?: number;
+	mtime?: number;
+	/** Gone from a folder the last scan read. Never deleted for it (doc 09 §2). */
+	missing?: true;
+	/** Set by the player when this browser could not play it (plan S12). */
+	error?: 'unreadable' | 'unsupported';
 }
 
 export interface TpTrackBlob {
-	/** Equals the track id, or `cover:<hash>` for artwork. */
+	/** The track id for imported audio (path B), or `cover:<hash>` for artwork
+	 *  from either path. */
 	id: string;
 	blob: Blob;
 }

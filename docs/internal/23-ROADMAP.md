@@ -1259,6 +1259,30 @@ then; the Binance.US probe from SJC is still open; M6 waits on the owner's
 production check of #26 and #28 — doc 22 §S6's last open item, the MapLibre
 modules' content type, was confirmed on 2026-09-29.
 
+### Week 7a-1 — the library, with the spike as its consumer (2026-09-29)
+
+Spike S7 first (doc 22 §S7), then the library rewritten on what it measured:
+`tags.ts`, the one module allowed to import music-metadata, and `library.ts`,
+whose scan resolves only once written and whose rescan diffs instead of
+rewriting (doc 09 §2's new "How a scan decides"). `/spike/s2` stays as the
+consumer until the widget exists in 7a-2 — knip needs one — and gained the
+controls for the manual half of S7.
+
+**Two parser surprises, both found by running real files through the real
+code:** a WAV file's RIFF INFO arrives as Latin-1 mojibake, and a text file
+named `fake.mp3` is parsed as MPEG without an error once its MIME type says
+audio, as every file from a folder's does. And one plan premise fell: Playwright
+1.62's browser decodes H.264, so 7b's "unsupported codec" fixture has to be
+something no browser plays.
+
+Fourteen mutations, one per rule, all turned the tests red. 200 files import in
+806–863 ms with the UI ticking throughout — the per-file transaction and worker
+round trip cost nothing measurable against S2's 857 ms.
+
+**Owed by the owner once 7a-1 is on production:** doc 22 §S7's manual half —
+real Chrome, a real folder, a browser restart, and S23's background-tab check,
+which decides whether the 7a-2 player pre-fetches its queue's files.
+
 ## Week 8 — Hardening & Release
 PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
 pass vs budgets · full manual matrix (doc 19 §5) · doc 10 §8 compliance

@@ -47,6 +47,15 @@ across reports without leaking contents). Never include note/todo/track
 contents, place names, or watchlist symbols? — watchlist **is** included
 (needed to reproduce markets bugs) with a visible note in the dialog.
 
+**Nothing about a reader's music or video files reaches the log** (2026-09-29).
+The scrub above catches tokens and query strings; it cannot catch a folder
+name, a file name or a song title, and a music library's folder names are as
+personal as anything this app holds. So the rule is the rss one — never write
+them in the first place: the music code logs nothing about a file, the tag
+worker reports a failure's *category* rather than the parser's message, and
+`library.svelte.test.ts` scans a folder with a failing file in it and asserts
+the log carries none of its names.
+
 ## 3. Issue form (`.github/ISSUE_TEMPLATE/bug_report.yml`)
 
 Fields: `what-happened` (textarea, required) · `steps` (textarea) ·
