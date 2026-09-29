@@ -99,6 +99,7 @@ after it reshaped the entire Week 1 commit plan.)
 | Detail chunks w/ ECharts (weather, currency, markets) | ≤ 350 KB each, excluding the shared echarts chunk |
 | Shared echarts core chunk (lazy, counted once) | ≤ 330 KB |
 | maplibre (vendored modules: main, shared, worker — on first map mount) | ≤ 300 KB |
+| music tag worker (music-metadata, one file — scans only) | ≤ 80 KB |
 | Fonts total (both families, subsets) | ≤ 220 KB |
 
 > Corrected 2026-08-10, two ways. `timer` was listed as an ECharts detail
@@ -133,6 +134,18 @@ counts toward CSS total — or would: the full sheet is mostly data-URI icons fo
 controls this app does not show, so the map ships a trimmed copy
 (`src/lib/map/maplibre.css`, well under 1 KB gz, recoloured with tokens), and
 CSS total measured 32.3 of 45 KB with the map built.
+
+**The music tag worker, measured 2026-09-29 (Week 7 spike S7, doc 22 §S7):
+66.0 KB gz, 82 % of 80.** It had run unmeasured since spike S2: Vite builds a
+`new Worker(new URL(…))` target on its own, outside the client manifest, so no
+`module` row can see it — the same position MapLibre's copied modules are in,
+and measured the same way, as a `static-glob` row over the emitted file. With
+the default `worker.format: 'iife'` every one of music-metadata's thirteen lazy
+parsers is inlined into that one file; `'es'` would split them (≈28 KB entry,
+≈43 KB for the MP3 path) at the price of a module worker and more files for the
+service worker to cache, and a scan is rare enough that one file wins. Whether
+music-metadata stays off the main thread is not a budget question —
+`eslint.config.js` refuses the import anywhere but `widgets/music/tags.ts`.
 
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit
