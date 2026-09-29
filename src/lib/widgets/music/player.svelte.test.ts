@@ -524,6 +524,24 @@ describe('resume (doc 09 §2, plan S10)', () => {
 		);
 	});
 
+	it('keeps where it was when the page closes, committed before the page can go', async () => {
+		await seed(['a']);
+		player.playTracks(['a'], 'a', { kind: 'library' });
+		await playing('a');
+		audio.tick(21);
+		const commit = vi.spyOn(IDBTransaction.prototype, 'commit');
+
+		window.dispatchEvent(new PageTransitionEvent('pagehide'));
+
+		// Inside the handler: a put Dexie commits once it has succeeded goes
+		// with a closing page (measured in journey-media, doc 04 §6).
+		expect(commit).toHaveBeenCalled();
+		commit.mockRestore();
+		await vi.waitFor(async () =>
+			expect((await target.playback.get('music'))?.state).toMatchObject({ positionMs: 21_000 })
+		);
+	});
+
 	it('comes back after a reload paused where it was — never playing on its own', async () => {
 		await seed(['a', 'b', 'c']);
 		player.playTracks(['a', 'b', 'c'], 'b', { kind: 'library' });

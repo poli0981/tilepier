@@ -429,8 +429,10 @@ succeeded, and a page being unloaded never sees that turn: the transaction is
 aborted with the document, and the write is lost on every reload. The trace
 showed the put leave at `pagehide` and nothing kept after it.
 `putPlaybackNow` (`core/storage/db.ts`) issues the put and `commit()` before
-the handler returns; the video's position uses it. The 300 ms writer above
-flushes through Dexie the same way, which is a known gap (Week 7b follow-up).
+the handler returns. The video's position uses it, and so does the music
+player's, whose flush had been lost on every reload since Week 7a. The 300 ms
+writer above flushes through Dexie the same way, which is a known gap (Week 7b
+follow-up).
 
 ## 7. Cross-tab behavior
 

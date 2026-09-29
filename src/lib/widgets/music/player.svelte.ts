@@ -9,7 +9,13 @@ import {
 	type TpMediaSession
 } from '$lib/core/media-session';
 import { claimPlayback, playbackOwner, releasePlayback } from '$lib/core/playback';
-import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
+import {
+	db as defaultDb,
+	putPlaybackNow,
+	type TpDb,
+	type TpPlaybackRow,
+	type TpTrack
+} from '$lib/core/storage/db';
 import { m } from '$lib/paraglide/messages';
 import { deck } from '$lib/stores/deck.svelte';
 import { toasts } from '$lib/stores/toast.svelte';
@@ -687,7 +693,8 @@ class TpPlayer {
 
 	/* ─────────────────────────────────────────────────────── persistence */
 
-	async #savePosition(): Promise<void> {
+	/** Where the player is, as a `playback` row. */
+	#positionRow(): TpPlaybackRow {
 		this.#lastSaved = this.#seams.now();
 		const state: TpSavedPosition = {
 			trackId: this.current?.id ?? null,
@@ -696,12 +703,12 @@ class TpPlayer {
 			repeat: this.repeat,
 			volume: this.volume
 		};
+		return { id: POSITION_KEY, updatedAt: this.#seams.now(), state };
+	}
+
+	async #savePosition(): Promise<void> {
 		try {
-			await this.#seams.target.playback.put({
-				id: POSITION_KEY,
-				updatedAt: this.#seams.now(),
-				state
-			});
+			await this.#seams.target.playback.put(this.#positionRow());
 		} catch {
 			// A full disk costs the resume point, nothing else.
 		}
@@ -721,10 +728,15 @@ class TpPlayer {
 		}
 	}
 
-	/** doc 04 §6's flush points, for the position: a closing or hidden page. */
+	/**
+	 * doc 04 §6's flush points, for the position: a closing or hidden page.
+	 * Written and committed before the handler returns (`putPlaybackNow`) — a
+	 * Dexie put commits only once it has succeeded, which a closing page never
+	 * sees, so until 2026-09-29 this flush was lost on every reload.
+	 */
 	#attachPage(): void {
 		if (typeof window === 'undefined') return;
-		const flush = () => void this.#savePosition();
+		const flush = () => putPlaybackNow(this.#positionRow(), this.#seams.target);
 		const onVisibility = () => {
 			if (document.visibilityState === 'hidden') flush();
 		};
