@@ -154,7 +154,9 @@ path, `name+size` made two different "01 Intro.mp3"s one track. So:
   folder to be stable in, and the same file imported twice is still one track.
 
 Paths are NFC-normalised before hashing, because macOS hands out decomposed
-names. The fields after `addedAt` are not indexed, so they needed no
+names. **The hash is `core/hash.ts`'s `sha256Hex(key, 12)`** since Week 7b — one client
+copy for track ids, cover keys and media's resume keys, pinned by a golden test
+against Node's own SHA-256, because every one of those ids is stored. The fields after `addedAt` are not indexed, so they needed no
 `version()` bump; the few rows spike S2 wrote on production lack them, and a
 rescan reads that as "changed".
 

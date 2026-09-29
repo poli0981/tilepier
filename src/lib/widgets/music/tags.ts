@@ -1,3 +1,4 @@
+import { sha256Hex } from '$lib/core/hash';
 import { parseBlob, type IPicture } from 'music-metadata';
 
 /**
@@ -101,7 +102,8 @@ export async function parseTags(file: File): Promise<TpTags> {
 		const bytes = new Uint8Array(picture.data);
 		tags.cover = {
 			blob: new Blob([bytes], { type: picture.format.startsWith('image/') ? picture.format : '' }),
-			hash: await sha256Hex(bytes)
+			// A cover's storage key: the first twelve bytes, as the track ids.
+			hash: await sha256Hex(bytes, 12)
 		};
 	}
 
@@ -161,13 +163,4 @@ function asUtf8(value: string): string {
 
 function isPositive(value: number | null | undefined): value is number {
 	return typeof value === 'number' && Number.isFinite(value) && value > 0;
-}
-
-/** First twelve bytes of SHA-256, as hex — a cover's storage key. */
-async function sha256Hex(bytes: Uint8Array): Promise<string> {
-	const digest = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
-	return [...new Uint8Array(digest)]
-		.slice(0, 12)
-		.map((byte) => byte.toString(16).padStart(2, '0'))
-		.join('');
 }
