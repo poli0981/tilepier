@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 import { seedLayout } from './_lib/seed';
 
 /**
@@ -203,43 +203,102 @@ test('security headers are set on HTML responses', async ({ request }) => {
 	expect(headers['cross-origin-opener-policy']).toBe('same-origin');
 	expect(headers['permissions-policy']).toContain('geolocation=(self)');
 
-	// Ignored in a <meta> CSP by spec, so it has to arrive as a header.
-	expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+	// Ignored in a <meta> CSP by spec, so it has to arrive as a header — and
+	// *only* it: a second full policy here would be enforced alongside the
+	// meta one without SvelteKit's hash, and block hydration (see _headers).
+	expect(headers['content-security-policy']).toBe("frame-ancestors 'none'");
 
 	// doc 16 §3: no cookies at all.
 	expect(headers['set-cookie']).toBeUndefined();
 });
 
-test('the CSP carries the hash for SvelteKit inline script', async ({ request }) => {
-	// SvelteKit emits the main policy itself (svelte.config.js kit.csp, hash
-	// mode) because it must include a hash for its hydration bootstrap. A bare
-	// `script-src 'self'` blocks that script, and the only visible symptom is
-	// that the page stops responding to clicks — so assert the hash is there.
-	const html = await (await request.get('/')).text();
+/** The page's `<meta>` CSP as directive → sorted values. SvelteKit appends its
+ *  hashes after the configured sources, so order is not the contract —
+ *  membership is. */
+async function metaPolicy(request: APIRequestContext, path: string) {
+	const html = await (await request.get(path)).text();
 	const meta = /<meta http-equiv="content-security-policy" content="([^"]+)"/.exec(html);
 
-	expect(meta, 'no CSP meta tag emitted').not.toBeNull();
-	const directives = new Map(
+	expect(meta, `no CSP meta tag emitted on ${path}`).not.toBeNull();
+	return new Map(
 		(meta?.[1] ?? '')
 			.split(';')
 			.map((part) => part.trim().split(/\s+/))
 			.filter((words) => words[0] !== undefined && words[0] !== '')
 			.map(([name, ...values]) => [name, values.sort()] as const)
 	);
+}
 
-	// Exact sets, not "contains": the point of doc 15 §2 is that nothing else
-	// gets in. SvelteKit appends its hashes after the configured sources, so the
-	// order is not the contract — the membership is.
-	expect(directives.get('default-src')).toEqual(["'self'"]);
+test('the CSP carries the hash for SvelteKit inline script', async ({ request }) => {
+	// SvelteKit emits the main policy itself (svelte.config.js kit.csp, hash
+	// mode) because it must include a hash for its hydration bootstrap. A bare
+	// `script-src 'self'` blocks that script, and the only visible symptom is
+	// that the page stops responding to clicks — so assert the hash is there.
+	const directives = await metaPolicy(request, '/');
+
 	const script = directives.get('script-src') ?? [];
-	expect(script.filter((v) => !v.startsWith("'sha256-"))).toEqual(
-		["'self'", 'https://challenges.cloudflare.com', 'https://static.cloudflareinsights.com'].sort()
-	);
 	expect(script.some((v) => /^'sha256-[A-Za-z0-9+/=]+'$/.test(v))).toBe(true);
-	expect(directives.get('connect-src')).toEqual(
-		["'self'", 'https://cloudflareinsights.com', 'https://tiles.openfreemap.org'].sort()
-	);
-	expect(directives.get('frame-src')).toEqual(['https://challenges.cloudflare.com']);
+});
+
+test('every CSP directive is exactly the configured one', async ({ request }) => {
+	// Exact sets, not "contains", and every directive rather than the four that
+	// used to be pinned: the point of doc 15 §2 is that nothing else gets in.
+	// Until 2026-09-29 `img-src`, `media-src` and `worker-src` could have grown
+	// a source without a test going red — and Week 7's players live in exactly
+	// those three (blob: audio and video, blob: covers, the tag worker).
+	//
+	// `frame-ancestors` is absent from the meta tag by specification; it is
+	// pinned as a header in the test above.
+	for (const path of ['/', '/w/clock', '/legal/privacy']) {
+		const directives = await metaPolicy(request, path);
+
+		expect([...directives.keys()].sort(), path).toEqual(
+			[
+				'base-uri',
+				'connect-src',
+				'default-src',
+				'font-src',
+				'form-action',
+				'frame-src',
+				'img-src',
+				'media-src',
+				'object-src',
+				'script-src',
+				'style-src',
+				'upgrade-insecure-requests',
+				'worker-src'
+			].sort()
+		);
+
+		expect(directives.get('default-src'), path).toEqual(["'self'"]);
+		expect(
+			(directives.get('script-src') ?? []).filter((v) => !v.startsWith("'sha256-")),
+			path
+		).toEqual(
+			[
+				"'self'",
+				'https://challenges.cloudflare.com',
+				'https://static.cloudflareinsights.com'
+			].sort()
+		);
+		expect(directives.get('frame-src'), path).toEqual(['https://challenges.cloudflare.com']);
+		// 'unsafe-inline' is why SvelteKit adds no style hashes, so this one is
+		// exact with nothing filtered.
+		expect(directives.get('style-src'), path).toEqual(["'self'", "'unsafe-inline'"].sort());
+		expect(directives.get('img-src'), path).toEqual(
+			["'self'", 'blob:', 'data:', 'https://tiles.openfreemap.org'].sort()
+		);
+		expect(directives.get('media-src'), path).toEqual(["'self'", 'blob:'].sort());
+		expect(directives.get('connect-src'), path).toEqual(
+			["'self'", 'https://cloudflareinsights.com', 'https://tiles.openfreemap.org'].sort()
+		);
+		expect(directives.get('font-src'), path).toEqual(["'self'"]);
+		expect(directives.get('worker-src'), path).toEqual(["'self'"]);
+		expect(directives.get('base-uri'), path).toEqual(["'self'"]);
+		expect(directives.get('form-action'), path).toEqual(["'self'"]);
+		expect(directives.get('object-src'), path).toEqual(["'none'"]);
+		expect(directives.get('upgrade-insecure-requests'), path).toEqual([]);
+	}
 });
 
 test('no page raises a CSP violation', async ({ page }) => {

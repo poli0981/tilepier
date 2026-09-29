@@ -102,9 +102,14 @@ Cloudflare services, each because it cannot be self-hosted:
   requires `api.js` from that exact URL, never proxied or cached.
 
 `e2e/legal-gate.e2e.ts` parses the emitted policy and compares **exact sets**
-for `default-src`, `script-src` (hashes aside), `connect-src` and `frame-src`,
-so adding a source is a deliberate edit to this section and to that test, not
-a side effect. The e2e browser maps all three Cloudflare hosts to
+for **every** directive — the list of directive names itself, and each one's
+sources (`script-src` with its hashes aside) — on `/`, `/w/clock` and
+`/legal/privacy`, and matches the `frame-ancestors` header exactly. So adding
+a source is a deliberate edit to this section and to that test, not a side
+effect. (Until 2026-09-29 only `default-src`, `script-src`, `connect-src` and
+`frame-src` were pinned, and `img-src`, `media-src` and `worker-src` — the
+three Week 7's players live in — could have grown a source unnoticed.
+Removing `blob:` from `media-src` was checked to turn the test red.) The e2e browser maps all three Cloudflare hosts to
 `~NOTFOUND`, so a test run never reports page views into production's
 analytics or waits on Cloudflare.
 
