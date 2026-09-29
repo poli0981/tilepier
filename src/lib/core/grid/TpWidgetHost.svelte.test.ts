@@ -133,3 +133,18 @@ describe('the h=1 strip (doc 13 §3)', () => {
 		expect(badge.getAttribute('aria-label')).toBeTruthy();
 	});
 });
+
+describe('removal (doc 06 §4)', () => {
+	it('says, on the button itself, that removing a tile keeps its data', async () => {
+		// A music library is the data readers are most afraid to lose, and
+		// "remove" over it reads as "delete" unless something says otherwise.
+		const onRemove = vi.fn();
+		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget, onRemove });
+
+		const remove = screen.getByRole('button', {
+			name: m['common.remove_tile'](),
+			includeHidden: true
+		});
+		await expect.element(remove).toHaveAttribute('title', m['common.remove_tile_hint']());
+	});
+});

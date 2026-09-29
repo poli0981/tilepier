@@ -151,10 +151,13 @@
 			also keeps it out of the accessibility tree while hidden.
 			No confirm: doc 06 §4 — removing a tile never deletes data.
 		-->
+		<!-- doc 06 §4: the tooltip says what removal does not do — until Week 7 it
+		     had none, and "remove" over a music library reads as "delete". -->
 		<button
 			type="button"
 			class="tp-host__remove"
 			aria-label={m['common.remove_tile']()}
+			title={m['common.remove_tile_hint']()}
 			data-testid="remove-{tile.instanceId}"
 			onclick={() => onRemove?.(tile.instanceId)}
 		>

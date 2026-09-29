@@ -3,6 +3,7 @@ import {
 	changeDirection,
 	fmtDate,
 	fmtDistance,
+	fmtDuration,
 	fmtPercentChange,
 	fmtTime,
 	isValidZone,
@@ -146,5 +147,26 @@ describe('fmtDistance (doc 08 §5)', () => {
 		expect(fmtDistance(4.24, 'vi')).toBe('4,2 km');
 		expect(fmtDistance(96.4, 'en')).toBe('96 km');
 		expect(fmtDistance(1, 'vi')).toBe('1 km');
+	});
+});
+
+describe('fmtDuration (doc 09 §2–§3)', () => {
+	it('writes minutes and seconds, and hours only when there are some', () => {
+		expect(fmtDuration(187_000, 'vi')).toBe('3:07');
+		expect(fmtDuration(3_723_000, 'en')).toBe('1:02:03');
+		expect(fmtDuration(59_999, 'en')).toBe('0:59');
+	});
+
+	it('rounds down, so elapsed time never runs ahead of the track', () => {
+		// The timer rounds up for a countdown; a position must not say a second
+		// has passed before it has.
+		expect(fmtDuration(999, 'vi')).toBe('0:00');
+		expect(fmtDuration(1_000, 'vi')).toBe('0:01');
+	});
+
+	it('reads nothing sensible as zero', () => {
+		expect(fmtDuration(Number.NaN, 'en')).toBe('0:00');
+		expect(fmtDuration(Number.POSITIVE_INFINITY, 'en')).toBe('0:00');
+		expect(fmtDuration(-5_000, 'en')).toBe('0:00');
 	});
 });
