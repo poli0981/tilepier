@@ -73,6 +73,20 @@
 	>();
 	/** instanceId → tile record, so serialise() can rejoin positions with settings. */
 	const tileById = new Map<string, TpTile>();
+	/**
+	 * instanceId → a wrapper that is on the grid with nothing mounted in it yet,
+	 * because its widget's component had not arrived when it was added. The
+	 * effect after `setup` mounts it the moment `widgets` carries it.
+	 *
+	 * Before 2026-09-29 `mountHost` simply returned in that case, and nothing
+	 * came back for the wrapper. The deck page renders its empty message rather
+	 * than this component when there are no tiles, so the first tile added to a
+	 * deck *loaded* empty mounts a fresh grid whose seed is that tile — while the
+	 * tile's chunk is still downloading. The page then adopts the seed as
+	 * mounted, and the reader got an empty tile until they reloaded.
+	 * `e2e/journey-2` "a deck loaded empty" is the case.
+	 */
+	const pending = new Map<string, GridItemHTMLElement>();
 	/* eslint-enable svelte/prefer-svelte-reactivity */
 
 	/**
@@ -91,7 +105,12 @@
 		if (!target) return;
 
 		const widget = override ?? widgets[tile.widgetId];
-		if (!widget) return;
+		if (!widget) {
+			// Not yet, rather than never — see `pending`.
+			pending.set(tile.instanceId, el);
+			return;
+		}
+		pending.delete(tile.instanceId);
 
 		/*
 		 * `tile` is handed over through a getter backed by `$state.raw`, and it
@@ -142,6 +161,7 @@
 	}
 
 	function unmountHost(instanceId: string) {
+		pending.delete(instanceId);
 		const entry = hosts.get(instanceId);
 		if (!entry) return;
 		unmount(entry.handle);
@@ -176,6 +196,16 @@
 	export function addTile(tile: TpTile, widget?: Component<TpWidgetProps>) {
 		if (!grid || hosts.has(tile.instanceId)) return;
 		tileById.set(tile.instanceId, tile);
+
+		// Already on the grid and waiting for this very component: fill the
+		// wrapper it has. A second `addWidget` would put the same instance on the
+		// grid twice — gridstack tells nodes apart by its own `_id`, not by `id`.
+		const waiting = pending.get(tile.instanceId);
+		if (waiting !== undefined) {
+			mountHost(tile, waiting, widget);
+			return;
+		}
+
 		const el = grid.addWidget(toGridStackWidget(tile));
 		mountHost(tile, el, widget);
 		emitLayout();
@@ -209,6 +239,7 @@
 			// stayed correct. That is precisely the detached-node growth doc 22 §S1
 			// is looking for, and it is silent: nothing throws, nothing warns.
 			for (const instanceId of [...hosts.keys()]) unmountHost(instanceId);
+			pending.clear();
 			grid.removeAll(true, false);
 			tileById.clear();
 
@@ -362,11 +393,27 @@
 			// doc 06 §5.6: unmount every host, then destroy the grid without
 			// removing the container itself.
 			for (const instanceId of [...hosts.keys()]) unmountHost(instanceId);
+			pending.clear();
 			tileById.clear();
 			grid?.destroy(false);
 			grid = undefined;
 		};
 	}
+
+	$effect(() => {
+		// Mounts the wrappers that were added before their widget's chunk had
+		// arrived (see `pending`), whenever `widgets` gains one. Tracks `widgets`
+		// and nothing else: the body is untracked for the same reason `setup`'s
+		// is — mounting notifies the parent, and a tracked callback prop would
+		// turn that notification into a re-run of this effect.
+		const available = widgets;
+		untrack(() => {
+			for (const [instanceId, el] of [...pending]) {
+				const tile = tileById.get(instanceId);
+				if (tile !== undefined && available[tile.widgetId] !== undefined) mountHost(tile, el);
+			}
+		});
+	});
 
 	$effect(() => {
 		// Synchronises interaction affordances with edit mode (doc 06 §5.5): the

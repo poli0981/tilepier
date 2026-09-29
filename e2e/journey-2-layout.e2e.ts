@@ -239,6 +239,95 @@ test('a tile can be removed, and the removal sticks', async ({ page }) => {
 	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
 });
 
+/**
+ * The empty deck is its own path through the page, and every widget that is
+ * not in the seed — music and media from Week 7 on — is added along it the day
+ * a reader clears their deck and starts again. With no tiles the page renders
+ * its empty message instead of `TpGrid`, so the first tile added afterwards
+ * mounts a *fresh* grid, and that grid has to end up with exactly one wrapper
+ * with the widget inside it (doc 06 §5 rule 15).
+ *
+ * Suspected by review on 2026-09-29. The first test below failed as predicted —
+ * an empty wrapper until reload — and the review's second prediction, a
+ * duplicate wrapper for a deck emptied by hand, did not reproduce. The two
+ * tests after it hold that case anyway, since it is one timing change away.
+ */
+async function storedIds(page: Page): Promise<string[]> {
+	const layout = (await storedLayout(page)) as { grid: { instanceId: string }[] } | null;
+	return (layout?.grid ?? []).map((tile) => tile.instanceId);
+}
+
+test('a deck loaded empty mounts the first tile it is given', async ({ page }) => {
+	await acceptGate(page);
+	await seedLayout(page, []);
+	await page.reload();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(0);
+
+	await page.getByTestId('open-drawer').click();
+	await page.getByTestId('add-clock').click();
+
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	// The widget, not just its wrapper — a wrapper with nothing mounted in it
+	// counts as a tile to every assertion above this one.
+	await expect(page.locator('.grid-stack-item .tp-clock')).toHaveCount(1);
+	await expect.poll(() => storedIds(page)).toHaveLength(1);
+
+	await page.reload();
+	await expect(page.locator('.grid-stack-item .tp-clock')).toHaveCount(1);
+});
+
+test('a deck emptied by hand and refilled mounts one tile, once', async ({ page }) => {
+	await acceptGate(page);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_only', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} }
+	]);
+	await page.reload();
+	await expect(page.locator('.grid-stack-item .tp-clock')).toHaveCount(1);
+
+	await page.keyboard.press('e');
+	await page.getByTestId('remove-wgt_only').click();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(0);
+
+	await page.getByTestId('open-drawer').click();
+	await page.getByTestId('add-clock').click();
+
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item .tp-clock')).toHaveCount(1);
+	// One tile in storage, under one id — not the same instance written twice.
+	await expect.poll(() => storedIds(page)).toHaveLength(1);
+
+	await page.reload();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item .tp-clock')).toHaveCount(1);
+});
+
+test('a deck emptied by hand takes a widget it has never loaded', async ({ page }) => {
+	// The previous test's clock chunk is already in memory when it is added
+	// back, so its import settles before the fresh grid mounts and the race
+	// never shows. A widget this page has never loaded is the honest case.
+	await acceptGate(page);
+	await seedLayout(page, [
+		{ instanceId: 'wgt_only', widgetId: 'clock', x: 0, y: 0, w: 3, h: 2, settings: {} }
+	]);
+	await page.reload();
+	await expect(page.locator('.grid-stack-item .tp-clock')).toHaveCount(1);
+
+	await page.keyboard.press('e');
+	await page.getByTestId('remove-wgt_only').click();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(0);
+
+	await page.getByTestId('open-drawer').click();
+	await page.getByTestId('add-calc').click();
+
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item .tp-calc')).toHaveCount(1);
+	await expect.poll(() => storedIds(page)).toHaveLength(1);
+
+	await page.reload();
+	await expect(page.locator('.grid-stack-item')).toHaveCount(1);
+	await expect(page.locator('.grid-stack-item .tp-calc')).toHaveCount(1);
+});
+
 test('the coach shows once and stays dismissed', async ({ page }) => {
 	await acceptGate(page);
 
