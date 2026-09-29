@@ -1,5 +1,14 @@
 import { untrack } from 'svelte';
-import { claimPlayback, releasePlayback } from '$lib/core/playback';
+import {
+	clearSession,
+	pageSession,
+	writeSessionHandlers,
+	writeSessionMetadata,
+	writeSessionPosition,
+	writeSessionState,
+	type TpMediaSession
+} from '$lib/core/media-session';
+import { claimPlayback, playbackOwner, releasePlayback } from '$lib/core/playback';
 import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
 import { m } from '$lib/paraglide/messages';
 import { deck } from '$lib/stores/deck.svelte';
@@ -55,6 +64,12 @@ import {
  *   player, or a library whose drive was unplugged would spin through every
  *   track, forever on repeat-all. `playing` resets the count.
  *
+ * **The OS's media keys and lock screen drive it through the Media Session**
+ * (doc 09 §2) — written only while this player holds `core/playback`'s claim,
+ * which every start takes, so the video player can have the session when it
+ * plays and this one never writes over it. Stopping clears it: a key press
+ * must not start music for a tile that has left the deck.
+ *
  * Methods report through state rather than throwing: the tile's error boundary
  * catches render and effect errors, not a click handler's.
  */
@@ -86,6 +101,7 @@ interface TpSeams {
 	now: () => number;
 	random: () => number;
 	notify: (notice: TpPlayerNotice) => void;
+	session: () => TpMediaSession | null;
 }
 
 /**
@@ -110,7 +126,8 @@ function defaultSeams(): TpSeams {
 		createAudio: () => new Audio(),
 		now: () => Date.now(),
 		random: Math.random,
-		notify: toast
+		notify: toast,
+		session: pageSession
 	};
 }
 
@@ -136,6 +153,8 @@ class TpPlayer {
 	#failures = 0;
 	#retried = false;
 	#pendingSeekMs: number | null = null;
+	/** The Media Session's artwork: one object URL, shared by an album's tracks. */
+	#cover: { id: string; src: string; type: string } | null = null;
 	#lastSaved = 0;
 	#restoring: Promise<void> | null = null;
 	#hadTile = false;
@@ -252,6 +271,7 @@ class TpPlayer {
 		this.positionMs = target;
 		if (this.#audio !== null && this.#url !== null) this.#audio.currentTime = target / 1000;
 		else this.#pendingSeekMs = target;
+		this.#sessionPosition();
 		void this.#savePosition();
 	}
 
@@ -279,7 +299,7 @@ class TpPlayer {
 		this.#token += 1;
 		this.#audio?.pause();
 		if (this.status !== 'idle') this.status = this.current === null ? 'idle' : 'paused';
-		releasePlayback('music');
+		this.#leaveSession();
 		void this.#savePosition();
 	}
 
@@ -360,6 +380,7 @@ class TpPlayer {
 		const audio = this.#element();
 		const token = this.#token;
 		claimPlayback('music', () => this.#yield());
+		void this.#publish();
 		try {
 			await audio.play();
 		} catch (error) {
@@ -400,10 +421,12 @@ class TpPlayer {
 	#onPlaying(): void {
 		this.status = 'playing';
 		this.#failures = 0;
+		this.#sessionState('playing');
 	}
 
 	#onPause(): void {
 		if (this.status === 'playing') this.status = 'paused';
+		this.#sessionState('paused');
 		void this.#savePosition();
 	}
 
@@ -447,6 +470,7 @@ class TpPlayer {
 			this.positionMs = this.#pendingSeekMs;
 			this.#pendingSeekMs = null;
 		}
+		this.#sessionPosition();
 	}
 
 	async #onError(): Promise<void> {
@@ -510,6 +534,82 @@ class TpPlayer {
 		}
 		if (this.current?.id === track.id) this.current = track;
 		for (const fn of this.#listeners) fn(track);
+	}
+
+	/* ──────────────────────────────────────────────────── Media Session */
+
+	/** The page's session while this player holds the claim, else nothing. */
+	#session(): TpMediaSession | null {
+		return playbackOwner() === 'music' ? this.#seams.session() : null;
+	}
+
+	/**
+	 * Fills the session for the current track: the keys first, then the words
+	 * and the cover once the cover is read. `#start` calls it right after the
+	 * claim that makes the session this player's to fill.
+	 */
+	async #publish(): Promise<void> {
+		const track = this.current;
+		const session = this.#session();
+		if (track === null || session === null) return;
+		writeSessionHandlers(session, {
+			play: () => this.play(),
+			pause: () => this.pause(),
+			previoustrack: () => this.prev(),
+			nexttrack: () => this.next(),
+			seekto: (details) => {
+				if (details.seekTime !== undefined) this.seek(details.seekTime * 1000);
+			}
+		});
+
+		const id = track.coverId;
+		const blob = id === undefined || this.#cover?.id === id ? undefined : await this.#coverBlob(id);
+		// The reader may have moved on, or the video player claimed the sound.
+		if (this.current?.id !== track.id || this.#session() !== session) return;
+		if (id !== undefined && blob !== undefined) {
+			this.#dropCover();
+			this.#cover = { id, src: URL.createObjectURL(blob), type: blob.type };
+		}
+		const cover = this.#cover;
+		writeSessionMetadata(session, {
+			title: track.title,
+			artist: track.artist || m['widget.music.unknown_artist'](),
+			album: track.album,
+			artwork: cover !== null && cover.id === id ? { src: cover.src, type: cover.type } : undefined
+		});
+	}
+
+	async #coverBlob(id: string): Promise<Blob | undefined> {
+		try {
+			return (await this.#seams.target.trackBlobs.get(id))?.blob;
+		} catch {
+			return undefined;
+		}
+	}
+
+	#dropCover(): void {
+		if (this.#cover !== null) URL.revokeObjectURL(this.#cover.src);
+		this.#cover = null;
+	}
+
+	#sessionState(state: MediaSessionPlaybackState): void {
+		const session = this.#session();
+		if (session === null) return;
+		writeSessionState(session, state);
+		writeSessionPosition(session, this.durationMs, this.positionMs);
+	}
+
+	#sessionPosition(): void {
+		const session = this.#session();
+		if (session !== null) writeSessionPosition(session, this.durationMs, this.positionMs);
+	}
+
+	/** Clears the session if it is this player's, and lets go of the claim. */
+	#leaveSession(): void {
+		const session = this.#session();
+		if (session !== null) clearSession(session);
+		releasePlayback('music');
+		this.#dropCover();
 	}
 
 	/* ─────────────────────────────────────────────────────── persistence */
@@ -582,6 +682,7 @@ class TpPlayer {
 		this.#token += 1;
 		this.#audio?.pause();
 		if (this.#url !== null) URL.revokeObjectURL(this.#url);
+		this.#leaveSession();
 		this.#detachPage?.();
 		this.#disposeWatcher?.();
 		this.#seams = { ...defaultSeams(), ...seams };
@@ -604,7 +705,6 @@ class TpPlayer {
 		this.shuffle = false;
 		this.repeat = 'off';
 		this.volume = 1;
-		releasePlayback('music');
 		this.#watchDeck();
 	}
 }

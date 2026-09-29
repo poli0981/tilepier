@@ -84,8 +84,43 @@ class FakeAudio extends EventTarget {
 	}
 }
 
+/** The page's Media Session, as the OS's keys see it: what it was told, and
+ *  a press on any key it was given. */
+class FakeSession {
+	metadata: MediaMetadata | null = null;
+	playbackState: MediaSessionPlaybackState = 'none';
+	handlers = new Map<MediaSessionAction, MediaSessionActionHandler | null>();
+	positions: (MediaPositionState | undefined)[] = [];
+	/** Actions this "browser" does not know: setting one throws. */
+	unknown = new Set<MediaSessionAction>();
+
+	setActionHandler(action: MediaSessionAction, handler: MediaSessionActionHandler | null): void {
+		if (this.unknown.has(action)) throw new TypeError(`unknown action: ${action}`);
+		this.handlers.set(action, handler);
+	}
+
+	setPositionState(state?: MediaPositionState): void {
+		this.positions.push(state);
+	}
+
+	press(action: MediaSessionAction, details: Partial<MediaSessionActionDetails> = {}): void {
+		const handler = this.handlers.get(action);
+		if (typeof handler !== 'function') throw new Error(`no handler for ${action}`);
+		handler({ action, ...details });
+	}
+}
+
+/** What a real session would have refused: an unknown length, or a place
+ *  outside the track. */
+function placeable(state: MediaPositionState | undefined): boolean {
+	if (state === undefined) return true;
+	const { duration = Number.NaN, position = 0 } = state;
+	return Number.isFinite(duration) && position >= 0 && position <= duration;
+}
+
 let target: TpDb;
 let audio: FakeAudio;
+let session: FakeSession;
 let notices: TpPlayerNotice[];
 let clock: number;
 
@@ -95,13 +130,15 @@ function reset(): void {
 		createAudio: () => audio as unknown as HTMLAudioElement,
 		now: () => clock,
 		random: () => 0,
-		notify: (notice) => notices.push(notice)
+		notify: (notice) => notices.push(notice),
+		session: () => session
 	});
 }
 
 beforeEach(() => {
 	target = createDb(`tp-player-test-${crypto.randomUUID()}`);
 	audio = new FakeAudio();
+	session = new FakeSession();
 	notices = [];
 	clock = 1_000_000;
 	deck.dispose();
@@ -459,6 +496,18 @@ describe('the tile leaving the deck (plan S3)', () => {
 		flushSync();
 		expect(audio.paused).toBe(true);
 	});
+
+	it('clears the Media Session as it stops, so a media key cannot start it again', async () => {
+		const id = await playOnDeck();
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song a'));
+
+		deck.remove(id);
+		flushSync();
+
+		expect(session.metadata).toBeNull();
+		expect(session.playbackState).toBe('none');
+		expect([...session.handlers.values()].every((handler) => handler === null)).toBe(true);
+	});
 });
 
 describe('one sound at a time (plan S4)', () => {
@@ -471,6 +520,149 @@ describe('one sound at a time (plan S4)', () => {
 
 		expect(audio.paused).toBe(true);
 		await vi.waitFor(() => expect(player.status).toBe('paused'));
+	});
+
+	it('leaves the Media Session to the player that took the sound', async () => {
+		await seed(['a']);
+		player.playTracks(['a'], 'a', { kind: 'library' });
+		await playing('a');
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song a'));
+
+		// The yield pauses this player inside the claim. Its pause must not say
+		// "paused" over the session the video player is about to fill.
+		claimPlayback('media', () => {});
+		expect(session.playbackState).toBe('playing');
+		const theirs = new MediaMetadata({ title: 'Phim' });
+		session.metadata = theirs;
+
+		player.seek(10_000);
+		expect(session.metadata).toBe(theirs);
+		expect(session.positions.filter((state) => state?.position === 10)).toHaveLength(0);
+	});
+});
+
+describe('the Media Session (doc 09 §2)', () => {
+	async function seedCovered(): Promise<void> {
+		await seed(['a', 'b', 'c']);
+		const png = new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
+		await target.trackBlobs.bulkPut([
+			{ id: 'cover:x', blob: png },
+			{ id: 'cover:y', blob: png }
+		]);
+		await target.tracks.update('a', { coverId: 'cover:x', artist: 'Mỹ Tâm', album: 'Tâm' });
+		await target.tracks.update('b', { coverId: 'cover:x' });
+		await target.tracks.update('c', { coverId: 'cover:y' });
+	}
+
+	it('fills the session when a track starts: the words, the cover, the keys', async () => {
+		await seedCovered();
+
+		player.playTracks(['a', 'b', 'c'], 'a', { kind: 'library' });
+		await playing('a');
+
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song a'));
+		expect(session.metadata?.artist).toBe('Mỹ Tâm');
+		expect(session.metadata?.album).toBe('Tâm');
+		expect(session.metadata?.artwork[0]?.src).toMatch(/^blob:/);
+		expect(session.metadata?.artwork[0]?.type).toBe('image/png');
+		expect(session.playbackState).toBe('playing');
+		for (const action of ['play', 'pause', 'previoustrack', 'nexttrack', 'seekto'] as const) {
+			expect(session.handlers.get(action)).toBeTypeOf('function');
+		}
+		// iOS shows skip-ten-seconds instead of previous and next while these
+		// exist; `stop` would end what the tile can only pause.
+		for (const action of ['seekbackward', 'seekforward', 'stop'] as const) {
+			expect(session.handlers.get(action)).toBeNull();
+		}
+	});
+
+	it('answers the keys: next, seek, pause, play and previous', async () => {
+		await seedCovered();
+		player.playTracks(['a', 'b', 'c'], 'a', { kind: 'library' });
+		await playing('a');
+
+		session.press('nexttrack');
+		await playing('b');
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song b'));
+		expect(session.metadata?.artist).toBe(m['widget.music.unknown_artist']());
+
+		audio.metadata(120);
+		session.press('seekto', { seekTime: 30 });
+		expect(player.positionMs).toBe(30_000);
+		expect(session.positions.at(-1)).toEqual({ duration: 120, position: 30, playbackRate: 1 });
+
+		session.press('pause');
+		expect(player.status).toBe('paused');
+		expect(session.playbackState).toBe('paused');
+
+		session.press('play');
+		await playing('b');
+		expect(session.playbackState).toBe('playing');
+
+		// Past three seconds, previous goes back to the start of this track.
+		session.press('previoustrack');
+		expect(player.current?.id).toBe('b');
+		expect(player.positionMs).toBe(0);
+	});
+
+	it('shares one cover URL across an album, and lets it go for the next cover', async () => {
+		await seedCovered();
+		const revoke = vi.spyOn(URL, 'revokeObjectURL');
+		player.playTracks(['a', 'b', 'c'], 'a', { kind: 'library' });
+		await playing('a');
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song a'));
+		const first = session.metadata?.artwork[0]?.src;
+
+		player.next();
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song b'));
+		expect(session.metadata?.artwork[0]?.src).toBe(first);
+		expect(revoke).not.toHaveBeenCalledWith(first);
+
+		player.next();
+		await vi.waitFor(() => expect(session.metadata?.title).toBe('Song c'));
+		expect(session.metadata?.artwork[0]?.src).not.toBe(first);
+		expect(revoke).toHaveBeenCalledWith(first);
+		revoke.mockRestore();
+	});
+
+	it('never hands the lock screen a length it does not know, or a place past the end', async () => {
+		await seed(['a']);
+
+		player.playTracks(['a'], 'a', { kind: 'library' });
+		await playing('a');
+		// Before its metadata the element knows no duration: a clear, not a throw.
+		expect(session.positions.at(-1)).toBeUndefined();
+
+		audio.metadata(60);
+		player.seek(90_000);
+
+		expect(session.positions.at(-1)).toEqual({ duration: 60, position: 60, playbackRate: 1 });
+		expect(session.positions.every(placeable)).toBe(true);
+	});
+
+	it('goes on without a key the browser does not know', async () => {
+		session.unknown.add('seekto');
+		await seed(['a', 'b']);
+
+		player.playTracks(['a', 'b'], 'a', { kind: 'library' });
+		await playing('a');
+
+		expect(session.handlers.has('seekto')).toBe(false);
+		session.press('nexttrack');
+		await playing('b');
+	});
+
+	it('plays in a browser with no Media Session at all', async () => {
+		player.reset({
+			target,
+			createAudio: () => audio as unknown as HTMLAudioElement,
+			session: () => null
+		});
+		await seed(['a']);
+
+		player.playTracks(['a'], 'a', { kind: 'library' });
+
+		await playing('a');
 	});
 });
 

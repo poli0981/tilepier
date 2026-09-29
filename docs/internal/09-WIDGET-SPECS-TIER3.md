@@ -278,7 +278,17 @@ only module allowed to import music-metadata:
   in the tile). Source: FSA → `getFile()` → object URL (revoke on track
   change); blob path → object URL from Dexie blob.
 - **Media Session API:** metadata (title/artist/album/cover), handlers for
-  play/pause/prev/next/seek → OS media keys + lockscreen.
+  play/pause/prev/next/seek → OS media keys + lockscreen. As built (Week 7):
+  written only while the music player holds `core/playback`'s claim, so it
+  never writes over the video player's session; cleared when the player
+  stops, so a media key cannot start music for a tile that has left the deck.
+  `seekbackward` and `seekforward` stay unset: iOS shows ±10 s buttons
+  *instead of* previous and next while either exists. Every write goes
+  through `core/media-session.ts`'s guards — older Safari throws for an
+  action it does not know, and `setPositionState` throws for the `NaN`
+  duration an element reports before its metadata. The artwork is the
+  cover's object URL, one per cover and shared by an album's tracks; Firefox
+  on Windows does not show `blob:` artwork, which is accepted.
 - Queue model: current playlist or ad-hoc queue; shuffle (Fisher–Yates over
   remaining), repeat off/all/one. Position persisted (settings) every 10 s
   and on pause → resume-where-left on reload.
