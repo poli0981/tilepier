@@ -1000,7 +1000,10 @@ opt-in, and the gate's own summary stays true.
    second profile would inherit it — "separate functions" were not separate. 6a-2.
 4. **The service worker precaches all of `build`**, maplibre included, for
    every visitor; doc 17 §2 says widget chunks are not precached. The doc is
-   corrected in 6b; the filter is the Week 8 PWA pass.
+   corrected in 6b; the filter is the Week 8 PWA pass. *(Corrected 2026-09-29:
+   MapLibre was **not** included — its modules sit outside `build`, and the
+   cache-first rule never wrote them anywhere, so they were neither precached
+   nor cached on use. Fixed in Week 7a-0; doc 17 §2.)*
 5. **`e2e/s4-budgets`'s "own chunk" assertion cannot fail** — its one specific
    check is `HEAVY.test('echarts')` on a constant. 6b.
 6. **A breaker per upstream cannot serve a class of upstreams**: copied for

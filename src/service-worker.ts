@@ -74,13 +74,32 @@ sw.addEventListener('fetch', (event) => {
 	if (url.pathname.startsWith('/api/')) return;
 
 	// Content-hashed output: cache-first is safe and permanent.
-	if (build.includes(url.pathname) || files.includes(url.pathname)) {
+	//
+	// `/_app/immutable/` as a whole, not only what `build` lists (2026-09-29).
+	// `build` comes from the Vite client manifest, and two kinds of output never
+	// reach it: the MapLibre modules scripts/vite-maplibre.ts copies in, and the
+	// music tag worker, which Vite builds on its own. Both were fetched from the
+	// network every time and cached nowhere, so a map or a library scan with no
+	// connection failed even after the reader had used it online. They are
+	// cached on first use rather than precached; what to precache is the Week 8
+	// PWA pass (doc 17 §2). MapLibre's folder is named by version rather than by
+	// hash, which is safe only because every deploy opens a fresh cache.
+	if (
+		build.includes(url.pathname) ||
+		files.includes(url.pathname) ||
+		url.pathname.startsWith('/_app/immutable/')
+	) {
 		event.respondWith(
 			caches.open(CACHE).then(async (cache) => {
 				const hit = await cache.match(request);
 				if (hit) return hit;
 				const response = await fetch(request);
-				if (response.ok) cache.put(request, response.clone());
+				// 200 exactly: a 206 is `ok` too, and `cache.put` refuses a partial
+				// response. The write is handed to waitUntil so it neither floats
+				// unobserved nor delays the response it is copying.
+				if (response.status === 200) {
+					event.waitUntil(cache.put(request, response.clone()).catch(() => undefined));
+				}
 				return response;
 			})
 		);

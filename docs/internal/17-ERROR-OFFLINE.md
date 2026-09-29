@@ -39,6 +39,16 @@ gate has not been accepted.
   the Week 8 PWA pass. MapLibre is the exception by construction: its modules
   are copied beside the build rather than built (doc 22 §S6), so they are not
   in `build` and arrive with the first map rather than the first visit.
+- **Corrected 2026-09-29: output outside `build` is cached on first use.**
+  "Arrive with the first map" was half true — they arrived, and were cached
+  nowhere, because the cache-first rule matched only paths in `build` and
+  `files`. The music tag worker is the same case (Vite builds workers on their
+  own, outside the client manifest). So a map or a library scan with no
+  connection failed even after the reader had used it online. The cache-first
+  rule now covers every `/_app/immutable/` path, writing on first use and only
+  a `200` (a `206` is `ok` too, and `cache.put` refuses it).
+  `e2e/s5-pwa` fetches both from a controlled page and was watched failing
+  before the change.
 - **Widget chunks are not precached, and that has a visible consequence.**
   Found 2026-08-28 by journey #4: opening a widget's detail for the *first* time
   with no connection fails, because the chunk has never been fetched and

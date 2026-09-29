@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -138,6 +138,45 @@ test.describe('S5 · PWA on adapter-cloudflare', () => {
 		});
 
 		expect(immutableCached).toBeGreaterThan(0);
+	});
+
+	test('hashed output the Vite manifest cannot list is cached on first use', async ({ page }) => {
+		// doc 17 §2 (2026-09-29). `$service-worker`'s `build` list comes from the
+		// Vite client manifest, and two kinds of output never appear in it: the
+		// MapLibre modules scripts/vite-maplibre.ts copies in, and the tag worker
+		// Vite builds on its own. Neither was precached nor cached on use, so a
+		// first map or a first library scan with no connection failed even after
+		// the reader had used both online.
+		const immutable = join(process.cwd(), '.svelte-kit', 'cloudflare', '_app', 'immutable');
+		const maplibre = readdirSync(immutable).find((name) => name.startsWith('maplibre-'));
+		const worker = readdirSync(join(immutable, 'workers')).find((name) =>
+			name.startsWith('tag-worker-')
+		);
+		expect(maplibre, 'the build carries no MapLibre modules').toBeDefined();
+		expect(worker, 'the build carries no tag worker').toBeDefined();
+		const paths = [
+			`/_app/immutable/${maplibre}/maplibre-gl-worker.mjs`,
+			`/_app/immutable/workers/${worker}`
+		];
+
+		await page.goto('/');
+		await awaitServiceWorker(page);
+		await expect
+			.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+			.toBe(true);
+
+		await page.evaluate(async (urls) => {
+			for (const url of urls) await (await fetch(url)).arrayBuffer();
+		}, paths);
+
+		for (const path of paths) {
+			await expect
+				.poll(() => page.evaluate(async (url) => (await caches.match(url)) !== undefined, path), {
+					timeout: 5_000,
+					message: `${path} was not cached on use`
+				})
+				.toBe(true);
+		}
 	});
 });
 
