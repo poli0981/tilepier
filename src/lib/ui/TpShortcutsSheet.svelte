@@ -20,7 +20,8 @@
 		{ key: () => '← →', label: 'common.shortcuts.video_seek' },
 		{ key: () => '↑ ↓', label: 'common.shortcuts.video_volume' },
 		{ key: () => 'M', label: 'common.shortcuts.video_mute' },
-		{ key: () => 'F', label: 'common.shortcuts.video_fullscreen' }
+		{ key: () => 'F', label: 'common.shortcuts.video_fullscreen' },
+		{ key: () => 'C', label: 'common.shortcuts.video_captions' }
 	] as const;
 </script>
 

@@ -4,6 +4,7 @@
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
 	import { TpVideoController } from './controller.svelte';
+	import { pickSubtitles } from './picker';
 	import type { TpMediaFile } from './store.svelte';
 	import TpMediaControls from './TpMediaControls.svelte';
 
@@ -38,6 +39,20 @@
 	});
 
 	const phase = $derived(player?.phase ?? 'loading');
+
+	/** Asks for a subtitle file, in the click, and shows what it holds. */
+	async function addSubtitles(current: TpVideoController): Promise<void> {
+		const file = await pickSubtitles(m['widget.media.subs_picker_label']());
+		if (file !== null) await current.subtitles.add(file);
+	}
+
+	/** The captions button: subtitles to add while there are none, else show or hide. */
+	function captions(): void {
+		const current = player;
+		if (current === null) return;
+		if (current.subtitles.name === null) void addSubtitles(current);
+		else current.subtitles.toggle();
+	}
 </script>
 
 <div class="tp-player" bind:this={box} data-testid="media-player" data-phase={phase}>
@@ -70,7 +85,7 @@
 			<p class="tp-player__note" role="status">{m['widget.media.press_play']()}</p>
 		{/if}
 		{#if player.resumedFromMs !== null}
-			<div class="tp-player__resumed" data-testid="media-resumed">
+			<div class="tp-player__row" data-testid="media-resumed">
 				<p class="tp-player__note tp-num" role="status">
 					{m['widget.media.resumed']({
 						position: fmtDuration(player.resumedFromMs, settings.locale)
@@ -80,6 +95,26 @@
 					{m['widget.media.start_over']()}
 				</button>
 			</div>
+		{/if}
+		{#if player.subtitles.name !== null}
+			<div class="tp-player__row" data-testid="media-subs">
+				<!-- A file's name is text, never markup (CLAUDE.md rule 7). -->
+				<p class="tp-player__note">
+					{m['widget.media.subs_loaded']({ name: player.subtitles.name })}
+				</p>
+				<button
+					type="button"
+					onclick={() => player !== null && void addSubtitles(player)}
+					data-testid="media-subs-change"
+				>
+					{m['widget.media.subs_change']()}
+				</button>
+			</div>
+		{/if}
+		{#if player.subtitles.failed !== null}
+			<p class="tp-player__note" role="status" data-testid="media-subs-failed">
+				{m['widget.media.subs_unreadable']({ name: player.subtitles.failed })}
+			</p>
 		{/if}
 		<TpMediaControls
 			playing={player.playing}
@@ -93,7 +128,11 @@
 			inPip={player.inPip}
 			fullscreenAvailable={player.fullscreenAvailable}
 			inFullscreen={player.inFullscreen}
+			captionsAvailable={!player.audioOnly}
+			hasSubtitles={player.subtitles.name !== null}
+			captionsShowing={player.subtitles.showing}
 			onPip={() => player?.togglePip()}
+			onCaptions={captions}
 			onFullscreen={() => player?.toggleFullscreen()}
 			onToggle={() => player?.toggle()}
 			onSeek={(ms) => player?.seekTo(ms)}
@@ -163,13 +202,13 @@
 		font-size: var(--text-xs);
 	}
 
-	.tp-player__resumed {
+	.tp-player__row {
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 	}
 
-	.tp-player__resumed button {
+	.tp-player__row button {
 		min-height: 40px;
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-ctl);
@@ -181,7 +220,7 @@
 		padding: 0 0.75rem;
 	}
 
-	.tp-player__resumed button:focus-visible {
+	.tp-player__row button:focus-visible {
 		outline: 2px solid var(--color-beacon);
 		outline-offset: 1px;
 	}

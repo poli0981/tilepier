@@ -9,8 +9,8 @@ import { recordSession, sessionLog } from './_lib/session';
 /**
  * The video widget end to end (doc 09 §3), on the built app under its real CSP
  * (doc 15 §2): opened through the OPFS-backed picker of `_lib/fsa` and through
- * the file input Brave and Firefox get, the files it cannot play, the keys, and
- * a reload in the middle of a video.
+ * the file input Brave and Firefox get, the files it cannot play, the keys,
+ * subtitles, and a reload in the middle of a video.
  *
  * **The video really plays.** Chrome for Testing decodes VP9, Opus, H.264 and
  * AAC (doc 22 §S8), and a headless run is muted, not stopped. What the OS would
@@ -37,7 +37,8 @@ async function openFromTile(page: Page, name: string): Promise<void> {
 		'clip.webm',
 		'clip.mp4',
 		'sound-only.webm',
-		'not-video.mp4'
+		'not-video.mp4',
+		'subs.vi.srt'
 	]);
 	await chooseFile(page, name);
 
@@ -158,5 +159,31 @@ test('reloaded mid-play, the video is offered back, and the same file picks up w
 
 	await expect(page.getByTestId('media-resumed')).toContainText(/Xem tiếp từ 0:0[78]/);
 	expect(await currentTime(page)).toBeGreaterThanOrEqual(left);
+	expect(await violations()).toEqual([]);
+});
+
+test('subtitles the reader adds show over the video, read past their mark and CRLF, and C hides them', async ({
+	page
+}) => {
+	const violations = await watchCsp(page);
+	await openFromTile(page, 'clip.webm');
+	await expect(page.getByTestId('media-player')).toHaveAttribute('data-phase', 'ready');
+	const video = page.getByTestId('media-video');
+	const track = (read: (video: HTMLVideoElement) => unknown) => video.evaluate(read);
+
+	await chooseFile(page, 'subs.vi.srt');
+	await page.getByTestId('media-captions').click();
+
+	await expect.poll(() => track((v) => v.textTracks[0]?.cues?.length ?? 0)).toBe(3);
+	expect(await track((v) => (v.textTracks[0]?.cues?.[0] as VTTCue).text)).toBe(
+		'Xin chào — đây là <i>phụ đề</i> thử.'
+	);
+	expect(await track((v) => v.textTracks[0]?.mode)).toBe('showing');
+	await expect(page.getByTestId('media-subs')).toContainText('Phụ đề: subs.vi.srt');
+
+	await page.keyboard.press('c');
+
+	await expect.poll(() => track((v) => v.textTracks[0]?.mode)).toBe('hidden');
+	await expect(page.getByTestId('media-captions')).toHaveAttribute('aria-label', 'Hiện phụ đề');
 	expect(await violations()).toEqual([]);
 });

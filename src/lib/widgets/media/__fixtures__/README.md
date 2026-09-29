@@ -15,3 +15,8 @@ at 160×90 over a synthesised sine tone.
   show" state.
 - `not-video.mp4` — a text file named like a video: error code 4 in every
   browser, the one "unsupported" case they all agree on (doc 22 §S8).
+- `subs.vi.srt` — subtitles for `clip.webm` as older SubRip files come: a
+  byte-order mark, CRLF, an override block, a font tag, `&` and angle
+  brackets, a one-digit hour, short milliseconds, a position after a timing,
+  and a blank line inside a cue. `.gitattributes` keeps its bytes exact.
+- `subs.vi.vtt` — the same as WebVTT, taken as it is.

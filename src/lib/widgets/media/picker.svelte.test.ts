@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { pickVideo } from './picker';
+import { pickSubtitles, pickVideo } from './picker';
 
 /**
- * Asking for a video (doc 09 §3): the File System Access picker where it
- * exists, keeping the handle; the `<input>` where it does not, or when it
- * fails; and nothing at all when the reader cancels.
+ * Asking for a video or its subtitles (doc 09 §3): the File System Access
+ * picker where it exists, keeping a video's handle; the `<input>` where it
+ * does not, or when it fails; and nothing at all when the reader cancels.
  */
 
 const FILE = new File(['frames'], 'Phim thử.mp4', { type: 'video/mp4' });
@@ -76,5 +76,42 @@ describe('pickVideo', () => {
 		answerInput(null);
 
 		expect(await pickVideo('Video')).toBeNull();
+	});
+});
+
+describe('pickSubtitles', () => {
+	const SRT = new File(['1\n00:00:01,000 --> 00:00:02,000\nMột\n'], 'Phim thử.vi.srt');
+
+	it('offers .srt and .vtt, in the folder the video came from', async () => {
+		const picker = vi.fn(async (_options?: OpenFilePickerOptions) => [handle(SRT)]);
+		window.showOpenFilePicker = picker;
+
+		const picked = await pickSubtitles('Phụ đề');
+
+		expect(picked?.name).toBe('Phim thử.vi.srt');
+		const options = picker.mock.calls[0]?.[0];
+		// The video picker's id: the browser remembers one folder for both.
+		expect(options?.id).toBe('tilepier-media');
+		expect(options?.types?.[0]?.description).toBe('Phụ đề');
+		expect(options?.types?.[0]?.accept).toEqual({
+			'text/vtt': ['.vtt'],
+			'application/x-subrip': ['.srt']
+		});
+	});
+
+	it('asks through the input for the same two where there is no picker', async () => {
+		answerInput(SRT);
+		let accept = '';
+		const click = HTMLInputElement.prototype.click;
+		vi.mocked(click).mockImplementationOnce(function (this: HTMLInputElement) {
+			accept = this.accept;
+			const chosen = new DataTransfer();
+			chosen.items.add(SRT);
+			this.files = chosen.files;
+			this.dispatchEvent(new Event('change'));
+		});
+
+		expect((await pickSubtitles('Phụ đề'))?.name).toBe('Phim thử.vi.srt');
+		expect(accept).toBe('.srt,.vtt');
 	});
 });
