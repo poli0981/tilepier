@@ -180,7 +180,11 @@
 		if (event.key !== 'Escape') return;
 		// doc 13 §8: Esc closes the topmost layer, and while this is open it is
 		// the topmost one. Stopping propagation keeps the layout's global handler
-		// from also dropping out of edit mode on the same keystroke.
+		// from also dropping out of edit mode on the same keystroke — which only
+		// works because this listens on the *document*, one step before `window`
+		// on the way up. The layout's handler is on `window` and registered first,
+		// so a `window` listener here ran after it, and no stopPropagation can
+		// recall a keystroke that has already been handled (fixed 2026-09-29).
 		event.stopPropagation();
 		void requestClose();
 	}
@@ -190,7 +194,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:document onkeydown={onKeydown} />
 
 <!-- doc 13 §5.1: scrim is ink-950 at 80 %. Presentation role — the dialog below
      is the thing screen readers should see, and Esc is handled above. -->

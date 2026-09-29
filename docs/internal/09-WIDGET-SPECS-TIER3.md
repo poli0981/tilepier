@@ -241,8 +241,12 @@ call rather than per candle — and a few kilobytes on a 1M view.
   prev/play/next; h≥2 adds queue-peek line.
 - **Detail:** library table (virtualized ≥ 500 rows — simple windowing,
   no dep), search, sort, playlists CRUD (drag to reorder), now-playing pane
-  with large cover. **Visualizer (Web Audio AnalyserNode) is the declared
-  cut-line** — ship v1.0 without it if Week 7 runs hot (charter risk #2).
+  with large cover. ~~**Visualizer (Web Audio AnalyserNode) is the declared
+  cut-line** — ship v1.0 without it if Week 7 runs hot (charter risk #2).~~
+  **Cut 2026-09-29**, before Week 7 started (doc 23): the week measured
+  5.55×, and `createMediaElementSource` binds the one audio element to an
+  AudioContext for good — every sound the player makes would route through a
+  graph that starts suspended. It is in the v1.x parking lot.
 - **Edge cases:** file moved/deleted since scan → play error toast + mark
   track missing (don't auto-delete; Rescan reconciles); unsupported codec →
   skip-next with per-track error mark; autoplay policy → first play always

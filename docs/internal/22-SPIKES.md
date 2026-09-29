@@ -484,7 +484,8 @@ blank, and **nothing is logged anywhere**.
    beside it, main and worker share one `shared` module, everything is
    same-origin, and the versioned path makes the adapter's immutable cache
    headers true. It is not in Vite's manifest, so the service worker does not
-   precache it.
+   precache it — and, it turned out, did not cache it on use either, until
+   Week 7a-0 (doc 17 §2).
 2. **Why same-origin is not optional.** Given a worker URL on another origin,
    MapLibre wraps it in a `blob:` URL — and doc 15 §2's `worker-src 'self'`
    refuses blobs. A CDN copy was never available (rule 3), and it would not
@@ -492,6 +493,10 @@ blank, and **nothing is logged anywhere**.
 3. **The CSP.** A same-origin module worker under `worker-src 'self'`: **0
    violations**, and the worker served as `text/javascript` under `nosniff`
    (`wrangler dev`; to be confirmed on production after the first deploy).
+   **Confirmed on production 2026-09-29**: all three
+   `/_app/immutable/maplibre-6.10.0/*.mjs` answer `200`,
+   `Content-Type: text/javascript`, `x-content-type-options: nosniff` and
+   `Cache-Control: public, immutable, max-age=31536000`.
 4. **Headless WebGL2: no flag needed.** Playwright 1.62's Chromium drew the
    map in the e2e — the centre pixel of a beacon-coloured GeoJSON patch reads
    back beacon-coloured through `readPixels`. The `--enable-unsafe-swiftshader`

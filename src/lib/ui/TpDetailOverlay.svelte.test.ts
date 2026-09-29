@@ -26,6 +26,16 @@ function openFor(): TpDetailState {
 	};
 }
 
+/**
+ * A key pressed while focus is inside the panel, which is where a real one
+ * starts. Dispatching on `window` instead skips the document entirely, so it
+ * would test a route no keystroke takes — four tests here did exactly that
+ * until 2026-09-29, and two of them passed without reaching the handler.
+ */
+function press(target: Element, key: string): void {
+	target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+}
+
 beforeEach(() => {
 	settings.dispose();
 	settings.hydrate();
@@ -115,21 +125,54 @@ describe('closing', () => {
 	it('closes on Escape', async () => {
 		const onClose = vi.fn();
 		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
-		await expect.element(screen.getByTestId('detail-panel')).toBeVisible();
+		const panel = screen.getByTestId('detail-panel');
+		await expect.element(panel).toBeVisible();
 
-		window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+		press(panel.element(), 'Escape');
 
 		await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
 	});
 
-	it('ignores keys that are not Escape', async () => {
-		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
-		await expect.element(screen.getByTestId('detail-panel')).toBeVisible();
+	it('keeps Escape from the layers underneath', async () => {
+		// doc 13 §8: Esc closes the topmost layer and nothing else. The layout's
+		// global handler is on `window` and is registered first, at layout init,
+		// so a handler that is *also* on `window` runs after it and no
+		// stopPropagation there can take the keystroke back. Until 2026-09-29 the
+		// same Esc that closed this panel dropped the deck out of edit mode.
+		const underneath = vi.fn();
+		window.addEventListener('keydown', underneath);
+		try {
+			const onClose = vi.fn();
+			const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+			const panel = screen.getByTestId('detail-panel');
+			await expect.element(panel).toBeVisible();
 
-		window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', bubbles: true }));
+			press(panel.element(), 'Escape');
 
-		expect(onClose).not.toHaveBeenCalled();
+			await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+			expect(underneath).not.toHaveBeenCalled();
+		} finally {
+			window.removeEventListener('keydown', underneath);
+		}
+	});
+
+	it('ignores keys that are not Escape, and lets them through', async () => {
+		const underneath = vi.fn();
+		window.addEventListener('keydown', underneath);
+		try {
+			const onClose = vi.fn();
+			const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+			const panel = screen.getByTestId('detail-panel');
+			await expect.element(panel).toBeVisible();
+
+			press(panel.element(), 'e');
+
+			expect(onClose).not.toHaveBeenCalled();
+			// Only Escape is claimed; every other key is still the layout's.
+			expect(underneath).toHaveBeenCalledTimes(1);
+		} finally {
+			window.removeEventListener('keydown', underneath);
+		}
 	});
 
 	it('closes once however many times it is asked', async () => {
@@ -143,10 +186,11 @@ describe('closing', () => {
 		// the guard has to hold for the paths that stay clickable.
 		const onClose = vi.fn();
 		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
-		await expect.element(screen.getByTestId('detail-panel')).toBeVisible();
+		const panel = screen.getByTestId('detail-panel');
+		await expect.element(panel).toBeVisible();
 
-		window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-		window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+		press(panel.element(), 'Escape');
+		press(panel.element(), 'Escape');
 		await screen.getByTestId('detail-close').click();
 
 		await vi.waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
@@ -159,7 +203,7 @@ describe('closing', () => {
 		const scrim = screen.getByTestId('detail-scrim');
 		await expect.element(scrim).toBeVisible();
 
-		window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+		press(screen.getByTestId('detail-panel').element(), 'Escape');
 
 		await vi.waitFor(() => {
 			expect(scrim.element().className).toContain('closing');

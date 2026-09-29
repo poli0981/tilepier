@@ -306,6 +306,23 @@ The single most dangerous integration point. Fixed rules:
     including one still-open question: an injected resize sometimes produces
     no `change` event at all, and whether a real pointer can do the same is
     unanswered.)
+15. **A wrapper whose widget has not arrived is pending, not finished.**
+    `mountHost` used to return silently when `widgets` had no component for a
+    tile, and nothing came back for that wrapper. The deck page renders its
+    empty message instead of `TpGrid` when there are no tiles, so the first
+    tile added to a deck *loaded* empty mounts a fresh grid whose seed is that
+    tile — while its chunk is still downloading — and the page then adopts the
+    seed as mounted. The reader saw an empty tile until they reloaded. Such a
+    wrapper is now held in `pending` and mounted by an effect the moment
+    `widgets` carries its component; `addTile` for a pending instance fills
+    the wrapper it has instead of adding a second one.
+
+    (Added 2026-09-29, from a review before Week 7, whose two widgets are never
+    in the seed and are always added. `e2e/journey-2` "a deck loaded empty
+    mounts the first tile it is given" was watched failing first. The review
+    also predicted a duplicate wrapper for a deck emptied *by hand* and then
+    refilled; that did not reproduce — with the clock or with a widget the page
+    had never loaded — and both cases are now held by tests of their own.)
 
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:

@@ -19,12 +19,28 @@ import { describe, expect, it } from 'vitest';
 
 const ALLOWED = ['src/lib/ui/TpFeedHtml.svelte', 'src/lib/ui/TpMarkdown.svelte'];
 
+/**
+ * Blanks comments until nothing changes. One pass is not enough in general:
+ * removing `<!-- -->` from `<!<!-- -->-- x -->` leaves a fresh `<!--` behind,
+ * which is CodeQL's js/incomplete-multi-character-sanitization (alert #6). Here
+ * the output only feeds a count, never a page, but a count that a crafted
+ * comment could fool is not the rule doc 15 §4 asks for either.
+ */
+function withoutComments(source: string): string {
+	let before: string;
+	let after = source;
+	do {
+		before = after;
+		after = before
+			.replace(/<!--[\s\S]*?-->/g, '')
+			.replace(/\/\*[\s\S]*?\*\//g, '')
+			.replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+	} while (after !== before);
+	return after;
+}
+
 function uses(file: string): number {
-	const source = readFileSync(file, 'utf8')
-		.replace(/<!--[\s\S]*?-->/g, '')
-		.replace(/\/\*[\s\S]*?\*\//g, '')
-		.replace(/(^|[^:])\/\/[^\n]*/g, '$1');
-	return source.match(/\{@html\s/g)?.length ?? 0;
+	return withoutComments(readFileSync(file, 'utf8')).match(/\{@html\s/g)?.length ?? 0;
 }
 
 describe('{@html} (doc 15 §4)', () => {
@@ -39,6 +55,10 @@ describe('{@html} (doc 15 §4)', () => {
 			.sort((a, b) => a.file.localeCompare(b.file));
 
 		expect(found).toEqual(ALLOWED.map((file) => ({ file, count: 1 })));
+	});
+
+	it('blanks a comment that a single pass would leave behind', () => {
+		expect(withoutComments('<!<!-- -->-- {@html x} -->')).not.toContain('{@html');
 	});
 
 	it('says, beside each one, which sanitiser it trusts', () => {
