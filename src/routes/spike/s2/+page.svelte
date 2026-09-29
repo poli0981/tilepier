@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { db } from '$lib/core/storage/db';
+	import { createDb } from '$lib/core/storage/db';
 	import {
 		estimateQuota,
 		fileAt,
@@ -29,8 +29,15 @@
 	 * the files, leave the tab for ten minutes, come back and check — the answer
 	 * says whether a `File` taken before the revocation can still be read.
 	 *
-	 * Goes in Week 7a-2, once the widget itself imports the library.
+	 * **Its own database, not the app's** (since Week 7a-2). The music widget's
+	 * library now lives in the app's, and "wipe library" here — or a folder
+	 * picked here, which would replace the widget's — must not reach it.
+	 *
+	 * Goes once the owner's manual S7 check has run on production (doc 22 §S7):
+	 * "hold files" and "check held" are the only way to answer S23, and the
+	 * widget has no such controls.
 	 */
+	const db = createDb('tp-spike-s2');
 
 	let status = $state('idle');
 	let summary = $state<TpLibrarySummary | null>(null);
@@ -70,7 +77,7 @@
 		trackCount = await db.tracks.count();
 		coverBlobCount = await db.trackBlobs.where('id').startsWith('cover:').count();
 		quota = await estimateQuota();
-		const handle = await loadMusicRoot();
+		const handle = await loadMusicRoot(db);
 		hasStoredHandle = !!handle;
 		permission = handle ? await queryRootPermission(handle) : 'none';
 	}
@@ -91,6 +98,7 @@
 		const started = performance.now();
 
 		summary = await importFiles(picked, {
+			target: db,
 			onProgress: (p) => {
 				parsed = p.done;
 				total = p.total;
@@ -110,7 +118,7 @@
 		status = 'picking';
 		try {
 			const handle = await picker.call(window, { mode: 'read' });
-			await saveMusicRoot(handle);
+			await saveMusicRoot(handle, db);
 			await refresh();
 			status = 'folder-saved';
 		} catch {
@@ -119,14 +127,14 @@
 	}
 
 	async function relink() {
-		const handle = await loadMusicRoot();
+		const handle = await loadMusicRoot(db);
 		if (!handle) return;
 		permission = await requestRootPermission(handle);
 		status = `permission-${permission}`;
 	}
 
 	async function scan() {
-		const handle = await loadMusicRoot();
+		const handle = await loadMusicRoot(db);
 		if (!handle) return;
 
 		status = 'scanning';
@@ -136,6 +144,7 @@
 
 		try {
 			summary = await scanFolder(handle, {
+				target: db,
 				onProgress: (p) => {
 					parsed = p.done;
 					total = p.total;
@@ -152,7 +161,7 @@
 	}
 
 	async function holdFiles() {
-		const handle = await loadMusicRoot();
+		const handle = await loadMusicRoot(db);
 		if (!handle) return;
 
 		const paths = (await db.tracks.toArray()).flatMap((track) =>
@@ -172,7 +181,7 @@
 	}
 
 	async function checkHeld() {
-		const handle = await loadMusicRoot();
+		const handle = await loadMusicRoot(db);
 		if (!handle) return;
 
 		let heldReadable = 0;

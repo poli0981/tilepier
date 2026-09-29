@@ -21,7 +21,13 @@ import { fillOpfs, lapseGrant, LIBRARY, stubPicker } from './_lib/music';
  * The fixtures are real WAV files rather than random bytes, because the point
  * is to exercise music-metadata's parser: a scan of 200 unparseable files
  * measures error handling, not tag parsing.
+ *
+ * **The harness keeps its own database** (`tp-spike-s2`) since Week 7a-2, when
+ * the music widget's library moved into the app's: its "wipe library" must not
+ * reach a reader's music. So the reads below open that one.
  */
+
+const SPIKE_DB = 'tp-spike-s2';
 
 const FILE_COUNT = 200;
 
@@ -112,7 +118,7 @@ test.describe('S2 · import path (every browser)', () => {
 			});
 			dbHandle.close();
 			return all as { title: string; source: string; durationMs?: number }[];
-		}, 'tilepier');
+		}, SPIKE_DB);
 
 		expect(stored.length).toBe(20);
 		expect(stored.every((t) => t.source === 'blob')).toBe(true);
@@ -213,7 +219,7 @@ async function storedTracks(page: Page): Promise<{ title: string; missing?: bool
 		});
 		dbHandle.close();
 		return rows as { title: string; missing?: boolean }[];
-	}, 'tilepier');
+	}, SPIKE_DB);
 }
 
 test.describe('S7 · path A through an OPFS folder', () => {
