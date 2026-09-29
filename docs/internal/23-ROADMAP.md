@@ -1397,13 +1397,16 @@ OS's keys and the keyboard's work from the moment a video loads (doc 09 §3).
   once its put has succeeded, a turn an unloading page never gets.
   journey-media's reload test found it, and a trace showed the put leave and
   nothing arrive. `putPlaybackNow` commits in the handler; music's flush, lost
-  since 7a, uses it too (doc 04 §6). The notes writer has the same gap and is
-  a filed follow-up.
-- **CI found three test races.** A tick before swr's cache write had landed
-  joined the in-flight request (weather, and rss's twin), reproduced with a
-  300 ms write. The file's first real video decoded later than a second.
-  And the test browser's first video did not start at all on CI, which a
-  warm-up playback before the player's tests now absorbs and reports.
+  since 7a, uses it too (doc 04 §6). The notes writer had the same gap since
+  Week 2 — a note's last 300 ms of typing lost on a reload — and #38 fixes
+  it the same way.
+- **CI found a test race and an environment gap.** A tick before swr's cache
+  write had landed joined the in-flight request (weather, and rss's twin),
+  reproduced with a 300 ms write. And the test browser's first video never
+  started on CI — not in five seconds, not in twenty — while every later one
+  did at once. A warm-up playback, started by a click before the player's
+  tests, now absorbs it, and reports what the page looked like if it ever
+  stalls again.
 
 ### Week 7b-3 — subtitles (2026-09-29)
 
