@@ -103,6 +103,20 @@ describe('states (doc 06 §3)', () => {
 		expect(onOpenDetail).toHaveBeenCalledTimes(1);
 	});
 
+	it('shows how far a first scan has got, not a player with nothing to play', async () => {
+		await collection.load();
+		// A first folder being read: a large one takes a while, and its tracks
+		// arrive only when it is done.
+		collection.scanning = { done: 12, total: 40 };
+
+		for (const size of [WIDE, ROW]) {
+			const screen = show(size);
+			await expect.element(screen.getByTestId('music-scanning')).toBeVisible();
+			await expect.element(screen.getByTestId('music-tile')).not.toBeInTheDocument();
+			cleanup();
+		}
+	});
+
 	it('asks for the folder again when its grant has lapsed', async () => {
 		const opfs = await navigator.storage.getDirectory();
 		const name = `tp-music-tile-${crypto.randomUUID()}`;

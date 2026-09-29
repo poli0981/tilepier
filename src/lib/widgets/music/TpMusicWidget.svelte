@@ -39,13 +39,15 @@
 
 	const track = $derived(player.current);
 
-	/** Anything but the player itself — see `TpMusicTileState`. */
+	/** Anything but the player itself — see `TpMusicTileState`. An empty library
+	 *  stays in its state through a first scan: its tracks arrive only when the
+	 *  scan is done, and until then a play button would have nothing to play. */
 	const showsState = $derived(
 		!collection.loaded ||
 			collection.failed ||
 			collection.needsRelink ||
 			player.status === 'permission' ||
-			(collection.tracks.length === 0 && collection.scanning === null)
+			collection.tracks.length === 0
 	);
 	const flat = $derived(size.h <= 1);
 	const tiny = $derived(flat && size.w <= 2);

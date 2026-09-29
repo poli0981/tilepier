@@ -14,7 +14,8 @@
 	 * `permission-needed` (a folder library the browser will not read until the
 	 * reader allows it again — the card carries where playback was, and one
 	 * click allows and resumes, Week 7 plan S11) and `empty` (how to add music,
-	 * and that it never leaves the device). `TpMusicWidget` shows this instead of
+	 * and that it never leaves the device — or, while the first folder is read,
+	 * how far that has got). `TpMusicWidget` shows this instead of
 	 * the player whenever its `showsState` says so; the branches here follow the
 	 * same order.
 	 */
@@ -65,7 +66,10 @@
 	</div>
 {:else}
 	<div class="tp-mstate" class:tp-mstate--flat={flat} data-testid="music-empty">
-		{#if flat}
+		{#if collection.scanning !== null}
+			<!-- A first scan: how far it has got, and a way to stop it. -->
+			<TpMusicLibraryActions compact showNote={false} />
+		{:else if flat}
 			<!-- No room for two buttons and a note: the detail has all three. -->
 			<button
 				type="button"
