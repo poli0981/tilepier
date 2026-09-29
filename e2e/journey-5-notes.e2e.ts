@@ -46,6 +46,21 @@ test('a note can be written and its markdown renders', async ({ page }) => {
 	await expect(preview.locator('li')).toHaveCount(2);
 });
 
+test('what was typed just before a reload is kept', async ({ page }) => {
+	// The 300 ms writer's own window: the reload comes before its timer, so
+	// only the pagehide flush can keep these words — and a Dexie write started
+	// there never committed (doc 04 §6, 2026-09-29).
+	await acceptGate(page);
+	await page.getByRole('button', { name: 'tạo ghi chú đầu tiên' }).click();
+	const editor = page.getByTestId('notes-editor');
+	await expect(editor).toBeVisible();
+
+	await editor.pressSequentially('kept through a reload');
+	await page.reload();
+
+	await expect(page.getByTestId('notes-preview')).toContainText('kept through a reload');
+});
+
 test('a note survives a reload', async ({ page }) => {
 	await acceptGate(page);
 	await page.getByRole('button', { name: 'tạo ghi chú đầu tiên' }).click();

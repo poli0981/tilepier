@@ -14,6 +14,7 @@
 		deleteNote,
 		listNotes,
 		saveNote,
+		saveNoteNow,
 		searchNotes,
 		setPinned,
 		titleOf
@@ -112,7 +113,12 @@
 		// doc 04 §6, same writer the tile uses and for the same reason.
 		writer = createDexieWriter<{ id: string; body: string }>(
 			({ id, body }) => saveNote(id, body),
-			(error) => logEntry('warn', 'could not save a note', { src: 'widget', error })
+			(error) => logEntry('warn', 'could not save a note', { src: 'widget', error }),
+			undefined,
+			({ id, body }) => {
+				const held = notes?.find((entry) => entry.id === id);
+				if (held !== undefined) saveNoteNow(held, body);
+			}
 		);
 		return () => {
 			writer?.dispose();
