@@ -27,6 +27,7 @@
 		"verify": "pnpm run clean && pnpm run lint && pnpm run knip && pnpm run i18n:check && pnpm run i18n:audit && pnpm run tokens:audit && pnpm run test:cov && pnpm run build && pnpm run budgets",
 		"fonts:sync": "node scripts/sync-fonts.mjs",
 		"fixtures:music": "node scripts/gen-music-fixtures.mjs",
+		"fixtures:media": "node scripts/gen-media-fixtures.mjs",
 		"icons:gen": "node scripts/gen-icons.mjs",
 		"i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide --emit-ts-declarations",
 		"i18n:check": "node scripts/i18n-check.mjs",

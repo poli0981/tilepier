@@ -194,6 +194,32 @@ export function createDb(name = 'tilepier'): TpDb {
 export const db = createDb();
 
 /**
+ * Writes a `playback` row from a page on its way out (`pagehide`), issued
+ * **and committed** before the handler returns.
+ *
+ * Dexie commits a write only once its request has succeeded, and a page being
+ * unloaded never sees that: the transaction is aborted with the document, and
+ * the row is lost. Measured 2026-09-29 in journey-media — the put went out at
+ * `pagehide`, and after the reload nothing had been kept. `commit()` asks
+ * for the commit up front, so the browser finishes without the page.
+ *
+ * Only for that moment: it bypasses Dexie's middleware and checks nothing, and
+ * a database the page never opened has nothing to keep. Silent on failure — a
+ * lost write costs the place, nothing else.
+ */
+export function putPlaybackNow(row: TpPlaybackRow, target: TpDb = db): void {
+	if (!target.isOpen()) return;
+	try {
+		const transaction = target.backendDB().transaction('playback', 'readwrite');
+		transaction.objectStore('playback').put(row);
+		// Missing before Safari 15, where the write is as safe as it was.
+		if (typeof transaction.commit === 'function') transaction.commit();
+	} catch {
+		// As above.
+	}
+}
+
+/**
  * Startup prune (doc 05 §3): drop cache entries older than 7 days, then cap at
  * 500 rows. Cheap enough to run on every load, and it keeps a long-lived
  * profile from accumulating payloads for widgets the user removed months ago.

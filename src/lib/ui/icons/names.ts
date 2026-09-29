@@ -24,6 +24,7 @@ export type TpIconName =
 	| 'map'
 	| 'chart'
 	| 'music'
+	| 'film'
 	| 'play'
 	| 'pause'
 	| 'prev'
@@ -70,6 +71,18 @@ export const ICON_PATHS: Record<TpIconName, readonly string[]> = {
 	rss: ['M5 19h.01', 'M4 11a9 9 0 0 1 9 9', 'M4 4a16 16 0 0 1 16 16'],
 	map: ['M9 4 3 7v13l6-3 6 3 6-3V4l-6 3z', 'M9 4v13', 'M15 7v13'],
 	chart: ['M4 20V10', 'M10 20V4', 'M16 20v-7', 'M22 20H2'],
+	// A strip of film: the frame and its sprocket holes (Week 7b, media).
+	film: [
+		'M4 4h16v16H4z',
+		'M8 4v16',
+		'M16 4v16',
+		'M4 8h4',
+		'M4 12h4',
+		'M4 16h4',
+		'M16 8h4',
+		'M16 12h4',
+		'M16 16h4'
+	],
 	music: [
 		'M9 18V6l11-2v12',
 		'M9 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z',

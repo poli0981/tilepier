@@ -401,6 +401,10 @@ describe('refresh and lifetime', () => {
 		expect(scheduler.size).toBe(1);
 
 		vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+		// Until the first load's cache write is done its request is in flight,
+		// and the tick's run would join it rather than fetch — the race weather's
+		// twin of this test lost on CI (#35, 2026-09-29).
+		await vi.waitFor(() => expect(swrCache.inspect().some((entry) => entry.inFlight)).toBe(false));
 		scheduler.tick(Date.now() + RSS_CADENCE.everyMs + 1_000);
 
 		await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2));

@@ -104,6 +104,16 @@ reads its rows through a validator that fails closed. **Not exported** (§6).
 skips upgrade paths, and also checks that a version 1 build still opens a
 version 2 database — the rollback runbook deploys exactly that.
 
+Media's rows (Week 7b, doc 09 §3):
+- `media:pos:<key>`: `{name, size, positionMs, durationMs}`, one per video. The
+  newest twenty are kept, trimmed in the same transaction as the write and only
+  among `media:pos:` rows — music's rows share the table and are never touched.
+- `media:prefs`: `{volume, muted}`, one row.
+- `<key>` is `sha256Hex(NFC(name) + '|' + size, 12)` (`core/hash`, §4). With no
+  `crypto.subtle` there is no key, and nothing is kept.
+- A closing page writes its row with `putPlaybackNow`, which commits inside the
+  `pagehide` handler — a Dexie put would go with the page (doc 04 §6).
+
 Notes:
 - `FileSystemDirectoryHandle` is structured-cloneable → storable in IndexedDB.
   Re-access requires `queryPermission`/`requestPermission` per session (doc 09 §2).
@@ -154,7 +164,9 @@ path, `name+size` made two different "01 Intro.mp3"s one track. So:
   folder to be stable in, and the same file imported twice is still one track.
 
 Paths are NFC-normalised before hashing, because macOS hands out decomposed
-names. The fields after `addedAt` are not indexed, so they needed no
+names. **The hash is `core/hash.ts`'s `sha256Hex(key, 12)`** since Week 7b — one client
+copy for track ids, cover keys and media's resume keys, pinned by a golden test
+against Node's own SHA-256, because every one of those ids is stored. The fields after `addedAt` are not indexed, so they needed no
 `version()` bump; the few rows spike S2 wrote on production lack them, and a
 rescan reads that as "changed".
 

@@ -86,6 +86,13 @@ describe('doc 06 §7 table', () => {
 		expect(rows.size).toBe(15);
 	});
 
+	it('has every row built: fifteen of fifteen registered (M7)', () => {
+		for (const id of rows.keys()) {
+			expect(getManifest(id), `doc 06 §7 lists "${id}" and nothing registers it`).toBeDefined();
+		}
+		expect(MANIFESTS).toHaveLength(15);
+	});
+
 	it('matches every registered manifest', () => {
 		expect(MANIFESTS.length).toBeGreaterThan(0);
 

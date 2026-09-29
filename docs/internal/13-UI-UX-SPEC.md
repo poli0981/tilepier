@@ -191,6 +191,19 @@ show "on deck" disabled state. Search filters by name.
   minimal: `e` toggles edit, `Esc` closes topmost layer, `?` opens a
   shortcuts sheet. Media keys via Media Session (doc 09 §2).
 - Detail panel = `role="dialog"` with focus trap + return-focus to tile.
+  **The trap was built in Week 7b** (`ui/dialog-keys.ts`). Until then this line
+  promised it, while Tab walked out of the panel into the deck behind the scrim.
+  - Tab and Shift+Tab now wrap within the panel, and come back in from outside.
+  - **Escape is the browser's while something inside is full screen**, and for
+    500 ms after it leaves. Chrome swallows that Escape; engines that pass it
+    on would otherwise close the detail too. The layers underneath still never
+    see it.
+- **The video player's keys** (doc 09 §3): Space or K, ← →, ↑ ↓, M and F. They
+  work where the player has focus, which it takes when a video loads.
+  - A key the player answers stops there.
+  - A key a control already answers is left to it.
+  - Escape and modified keys pass on.
+  - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).

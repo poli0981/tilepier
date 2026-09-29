@@ -94,11 +94,16 @@ export function writeSessionState(session: TpMediaSession, state: MediaSessionPl
  * Where playback is, for the lock screen's scrubber. An unknown length —
  * before the metadata, or a stream — clears the position instead of throwing;
  * a position past the end is held at the end.
+ *
+ * `rate` is the speed it plays at: the OS moves the scrubber on by itself
+ * between writes, so a video at 1.5× written as 1 would fall behind every
+ * second (Week 7b). One it cannot use — zero, negative, not a number — is 1.
  */
 export function writeSessionPosition(
 	session: TpMediaSession,
 	durationMs: number,
-	positionMs: number
+	positionMs: number,
+	rate = 1
 ): void {
 	if (session.setPositionState === undefined) return;
 	try {
@@ -111,7 +116,7 @@ export function writeSessionPosition(
 		session.setPositionState({
 			duration,
 			position: Math.min(duration, Math.max(0, at)),
-			playbackRate: 1
+			playbackRate: Number.isFinite(rate) && rate > 0 ? rate : 1
 		});
 	} catch {
 		// Stricter about the same numbers than the spec: no scrubber, still sound.

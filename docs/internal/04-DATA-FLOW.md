@@ -420,7 +420,19 @@ Two writers added in Week 7 do not debounce, each for a reason:
   `setInterval` stands — and at once on pause, `pagehide` and
   `visibilitychange → hidden`, to the `playback` table (doc 05 §3). A
   debounce would never fire while `timeupdate` keeps arriving, which is the
-  whole time music plays.
+  whole time music plays. The video player's position follows the same
+  schedule (doc 09 §3).
+
+**A write from `pagehide` has to be committed inside the handler** (measured
+2026-09-29 in journey-media). Dexie asks for the commit only once its put has
+succeeded, and a page being unloaded never sees that turn: the transaction is
+aborted with the document, and the write is lost on every reload. The trace
+showed the put leave at `pagehide` and nothing kept after it.
+`putPlaybackNow` (`core/storage/db.ts`) issues the put and `commit()` before
+the handler returns. The video's position uses it, and so does the music
+player's, whose flush had been lost on every reload since Week 7a. The 300 ms
+writer above flushes through Dexie the same way, which is a known gap (Week 7b
+follow-up).
 
 ## 7. Cross-tab behavior
 

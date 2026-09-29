@@ -3,6 +3,7 @@
 	import type { TpDetailProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import TpSeekBar from '$lib/ui/TpSeekBar.svelte';
 	import { collection } from './collection.svelte';
 	import { player } from './player.svelte';
 	import TpMusicCover from './TpMusicCover.svelte';
@@ -11,7 +12,6 @@
 	import TpMusicOrphans from './TpMusicOrphans.svelte';
 	import TpMusicPlaylists from './TpMusicPlaylists.svelte';
 	import TpMusicQueue from './TpMusicQueue.svelte';
-	import TpMusicSeek from './TpMusicSeek.svelte';
 	import TpMusicTransport from './TpMusicTransport.svelte';
 
 	/**
@@ -67,7 +67,14 @@
 			{/if}
 		</div>
 
-		<TpMusicSeek />
+		<TpSeekBar
+			positionMs={player.positionMs}
+			durationMs={player.durationMs}
+			disabled={player.current === null || player.durationMs === 0}
+			label={m['widget.music.position']()}
+			onSeek={(ms) => player.seek(ms)}
+			testid="music-seek"
+		/>
 
 		<div class="tp-mdetail__controls">
 			<button

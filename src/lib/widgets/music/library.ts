@@ -1,3 +1,4 @@
+import { sha256Hex } from '$lib/core/hash';
 import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
 import type { TpCover, TpTagReply, TpTagRequest, TpTags } from './tags';
 
@@ -513,12 +514,8 @@ export async function deleteOrphans(
  * Paths are NFC-normalised first: macOS hands out decomposed names, and the
  * same file seen composed and decomposed must be one track.
  */
-async function trackIdOf(key: string): Promise<string> {
-	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
-	return [...new Uint8Array(digest)]
-		.slice(0, 12)
-		.map((byte) => byte.toString(16).padStart(2, '0'))
-		.join('');
+function trackIdOf(key: string): Promise<string> {
+	return sha256Hex(key, 12);
 }
 
 function nfc(path: string): string {

@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
-import { afterEach, describe, expect, it } from 'vitest';
-import { createDb, pruneApiCache, type TpDb } from './db';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createDb, pruneApiCache, putPlaybackNow, type TpDb } from './db';
 
 /**
  * doc 19 §3.3 wants a test per migration; doc 05 §3 says apiCache is pruned on
@@ -166,5 +166,33 @@ describe('pruneApiCache', () => {
 		const db = freshDb();
 
 		expect(await pruneApiCache(Date.now(), db)).toBe(0);
+	});
+});
+
+describe('putPlaybackNow', () => {
+	it('writes and commits before it returns — a closing page gets no later turn', async () => {
+		const db = freshDb();
+		await db.open();
+		const commit = vi.spyOn(IDBTransaction.prototype, 'commit');
+
+		try {
+			putPlaybackNow({ id: 'music', updatedAt: 1, state: { positionMs: 5 } }, db);
+			// Asked for inside the call: Dexie asks only once the put has
+			// succeeded, which an unloading page never sees.
+			expect(commit).toHaveBeenCalledOnce();
+		} finally {
+			commit.mockRestore();
+		}
+		await vi.waitFor(async () =>
+			expect((await db.playback.get('music'))?.state).toEqual({ positionMs: 5 })
+		);
+	});
+
+	it('leaves a database the page never opened alone', () => {
+		const db = freshDb();
+
+		putPlaybackNow({ id: 'music', updatedAt: 1, state: {} }, db);
+
+		expect(db.isOpen()).toBe(false);
 	});
 });

@@ -15,7 +15,11 @@ export interface TpWidgetLabels {
 	blurb: () => string;
 }
 
-const LABELS: Partial<Record<TpWidgetId, TpWidgetLabels>> = {
+/**
+ * A full record since Week 7b, when the fifteenth widget landed: a widget with
+ * no labels no longer compiles, where it used to fall back to its id.
+ */
+const LABELS: Record<TpWidgetId, TpWidgetLabels> = {
 	clock: {
 		title: () => m['widget.clock.title'](),
 		blurb: () => m['widget.clock.blurb']()
@@ -71,11 +75,13 @@ const LABELS: Partial<Record<TpWidgetId, TpWidgetLabels>> = {
 	music: {
 		title: () => m['widget.music.title'](),
 		blurb: () => m['widget.music.blurb']()
+	},
+	media: {
+		title: () => m['widget.media.title'](),
+		blurb: () => m['widget.media.blurb']()
 	}
 };
 
-/** Undefined for a widget that has not been built yet — the registry only
- *  lists what exists, so in practice every registered id resolves. */
-export function widgetLabels(id: TpWidgetId): TpWidgetLabels | undefined {
+export function widgetLabels(id: TpWidgetId): TpWidgetLabels {
 	return LABELS[id];
 }

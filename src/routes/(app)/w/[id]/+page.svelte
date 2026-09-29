@@ -79,7 +79,7 @@
 		if (tile !== undefined) deck.updateSettings(tile.instanceId, partial);
 	}
 
-	const title = $derived(widgetId === null ? null : (widgetLabels(widgetId)?.title() ?? widgetId));
+	const title = $derived(widgetId === null ? null : widgetLabels(widgetId).title());
 </script>
 
 <svelte:head>

@@ -8,6 +8,7 @@
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { trapTab, watchFullscreen, type TpFullscreenWatch } from './dialog-keys';
 
 	/**
 	 * The expanded detail panel (doc 13 §5), mounted over the deck.
@@ -64,6 +65,7 @@
 	const tile = $derived(deck.tiles.find((entry) => entry.instanceId === detail.instanceId));
 
 	let trigger: Element | null = null;
+	let fullscreen: TpFullscreenWatch | null = null;
 
 	/**
 	 * Starts a load of the widget's detail chunk. Code, not data — doc 20 §3's
@@ -101,6 +103,17 @@
 
 		return () => {
 			if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
+		};
+	});
+
+	$effect(() => {
+		// Escape stays the browser's while something in here is full screen, and
+		// just after (dialog-keys.ts).
+		const watch = watchFullscreen();
+		fullscreen = watch;
+		return () => {
+			watch.dispose();
+			fullscreen = null;
 		};
 	});
 
@@ -177,6 +190,11 @@
 	}
 
 	function onKeydown(event: KeyboardEvent): void {
+		if (event.key === 'Tab') {
+			// doc 13 §8: focus stays in the dialog (dialog-keys.ts).
+			if (panelEl !== null) trapTab(panelEl, event);
+			return;
+		}
 		if (event.key !== 'Escape') return;
 		// doc 13 §8: Esc closes the topmost layer, and while this is open it is
 		// the topmost one. Stopping propagation keeps the layout's global handler
@@ -186,6 +204,9 @@
 		// so a `window` listener here ran after it, and no stopPropagation can
 		// recall a keystroke that has already been handled (fixed 2026-09-29).
 		event.stopPropagation();
+		// Full screen, or just out of it: the key was the browser's, and the
+		// detail stays open (dialog-keys.ts).
+		if (fullscreen?.escapeIsTheBrowsers() === true) return;
 		void requestClose();
 	}
 
@@ -221,7 +242,7 @@
 		     before its chunk has arrived. Through `widgetLabels` rather than a
 		     computed `m[...]` key: doc 06 §1 puts the message references in one
 		     record precisely so a lookup by id stays typed. -->
-		<h2 id="tp-detail-title">{widgetLabels(detail.widgetId)?.title() ?? detail.widgetId}</h2>
+		<h2 id="tp-detail-title">{widgetLabels(detail.widgetId).title()}</h2>
 		<button
 			type="button"
 			class="tp-detail__close"
