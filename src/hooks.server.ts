@@ -46,6 +46,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
 			response.headers.set(name, value);
 		}
+		// A 404 answers for whatever was asked, and that is often an image, an icon
+		// or a script. SvelteKit still sends its page's preload `Link` header
+		// (sixty-odd stylesheets and modules), and Chromium applies a
+		// subresource's preload hints to the page that asked: that was Brave's
+		// "preloaded but not used" warning for the error page's CSS (2026-09-29).
+		// Nothing about a missing file is worth preloading.
+		if (response.status === 404) response.headers.delete('link');
 	}
 
 	return response;

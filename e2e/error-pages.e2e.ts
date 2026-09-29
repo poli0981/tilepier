@@ -15,6 +15,16 @@ test('an unknown route renders the 404 page, gate or no gate', async ({ page }) 
 	await expect(page.getByRole('link', { name: /về bàn/ })).toBeVisible();
 });
 
+test('a missing file answers 404 without the page’s preload hints', async ({ request }) => {
+	// Chromium applies a subresource's preload `Link` header to the page that
+	// asked for it: a missing icon once preloaded the error page's CSS into the
+	// deck (doc 17 §2, 2026-09-29).
+	const response = await request.get('/khong-ton-tai.png');
+
+	expect(response.status()).toBe(404);
+	expect(response.headers()['link']).toBeUndefined();
+});
+
 test('the 404 page carries no report button', async ({ page }) => {
 	await page.goto('/khong-ton-tai');
 

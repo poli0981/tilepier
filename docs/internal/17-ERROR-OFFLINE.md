@@ -63,6 +63,10 @@ gate has not been accepted.
   fetched by `e2e/s5-pwa`, not only declared** (2026-09-29).
   - The old check read the manifest's JSON and passed while both icons pointed
     at a missing file.
+  - The 404 that file returned also carried SvelteKit's preload `Link` header,
+    which Chromium applied to the page. That was Brave's "preloaded but not used"
+    warning for the error page's CSS, and a 404 now drops the header
+    (`hooks.server.ts`).
 - **Resolved 2026-08-10 (spike S5): the fallback is what ships.**
   vite-plugin-pwa does fight adapter-cloudflare. `@vite-pwa/sveltekit` builds
   its precache manifest from SvelteKit's internal layout (`client/…`,

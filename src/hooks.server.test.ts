@@ -12,8 +12,13 @@ const ON = { TURNSTILE_SECRET_KEY: 'secret', TURNSTILE_SITE_KEY: 'sitekey' };
 
 type HandleInput = Parameters<typeof handle>[0];
 
-function input(path: string, routeId: string | null, env: Record<string, string>) {
-	const resolve = vi.fn(async () => new Response('from the route', { status: 200 }));
+function input(
+	path: string,
+	routeId: string | null,
+	env: Record<string, string>,
+	answer: () => Response = () => new Response('from the route', { status: 200 })
+) {
+	const resolve = vi.fn(async () => answer());
 	const url = new URL(`https://tilepier.win${path}`);
 	const event = {
 		url,
@@ -53,5 +58,33 @@ describe('handle', () => {
 
 		expect((await handle(args)).status).toBe(200);
 		expect(resolve).toHaveBeenCalledOnce();
+	});
+});
+
+describe('pages', () => {
+	const PRELOAD = '<./_app/immutable/assets/1.css>; rel="preload"; as="style"; nopush';
+
+	function page(status: number): () => Response {
+		return () =>
+			new Response('<!doctype html>', {
+				status,
+				headers: { 'content-type': 'text/html', link: PRELOAD }
+			});
+	}
+
+	it('drops the preload hints from a 404, which answers for images and icons too', async () => {
+		const { args } = input('/favicon.svg', null, {}, page(404));
+
+		const response = await handle(args);
+
+		expect(response.status).toBe(404);
+		expect(response.headers.get('link')).toBeNull();
+		expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+	});
+
+	it('keeps them on a page that exists', async () => {
+		const { args } = input('/settings', '/(app)/settings', {}, page(200));
+
+		expect((await handle(args)).headers.get('link')).toBe(PRELOAD);
 	});
 });
