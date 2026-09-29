@@ -1161,8 +1161,103 @@ decided is in doc 08 §5; the parts with consequences elsewhere:
 
 ## Week 7 — Music · Media
 FSA + fallback ingestion, worker tag parsing, playback + Media Session +
-playlists + resume · media player + subtitles + PiP. Visualizer only if
-green on schedule (declared cut-line). **M7:** feature-complete.
+playlists + resume · media player + subtitles + PiP. ~~Visualizer only if
+green on schedule (declared cut-line).~~ — **cut**, 2026-09-29. **M7:**
+feature-complete.
+
+### Measured before it was started (2026-09-29)
+
+Sixteen items scored the way Weeks 4–6 were, then reviewed against the code:
+**≈27.75 focused days against a five-day week — 5.55×**, the largest yet
+(Week 4 4.25×, Week 5 4.3×, Week 6 4.8×). The review added ≈2.75 days, nearly
+all of it the difference between a plan that loses data and one that does not.
+
+| | item | complexity | difficulty | days |
+|---|---|:--:|:--:|--:|
+| S7 | spike: the tag worker, fixtures in six formats, playback under the real CSP, an OPFS-backed folder stub | 3 | 5 | 1.5 |
+| A | storage: schema v2 (`playback`), track fields, cover GC, orphaned imports | 3 | 4 | 1.75 |
+| B | library: a pure `tags.ts`, a `library.ts` that resolves after its writes, rescan | 5 | 5 | 3.5 |
+| C | the player: queue, shuffle, repeat, error rules, resume, `core/playback` | 5 | 5 | 3.0 |
+| D | Media Session | 2 | 3 | 0.5 |
+| E | music tile | 4 | 4 | 2.0 |
+| F | music detail: windowed library, search, playlists | 5 | 4 | 3.5 |
+| G | ~~visualizer~~ — **cut** | 2 | 3 | ~~0.75~~ |
+| H | e2e, fixtures, i18n, icons, formatters, a second toast kind, docs | 4 | 3 | 3.0 |
+| K | media: open a file, recents | 3 | 3 | 1.0 |
+| L | media detail: controls, keys, codec state, PiP, fullscreen | 4 | 4 | 2.5 |
+| M | subtitles: `.vtt`, the `.srt` converter, encodings | 2 | 3 | 1.0 |
+| N | resume and poster | 3 | 3 | 1.0 |
+| O | media tile | 3 | 3 | 1.0 |
+| P | media e2e, docs, M7 | 3 | 3 | 1.5 |
+| — | 7a-0 and the carried items | — | — | 1.0 |
+
+**Four owner decisions.** Playback state lives in a Dexie table of its own
+(`db.version(2)`, `playback`), not in tile settings: the layout does not sync
+across tabs — doc 04 §7 says it does and nothing implements it — so a position
+written into `tp.layout.v1` every ten seconds would overwrite another tab's
+layout edits, and a 50 KB poster would be half the localStorage budget. PiP
+ends when the media detail closes. **Only the visualizer is cut** (slip #1);
+the poster, media recents and the `.srt` converter are priced and kept, to be
+cut in that order if the week runs hot. And the import path gets no Firefox
+project in the e2e suite: it is checked by hand on production and in Week 8's
+matrix.
+
+**Split as 7a — music, then 7b — media**, in four PRs: 7a-0, fixes found on the
+way; 7a-1, the library, still consumed by `/spike/s2`; 7a-2, the player, tile
+and detail, where the spike goes; 7b, media and M7.
+
+**Found by the measurement and the review, before any Week 7 code:**
+
+1. **Spike S2's code is in `widgets/music/` and live.** `/spike/s2` is served
+   on production, outside the legal gate, with a button that wipes the real
+   `tracks` and `trackBlobs`. Harmless while nobody has a library; not from the
+   day music ships.
+2. **`ingest()` resolves before its writes land**, the worker writes the
+   Vietnamese `'không rõ'` into Dexie as data, one unreadable subfolder aborts
+   a whole scan, and one malformed file can hang the worker.
+3. **The draft's answer to a real leak would have been irreversible data
+   loss.** A backup *replace* leaves imported audio in `trackBlobs` with no
+   track pointing at it, and the draft deleted it. But the backup taken before
+   a replace cannot hold audio, so those bytes are the only undo. Imported
+   audio is never deleted automatically; the detail offers it.
+4. **`NotAllowedError` has two sources** — a revoked folder grant and an
+   autoplay refusal — and `play()` throws `AbortError` when the track changes
+   before it starts. A "stop after three failures" rule counting either would
+   stop the player on three quick taps of Next.
+5. **Chrome revokes an "Allow this time" folder grant once a tab has been in
+   the background a while**, which is the normal way to listen to music. S7
+   measures it by hand.
+6. **Playwright's "chromium" has been Chrome for Testing since 1.57** and
+   decodes H.264 and AAC, so an "unsupported codec" fixture has to be something
+   no browser plays.
+
+### Week 7a-0 — what the review found in code that already ships
+
+Five fixes, each watched failing first:
+
+- **Esc in a detail also dropped the deck out of edit mode.** `<svelte:window>`
+  listeners are direct, the layout's was registered first, and a
+  `stopPropagation` in a second `window` listener cannot recall a keystroke
+  already handled; the overlay now listens on the document. Four unit tests had
+  dispatched on `window`, which never passes through the document — two of them
+  passed without reaching the handler — and the e2e never entered edit mode, so
+  it could not fail (doc 13 §8).
+- **The CSP was pinned for four directives out of thirteen**, and `img-src`,
+  `media-src` and `worker-src` — the three Week 7's players live in — could have
+  grown a source unnoticed (doc 15 §2).
+- **The service worker cached nothing outside the Vite manifest**: MapLibre's
+  modules and the tag worker were fetched every time and never kept, so a map or
+  a scan with no connection failed after an online visit. The Week 6 note above
+  said MapLibre was precached; it was not (doc 17 §2).
+- **A tile added to a deck loaded empty mounted nothing** until a reload (doc 06
+  §5 rule 15). The review also predicted a duplicate wrapper for a deck emptied
+  by hand; that did not reproduce, and the case has a test of its own.
+- CodeQL #6, a comment-blanking regex in a test (doc 15 §4).
+
+**Carried, with dates:** the quota watch ends 2026-09-30 and is recorded here
+then; the Binance.US probe from SJC is still open; M6 waits on the owner's
+production check of #26 and #28 — doc 22 §S6's last open item, the MapLibre
+modules' content type, was confirmed on 2026-09-29.
 
 ## Week 8 — Hardening & Release
 PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
@@ -1192,6 +1287,11 @@ preset · BroadcastChannel tab sync. (Turnstile left this list on 2026-09-23 —
 ## Slip policy
 
 Order of sacrifice if a week overruns: 1) visualizer, 2) media subtitles
-(.srt convert), 3) OPML, 4) quote browse-detail (keep tile), 5) push
-media widget whole to v1.0.1. The 15-widget count is protected by cutting
-depth, not widgets.
+(.srt convert), 3) OPML, 4) quote browse-detail (keep tile), 5) ~~push
+media widget whole to v1.0.1~~ media ships thin — open a file, play it,
+resume it; no recents, poster or subtitles. The 15-widget count is protected
+by cutting depth, not widgets.
+
+(Amended 2026-09-29. Item 5 contradicted the sentence after it — pushing a
+widget out is the one move that sentence rules out — and Week 7's measurement
+priced the thin version instead. Item 1 was taken that day.)
