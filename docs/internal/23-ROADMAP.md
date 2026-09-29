@@ -1159,11 +1159,12 @@ decided is in doc 08 §5; the parts with consequences elsewhere:
 - **`map` has no `stale` or `stale-error`** (plan S5, doc 06 §3): it holds no
   payload for either to describe.
 
-## Week 7 — Music · Media
+## Week 7 — Music · Media · **CODE COMPLETE 2026-09-29, M7 waits on the owner's production check**
 FSA + fallback ingestion, worker tag parsing, playback + Media Session +
 playlists + resume · media player + subtitles + PiP. ~~Visualizer only if
 green on schedule (declared cut-line).~~ — **cut**, 2026-09-29. **M7:**
-feature-complete.
+feature-complete — fifteen widgets registered, and of the media depth the
+slip policy prices (poster, recents, `.srt`), none cut.
 
 ### Measured before it was started (2026-09-29)
 
@@ -1384,6 +1385,52 @@ when a fresh read is refused, so an edited file is still read as it is now
 thing the harness still asserted that nothing else did, moved into
 `journey-music` (doc 19 §4).
 
+### Week 7b-2 — the fifteenth widget: open, play, keys, resume (2026-09-29)
+
+#35. The detail plays one `<video>` per file; the tile shows the video open
+in the page, or after a reload the last one worth coming back to. Codec
+trouble is never a black box, the sound is one at a time with music, and the
+OS's keys and the keyboard's work from the moment a video loads (doc 09 §3).
+
+**Two findings.**
+- **A write from `pagehide` was never kept on a reload.** Dexie commits only
+  once its put has succeeded, a turn an unloading page never gets.
+  journey-media's reload test found it, and a trace showed the put leave and
+  nothing arrive. `putPlaybackNow` commits in the handler; music's flush, lost
+  since 7a, uses it too (doc 04 §6). The notes writer had the same gap since
+  Week 2 — a note's last 300 ms of typing lost on a reload — and #38 fixes
+  it the same way.
+- **CI found two test races.** A tick before swr's cache write had landed
+  joined the in-flight request (weather, and rss's twin), reproduced with a
+  300 ms write. And the player tests read the button's label, then pressed
+  it: a press that could land just after playback began, and pause it. That
+  failed three runs across #35 and #37 — the first two on the file's first
+  test, misread at first as a video that never starts, with waits of five and
+  then twenty seconds that could not help. The tests now press only when the
+  browser has refused to start ("press play"), and a clicked warm-up gives the
+  page a reader's activation before any of them.
+
+### Week 7b-3 — subtitles (2026-09-29)
+
+#36. `.srt` and `.vtt`, read by byte-order mark, then UTF-8, then
+windows-1258 composed to NFC (doc 14 §6). SubRip becomes WebVTT with only
+`b i u` kept, and the browser draws the cues from a `blob:` `<track>`, so
+the reader's own caption settings apply. C shows and hides them. Seven
+mutations, each red.
+
+### Week 7b-4 — recents, stills, and M7 (2026-09-29)
+
+The last of the media depth. Every video opened through the picker is
+remembered (five, each forgettable) and opens again from its handle after
+the browser asks; a still of where the reader stopped shows on the tile, in
+the recents and on the lock screen (doc 09 §3). `fsaHandles` became a union,
+and `loadMusicRoot` checks `handle.kind` — a file under its id failed on the
+parent. Six mutations, each red.
+
+**M7: feature-complete.** Fifteen of fifteen widgets. The visualizer is the
+only thing cut from Week 7, and it was cut before the week began. What
+remains is the owner's production check (doc 19 §5).
+
 ## Week 8 — Hardening & Release
 PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
 pass vs budgets · full manual matrix (doc 19 §5) · doc 10 §8 compliance
@@ -1411,12 +1458,14 @@ preset · BroadcastChannel tab sync. (Turnstile left this list on 2026-09-23 —
 
 ## Slip policy
 
-Order of sacrifice if a week overruns: 1) visualizer, 2) media subtitles
-(.srt convert), 3) OPML, 4) quote browse-detail (keep tile), 5) ~~push
+Order of sacrifice if a week overruns: 1) visualizer, 2) media depth, in
+the order Week 7b priced it: poster, then recents, then the `.srt`
+converter, 3) OPML, 4) quote browse-detail (keep tile), 5) ~~push
 media widget whole to v1.0.1~~ media ships thin — open a file, play it,
 resume it; no recents, poster or subtitles. The 15-widget count is protected
 by cutting depth, not widgets.
 
 (Amended 2026-09-29. Item 5 contradicted the sentence after it — pushing a
 widget out is the one move that sentence rules out — and Week 7's measurement
-priced the thin version instead. Item 1 was taken that day.)
+priced the thin version instead. Item 1 was taken that day. Item 2 was
+re-ordered by Week 7b's measurement, and none of it was taken.)

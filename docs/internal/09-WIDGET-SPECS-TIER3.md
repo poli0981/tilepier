@@ -339,10 +339,13 @@ only module allowed to import music-metadata:
 
 - Scope: play local video files; deliberately thin next to `music`.
 - **Ingestion:** per-session file open (FSA file picker or `<input>`);
-  optional "remember this file" (FSA handle in Dexie) for up to 5 recents.
-  No library scan, no blobs stored (video sizes).
-- **Tile:** last-played poster frame (captured to canvas → dataURL in
-  settings, ≤ 50 KB) + resume position; click → detail.
+  ~~optional "remember this file"~~ every file opened through the FSA picker
+  remembered (the owner's decision, 2026-09-29; FSA handle in Dexie) for up
+  to 5 recents, each forgettable. No library scan, no blobs stored (video
+  sizes).
+- **Tile:** last-played poster frame (captured to canvas → ~~dataURL in
+  settings~~ a JPEG `Blob` in the `playback` table, ≤ 50 KB) + resume
+  position; click → detail.
 - **Detail:** `<video>` with custom controls skinned to tokens: play/seek/
   volume/speed (0.5–2×), PiP button (`requestPictureInPicture`), fullscreen,
   keyboard map (space, ←→ 5 s, ↑↓ volume, F, M). Subtitle support: sideload
@@ -407,11 +410,36 @@ only module allowed to import music-metadata:
     place. With no `crypto.subtle` (plain http) nothing is kept.
   - The volume and mute are the reader's, one row for every video. Speed goes
     back to 1× with each file.
-- **After a reload** the tile shows the last video worth coming back to, and
-  so does the detail with nothing open — a reload with the detail open lands
-  on `/w/media`, not on the deck. The file itself is not kept, so "Continue"
-  opens the picker, and the same file picked again finds its place. The tile's
-  `loading` and `error` are that read, and an error still offers a video.
+- **After a reload** the tile shows the last video worth coming back to,
+  with its still, and so does the detail with nothing open — a reload with the
+  detail open lands on `/w/media`, not on the deck. The tile's `loading` and
+  `error` are that read, and an error still offers a video.
+  - One opened through the picker opens again from its handle: the browser
+    asks for the grant again first, in the click. A refusal, or a file that
+    has moved, is said on the tile, and the next press picks instead.
+  - Any other — from the `<input>`, as in Brave and Firefox — is picked
+    again, and the same file finds its place by its name and size.
+- **Recents** (Week 7b-4, `recents.ts`, `TpMediaRecents`). Every video
+  opened through the picker is remembered once it has loaded: the newest five,
+  in `fsaHandles` beside music's library folder, which nothing here touches.
+  The detail with nothing open lists them, each with its still and where it
+  was left.
+  - Opening one asks the browser first, in the click. A refusal or a missing
+    file is said beside the row, which keeps its Forget.
+  - Forget takes the video's recent, its place and its still in one
+    transaction; Forget all takes every video's, and keeps the volume.
+  - A handle is a way back to the file, never the file (the privacy page
+    says so).
+- **Stills** (Week 7b-4, `poster.ts`). The frame the reader stopped on:
+  drawn on every pause and when the player goes, but not at the end (its last
+  frame is often black) and not mid-seek.
+  - At most 320 px wide; JPEG at 0.7, then 0.55, then 0.4, until it fits in
+    50 KB, else none. In the `playback` table beside the place, and gone
+    when the place is.
+  - Drawn synchronously, so the teardown draws before the element lets go of
+    the file; the encode and the write come after.
+  - Shown on the tile and in the recents, and given to the lock screen as
+    the Media Session's artwork.
 - **Subtitles** (Week 7b-3; `subtitles.ts`, `track.svelte.ts`). The
   captions button asks for a `.srt` or `.vtt` — in the folder the video came
   from, since the two pickers share an `id` — and shows it; after that it

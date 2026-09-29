@@ -70,7 +70,9 @@ export async function loadMusicRoot(
 	target: TpDb = defaultDb
 ): Promise<FileSystemDirectoryHandle | null> {
 	const row = await target.fsaHandles.get(FSA_ROOT_ID);
-	return row?.handle ?? null;
+	// The table holds the video player's file handles too (Week 7b): only a
+	// folder is a library root, whatever its row is called.
+	return row?.handle.kind === 'directory' ? row.handle : null;
 }
 
 export type FsaPermission = 'granted' | 'prompt' | 'denied' | 'unsupported';

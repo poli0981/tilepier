@@ -1,8 +1,12 @@
 import { keyAction, targetOf } from './keys';
+import { drawPoster, encodePoster } from './poster';
+import { rememberRecent } from './recents';
 import {
+	loadPoster,
 	loadPrefs,
 	loadResume,
 	resumeKey,
+	savePoster,
 	savePrefs,
 	savePrefsNow,
 	saveResume,
@@ -50,6 +54,11 @@ type TpPhase = 'loading' | 'ready' | 'unsupported' | 'unreadable';
  *
  * **Subtitles** are `TpSubtitles`'s (`track.svelte.ts`): C shows and hides
  * them, and they go with the player.
+ *
+ * **What the shelf needs** (`recents.ts`, `poster.ts`): a video opened
+ * through the picker is remembered once it has loaded, and its still is drawn
+ * on every pause and when the player goes — not at the end, whose last frame
+ * is often black. The still stored last time is the lock screen's artwork.
  *
  * **The listeners are its own**, added here and removed in `dispose`. What
  * happens when the player goes — keep the place, pause, let go of the sound,
@@ -100,7 +109,7 @@ export class TpVideoController {
 		this.#video = video;
 		this.#box = box;
 		this.#file = file;
-		this.#session = videoSession(video, file.name);
+		this.#session = videoSession(video, file.name, undefined, () => media.poster);
 		this.fullscreenAvailable = canFullscreen(video);
 		this.subtitles = new TpSubtitles(video);
 
@@ -144,8 +153,10 @@ export class TpVideoController {
 
 	/** The player is going: silence, and let go of everything it held. */
 	dispose(): void {
-		// First, while the element still holds the file and knows where it is.
+		// First, while the element still holds the file and knows where it is,
+		// and on the frame the reader left.
 		this.#save();
+		const still = this.#stillNow();
 		this.#disposed = true;
 		for (const [target, type, listener] of this.#listeners) {
 			target.removeEventListener(type, listener);
@@ -161,6 +172,7 @@ export class TpVideoController {
 		this.#url = null;
 		this.playing = false;
 		media.report(this.positionMs, this.durationMs, false);
+		void this.#keepStill(still);
 	}
 
 	/**
@@ -238,7 +250,9 @@ export class TpVideoController {
 			this.#video.muted = prefs.muted;
 		}
 		this.#key = key;
-		const saved = key === null ? null : await loadResume(key);
+		const [saved, still] =
+			key === null ? [null, null] : await Promise.all([loadResume(key), loadPoster(key)]);
+		if (still !== null && !this.#disposed && media.current === this.#file) media.setPoster(still);
 		if (saved !== null && shouldResume(saved.positionMs, saved.durationMs)) {
 			this.#pendingMs = saved.positionMs;
 			this.#pendingIsResume = true;
@@ -341,6 +355,10 @@ export class TpVideoController {
 			// click into the player first.
 			this.#focused = true;
 			video.focus({ preventScroll: true });
+			const { handle, name, size } = this.#file;
+			if (handle !== undefined && this.#key !== null) {
+				void rememberRecent(this.#key, { handle, name, size });
+			}
 		}
 		this.#session.position();
 		this.#report();
@@ -359,6 +377,24 @@ export class TpVideoController {
 		this.#session.state(false);
 		this.#report();
 		this.#save();
+		// The pause that comes with the end is not one to keep a still from.
+		if (!this.#video.ended) void this.#keepStill(this.#stillNow());
+	}
+
+	/** The frame showing now, drawn, when there is a video to keep it for. */
+	#stillNow(): HTMLCanvasElement | null {
+		if (this.#key === null || this.phase !== 'ready' || this.#pendingMs !== null) return null;
+		return drawPoster(this.#video);
+	}
+
+	/** Encodes a drawn still and keeps it: for the tile now, the shelf later. */
+	async #keepStill(canvas: HTMLCanvasElement | null): Promise<void> {
+		const key = this.#key;
+		if (canvas === null || key === null) return;
+		const blob = await encodePoster(canvas);
+		if (blob === null) return;
+		await savePoster(key, blob);
+		if (media.current === this.#file) media.setPoster(blob);
 	}
 
 	/** Watched to the end: the next time starts at the start (doc 09 §3). */

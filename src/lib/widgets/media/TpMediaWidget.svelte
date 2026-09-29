@@ -7,6 +7,7 @@
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
 	import { pickVideo } from './picker';
+	import { reopen } from './recents';
 	import { media } from './store.svelte';
 
 	/**
@@ -18,9 +19,11 @@
 	 * detail that opens plays it. The tile never holds a `<video>`: the detail
 	 * does, so picture-in-picture ends with it (owner decision Q2).
 	 *
-	 * **After a reload** it shows the last video worth coming back to, read
-	 * from storage. The file itself is not kept (recents come later), so
-	 * "Continue" opens the picker: the same file picked again finds its place.
+	 * **After a reload** it shows the last video worth coming back to, with
+	 * its still, read from storage (`recents.ts`). One opened through the
+	 * picker opens again from its handle — the browser asks first, in the click.
+	 * Any other, or one the browser refused or could not find, is picked again,
+	 * and the same file picked again finds its place.
 	 *
 	 * **States (doc 06 §3, the music/media class):** `loading` and `error`
 	 * are that read — an error still offers a video, since a table that will not
@@ -33,7 +36,7 @@
 
 	$effect(() => {
 		// Where the reader left off, read once per page, shared with the detail.
-		untrack(() => void media.loadLast());
+		untrack(() => void media.loadShelf());
 	});
 
 	const roomy = $derived(size.h >= 3);
@@ -42,13 +45,15 @@
 	const shown = $derived.by(() => {
 		const open = media.current;
 		if (open !== null) {
-			const { positionMs, durationMs } = media;
-			return { name: open.name, positionMs, durationMs, inHand: true };
+			const { positionMs, durationMs, poster } = media;
+			return { name: open.name, positionMs, durationMs, poster, inHand: true };
 		}
 		const last = media.last;
 		return last === null ? null : { ...last, inHand: false };
 	});
-	const reading = $derived(media.current === null && media.lastStatus !== 'ready');
+	const reading = $derived(media.current === null && media.shelfStatus !== 'ready');
+	/** Its handle would not open it: the next press picks it instead. */
+	let refused = $state<'denied' | 'missing' | null>(null);
 	const progress = $derived(
 		shown !== null && shown.durationMs > 0 ? Math.min(1, shown.positionMs / shown.durationMs) : 0
 	);
@@ -60,9 +65,25 @@
 		media.open(picked);
 		onOpenDetail?.();
 	}
+
+	/** The last video again: from its handle when it has one, else the picker. */
+	async function resume(): Promise<void> {
+		const handle = media.last?.handle ?? null;
+		if (handle === null || refused !== null) {
+			await open();
+			return;
+		}
+		const result = await reopen(handle);
+		if (result.kind !== 'opened') {
+			refused = result.kind;
+			return;
+		}
+		media.open(result.file);
+		onOpenDetail?.();
+	}
 </script>
 
-{#if reading && media.lastStatus === 'loading'}
+{#if reading && media.shelfStatus === 'loading'}
 	<div class="tp-media tp-media--state" aria-busy="true" aria-label={m['widget.media.loading']()}>
 		<TpTideGauge size={roomy ? 32 : 20} animated level={0.35} />
 	</div>
@@ -70,7 +91,7 @@
 	<div class="tp-media tp-media--empty" role="alert" data-testid="media-error">
 		<p>{m['widget.media.error']()}</p>
 		<div class="tp-media__actions">
-			<button type="button" class="tp-media__quiet" onclick={() => void media.retryLast()}>
+			<button type="button" class="tp-media__quiet" onclick={() => void media.refreshShelf()}>
 				{m['common.retry']()}
 			</button>
 			<button
@@ -102,7 +123,11 @@
 {:else}
 	<div class="tp-media" data-testid="media-tile">
 		<div class="tp-media__head">
-			<TpIcon name="film" size={20} />
+			{#if shown.poster !== null && roomy}
+				<img class="tp-media__still" src={shown.poster} alt="" data-testid="media-still" />
+			{:else}
+				<TpIcon name="film" size={20} />
+			{/if}
 			<!-- A file's name is text, never markup (CLAUDE.md rule 7). -->
 			<p class="tp-media__name" title={shown.name}>{shown.name}</p>
 		</div>
@@ -118,12 +143,18 @@
 		<button
 			type="button"
 			class="tp-media__open"
-			onclick={() => (shown.inHand ? onOpenDetail?.() : void open())}
+			onclick={() => (shown.inHand ? onOpenDetail?.() : void resume())}
 			data-testid="media-continue"
 		>
 			{m['widget.media.continue']()}
 		</button>
-		{#if !shown.inHand && roomy}
+		{#if refused !== null}
+			<p class="tp-media__note" role="status" data-testid="media-tile-refused">
+				{refused === 'denied'
+					? m['widget.media.recent_denied']()
+					: m['widget.media.recent_missing']()}
+			</p>
+		{:else if !shown.inHand && media.last?.handle === null && roomy}
 			<p class="tp-media__note">{m['widget.media.pick_again']()}</p>
 		{/if}
 	</div>
@@ -165,6 +196,15 @@
 		align-items: center;
 		gap: 0.5rem;
 		color: var(--color-fg);
+	}
+
+	.tp-media__still {
+		flex: none;
+		width: 48px;
+		height: 27px;
+		border-radius: var(--radius-ctl);
+		background: var(--color-ink-950);
+		object-fit: cover;
 	}
 
 	.tp-media__name {

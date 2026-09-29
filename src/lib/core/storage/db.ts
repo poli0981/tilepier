@@ -92,11 +92,30 @@ export interface TpTrackBlob {
 	blob: Blob;
 }
 
-export interface TpFsaHandle {
-	/** `musicRoot` is the only entry in v1. */
+/** Music's library folder, under the id `musicRoot` (doc 09 §2). */
+export interface TpFsaRoot {
 	id: string;
 	handle: FileSystemDirectoryHandle;
 }
+
+/**
+ * A video the reader opened through the picker, under `media:<key>` (Week 7b,
+ * doc 09 §3): the newest five, so one can be opened again after a reload. The
+ * handle is a way back to the file, not the file.
+ */
+export interface TpFsaRecent {
+	id: string;
+	handle: FileSystemFileHandle;
+	name: string;
+	size: number;
+	openedAt: number;
+}
+
+/**
+ * One table, two kinds of handle. A reader of it checks `handle.kind` before
+ * trusting a row, since the id alone does not say which a row holds.
+ */
+export type TpFsaHandle = TpFsaRoot | TpFsaRecent;
 
 export interface TpSavedPlace {
 	id: string;
@@ -153,7 +172,9 @@ export type TpDb = Dexie & {
 	playlists: EntityTable<TpPlaylist, 'id'>;
 	tracks: EntityTable<TpTrack, 'id'>;
 	trackBlobs: EntityTable<TpTrackBlob, 'id'>;
-	fsaHandles: EntityTable<TpFsaHandle, 'id'>;
+	// The insert type spelled out: Dexie's default is an `Omit` over the
+	// union, which is not distributive, and would refuse to `put` a recent.
+	fsaHandles: EntityTable<TpFsaHandle, 'id', TpFsaHandle>;
 	savedPlaces: EntityTable<TpSavedPlace, 'id'>;
 	focusSessions: EntityTable<TpFocusSession, 'id'>;
 	apiCache: EntityTable<TpApiCacheRow, 'key'>;

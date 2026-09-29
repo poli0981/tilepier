@@ -146,6 +146,9 @@ music player's rules, as the Week 7 review corrected them:
 | video: reading where it was left (IndexedDB) | any | the table will not open | the tile says so, with a retry — and still opens a video; the player starts at 0:00 |
 | video: keeping its place (IndexedDB) | any | a full disk, a closed table | nothing: the place is lost, the video plays on |
 | video: subtitles | no cue in the file, over 2 MB, or WebVTT the browser will not parse | not subtitles, or a video picked by mistake | "no subtitles could be read from {name}" under the video; no track; the video plays on |
+| video: a recent's grant (`requestPermission`) | not `granted` | the reader refused, or the browser did | "the browser didn't allow opening this file again", beside the row or on the tile; the tile's next press picks instead |
+| video: a recent's file (`getFile`) | `NotFoundError`, or any other | the file moved or was deleted | "this file isn't where it was", with its Forget |
+| video: a still | the encode, or no size under 50 KB | a busy frame, or no frame to draw | no still; the tile shows the glyph |
 
 Notices go to doc 13 §7's toast. Nothing about a file — name, path, title —
 goes to the log (doc 18).

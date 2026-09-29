@@ -53,6 +53,21 @@ afterEach(() => {
 });
 
 describe('videoSession', () => {
+	it('shows the video’s still on the lock screen when it has one', () => {
+		const video = new FakeVideo();
+		const session = new FakeSession();
+		const hold = videoSession(
+			video as unknown as HTMLVideoElement,
+			'Phim thử.webm',
+			() => session,
+			() => 'blob:still'
+		);
+
+		hold.claim();
+
+		expect(session.metadata?.artwork[0]?.src).toContain('blob:still');
+	});
+
 	it('takes the sound, names the file, and answers play, pause, skip and seek', async () => {
 		const { video, session, hold } = setup();
 

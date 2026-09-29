@@ -16,9 +16,10 @@ import { SKIP_SECONDS } from './service';
  *
  * - **`claim`** when the video starts playing: the music player, if it was
  *   playing, is told to pause, and the session becomes this video's.
- * - **The session** carries the file's name, and answers play, pause, skip
- *   back and forward ten seconds, and seek. Previous and next stay unset: there
- *   is no queue, and on iOS the skip buttons are what a video wants.
+ * - **The session** carries the file's name and its still, when it has one,
+ *   and answers play, pause, skip back and forward ten seconds, and seek.
+ *   Previous and next stay unset: there is no queue, and on iOS the skip
+ *   buttons are what a video wants.
  * - **Only while holding the claim**, so the music player's session is never
  *   written over; **`leave`** clears it and lets go.
  */
@@ -34,7 +35,8 @@ export interface TpVideoSession {
 export function videoSession(
 	video: HTMLVideoElement,
 	title: string,
-	session: () => TpMediaSession | null = pageSession
+	session: () => TpMediaSession | null = pageSession,
+	still: () => string | null = () => null
 ): TpVideoSession {
 	const mine = (): TpMediaSession | null => (playbackOwner() === 'media' ? session() : null);
 
@@ -68,7 +70,13 @@ export function videoSession(
 					if (details.seekTime !== undefined) video.currentTime = details.seekTime;
 				}
 			});
-			writeSessionMetadata(current, { title, artist: '', album: '' });
+			const art = still();
+			writeSessionMetadata(current, {
+				title,
+				artist: '',
+				album: '',
+				artwork: art === null ? undefined : { src: art, type: 'image/jpeg' }
+			});
 		},
 		state(playing) {
 			const current = mine();

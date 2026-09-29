@@ -65,7 +65,7 @@
 	"legal.privacy.page_title": "Riêng tư — TilePier",
 	"legal.privacy.intro": "TilePier không giữ gì về bạn. Có hai dịch vụ của Cloudflare nhìn thấy lượt truy cập của bạn, OpenFreeMap thấy bản đồ nếu bạn mở bản đồ, và trang này nói rõ mỗi bên nhận được gì.",
 	"legal.privacy.no_tracking": "Không tài khoản, không quảng cáo, không cookie theo dõi, và không có gì theo dõi bạn sang trang khác. Bản thân TilePier không đặt cookie nào; cookie duy nhất ở đây là của Cloudflare, nói ở dưới.",
-	"legal.privacy.local_only": "Mọi nội dung cá nhân — bố cục, ghi chú, việc cần làm, sự kiện, danh sách phát, tệp nhạc, địa điểm đã lưu — nằm trong bộ nhớ trình duyệt trên máy bạn.",
+	"legal.privacy.local_only": "Mọi nội dung cá nhân — bố cục, ghi chú, việc cần làm, sự kiện, danh sách phát, tệp nhạc, địa điểm đã lưu, các video mở gần đây (lối mở lại từng tệp, không bao giờ là bản thân tệp) cùng chỗ bạn xem dở và một khung hình nhỏ của mỗi video — nằm trong bộ nhớ trình duyệt trên máy bạn.",
 	"legal.privacy.proxy": "Yêu cầu mạng đi qua proxy /api của chính TilePier — bản đồ, ở dưới, là ngoại lệ duy nhất. Proxy không giữ định danh người dùng và chỉ cache lại chính dữ liệu công khai. Cloudflare, bên vận hành proxy, lưu nhật ký yêu cầu — gồm địa chỉ IP của bạn và địa chỉ bạn yêu cầu — tối đa 7 ngày để chẩn đoán lỗi, theo chính sách của họ.",
 	"legal.privacy.analytics": "Đếm lượt truy cập: mọi trang đều tải Cloudflare Web Analytics, ngay từ trang đầu tiên — kể cả trang này. Nó ghi một lượt xem trang và tốc độ tải trang: địa chỉ trang (không kèm tham số truy vấn), trang bạn đến từ đó, trình duyệt và quốc gia của bạn. Nó không dùng cookie, không dùng bộ nhớ cục bộ và không lấy dấu vân tay trình duyệt.",
 	"legal.privacy.botcheck": "Kiểm tra bot: sau khi bạn đồng ý, ứng dụng nhờ Cloudflare Turnstile xác nhận đây là một trình duyệt thật, để lưu lượng tự động không thể dùng cạn hạn mức dữ liệu dùng chung. Cloudflare xem xét các tín hiệu như địa chỉ IP và đặc điểm trình duyệt của bạn, theo điều khoản quyền riêng tư Turnstile của họ. TilePier chỉ giữ một mã thông hành có hạn một giờ, trong bộ nhớ, không bao giờ ghi xuống đĩa.",
@@ -794,5 +794,13 @@
 	"widget.media.subs_picker_label": "Phụ đề",
 	"widget.media.subs_loaded": "Phụ đề: {name}",
 	"widget.media.subs_change": "Đổi",
-	"widget.media.subs_unreadable": "Không đọc được phụ đề từ {name}."
+	"widget.media.subs_unreadable": "Không đọc được phụ đề từ {name}.",
+	"widget.media.recents": "Mở gần đây",
+	"widget.media.open_recent": "Mở {name}",
+	"widget.media.forget": "Quên",
+	"widget.media.forget_named": "Quên {name}",
+	"widget.media.forget_all": "Quên tất cả",
+	"widget.media.recent_denied": "Trình duyệt không cho mở lại tệp này.",
+	"widget.media.recent_missing": "Tệp không còn ở chỗ cũ.",
+	"widget.media.recent_note": "Chỉ giữ lối mở lại từng tệp, không bao giờ giữ bản thân tệp."
 }

@@ -125,7 +125,14 @@ through Playwright's file chooser. It covers:
 - the keys, from the focus the player takes when it loads;
 - Escape, which does not close the detail out of full screen but does after;
 - a reload in the middle of a video, then the same file picked again;
-- subtitles from a SubRip file with a byte-order mark and CRLF, and C.
+- subtitles from a SubRip file with a byte-order mark and CRLF, and C;
+- after a reload, the tile's still and its Continue opening the video from its
+  handle; a recent the browser refuses, then one whose file is gone, and
+  Forget.
+
+The reload test itself now opens its video through the `<input>`: one from
+the picker comes back as a recent, and the input's is the path that is picked
+again by name and size.
 
 The reload test is the one that found `pagehide` writes lost (doc 04 §6): it
 plays past the seek's own save, so only the closing page can keep the place.

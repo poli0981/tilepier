@@ -563,7 +563,9 @@ building. The automated half is below; the manual half is at the end.
    - All nine real fixtures played to `ended` from `blob:` URLs. The text
      file errored with code 4.
    - So an "unsupported codec" fixture for Week 7b must be something no
-     browser plays, not H.264. HEVC is the candidate.
+     browser plays, not H.264. ~~HEVC is the candidate.~~ Junk bytes named
+     `.mp4`, as built (S8 below): real Chrome and Edge decode HEVC with
+     hardware, so HEVC is a production check, not a fixture.
    - Media Session, `setPositionState` and `document.pictureInPictureEnabled`
      are all present headless.
 6. **The worker.** Vite 8 builds `new Worker(new URL(…))` on its own, outside
