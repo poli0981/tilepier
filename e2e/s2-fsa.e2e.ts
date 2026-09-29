@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fillOpfs, lapseGrant, LIBRARY, stubPicker } from './_lib/music';
 
 /**
  * Spike S2 — music library ingestion (doc 22 §S2).
@@ -97,8 +98,8 @@ test.describe('S2 · import path (every browser)', () => {
 		await page.getByTestId('import').setInputFiles(fixturePaths.slice(0, 20));
 		await expect(page.getByTestId('status')).toHaveText('done', { timeout: 60_000 });
 
-		const stored = await page.evaluate(async () => {
-			const request = indexedDB.open('tilepier');
+		const stored = await page.evaluate(async (name) => {
+			const request = indexedDB.open(name);
 			const dbHandle = await new Promise<IDBDatabase>((resolve, reject) => {
 				request.onsuccess = () => resolve(request.result);
 				request.onerror = () => reject(request.error);
@@ -111,7 +112,7 @@ test.describe('S2 · import path (every browser)', () => {
 			});
 			dbHandle.close();
 			return all as { title: string; source: string; durationMs?: number }[];
-		});
+		}, 'tilepier');
 
 		expect(stored.length).toBe(20);
 		expect(stored.every((t) => t.source === 'blob')).toBe(true);
@@ -197,94 +198,10 @@ test.describe('S2 · File System Access availability', () => {
 	});
 });
 
-/**
- * Path A, driven after all (doc 22 §S7, plan S22).
- *
- * The picker opens an OS dialog no automation can operate, but what it returns
- * is an ordinary `FileSystemDirectoryHandle` — and OPFS hands out real ones.
- * So `showDirectoryPicker` is stubbed to return an OPFS folder filled with the
- * fixture library, and everything after the dialog is the real code: the walk,
- * `getFile()`, the worker, the handle kept in IndexedDB across a reload.
- *
- * OPFS always answers `granted`, so a grant that lapsed — a browser restart
- * without "Allow on every visit", or Chrome revoking it from a tab left in the
- * background — is simulated: `queryPermission` reads a flag in sessionStorage
- * (which survives the reload), and while the flag says `prompt` every handle
- * method the library uses throws `NotAllowedError`, as the real ones do. A
- * stub that only changed `queryPermission` would pass code that never looks
- * past it.
- */
-const LIBRARY = join(process.cwd(), 'src', 'lib', 'widgets', 'music', '__fixtures__', 'library');
-const LIBRARY_FILES = [
-	'Artist A/Album 1/01 One.mp3',
-	'Artist A/Album 1/02 Two.flac',
-	'Artist A/Album 1/cover.png',
-	'Artist A/Album 1/._01 One.mp3',
-	'Artist B/Three.ogg',
-	'.hidden/Skipped.mp3'
-];
-
-async function stubPicker(page: Page): Promise<void> {
-	await page.addInitScript(() => {
-		const state = () => sessionStorage.getItem('tp-test-permission') ?? 'granted';
-		const lapsed = () => new DOMException('The grant has lapsed.', 'NotAllowedError');
-
-		window.showDirectoryPicker = async () =>
-			(await navigator.storage.getDirectory()).getDirectoryHandle('music', { create: true });
-
-		FileSystemHandle.prototype.queryPermission = async () => state() as PermissionState;
-		FileSystemHandle.prototype.requestPermission = async () => {
-			sessionStorage.setItem('tp-test-permission', 'granted');
-			return 'granted';
-		};
-
-		const dir = FileSystemDirectoryHandle.prototype;
-		const file = FileSystemFileHandle.prototype;
-		for (const [proto, name] of [
-			[dir, 'entries'],
-			[dir, 'getDirectoryHandle'],
-			[dir, 'getFileHandle'],
-			[file, 'getFile']
-		] as const) {
-			const real = (proto as unknown as Record<string, (...args: unknown[]) => unknown>)[name];
-			Object.defineProperty(proto, name, {
-				configurable: true,
-				value(this: unknown, ...args: unknown[]) {
-					if (state() !== 'granted') throw lapsed();
-					return real?.apply(this, args);
-				}
-			});
-		}
-	});
-}
-
-/** Fills the OPFS folder the stubbed picker returns with the fixture library. */
-async function fillOpfs(page: Page): Promise<void> {
-	const files = LIBRARY_FILES.map((path) => ({
-		path,
-		base64: readFileSync(join(LIBRARY, path)).toString('base64')
-	}));
-	await page.evaluate(async (entries) => {
-		const root = await (
-			await navigator.storage.getDirectory()
-		).getDirectoryHandle('music', {
-			create: true
-		});
-		for (const { path, base64 } of entries) {
-			const parts = path.split('/');
-			const name = parts.pop() ?? '';
-			let dir = root;
-			for (const part of parts) dir = await dir.getDirectoryHandle(part, { create: true });
-			const writable = await (await dir.getFileHandle(name, { create: true })).createWritable();
-			await writable.write(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
-			await writable.close();
-		}
-	}, files);
-}
-
+/** Path A through an OPFS folder, as `_lib/music` stubs it (doc 22 §S7). */
 async function storedTracks(page: Page): Promise<{ title: string; missing?: boolean }[]> {
-	return page.evaluate(async () => {
-		const request = indexedDB.open('tilepier');
+	return page.evaluate(async (name) => {
+		const request = indexedDB.open(name);
 		const dbHandle = await new Promise<IDBDatabase>((resolve, reject) => {
 			request.onsuccess = () => resolve(request.result);
 			request.onerror = () => reject(request.error);
@@ -296,7 +213,7 @@ async function storedTracks(page: Page): Promise<{ title: string; missing?: bool
 		});
 		dbHandle.close();
 		return rows as { title: string; missing?: boolean }[];
-	});
+	}, 'tilepier');
 }
 
 test.describe('S7 · path A through an OPFS folder', () => {
@@ -336,7 +253,7 @@ test.describe('S7 · path A through an OPFS folder', () => {
 		await page.getByTestId('scan').click();
 		await expect(page.getByTestId('summary')).toContainText('added 3');
 
-		await page.evaluate(() => sessionStorage.setItem('tp-test-permission', 'prompt'));
+		await lapseGrant(page);
 		await page.reload();
 		await expect(page.getByTestId('permission')).toHaveText('prompt');
 

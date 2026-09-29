@@ -91,12 +91,22 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
 6. Export backup → wipe → import → deck + notes restored.
 7. i18n: switch vi↔en → gate/labels/lunar footer switch, no missing-key
    text.
-Markets/music E2E are manual-checklist in v1 (real APIs / real files);
-their logic is unit/component-covered. **Music's folder path is automated
-since Week 7a-1** (doc 22 §S7): `showDirectoryPicker` is stubbed to return a
+Markets E2E is a manual checklist in v1 (real APIs); its logic is
+unit/component-covered. ~~Music's too (real files).~~ **Music is automated
+since Week 7a** (doc 22 §S7): `showDirectoryPicker` is stubbed to return a
 real OPFS folder of generated fixtures, and a lapsed grant is simulated by
-every handle method throwing `NotAllowedError`. What stays manual is what no
-stub can be — the OS dialog, the gesture, a grant across a browser restart.
+every handle method throwing `NotAllowedError` (`e2e/_lib/music.ts`).
+`journey-music` picks a folder from the tile and plays it, imports files in
+the detail and finds one without its accents, resumes after a lapsed grant in
+one click, and resets the deck from Settings to prove the player stops with
+no deck page to tell it. The audio really plays — Chrome for Testing has the
+codecs and headless is muted, not stopped — and what the OS would show is
+read from `navigator.mediaSession`, through an init script that records every
+title and state written there, because the fixture songs last a second each.
+Every one of those tests also asserts no CSP violation, collected by
+`_lib/csp.ts` from both `securitypolicyviolation` events and the console.
+What stays manual is what no stub can be — the OS dialog, the gesture, a
+grant across a browser restart, the OS's own media controls.
 
 **Written so far** (2026-08-28): #1, #2, #4, #5, #6 and #7, plus three supporting
 specs that are not numbered journeys — `legal-gate`, `error-pages` and
