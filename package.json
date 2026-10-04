@@ -37,7 +37,7 @@
 	},
 	"dependencies": {
 		"dexie": "^4.4.4",
-		"dompurify": "^3.4.13",
+		"dompurify": "^3.4.16",
 		"echarts": "^6.1.0",
 		"fast-xml-parser": "^5.10.1",
 		"gridstack": "^12.6.0",
