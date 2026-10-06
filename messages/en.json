@@ -37,6 +37,7 @@
 	"common.offline.body": "No connection. Your deck and everything saved stay on your device.",
 	"common.tile.stale": "from {age}",
 	"common.tile.stale_hint": "the last reading that arrived — a newer one is on the way",
+	"common.tile.unavailable": "This widget is not on this device yet, and its first load needs a connection.",
 	"common.tile.offline_short": "no network",
 	"common.tile.offline_hint": "showing what was saved — this tile needs the network to update",
 	"common.toast.rate_limited": "too many requests just now — the deck will catch up shortly",

@@ -1,3 +1,12 @@
+<script module lang="ts">
+	/**
+	 * doc 01's cold-load figure — the first widget on screen — needs a point to
+	 * measure to. The first host to mount marks the frame after it, once per
+	 * page; the owner reads it from the Performance panel (doc 19 §5).
+	 */
+	let firstTileMarked = false;
+</script>
+
 <script lang="ts">
 	import type { Component } from 'svelte';
 	import { logEntry } from '$lib/core/log-buffer';
@@ -73,6 +82,12 @@
 					? ''
 					: m['common.tile.stale']({ age: status.age })
 	);
+
+	$effect(() => {
+		if (firstTileMarked) return;
+		firstTileMarked = true;
+		requestAnimationFrame(() => performance.mark('tp:first-tile'));
+	});
 
 	// Reports the tile's pixel box to the widget. Batched by the browser, and
 	// torn down with the host — a leaked observer here is exactly the kind of

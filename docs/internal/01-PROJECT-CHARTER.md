@@ -66,6 +66,8 @@ One sentence: **"Your new-tab page, if it were built like an instrument panel."*
 - Initial route ≤ 200 KB gzipped JS; each detail chunk ≤ 350 KB (doc 20).
 - Lighthouse (desktop): Performance ≥ 90, A11y ≥ 95, Best Practices ≥ 95.
 - Cold load → first widget rendered from cache < 1.5 s on mid-range hardware.
+  Measured to the `tp:first-tile` performance mark (Week 8): the frame after
+  the first tile host mounts, once per page load (doc 19 §5).
 - Proxy stays inside free-tier quotas at 500 DAU in the load model (doc 11 §7).
 - Legal gate, licenses page, and attributions verified against doc 16.
 

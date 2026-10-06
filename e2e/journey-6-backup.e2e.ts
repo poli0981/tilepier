@@ -50,8 +50,21 @@ async function awaitStoredTiles(page: Page, count: number): Promise<void> {
 		.toBe(count);
 }
 
-async function exportBackup(page: Page): Promise<string> {
+/**
+ * Opens /settings and waits for it to hydrate. The page is prerendered, so its
+ * controls are on screen before hydration attaches their handlers, and a click
+ * in between lands on nothing: the export's download never comes. That was the
+ * one red of #42's e2e run on CI (2026-10-06), and delaying the route modules
+ * by 1.5 s reproduces it every time. The panel's `data-ready` flips with
+ * `browser` — the same wait journey #7 and the error pages use.
+ */
+async function openSettings(page: Page): Promise<void> {
 	await page.goto('/settings');
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
+}
+
+async function exportBackup(page: Page): Promise<string> {
+	await openSettings(page);
 	const download = page.waitForEvent('download');
 	await page.getByTestId('backup-export').click();
 
@@ -68,7 +81,7 @@ async function exportBackup(page: Page): Promise<string> {
  * (doc 16 §3.6). Ends on the deck, which is where every caller wants to be.
  */
 async function wipe(page: Page): Promise<void> {
-	await page.goto('/settings');
+	await openSettings(page);
 	await page.getByTestId('erase-data').click();
 	await page.getByTestId('erase-confirm').click();
 
@@ -110,7 +123,7 @@ test('a backup round-trips the deck and the notes', async ({ page }) => {
 	await wipe(page);
 	await expect(page.getByTestId('notes-empty')).toBeVisible();
 
-	await page.goto('/settings');
+	await openSettings(page);
 	await importBackup(page, json);
 	await page.getByTestId('backup-replace').click();
 	await page.getByTestId('backup-replace-confirm').click();
@@ -133,7 +146,7 @@ test('the dry run reports what it would do, before doing it', async ({ page }) =
 	const json = await exportBackup(page);
 	await wipe(page);
 
-	await page.goto('/settings');
+	await openSettings(page);
 	await importBackup(page, json);
 
 	// doc 05 §6: counts per table, and nothing written until the user confirms.
@@ -163,7 +176,7 @@ test('merge adds what is missing and removes nothing', async ({ page }) => {
 	// race the write, and the merge would then be comparing the wrong copy.
 	await expect(page.getByTestId('notes-preview')).toContainText('written afterwards');
 
-	await page.goto('/settings');
+	await openSettings(page);
 	await importBackup(page, json);
 	await page.getByTestId('backup-merge').click();
 	await expect(page.getByTestId('backup-done')).toBeVisible();
@@ -180,7 +193,7 @@ test('replace saves a backup of the current state first', async ({ page }) => {
 	await writeNote(page, 'about to be replaced');
 
 	const json = await exportBackup(page);
-	await page.goto('/settings');
+	await openSettings(page);
 	await importBackup(page, json);
 
 	const safety = page.waitForEvent('download');
@@ -196,7 +209,7 @@ test('a file that is not a backup is refused, and nothing changes', async ({ pag
 	await acceptGate(page);
 	await writeNote(page, 'still here');
 
-	await page.goto('/settings');
+	await openSettings(page);
 	await page.getByTestId('backup-file').setInputFiles({
 		name: 'not-a-backup.json',
 		mimeType: 'application/json',

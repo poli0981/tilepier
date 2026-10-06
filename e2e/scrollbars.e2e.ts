@@ -150,6 +150,8 @@ test('hidden scrollbars take no width, and the page still scrolls (doc 12 §9)',
 	expect(await gutter(), 'shown: the page keeps its gutter').toBeGreaterThan(0);
 
 	await page.goto('/settings');
+	// Prerendered: the button is there before its onclick (journey #6).
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 	await page.getByTestId('scrollbars-hidden').click();
 	await page.goto('/');
 	await expect(page.locator('.grid-stack-item').first()).toBeVisible();

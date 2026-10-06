@@ -46,6 +46,8 @@ test('the shortcuts sheet keeps its header on screen and scrolls inside', async 
 test('the bug dialog keeps its header on screen and scrolls inside', async ({ page }) => {
 	await acceptGate(page, { dismissCoach: true });
 	await page.goto('/settings');
+	// Prerendered: the button is there before its onclick (journey #6).
+	await expect(page.locator('[data-ready="true"]')).toBeAttached();
 	await page.setViewportSize(ZOOMED);
 
 	await page.getByTestId('open-bug').click();
