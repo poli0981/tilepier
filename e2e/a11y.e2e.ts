@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { WEATHER_OK } from '../src/lib/core/__fixtures__/weather';
 import { axeViolations } from './_lib/axe';
 
 /**
@@ -11,7 +12,11 @@ import { axeViolations } from './_lib/axe';
  * in both themes (`@nightly`), which is too long for a per-PR gate.
  *
  * `/api/*` answers 503 here: a scan must not depend on an upstream, and a
- * widget's error state is a surface like any other. Motion is reduced so that
+ * widget's error state is a surface like any other. The one exception is a
+ * second weather tile, given a place and the recorded forecast, because a tile
+ * with data carries the deck's one credit link (doc 10 §8) and an error card
+ * carries none; the first weather tile keeps no place, so the place search is
+ * scanned as well. Motion is reduced so that
  * no transition is caught half-way when colours are measured. The deck holds
  * all fifteen widgets: `/w/<id>` for a widget that is not on it shows an offer
  * to pin it rather than the detail, which is how the first draft of this file
@@ -43,17 +48,30 @@ const WIDGETS = [
 ] as const;
 
 /** Every widget once, stacked; the grid clamps each to its manifest's size. */
-const FULL_DECK = WIDGETS.map((widgetId, index) => ({
-	instanceId: `wgt_a11y_${widgetId}`,
-	widgetId,
-	x: 0,
-	y: index * 4,
-	w: 4,
-	// Four rows, so the calculator shows its keypad (doc 07 §3) and is scanned
-	// with it; its compact form has a component test of its own.
-	h: 4,
-	settings: {}
-}));
+const FULL_DECK = [
+	...WIDGETS.map((widgetId, index) => ({
+		instanceId: `wgt_a11y_${widgetId}`,
+		widgetId,
+		x: 0,
+		y: index * 4,
+		w: 4,
+		// Four rows, so the calculator shows its keypad (doc 07 §3) and is scanned
+		// with it; its compact form has a component test of its own.
+		h: 4,
+		settings: {}
+	})),
+	// Last, so `/w/weather` still opens the first weather tile, which has no
+	// place. At its smallest size, where the credit is closest to the rest.
+	{
+		instanceId: 'wgt_a11y_weather_placed',
+		widgetId: 'weather',
+		x: 0,
+		y: WIDGETS.length * 4,
+		w: 2,
+		h: 2,
+		settings: { place: { name: 'Hà Nội', lat: 21.02, lon: 105.85 } }
+	}
+];
 
 /** Settings, the deck and the gate's acceptance, written before any page script runs. */
 async function seed(
@@ -67,6 +85,8 @@ async function seed(
 			body: JSON.stringify({ error: { code: 'UPSTREAM_DOWN' } })
 		})
 	);
+	// Registered later, so it answers first (Playwright runs routes newest first).
+	await page.route('**/api/weather*', (route) => route.fulfill({ json: WEATHER_OK }));
 	await page.addInitScript(
 		([theme, accepted, coach, grid]) => {
 			if (sessionStorage.getItem('tp.e2e.a11y') !== null) return;
@@ -100,6 +120,8 @@ async function seed(
 async function deck(page: Page): Promise<void> {
 	await page.goto('/');
 	await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+	// The placed weather tile has its data, so the scan meets its credit.
+	await expect(page.getByRole('link', { name: 'Open-Meteo.com' })).toBeVisible();
 }
 
 /**

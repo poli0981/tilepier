@@ -239,6 +239,11 @@ show "on deck" disabled state. Search filters by name.
   link inside running text is exempt, as 2.5.8 exempts it. Visible
   `:focus-visible` ring (beacon, 2 px offset).
 
+  Weather's credit link (1.0.1) is shorter than the token: a 15 px line,
+  which is all a 2 × 2 tile has room for. It meets 2.5.8 by its spacing
+  exception, since nothing else in the readout can be pressed, and the axe
+  sweep checks it with the tile's data in place.
+
   **Week 8 found the rule had never been held.** The brand link was 23 px tall,
   the edit strip's Done 24, the drawer's Add buttons 32, the Settings swatches
   24, its select 18 — the browser's own — and its actions 36; the bot check's

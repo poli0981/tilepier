@@ -139,6 +139,24 @@ describe('the reading', () => {
 	});
 });
 
+describe('the credit (doc 10 §8)', () => {
+	it('links to Open-Meteo beside the reading, as its licence requires', async () => {
+		// Open-Meteo's licence, read again 2026-10-07: "You must include a link
+		// next to any location Open-Meteo data are displayed". A tile is one. Until
+		// 1.0.1 only the detail and the licences page carried the link — a P1 by
+		// doc 19 §7, found after the release had shipped it.
+		serve(WEATHER_OK);
+		const screen = render(TpWeatherWidget, props());
+
+		const credit = screen.getByRole('link', { name: m['widget.weather.credit']() });
+		await expect.element(credit).toHaveAttribute('href', 'https://open-meteo.com/');
+		await expect.element(credit).toHaveAttribute('target', '_blank');
+		await expect.element(credit).toHaveAttribute('rel', 'noopener noreferrer');
+		// The payload's own sentence, the one the detail shows, on hover.
+		await expect.element(credit).toHaveAttribute('title', WEATHER_PAYLOAD.attribution);
+	});
+});
+
 describe('density (doc 08 §1)', () => {
 	it('has no sparkline at h=2', async () => {
 		serve(WEATHER_OK);

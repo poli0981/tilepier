@@ -317,6 +317,22 @@
 				</figcaption>
 			</figure>
 		{/if}
+
+		<!--
+			doc 10 §8. Open-Meteo's licence: "You must include a link next to any
+			location Open-Meteo data are displayed", and a tile is one — until 1.0.1
+			only the detail carried it. The words are the domain because they fit
+			a 2 × 2 tile whole, where the payload's sentence does not (163 px against
+			206); the sentence is the title. Under 24 px tall, a target 2.5.8's
+			spacing exception covers: nothing else here can be pressed.
+		-->
+		<a
+			class="tp-wx__credit"
+			href="https://open-meteo.com/"
+			target="_blank"
+			rel="noopener noreferrer"
+			title={payload?.attribution}>{m['widget.weather.credit']()}</a
+		>
 	{/if}
 </div>
 
@@ -400,6 +416,23 @@
 		flex: none;
 		color: var(--color-fg-dim);
 		font-size: var(--text-2xs);
+	}
+
+	/* Held to the foot of the tile. Underlined, as the detail's credit is: a
+	   credit the licence asks to be a link should look like one. The 15 px line
+	   is what fits a 2 × 2 tile, with 1.4 px to spare; at the inherited 18 px the
+	   reading's row gave way by 1.6 (`TpWeatherReadout.svelte.test.ts`). */
+	.tp-wx__credit {
+		flex: none;
+		align-self: flex-start;
+		max-width: 100%;
+		margin-top: auto;
+		color: var(--color-fg-mute);
+		font-size: var(--text-2xs);
+		line-height: 1.25;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		white-space: nowrap;
 	}
 
 	.tp-wx__note {

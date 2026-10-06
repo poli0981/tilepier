@@ -9,8 +9,9 @@ TTLs are authoritative in doc 11 §4. Every widget here must exhibit correct
 - **Source:** Open-Meteo forecast + air-quality + geocoding (doc 10 §2).
 - **Tile:** place name, current temp (big), condition icon (internal icon
   set mapped from WMO weather codes — no emoji), hi/lo, precip probability
-  chip; at h≥3 add a 12 h temp sparkline (inline SVG). Multi-instance:
-  one tile per place.
+  chip; at h≥3 add a 12 h temp sparkline (inline SVG); under the reading,
+  a link to Open-Meteo, which its licence requires beside any display of its
+  data (doc 10 §8, since 1.0.1). Multi-instance: one tile per place.
 - **Detail (ECharts):** 24 h combo chart (temp line + precip bars + cloud
   band), 7-day strip (icon, hi/lo bars), wind (speed + direction), humidity,
   UV, pressure; AQI gauge (European AQI) with pollutant breakdown; astronomy
