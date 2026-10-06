@@ -23,6 +23,7 @@ import {
 type TpLocale = 'vi' | 'en';
 type TpTheme = 'dark' | 'light' | 'system';
 type TpReducedMotion = 'system' | 'on' | 'off';
+type TpScrollbars = 'shown' | 'hidden';
 
 export interface TpSettings {
 	schemaVersion: 1;
@@ -36,9 +37,19 @@ export interface TpSettings {
 	coachDismissed: boolean;
 	/** doc 18 §5 diagnostics panel. Lives here rather than as a fourth key. */
 	debug: boolean;
+	/**
+	 * doc 12 §9. **Optional, and not a version bump** (doc 05 §5's additive
+	 * rule): a value stored before the field existed reads as `'shown'`, and a
+	 * build from before it ignores the key and keeps it, because every write
+	 * here spreads the stored object. A v2 would have been quarantined — theme,
+	 * language and accent with it — by any older build that met it: a rollback,
+	 * a tab offline on the previous build's precache, or a second tab.
+	 */
+	scrollbars?: TpScrollbars;
 }
 
 const LOCALES: readonly TpLocale[] = ['vi', 'en'];
+const SCROLLBARS: readonly TpScrollbars[] = ['shown', 'hidden'];
 
 /** Matches `--color-beacon` in app.css (doc 12 §2). Duplicated deliberately:
  *  the default has to exist before any stylesheet has been parsed. */
@@ -65,7 +76,8 @@ export function defaultSettings(): TpSettings {
 		weekStartsOn: locale === 'vi' ? 1 : 0,
 		reducedMotion: 'system',
 		coachDismissed: false,
-		debug: false
+		debug: false,
+		scrollbars: 'shown'
 	};
 }
 
@@ -93,15 +105,20 @@ export function isSettings(candidate: unknown): candidate is TpSettings {
 		(s['weekStartsOn'] === 0 || s['weekStartsOn'] === 1) &&
 		isOneOf(s['reducedMotion'], ['system', 'on', 'off'] as const) &&
 		typeof s['coachDismissed'] === 'boolean' &&
-		typeof s['debug'] === 'boolean'
+		typeof s['debug'] === 'boolean' &&
+		// Absent is a value stored before the field existed; anything else that
+		// is not one of the two quarantines like every other field.
+		(s['scrollbars'] === undefined || isOneOf(s['scrollbars'], SCROLLBARS))
 	);
 }
 
 const SETTINGS_SPEC: TpVersionedSpec<TpSettings> = {
 	key: LOCAL_KEYS.settings,
 	version: SETTINGS_VERSION,
-	// Nothing has shipped at v1 yet, so there is nothing to migrate from.
-	// Appending here is how v2 lands; never edit a step that has shipped.
+	// v1 has shipped since 2026-08-19 and has needed no step: a field added
+	// with a default is optional rather than versioned (doc 05 §5), which an
+	// older build carries untouched. A step is for a change an older build
+	// would misread; append it here, and never edit one that has shipped.
 	migrations: [],
 	validate: isSettings,
 	fallback: defaultSettings
@@ -137,6 +154,9 @@ class SettingsStore {
 	}
 	get debug(): boolean {
 		return this.#value.debug;
+	}
+	get scrollbars(): TpScrollbars {
+		return this.#value.scrollbars ?? 'shown';
 	}
 
 	/** `'system'` resolved against the media query, for anything that needs a
@@ -252,6 +272,10 @@ class SettingsStore {
 		root.setAttribute('data-theme', this.resolvedTheme);
 		root.setAttribute('lang', this.#value.locale);
 		root.setAttribute('data-motion', this.motionOK ? 'ok' : 'reduced');
+		// Present only when hidden, so the markup default — and a page whose
+		// boot.js never ran — is the shown, themed scrollbar (doc 12 §9).
+		if (this.scrollbars === 'hidden') root.setAttribute('data-scrollbars', 'hidden');
+		else root.removeAttribute('data-scrollbars');
 		root.style.setProperty('--color-beacon', this.#value.accent);
 	}
 

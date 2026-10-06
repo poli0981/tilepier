@@ -61,6 +61,18 @@ describe('round-trips', () => {
 		expect(settings.motionOK).toBe(false);
 	});
 
+	it('hides scrollbars, and names the control by its own row', async () => {
+		const screen = render(TpSettingsPanel);
+
+		await screen.getByTestId('scrollbars-hidden').click();
+
+		expect(settings.scrollbars).toBe('hidden');
+		expect(stored()?.['scrollbars']).toBe('hidden');
+		await expect
+			.element(screen.getByRole('group', { name: m['settings.appearance.scrollbars']() }))
+			.toBeVisible();
+	});
+
 	it('toggles the 24-hour clock', async () => {
 		const screen = render(TpSettingsPanel);
 
@@ -76,6 +88,35 @@ describe('round-trips', () => {
 
 		await expect.element(screen.getByTestId('theme-light')).toHaveAttribute('aria-pressed', 'true');
 		await expect.element(screen.getByTestId('theme-dark')).toHaveAttribute('aria-pressed', 'false');
+	});
+});
+
+describe('names for assistive technology', () => {
+	it('names each choice group by its own row, not by its section', async () => {
+		// Until 2026-10-06 the theme and motion groups were both labelled by the
+		// Appearance heading, so a screen reader announced two groups called
+		// "Appearance" and neither said what it chose.
+		const screen = render(TpSettingsPanel);
+
+		for (const label of [
+			m['settings.language.label'](),
+			m['settings.appearance.theme'](),
+			m['settings.appearance.motion'](),
+			m['settings.appearance.scrollbars']()
+		]) {
+			await expect.element(screen.getByRole('group', { name: label, exact: true })).toBeVisible();
+		}
+	});
+
+	it('names the accent swatches by colour rather than by hex', async () => {
+		const screen = render(TpSettingsPanel);
+
+		await expect
+			.element(screen.getByRole('button', { name: m['settings.appearance.accent_teal']() }))
+			.toHaveAttribute('aria-pressed', 'true');
+		await screen.getByRole('button', { name: m['settings.appearance.accent_violet']() }).click();
+
+		expect(settings.accent).toBe('#b48ce8');
 	});
 });
 

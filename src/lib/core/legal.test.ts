@@ -40,6 +40,13 @@ describe('static/boot.js', () => {
 		expect(source).toMatch(/'dark'/);
 	});
 
+	it('applies the scrollbar setting the way the store does (doc 12 §9)', () => {
+		// The attribute, and only for `hidden`. boot.svelte.test.ts runs the
+		// file to prove the behaviour; this pins the vocabulary the store shares.
+		expect(source).toContain("setAttribute('data-scrollbars', 'hidden')");
+		expect(source).toContain("settings.scrollbars === 'hidden'");
+	});
+
 	it('applies ?lang= for the gate switch but never persists it', () => {
 		// doc 14 §6: the switch has to work before hydration. Writing from here
 		// would write a partial settings object, which fails the store's

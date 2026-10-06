@@ -46,9 +46,14 @@ draw, which the obvious 62-character version is not.
   "weekStartsOn": 1,
   "reducedMotion": "system",   // "system" | "on" | "off"
   "coachDismissed": false,     // doc 13 §9 one-time coach overlay
-  "debug": false               // doc 18 §5 diagnostics panel
+  "debug": false,              // doc 18 §5 diagnostics panel
+  "scrollbars": "shown"        // "shown" | "hidden" — optional, doc 12 §9
 }
 ```
+
+> Amended 2026-10-06. **`scrollbars` added as an optional field, with no
+> version bump** — the first field added since v1 shipped, and the reason §5
+> now has an additive rule. Absent reads as `"shown"`.
 
 > Amended 2026-08-19. **`editLocked` removed** — doc 13 §2 states that edit mode
 > is not persisted, and the two could not both be true; nothing else in the
@@ -228,6 +233,17 @@ createDebouncedWriter<T>(spec, delayMs): { schedule(v); flush(); dispose() }
 - `createDebouncedWriter` registers its `flush` on `visibilitychange → hidden`
   and `pagehide` at construction and removes them in `dispose()`; doc 04 §6
   requires both.
+- **Additive rule (2026-10-06): a new field with a default is optional, not a
+  version bump.** The validator accepts it absent or valid, the store reads
+  absent as the default, and nothing is rewritten on read. It works across
+  builds because every write spreads the stored object (`patch`, `restore`,
+  `snapshot`), so a build that does not know the key keeps it — a test pins
+  that an unrelated write keeps an unknown key. A bump would have had the
+  opposite effect: an older build quarantines a newer version, so a rollback, a
+  tab that falls back offline to the previous build's precache, or a second
+  tab on the old build would reset the reader's theme, language and accent.
+  **Bump only for a change an older build would misread** — a renamed field, a
+  new meaning for an old value — and give it a step in the chain.
 - Dexie: use native `db.version(n).upgrade()` chain. Never edit a shipped
   version block; only append.
 - Layout migration must tolerate unknown `widgetId` (a widget removed in a

@@ -313,7 +313,7 @@
 		translate: -50% -50%;
 		display: flex;
 		flex-direction: column;
-		width: min(1120px, calc(100vw - 2rem));
+		width: min(1120px, calc(100% - 2rem));
 		height: min(86vh, calc(100dvh - 2rem));
 		overflow: hidden;
 		border: 1px solid var(--color-ink-700);
@@ -379,6 +379,9 @@
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow: auto;
+		/* A wheel at the end of the detail stops here rather than scrolling the
+		   deck behind the scrim. */
+		overscroll-behavior: contain;
 		padding: 1rem;
 	}
 
@@ -415,7 +418,7 @@
 			top: 0;
 			left: 0;
 			translate: none;
-			width: 100vw;
+			width: 100%;
 			height: 100dvh;
 			border: 0;
 			border-radius: 0;

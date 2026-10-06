@@ -105,7 +105,11 @@
 		left: 50%;
 		z-index: 71;
 		transform: translate(-50%, -50%);
-		width: min(44rem, calc(100vw - 2rem));
+		width: min(44rem, calc(100% - 2rem));
+		/* Never taller than the screen, so zoomed far in it scrolls rather
+		   than losing its header and close button off the top (WCAG 1.4.10). */
+		max-height: calc(100dvh - 2rem);
+		overflow-y: auto;
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
 		background: var(--color-ink-850);

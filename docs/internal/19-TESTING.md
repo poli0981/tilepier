@@ -306,6 +306,21 @@ copies, before the rss journey (`e2e/rss.e2e.ts`) became a ninth. Its
 `dismissCoach` option is journey #4's variant, which also clears doc 13 §9's
 coach before clicking a tile.
 
+And an eighth, found on 2026-10-06: **no test had ever seen a scrollbar.**
+Playwright launches headless Chromium with `--hide-scrollbars`, in this suite
+and in Vitest's browser mode alike, so every width the suite measured was taken
+with scrollbars zero pixels wide — on Windows a page scrollbar takes about 15.
+That is how the deck could flip from 12 columns to 6 when edit mode made the
+page scroll, with every layout assertion green (doc 06 §5.4).
+`e2e/scrollbars.e2e.ts` drops the flag with `ignoreDefaultArgs` and is the one
+place a scrollbar's width can break a layout. On CI it requires a scrollbar
+wider than 0 rather than skipping, so it cannot pass by testing nothing.
+`test.use({ launchOptions })` *replaces* the config's launch options rather
+than merging, which is why the certificate flag and the hermetic host rules
+live in `e2e/_lib/launch.ts` for both to share. A computed style
+(`scrollbarWidth`, `scrollbarGutter`) is visible under the flag too; a pixel
+width is not.
+
 ## 5. Manual test matrix (release gate)
 
 Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android

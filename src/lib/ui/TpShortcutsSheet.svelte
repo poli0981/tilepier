@@ -76,7 +76,10 @@
 		left: 50%;
 		z-index: 71;
 		transform: translate(-50%, -50%);
-		width: min(22rem, calc(100vw - 2rem));
+		width: min(22rem, calc(100% - 2rem));
+		/* As the bug dialog: scroll inside, never lose the header (WCAG 1.4.10). */
+		max-height: calc(100dvh - 2rem);
+		overflow-y: auto;
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
 		background: var(--color-ink-850);

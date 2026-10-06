@@ -227,3 +227,73 @@ describe('cross-tab sync', () => {
 		expect(settings.clock24h).toBe(true);
 	});
 });
+
+describe('scrollbars — an optional field (doc 12 §9, doc 05 §5)', () => {
+	/** A value as every build before 2026-10-06 wrote it: no `scrollbars` key. */
+	function seedFromBefore(): void {
+		const before: Record<string, unknown> = { ...defaultSettings() };
+		delete before['scrollbars'];
+		localStorage.setItem(LOCAL_KEYS.settings, JSON.stringify(before));
+	}
+
+	it('reads a value stored before the field existed as shown, and leaves it be', () => {
+		seedFromBefore();
+
+		settings.hydrate();
+
+		expect(settings.scrollbars).toBe('shown');
+		expect(Object.keys(localStorage).some((k) => k.startsWith('tp.corrupt.'))).toBe(false);
+		// Read, not rewritten: nothing about an older value needs migrating.
+		expect(stored().scrollbars).toBeUndefined();
+	});
+
+	it('writes hidden through, and reads it back', () => {
+		settings.hydrate();
+
+		settings.patch({ scrollbars: 'hidden' });
+		settings.dispose();
+		settings.hydrate();
+
+		expect(stored().scrollbars).toBe('hidden');
+		expect(settings.scrollbars).toBe('hidden');
+	});
+
+	it('quarantines a value that is neither, as it would any other field', () => {
+		localStorage.setItem(
+			LOCAL_KEYS.settings,
+			JSON.stringify({ ...defaultSettings(), scrollbars: 'sideways' })
+		);
+
+		settings.hydrate();
+
+		expect(settings.scrollbars).toBe('shown');
+		expect(Object.keys(localStorage).some((k) => k.startsWith('tp.corrupt.'))).toBe(true);
+	});
+
+	it('keeps a key it does not know through an unrelated write', () => {
+		// The property the additive rule rests on. A build from before this
+		// field meets `scrollbars` exactly as this one meets an unknown key, and
+		// a reader who hid their scrollbars must not get them back because an
+		// older tab — or a rollback — changed their theme.
+		localStorage.setItem(
+			LOCAL_KEYS.settings,
+			JSON.stringify({ ...defaultSettings(), fromANewerBuild: 'kept' })
+		);
+		settings.hydrate();
+
+		settings.patch({ theme: 'light' });
+
+		expect((stored() as unknown as Record<string, unknown>)['fromANewerBuild']).toBe('kept');
+	});
+
+	it('marks <html> only while hidden', () => {
+		seed({ scrollbars: 'hidden' });
+		settings.hydrate();
+		settings.applyToDocument();
+		expect(document.documentElement.getAttribute('data-scrollbars')).toBe('hidden');
+
+		settings.patch({ scrollbars: 'shown' });
+		settings.applyToDocument();
+		expect(document.documentElement.hasAttribute('data-scrollbars')).toBe(false);
+	});
+});

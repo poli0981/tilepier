@@ -151,6 +151,11 @@ show "on deck" disabled state. Search filters by name.
   layouts = v1.x backlog item — document limitation in About).
 - Touch: drag/resize only in edit mode (long-press to enter), preventing
   scroll-hijack; detail panels become full-screen sheets under 768 px.
+- The page reserves its scrollbar gutter (doc 06 §5.4), so a fixed surface
+  — the drawer, the detail panel and its full-screen sheet, the dialogs, the
+  coach — sizes itself with `100%`, never `100vw`. `100vw` includes the
+  scrollbar, so a sheet sized with it ran 15 px under the page's scrollbar on
+  Windows, where its close button sits. (2026-10-06, `e2e/scrollbars`.)
 
 ## 7. States (visual definitions)
 
@@ -205,6 +210,17 @@ show "on deck" disabled state. Search filters by name.
   - Escape and modified keys pass on.
   - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
+- **Every overlay scrolls inside itself** (WCAG 1.4.10). An overlay is
+  `position: fixed`, so the page cannot scroll to anything it cannot show, and
+  at 400 % zoom — 320 × 256 CSS px — the gate, the bug dialog and the
+  shortcuts sheet were taller than the screen. Until 2026-10-06 the gate's
+  Accept button could not be reached at that size. The dialogs cap themselves
+  at the screen's height minus their margin and scroll. The gate scrolls as a
+  whole, and centres its panel with auto margins, so a panel too tall to centre
+  starts at the top instead of overflowing both ends. The detail's body and
+  the drawer set `overscroll-behavior: contain`: a wheel at the end of either
+  stops there rather than scrolling the deck behind the scrim.
+  (`e2e/overlays`, each test red on the parent.)
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).
 - Contrast: **measured 2026-08-28**, when `widgets/toolbox/color.ts` gave the
@@ -275,10 +291,16 @@ and stacked below. **No save button** — every control writes through
 `stores/settings.svelte.ts` immediately. Local-first means there is nothing to
 submit.
 
+A choice group (`role="group"`) is named by **its own row's label**, never by
+its section's heading, and a swatch by its colour's name, never its hex. Until
+2026-10-06 the theme and motion groups were both labelled by the Appearance
+heading, so a screen reader announced two groups called "Appearance", and the
+swatches were read out as six hex digits.
+
 | # | Section | Contents | Lands |
 |---|---------|----------|-------|
 | 1 | Ngôn ngữ / Language | vi \| en segmented control; changing it reloads (doc 14 §1) | Week 1 |
-| 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off) | Week 1 |
+| 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off), scrollbars (shown \| hidden, doc 12 §9 — added Week 8) | Week 1 |
 | 3 | Hiển thị / Display | 24-hour clock, week starts on | Week 1 |
 | 4 | Bàn làm việc / Deck | reset layout to the seeded default (confirm) | Week 1 |
 | 5 | Sao lưu / Backup | export JSON, import with dry-run diff (doc 05 §6) | Week 2 ✓ |

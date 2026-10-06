@@ -31,6 +31,9 @@ base, teal beacon, gauge motif. No shared tokens with any other project.
   --color-fg-mute: #8FA0B0;   /* secondary */
   --color-fg-dim:  #5C6B7A;   /* tertiary, timestamps */
 
+  /* Scrollbar thumb (§9) — light theme #78858F */
+  --color-scrollbar: #5C6B7A;
+
   /* Beacon (accent) */
   --color-beacon:      #46D5C8;
   --color-beacon-soft: #46D5C81F;  /* 12% wash */
@@ -233,3 +236,35 @@ UI copy: lowercase-calm, terse, no exclamation marks, no anthropomorphizing.
 Empty states explain + one action ("chưa có ghi chú — tạo ghi chú đầu tiên").
 Errors say what happened and what happens next ("dữ liệu cũ 12 phút —
 sẽ thử lại"). Same register in EN and VI (doc 14 §5).
+
+## 9. Scrollbars
+
+Added 2026-10-06, at the owner's request (doc 23, Week 8).
+
+- **Thin, in the theme's colours, drawn with the standard properties only.**
+  `scrollbar-width: thin` on every element, and one `scrollbar-color:
+  var(--color-scrollbar) transparent` on the root, which every scroller
+  inherits. Browsers ignore `::-webkit-scrollbar` on any element where either
+  property is set, so there is no second path to keep in step, and no script.
+  Supported by Chrome and Edge 121, Firefox 64 and Safari 18.2 (`scrollbar-color`
+  from Safari 26.2; before that Safari draws its own thin bar). Forced-colours
+  mode resets the colour by itself.
+- **The thumb is neutral**: `--color-scrollbar` (#5C6B7A dark, #78858F light),
+  at least 3:1 against ink-950, -900 and -850 of its theme, so the bar is a
+  visible control rather than decoration. It is not the beacon (§4.1: one
+  beacon per view), and it is a token of its own so that a change to `fg-dim`
+  does not make it louder. The track is transparent, so a pane's own surface
+  shows through.
+- **The page reserves its gutter** (`scrollbar-gutter: stable`): the deck's
+  column count comes from its width, and a scrollbar appearing used to change
+  it (doc 06 §5.4). The strip of gutter beside a full-screen scrim is not
+  dimmed; that is accepted, and it does not appear where scrollbars overlay.
+- **Settings → Appearance → Scrollbars: shown | hidden**, shown by default.
+  Hidden sets `data-scrollbars="hidden"` on `<html>` — `static/boot.js` before
+  first paint, the settings store after hydration — and `scrollbar-width: none`
+  on everything. It is never `overflow: hidden`: the wheel, the keyboard and
+  touch all still scroll, which the settings note tells the reader. Hidden
+  removes the gutter too, so switching it can change the column count once at a
+  boundary width; that is the reader's own action, like resizing the window.
+- How it is tested: computed style in `ui/scrollbars.svelte.test.ts` and pixels
+  in `e2e/scrollbars`, the one spec that runs with real scrollbars (doc 19 §4).

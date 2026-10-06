@@ -156,6 +156,13 @@ The single most dangerous integration point. Fixed rules:
    `{1280→12, 768→6, 480→3, else→1}` with `layout: 'compact'` on collapse.
    `draggable.handle: '.tp-drag'` (whole header in edit mode),
    `resizable.handles: 'se'`.
+   The count is decided by the grid's own width, and the deck scrolls the
+   window, so `html` reserves its scrollbar gutter (`scrollbar-gutter:
+   stable`, app.css). Without it a classic scrollbar appearing narrowed the
+   grid by its own width — edit mode's strip alone makes a deck that fits the
+   screen scroll — and near a breakpoint the deck flipped from 12 columns to 6
+   as the reader pressed `e`. Measured on 2026-10-06 by `e2e/scrollbars`, the
+   one spec that runs with real scrollbars (doc 19 §4).
 5. View mode: `grid.enableMove(false); grid.enableResize(false)` — the grid
    is inert; hover shows nothing. Edit mode toggles both on (doc 13 §2).
 6. Destroy: on route leave / HMR dispose, `grid.destroy(false)` after
