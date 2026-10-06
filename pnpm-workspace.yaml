@@ -36,3 +36,12 @@ overrides:
   # asks for ^0.6.0. 0.7 keeps 0.6's parse/serialize API, and this app sets no
   # cookies of its own (doc 16 §3), so raising the floor changes nothing it does.
   'cookie@<0.7.0': '^0.7.2'
+  # Ten advisories in undici before 7.29.1 by npm's count, six as Dependabot
+  # alerts (Week 8); the two high are GHSA-rfgv-xxqx-mfg5 and
+  # GHSA-w293-vg96-wgc3. Through miniflare, which wrangler runs for
+  # `wrangler dev` and the preview — dev tooling only, nothing in the deployed
+  # Worker. miniflare pins 7.29.0 exactly, and Dependabot's own six attempts at
+  # a bump failed on that pin.
+  # The lock takes 7.30.0 (published 2026-09-25), and the e2e suite runs on it:
+  # its server is `wrangler dev`.
+  'undici@<7.29.1': '^7.29.1'

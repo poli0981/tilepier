@@ -284,7 +284,18 @@ feed (VnExpress) arriving through the Worker's own egress.
 - **Security floors for transitive dependencies** live in `pnpm-workspace.yaml`'s
   `overrides` (added 2026-09-23). Each entry names its advisory, and it comes out
   when the parent package raises its own range. The first is
-  `cookie@<0.7.0 → ^0.7.2` under SvelteKit (GHSA-pxg6-pf52-xh8x).
+  `cookie@<0.7.0 → ^0.7.2` under SvelteKit (GHSA-pxg6-pf52-xh8x). The second
+  (2026-10-06) is `undici@<7.29.1 → ^7.29.1` under miniflare — ten advisories,
+  two high (GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3), in dev tooling only —
+  because miniflare pins `7.29.0` exactly, so no range of its own will move.
+- **An override is for a parent that will not move. A stale lock is the
+  commoner case** (2026-10-06): five packages carried high or moderate
+  advisories whose fixes sat inside their parents' own ranges — `devalue`
+  5.9.0 under svelte and SvelteKit (`^5.8.1`), `brace-expansion`,
+  `source-map-js`, `smol-toml`, `postcss-selector-parser` — and the lock had
+  simply been resolved before the fixes existed. `pnpm update <name>` refreshes
+  a transitive entry in place: no override, nothing to take out later. Read the
+  lock diff for anything beyond the names asked for.
 - No CDN scripts/fonts — everything bundled/self-hosted (also a CSP
   consequence), with the two named Cloudflare exceptions of §2. CI grep
   forbids `https://cdn`, `unpkg`, `jsdelivr`, `googleapis` in the build
