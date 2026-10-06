@@ -1,0 +1,48 @@
+# Notify — doc 21 §1. Announces a published release on Discord, through the
+# shared workflow in poli0981/.github. Runs when the owner publishes the draft
+# release.yml made, or by hand to announce a release again.
+name: notify
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to announce again, e.g. v1.0.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # The shared workflow fails outright when no webhook is set. Without the
+  # secret, this repository skips the announcement rather than going red on
+  # every release.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      configured: ${{ steps.secret.outputs.configured }}
+    steps:
+      - id: secret
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
+        run: |
+          if [ -n "$WEBHOOK" ]; then echo "configured=true"; else echo "configured=false"; fi >> "$GITHUB_OUTPUT"
+
+  announce:
+    needs: check
+    if: needs.check.outputs.configured == 'true'
+    # Pinned to a commit, so a change in the shared repository reaches this one
+    # only through a pull request that moves the SHA. The pin covers the
+    # workflow; the posting script it fetches comes from that repository's
+    # main, which no pin here can reach.
+    uses: poli0981/.github/.github/workflows/announce-release.yml@c3e118a01d40e95b36b2c3466dc206638c11eb5a
+    with:
+      tag_override: ${{ inputs.tag || '' }}
+    # Named, not `secrets: inherit`: the shared workflow gets the one secret
+    # it posts with, and nothing else this repository holds.
+    secrets:
+      DISCORD_RELEASES_WEBHOOK: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}

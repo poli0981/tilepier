@@ -1,0 +1,78 @@
+# Release — doc 21 §1. Turns a `v*` tag into a **draft** GitHub Release whose
+# body is that version's section of CHANGELOG.md.
+#
+# A draft, because a release created with GITHUB_TOKEN never triggers
+# `release: published` workflows (GitHub's guard against recursive runs), so a
+# release this workflow published itself would never be announced. The owner
+# publishes it by hand, which is the last human check of a release and the
+# event notify.yml waits for.
+#
+# `workflow_dispatch` with `dry_run` (the default) runs every check and prints
+# the notes, before a tag exists, and creates nothing.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The tag, e.g. v1.0.0
+        required: true
+        type: string
+      dry_run:
+        description: Check and print the notes only
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      # The tag itself, except on a dry run, which checks the branch it was
+      # started from — the tag may not exist yet.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run && inputs.tag || '' }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: The tag names package.json's version, on main
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::$TAG does not name package.json's version ($VERSION)"
+            exit 1
+          fi
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$TAG is not a commit on main"
+            exit 1
+          fi
+
+      - name: Notes from CHANGELOG.md
+        run: |
+          node scripts/release-notes.mjs "${TAG#v}" > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+
+      - name: Draft release
+        if: github.event_name == 'push' || !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$TAG" --draft --verify-tag
+          --title "TilePier $TAG" --notes-file "$RUNNER_TEMP/notes.md"
