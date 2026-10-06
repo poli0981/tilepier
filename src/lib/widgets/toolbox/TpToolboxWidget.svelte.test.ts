@@ -189,3 +189,17 @@ describe('the colour tab', () => {
 		});
 	});
 });
+
+describe('at tier L', () => {
+	// doc 19 §6's first box — the tile at every density tier its manifest
+	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
+	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
+	it('opens on its tabs, as at tier M', async () => {
+		const screen = render(TpToolboxWidget, {
+			...props(),
+			size: { w: 4, h: 4, pxW: 440, pxH: 320, tier: 'L' }
+		});
+
+		await expect.element(screen.getByTestId('tab-qr')).toHaveAttribute('aria-selected', 'true');
+	});
+});

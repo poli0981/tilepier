@@ -205,3 +205,20 @@ describe('the scheduler wiring (doc 04 §3)', () => {
 		expect(scheduler.size).toBe(0);
 	});
 });
+
+describe('at tier S', () => {
+	// doc 19 §6's first box — the tile at every density tier its manifest
+	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
+	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
+	it('is the line alone at 2×1, as at every one-row width', async () => {
+		const screen = render(
+			TpQuoteWidget,
+			props({}, vi.fn(), { w: 2, h: 1, pxW: 200, pxH: 34, tier: 'S' })
+		);
+
+		await expect
+			.element(screen.getByTestId('quote-text'))
+			.toHaveTextContent(quoteText(expected!, 'vi'));
+		await expect.element(screen.getByTestId('quote-cite')).not.toBeInTheDocument();
+	});
+});

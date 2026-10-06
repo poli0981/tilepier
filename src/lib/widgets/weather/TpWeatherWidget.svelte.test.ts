@@ -520,3 +520,19 @@ describe('the cache (doc 04 §2)', () => {
 		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale-error'));
 	});
 });
+
+describe('at tier L', () => {
+	// doc 19 §6's first box — the tile at every density tier its manifest
+	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
+	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
+	it('shows the reading and the sparkline', async () => {
+		serve(WEATHER_OK);
+		const screen = render(
+			TpWeatherWidget,
+			props({ size: { w: 6, h: 4, pxW: 660, pxH: 320, tier: 'L' } })
+		);
+
+		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
+		await expect.element(screen.getByTestId('weather-spark-summary')).toBeInTheDocument();
+	});
+});

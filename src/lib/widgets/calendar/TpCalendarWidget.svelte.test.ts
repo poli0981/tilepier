@@ -180,3 +180,15 @@ describe('the scheduler wiring (doc 04 §3)', () => {
 		expect(scheduler.size).toBe(0);
 	});
 });
+
+describe('at tier L', () => {
+	// doc 19 §6's first box — the tile at every density tier its manifest
+	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
+	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
+	it('shows the month, with today ringed', async () => {
+		const screen = render(TpCalendarWidget, props({ w: 6, h: 5, pxW: 660, pxH: 400, tier: 'L' }));
+
+		await expect.element(screen.getByText('tháng 8 năm 2026')).toBeInTheDocument();
+		expect(screen.container.querySelectorAll('[aria-current="date"]')).toHaveLength(1);
+	});
+});

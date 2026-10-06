@@ -242,3 +242,20 @@ describe('permission-needed', () => {
 		await expect.element(screen.getByTestId('timer-permission')).not.toBeInTheDocument();
 	});
 });
+
+describe('at tier L', () => {
+	// doc 19 §6's first box — the tile at every density tier its manifest
+	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
+	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
+	it('shows the countdown and its control', async () => {
+		const screen = render(TpTimerWidget, {
+			...props({ mode: 'countdown', durationMs: 5 * MINUTE }),
+			size: { w: 4, h: 3, pxW: 440, pxH: 240, tier: 'L' }
+		});
+
+		await expect.element(screen.getByTestId('timer-readout')).toHaveTextContent('5:00');
+		await expect
+			.element(screen.getByTestId('timer-primary'))
+			.toHaveTextContent(m['widget.timer.start']());
+	});
+});
