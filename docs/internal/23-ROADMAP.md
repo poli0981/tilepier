@@ -1631,8 +1631,11 @@ each is on the owner's post-release list above, and what it finds is a 1.0.x.
   a test. The one open row, CAMS, is data nothing shows, so no credit is due
   yet; whether to keep fetching it is the owner's call.
 - [ ] Legal texts final (vi+en) · LEGAL_VERSION=3 (2: 2026-09-23, Web Analytics + Turnstile; 3: 2026-09-29, the `cf_clearance` cookie) · gate verified pre-JS — **the gate is verified pre-JS** (`legal-gate.e2e.ts`), and LEGAL_VERSION is 3. "Final" is the owner's reading.
-- [ ] Secrets grep clean (doc 21 §5) · headers verified in prod — **the grep is a
-  CI step, clean**; production headers wait on `e2e/prod-headers.e2e.ts`.
+- [x] Secrets grep clean (doc 21 §5) · headers verified in prod — the grep is a
+  CI step, clean; and `e2e/prod-headers.e2e.ts` passed against tilepier.win on
+  2026-10-06, once #43 had deployed: a prerendered page, a legal page and a
+  Worker-rendered 404 each carry doc 15 §2's list exactly, with
+  `frame-ancestors 'none'` and no cookie, and security.txt is served.
 - [ ] Backup export/import round-trip on prod build — journey 6 covers the
   build; production is the owner's.
 - [ ] Rollback runbook tested once (deploy previous version) — the owner's drill.
