@@ -121,9 +121,10 @@ no-WebGL fallback is a state of its own on top.
 `permission-needed` is orthogonal to the class and is not counted in either
 column: it is required exactly when the manifest declares a `permissions`
 entry, and forbidden otherwise. That is what makes `permissions` a manifest
-field rather than a convention — `timer` declares `notifications`, `map`
-declares `geolocation`, `music` declares `fsa`, and nothing else declares
-anything.
+field rather than a convention — `timer` declares `notifications`, `weather`
+and `map` declare `geolocation`, `music` declares `fsa`, and nothing else
+declares anything. (This list left out `weather` until Week 8, though its
+manifest has declared `geolocation` since Week 4.)
 
 ## 4. Add/remove flow
 

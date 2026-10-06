@@ -126,7 +126,7 @@
 <div class="tp-clock" data-tier={size.tier}>
 	<time class="tp-clock__time tp-num" datetime={new Date(now).toISOString()}>{time}</time>
 	<!-- Keyed on height, like the zone rows below: one row is 34 px at any
-	     width, and a 3 × 1 tile is tier M (doc 08 §5). Keyed on the tier, the
+	     width, and a 3 × 1 tile is tier M (doc 08 §3). Keyed on the tier, the
 	     date line clipped the hero digits by 4 px there. -->
 	{#if size.h >= 2}
 		<p class="tp-clock__date">

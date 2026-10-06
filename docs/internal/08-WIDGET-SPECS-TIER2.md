@@ -236,9 +236,10 @@ Two things about the shape of the fix are worth keeping:
    the 34, i.e. a loading state that overflows the ready state it stands in for.
 
 `sizes.min` stays `2x1` — one row is an allowed size, and now a designed one.
-It would not matter much if it changed: `toGridStackWidget` does not pass the
-manifest's min/max to gridstack, so every tile can be dragged to one row today
-regardless of what its manifest says (tracked separately).
+(This paragraph went on to say `toGridStackWidget` passed no min/max to
+gridstack, so any tile could be dragged to one row. That was fixed on
+2026-08-31, the day after it was written — doc 06 §7 — and the note outlived
+the fix until Week 8. The manifest's bounds are what a drag obeys.)
 
 ## 4. `rss` — RSS / News Reader
 
