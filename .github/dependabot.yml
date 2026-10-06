@@ -1,0 +1,42 @@
+# Dependabot — doc 21 §6.
+#
+# Security updates are a repository setting and need nothing here. This file
+# adds the version updates the docs promised from the start, as Renovate, which
+# was never installed. Every update still meets the gates a person's PR does:
+# `ci` (with its dependency audit) and `e2e`.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # doc 15 §6's release-age caution: nothing younger than three days. Stricter
+    # than pnpm's own one-day gate, so a PR never asks for a version pnpm would
+    # refuse. Security updates are not held.
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # Majors are left out of both groups, so each arrives on its own.
+      development:
+        dependency-type: development
+        update-types: [minor, patch]
+      production:
+        dependency-type: production
+        update-types: [patch]
+    ignore:
+      # Node 24 LTS is the stack (doc 02); a new major is a decision, not a bump.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: ci
+      include: scope

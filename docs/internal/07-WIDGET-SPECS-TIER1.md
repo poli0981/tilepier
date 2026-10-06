@@ -339,7 +339,7 @@ Three tabs in one widget (charter decision 2026-07-19).
    would have needed `@ts-nocheck` and exclusions in eslint, prettier, knip and
    coverage — five holes in a repo that otherwise has none. `qrcode-generator`
    is MIT, **zero-dependency**, by the original author, and goes through the
-   same Renovate and `pnpm audit` path as everything else (doc 02, doc 16 §5).
+   same Dependabot and `pnpm audit` path as everything else (doc 02, doc 16 §5).
 
 2. **The text is encoded as UTF-8, which is not that library's default.** Its
    `stringToBytes` is `charCodeAt(i) & 0xff`. `à` survives that by luck and `ộ`

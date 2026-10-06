@@ -255,9 +255,21 @@ feed (VnExpress) arriving through the Worker's own egress.
 
 ## 6. Supply chain
 
-- `pnpm` with lockfile, `--frozen-lockfile` in CI; Renovate PRs only.
-- `pnpm audit --prod` CI gate; `minimumReleaseAge`-style caution: Renovate
-  configured with `stabilityDays=3` for non-security updates.
+- `pnpm` with lockfile, `--frozen-lockfile` in CI; dependency changes arrive
+  as Dependabot PRs (doc 21 §6) or as a PR that says why.
+- **`pnpm audit --audit-level high` over every dependency** is a CI gate, the
+  last step of `ci.yml` (2026-10-06). **Not `--prod`**, which this section
+  asked for until then and which never ran: the code that ships from here —
+  svelte, SvelteKit, devalue under them, Paraglide's runtime — sits in
+  devDependencies, and on 2026-10-06 `--prod` passed with three high devalue
+  advisories in the lock, while the full audit found eight. The gate is not
+  hermetic: an advisory published tomorrow turns today's commit red, and that
+  is the point. The answer is a lock refresh or an override (below) or, while
+  no fixed version exists, an `auditConfig.ignoreGhsas` entry in
+  `pnpm-workspace.yaml` with its reason beside it, out again when the fix
+  ships.
+- Release-age caution: Dependabot's `cooldown` holds version updates three
+  days (doc 21 §6). Security updates are not held.
 - No postinstall scripts allowed. **Mechanism updated 2026-08-10:** pnpm 11 no
   longer reads the `pnpm` field from `package.json` and renamed the setting, so
   the allowlist is `allowBuilds` in **`pnpm-workspace.yaml`**. Deny by default;
@@ -273,7 +285,9 @@ feed (VnExpress) arriving through the Worker's own egress.
   component tests land, rather than as an install side effect.
 - pnpm 11 additionally gates packages published inside its minimum-release-age
   window; conscious exceptions are listed in `minimumReleaseAgeExclude`. This
-  is the same caution asked of Renovate below, now enforced at install time.
+  is the same caution as the cooldown above, enforced at install time; its
+  default is one day, so the cooldown is the stricter of the two and a
+  Dependabot PR never asks pnpm for a version it would refuse.
   **A non-strict install adds to that list by itself** (2026-09-23): asked for
   a version inside the window, pnpm 11 writes the exclusion and installs. That
   happened with `wrangler@4.136.3`, fourteen hours old. The exclusion was

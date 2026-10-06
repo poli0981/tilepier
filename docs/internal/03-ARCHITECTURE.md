@@ -124,8 +124,9 @@ tilepier/
 ├─ static/                       # fonts (self-hosted), icons, manifest
 ├─ docs/internal/                # this suite (gitignored — decide at init)
 ├─ .github/workflows/            # caller stubs (doc 21)
+├─ .github/dependabot.yml        # dependency updates (doc 21 §6)
 ├─ wrangler.toml                 # Worker name, KV binding, custom domain
-├─ eslint.config.js · knip.json · .prettierrc · renovate.json
+├─ eslint.config.js · knip.jsonc · prettier.config.js
 └─ package.json · pnpm-lock.yaml · svelte.config.js · vite.config.ts
 ```
 

@@ -23,7 +23,8 @@ allowBuilds:
   msw: false
 
 # pnpm 11 gates packages published more recently than its minimum-release-age
-# threshold — the same caution doc 15 §6 asks Renovate for via stabilityDays.
+# threshold (one day by default) — the caution doc 15 §6 also asks of
+# Dependabot's version updates, which wait three.
 # Entries here are packages consciously taken before that window elapsed.
 minimumReleaseAgeExclude:
   - knip@6.32.1
