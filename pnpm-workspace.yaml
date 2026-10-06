@@ -46,3 +46,9 @@ overrides:
   # The lock takes 7.30.0 (published 2026-09-25), and the e2e suite runs on it:
   # its server is `wrangler dev`.
   'undici@<7.29.1': '^7.29.1'
+  # GHSA-wq5f-xc86-pv6w (high): sharp before 0.35.5, a vulnerable librsvg. It
+  # reached npm's audit data on 2026-10-06, between two CI runs of the pull
+  # request that added the audit gate. Through miniflare again, which pins
+  # sharp 0.35.4 exactly for its Images binding — dev tooling only, nothing the
+  # app uses or the Worker ships. 0.35.5 was published 2026-09-27.
+  'sharp@<0.35.5': '^0.35.5'
