@@ -4,6 +4,7 @@ import type { StyleSpecification } from 'maplibre-gl';
 import { GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
 import { createDb, type TpDb } from '$lib/core/storage/db';
 import type { TpTileSize } from '$lib/core/types';
+import { loadMapLibre } from '$lib/map/maplibre';
 import { mapStyleOverride } from '$lib/map/styles';
 import { m } from '$lib/paraglide/messages';
 import { online } from '$lib/stores/online.svelte';
@@ -161,5 +162,58 @@ describe('without a map', () => {
 
 		await expect.element(screen.getByTestId('map-permission')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('place-search')).toBeInTheDocument();
+	});
+});
+
+describe('a map that does not draw (doc 06 §3)', () => {
+	// The tile's `loading`, `offline` and `error` cards, which TpMap reports
+	// and nothing tested until Week 8 — only `no-webgl` was. MapLibre's `load`
+	// is held back on the prototype, and a failure handed to the `error`
+	// listener, as the style's own failure would be.
+	async function holdLoad(failure?: Error): Promise<void> {
+		const maplibre = await loadMapLibre();
+		const on = maplibre.Map.prototype.on;
+		vi.spyOn(maplibre.Map.prototype, 'on').mockImplementation(function (
+			this: unknown,
+			type: string,
+			...rest: unknown[]
+		) {
+			if (type === 'load') return this;
+			const listener = rest.at(-1);
+			if (type === 'error' && failure !== undefined && typeof listener === 'function') {
+				queueMicrotask(() => (listener as (event: { error: Error }) => void)({ error: failure }));
+			}
+			return (on as (...args: unknown[]) => unknown).call(this, type, ...rest);
+		} as never);
+	}
+
+	it('loading: a skeleton over the space the map will fill, never a blank', async () => {
+		await holdLoad();
+		const screen = show();
+
+		await expect
+			.element(screen.getByRole('status', { name: m['widget.map.loading']() }))
+			.toBeInTheDocument();
+	});
+
+	it('error: says so, with the coordinates and a way out, not a blank square', async () => {
+		await holdLoad(new Error('style refused'));
+		const screen = show();
+
+		const card = screen.getByTestId('map-fallback');
+		await expect.element(card).toHaveAttribute('data-reason', 'error');
+		await expect.element(card).toHaveTextContent(m['widget.map.error']());
+		await expect.element(card).toHaveTextContent('21.02851, 105.85240');
+	});
+
+	it('offline: says the network is gone rather than that the map broke', async () => {
+		online.noteFetchResult('network-error');
+		online.noteFetchResult('network-error');
+		await holdLoad(new Error('fetch failed'));
+		const screen = show();
+
+		const card = screen.getByTestId('map-fallback');
+		await expect.element(card).toHaveAttribute('data-reason', 'offline');
+		await expect.element(card).toHaveTextContent(m['widget.map.offline']());
 	});
 });
