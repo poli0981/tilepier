@@ -39,7 +39,15 @@ said "set in `hooks.server.ts` for all HTML responses". Both halves were wrong:
 1. **The hook never runs for most pages.** The shell and the legal pages are
    prerendered and served straight from the ASSETS binding, so `handle` is
    bypassed. Everything except CSP therefore lives in the root `_headers` file,
-   with `hooks.server.ts` keeping a copy for dynamically rendered responses.
+   with `hooks.server.ts` setting the same list on dynamically rendered
+   responses. **One list since 2026-10-06**: `src/lib/server/security-headers.ts`
+   is what the hook imports; `security-headers.test.ts` holds `_headers`' `/*`
+   block and the block above to it (and `_headers`' `frame-ancestors` to
+   `svelte.config.js`); `legal-gate.e2e.ts` holds a prerendered page and a
+   Worker-rendered 404 to it value for value — until then the two paths agreed
+   by a comment, and Permissions-Policy was checked for a substring. After a
+   deploy, `e2e/prod-headers.e2e.ts` does the same against production when
+   `S3_BASE_URL` names it (doc 19 §5).
 2. **`script-src 'self'` alone breaks the app.** This doc claimed "scripts stay
    strict (no inline, no eval — Rolldown output complies)". Rolldown does
    comply; SvelteKit does not. It emits a small inline `<script>` carrying
@@ -255,9 +263,21 @@ feed (VnExpress) arriving through the Worker's own egress.
 
 ## 6. Supply chain
 
-- `pnpm` with lockfile, `--frozen-lockfile` in CI; Renovate PRs only.
-- `pnpm audit --prod` CI gate; `minimumReleaseAge`-style caution: Renovate
-  configured with `stabilityDays=3` for non-security updates.
+- `pnpm` with lockfile, `--frozen-lockfile` in CI; dependency changes arrive
+  as Dependabot PRs (doc 21 §6) or as a PR that says why.
+- **`pnpm audit --audit-level high` over every dependency** is a CI gate, the
+  last step of `ci.yml` (2026-10-06). **Not `--prod`**, which this section
+  asked for until then and which never ran: the code that ships from here —
+  svelte, SvelteKit, devalue under them, Paraglide's runtime — sits in
+  devDependencies, and on 2026-10-06 `--prod` passed with three high devalue
+  advisories in the lock, while the full audit found eight. The gate is not
+  hermetic: an advisory published tomorrow turns today's commit red, and that
+  is the point. The answer is a lock refresh or an override (below) or, while
+  no fixed version exists, an `auditConfig.ignoreGhsas` entry in
+  `pnpm-workspace.yaml` with its reason beside it, out again when the fix
+  ships.
+- Release-age caution: Dependabot's `cooldown` holds version updates three
+  days (doc 21 §6). Security updates are not held.
 - No postinstall scripts allowed. **Mechanism updated 2026-08-10:** pnpm 11 no
   longer reads the `pnpm` field from `package.json` and renamed the setting, so
   the allowlist is `allowBuilds` in **`pnpm-workspace.yaml`**. Deny by default;
@@ -273,7 +293,9 @@ feed (VnExpress) arriving through the Worker's own egress.
   component tests land, rather than as an install side effect.
 - pnpm 11 additionally gates packages published inside its minimum-release-age
   window; conscious exceptions are listed in `minimumReleaseAgeExclude`. This
-  is the same caution asked of Renovate below, now enforced at install time.
+  is the same caution as the cooldown above, enforced at install time; its
+  default is one day, so the cooldown is the stricter of the two and a
+  Dependabot PR never asks pnpm for a version it would refuse.
   **A non-strict install adds to that list by itself** (2026-09-23): asked for
   a version inside the window, pnpm 11 writes the exclusion and installs. That
   happened with `wrangler@4.136.3`, fourteen hours old. The exclusion was
@@ -284,7 +306,22 @@ feed (VnExpress) arriving through the Worker's own egress.
 - **Security floors for transitive dependencies** live in `pnpm-workspace.yaml`'s
   `overrides` (added 2026-09-23). Each entry names its advisory, and it comes out
   when the parent package raises its own range. The first is
-  `cookie@<0.7.0 → ^0.7.2` under SvelteKit (GHSA-pxg6-pf52-xh8x).
+  `cookie@<0.7.0 → ^0.7.2` under SvelteKit (GHSA-pxg6-pf52-xh8x). The second
+  (2026-10-06) is `undici@<7.29.1 → ^7.29.1` under miniflare — ten advisories,
+  two high (GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3), in dev tooling only —
+  because miniflare pins `7.29.0` exactly, so no range of its own will move.
+  The third, the same day, is `sharp@<0.35.5 → ^0.35.5` (GHSA-wq5f-xc86-pv6w,
+  high), under miniflare's exact pin of `0.35.4` for its Images binding: **the
+  audit gate's first catch**, an advisory that reached npm's data between two
+  CI runs of the pull request that added the gate.
+- **An override is for a parent that will not move. A stale lock is the
+  commoner case** (2026-10-06): five packages carried high or moderate
+  advisories whose fixes sat inside their parents' own ranges — `devalue`
+  5.9.0 under svelte and SvelteKit (`^5.8.1`), `brace-expansion`,
+  `source-map-js`, `smol-toml`, `postcss-selector-parser` — and the lock had
+  simply been resolved before the fixes existed. `pnpm update <name>` refreshes
+  a transitive entry in place: no override, nothing to take out later. Read the
+  lock diff for anything beyond the names asked for.
 - No CDN scripts/fonts — everything bundled/self-hosted (also a CSP
   consequence), with the two named Cloudflare exceptions of §2. CI grep
   forbids `https://cdn`, `unpkg`, `jsdelivr`, `googleapis` in the build
@@ -342,3 +379,16 @@ feed (VnExpress) arriving through the Worker's own egress.
 `SECURITY.md` in repo: private reporting via GitHub Security Advisories,
 response target 72 h, supported version = latest only. Dependabot/GHSA
 alerts enabled on the repo.
+
+**Written 2026-10-06**: specified here since Week 0, it did not exist until
+then. Private vulnerability reporting was confirmed on for the repository the
+same day. Beyond this paragraph it states a scope (the app, its Worker and the
+repository; not the upstream services, a compromised device, volumetric denial
+of service or unverified scanner output) and that there is no bounty.
+
+`static/.well-known/security.txt` (RFC 9116) names the same advisory form as
+its `Contact`, with `Policy` pointing at `SECURITY.md`. Its `Expires`
+(currently 2027-10-01) is the one field that needs a person:
+`security-txt.test.ts` turns CI red thirty days before it, and the fix is a new
+date less than a year ahead. `legal-gate.e2e.ts` checks the file is served, and
+`prod-headers.e2e.ts` that production serves it.

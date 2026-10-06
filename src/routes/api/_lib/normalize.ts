@@ -193,7 +193,7 @@ export function normalizeWeather(
 		hourly: normalizeHourly(forecast['hourly']),
 		daily: normalizeDaily(forecast['daily']),
 		air: normalizeAir(air, timezone, at),
-		attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
+		attribution: 'Weather data by Open-Meteo.com'
 	};
 }
 

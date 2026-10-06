@@ -550,6 +550,8 @@
 	"widget.weather.uv": "UV",
 	"widget.weather.pressure": "pressure",
 	"widget.weather.week": "the next seven days",
+	"widget.weather.licence": "Licence: CC BY 4.0",
+	"widget.weather.disclaimer": "Forecasts are for reference and can be wrong — in severe weather, follow official warnings.",
 	"widget.markets.title": "Markets",
 	"widget.markets.blurb": "A watchlist of coins and stocks, at a glance",
 	"widget.markets.loading": "reading the market",

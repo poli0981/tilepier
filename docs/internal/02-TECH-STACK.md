@@ -3,7 +3,8 @@
 Versions verified against npm/official release channels on 2026-07-19;
 re-checked against the live registry **2026-08-10** (see §Version & CVE policy
 note 7 for what moved).
-Rule: pin minors in `package.json` (`^` within major), let Renovate raise PRs.
+Rule: pin minors in `package.json` (`^` within major), let Dependabot raise PRs
+(doc 21 §6).
 
 ## Runtime & tooling
 
@@ -31,7 +32,7 @@ Rule: pin minors in `package.json` (`^` within major), let Renovate raise PRs.
 | music-metadata | latest | Browser build; ID3/FLAC/Vorbis tags + cover art for the music widget. |
 | marked + dompurify | latest | Notes markdown preview. DOMPurify mandatory before any `{@html}`. |
 | fast-xml-parser | **5.x** | Server-side RSS/Atom/RDF parsing in the Worker (doc 10 §7). Added 2026-08-10 — it was required by docs 10 and 16 but missing from this table. |
-| qrcode-generator | **2.0.x** | MIT, **zero dependencies**, by the original author. The toolbox's QR tab (doc 07 §7). Added 2026-08-28 — that section says "small vendored QR encoder", and vendoring was measured before it was rejected: Nayuki's TypeScript source is 990 lines and produces **43 errors** under this repo's `noUncheckedIndexedAccess`, so carrying it verbatim would have meant `@ts-nocheck` plus exclusions in eslint, prettier, knip and coverage — five holes in a repo that has none. A zero-dep package goes through Renovate and `pnpm audit` like everything else. `qrcode` was the alternative doc 07 §7 named and is not it: three transitive dependencies including `yargs`. |
+| qrcode-generator | **2.0.x** | MIT, **zero dependencies**, by the original author. The toolbox's QR tab (doc 07 §7). Added 2026-08-28 — that section says "small vendored QR encoder", and vendoring was measured before it was rejected: Nayuki's TypeScript source is 990 lines and produces **43 errors** under this repo's `noUncheckedIndexedAccess`, so carrying it verbatim would have meant `@ts-nocheck` plus exclusions in eslint, prettier, knip and coverage — five holes in a repo that has none. A zero-dep package goes through Dependabot and `pnpm audit` like everything else. `qrcode` was the alternative doc 07 §7 named and is not it: three transitive dependencies including `yargs`. |
 | vite-plugin-pwa | latest | Workbox precache + offline fallback (doc 17). Subject to Spike S5. |
 
 Deliberately **not** used: no UI component library (design system is bespoke,
@@ -60,8 +61,12 @@ bundle budgets (doc 20 §6).
 
 ## Version & CVE policy
 
-1. **Renovate** (config in repo) groups patch updates weekly, majors individually.
-2. `pnpm audit --prod` runs in CI; high/critical findings fail the build.
+1. **Dependabot** (`.github/dependabot.yml`, doc 21 §6) groups patch updates
+   weekly, majors individually. This said Renovate until 2026-10-06; Renovate
+   was never installed, and Dependabot's security updates were what ran.
+2. `pnpm audit --audit-level high` runs in CI over **every** dependency —
+   not `--prod`, which misses what ships from devDependencies (doc 15 §6);
+   high/critical findings fail the build.
 3. **CodeQL** `javascript-typescript` via the shared reusable workflow (doc 21).
 4. Known-issue register (keep updated):
    - SvelteKit < 2.57.1 — remote-functions auth bypass → floor set above.
@@ -69,7 +74,7 @@ bundle budgets (doc 20 §6).
      dev-mode only and are irrelevant on Vite 8, but never expose `vite dev`
      to a network interface anyway (`--host` forbidden in scripts).
    - gridstack, echarts, dexie, maplibre: no unpatched critical CVEs known at
-     lock date. Re-verify at each Renovate major PR.
+     lock date. Re-verify at each major PR.
 5. Lockfile is committed; CI uses `--frozen-lockfile`.
 7. **Registry re-check 2026-08-10.** Two majors shipped since the 2026-07-19
    lock. Both are deliberately **not** taken yet; each gets its own PR under

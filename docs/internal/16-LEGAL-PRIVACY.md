@@ -177,7 +177,10 @@ and from 2026-09-23 it was false.
 
 - Markets: "Dữ liệu có thể trễ và chỉ mang tính tham khảo — không phải
   khuyến nghị đầu tư." rendered in the markets detail footer permanently.
-- Weather: forecast-nature disclaimer one-liner on detail.
+- Weather: forecast-nature disclaimer one-liner on detail. **Built
+  2026-10-06**, above the credit: "Forecasts are for reference and can be
+  wrong — in severe weather, follow official warnings."
+  (`widget.weather.disclaimer`; `TpWeatherDetail.svelte.test.ts` holds it).
 - Terms include: no warranty (GPL §15–16 spirit), personal-use service,
   fair-use of the hosted instance (rate limits), right to discontinue.
 

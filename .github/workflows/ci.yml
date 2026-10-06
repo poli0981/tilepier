@@ -94,3 +94,14 @@ jobs:
             exit 1
           fi
           echo "secret and CDN gate clean"
+
+      # doc 15 §6. Every dependency, not `--prod`: svelte and SvelteKit, and
+      # devalue under them, ship in the Worker and the page from
+      # devDependencies, and `--prod` passed on 2026-10-06 with three high
+      # devalue advisories in the lock. Not hermetic — an advisory published
+      # tomorrow turns today's commit red, which is the point. Last, so a PR's
+      # own failures show first. The answers are a lock refresh, an override,
+      # or, while no fix exists, a reasoned `auditConfig.ignoreGhsas` entry in
+      # pnpm-workspace.yaml.
+      - name: Dependency audit
+        run: pnpm audit --audit-level high

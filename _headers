@@ -18,8 +18,9 @@
 # safe to stack — browsers enforce each policy independently, and this one
 # restricts nothing else.
 #
-# hooks.server.ts keeps a copy of these for dynamically rendered responses.
-# Change both together. The e2e suite asserts the result against local
+# hooks.server.ts sets the same list on dynamically rendered responses, from
+# src/lib/server/security-headers.ts, and security-headers.test.ts holds this
+# block to that list (Week 8). The e2e suite asserts the result against local
 # `wrangler dev`, not production — and production is not identical: the zone's
 # own HSTS setting replaces this Strict-Transport-Security header at the edge,
 # and Cloudflare adds NEL/Report-To. The value here matches what the zone sends

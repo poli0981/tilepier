@@ -250,9 +250,23 @@
 			</section>
 		{/if}
 
+		<!-- doc 16 §4: what a forecast is, beside the forecast. -->
+		<p class="tp-wxd__note">{m['widget.weather.disclaimer']()}</p>
 		<!-- doc 10 §8 / doc 16 §5: the attribution rides inside the payload so the
-		     UI cannot forget it. Rendered as a text node (CLAUDE.md rule 7). -->
-		<p class="tp-wxd__credit" data-testid="weather-attribution">{payload?.attribution}</p>
+		     UI cannot forget it, rendered as a text node (CLAUDE.md rule 7).
+		     Open-Meteo's licence asks for a link to it beside its data, and CC BY
+		     4.0 for a link to the licence. Inline links in a line of text, so the
+		     inline exception to the target size applies (WCAG 2.5.8). -->
+		<p class="tp-wxd__credit" data-testid="weather-attribution">
+			<a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer"
+				>{payload?.attribution}</a
+			>
+			<a
+				href="https://creativecommons.org/licenses/by/4.0/"
+				target="_blank"
+				rel="noopener noreferrer">{m['widget.weather.licence']()}</a
+			>
+		</p>
 	{/if}
 </div>
 
@@ -362,5 +376,16 @@
 		margin: 0;
 		color: var(--color-fg-dim);
 		font-size: var(--text-2xs);
+	}
+
+	/* Underlined: a credit the licence asks to be a link should look like one. */
+	.tp-wxd__credit a {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.tp-wxd__credit a + a {
+		margin-inline-start: 0.75em;
 	}
 </style>

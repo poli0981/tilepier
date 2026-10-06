@@ -550,6 +550,8 @@
 	"widget.weather.uv": "UV",
 	"widget.weather.pressure": "áp suất",
 	"widget.weather.week": "bảy ngày tới",
+	"widget.weather.licence": "Giấy phép: CC BY 4.0",
+	"widget.weather.disclaimer": "Dự báo chỉ mang tính tham khảo và có thể sai — khi thời tiết nguy hiểm, hãy theo cảnh báo chính thức.",
 	"widget.markets.title": "Thị trường",
 	"widget.markets.blurb": "Danh sách theo dõi tiền mã hoá và cổ phiếu, nhìn là thấy",
 	"widget.markets.loading": "đang đọc thị trường",

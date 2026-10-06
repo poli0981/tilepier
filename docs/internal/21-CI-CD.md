@@ -20,7 +20,7 @@ workflows do not reliably inherit them. Every stub below includes them.
 | Stub | Trigger | Reusable target | Purpose |
 |------|---------|-----------------|---------|
 | `ci.yml` | PR + push main | `wf-node-ci.yml` | pnpm install → lint → svelte-check → knip → vitest (coverage gates) → build → budgets |
-| `e2e.yml` | PR + push main + nightly | `wf-playwright.yml` | Playwright smoke matrix |
+| `e2e.yml` | PR + push main + nightly | `wf-playwright.yml` | Playwright smoke suite, Chromium only (doc 19 §4) |
 | `codeql.yml` | push main + weekly | `wf-codeql.yml` (js-ts) | static analysis |
 | ~~`deploy.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
 | ~~`preview.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
@@ -161,11 +161,28 @@ would have to be relaxed for correct code is not a gate.
 it is the third Worker secret (doc 11 §9) and had no reason to be the one left
 out.
 
-## 6. Renovate
+## 6. Dependabot
 
-Extends the shared org preset; groups: dev-deps weekly, prod patch weekly,
-majors individual with `stabilityDays: 3`; lockfile maintenance monthly;
-`engines` pinned so Node 26-Current doesn't sneak in before its LTS date.
+**Renovate was never installed.** This section specified it from the start;
+what opened dependency PRs was Dependabot's security updates, a repository
+setting (#39). Rewritten 2026-10-06 around what runs, keeping Renovate's
+intent where Dependabot has the means:
+
+- **Security updates**: the repository setting, unchanged, and not held by the
+  cooldown.
+- **Version updates**: `.github/dependabot.yml`, weekly. Development minors and
+  patches in one group, production patches in another, every major on its own.
+  `cooldown: 3` days is Renovate's `stabilityDays: 3`, and stricter than pnpm's
+  one-day release-age gate (doc 15 §6). Commit messages come out as
+  `chore(deps)`, `chore(deps-dev)` and `ci(deps)` (CLAUDE.md rule 14). GitHub
+  Actions monthly.
+- **`@types/node` majors are ignored.** Node 24 LTS is the stack (doc 02), and a
+  new major is a decision, not a bump — what pinning `engines` was meant to
+  guard against.
+- **No lockfile maintenance**, which Dependabot does not have. A transitive
+  entry moves when an advisory names it, and the `pnpm audit` gate at the end
+  of `ci.yml` is what finds it — as it found five stale ones the day it was
+  added (doc 15 §6).
 
 ## 7. Branch protection (repo settings checklist)
 
