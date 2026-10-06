@@ -1603,7 +1603,8 @@ end (O), left to the owner's matrix; screenshots and the social preview (Z2).
 `DISCORD_RELEASES_WEBHOOK` secret added; the two retired `CLOUDFLARE_*`
 secrets deleted; the zone's HSTS `preload` confirmed as deliberate. The owner
 then asked for the stack to be merged in order and 1.0.0 released the same
-day; #39 (DOMPurify) closes itself, since 8b-2 takes 3.4.16.
+day. #39 (DOMPurify) was to close itself, since 8b-2 takes 3.4.16; it had not
+by the next day, and was closed by hand.
 
 **Still the owner's, after the release — nothing here can be done from a
 build:**
@@ -1611,10 +1612,24 @@ build:**
 1. On production: the doc 19 §5 matrix; Lighthouse against doc 01's targets;
    NVDA, keyboard only, 200 % and 400 % zoom; a backup export and import; the
    rollback drill (doc 21 §4). A P0 or P1 found there is a 1.0.x.
-2. Two decisions: the weather tile's own Open-Meteo credit (doc 10 §8), and
-   whether to keep the unused CAMS air-quality call.
-3. Repository hygiene: the P0–P3 labels, the description and topics, the
-   social preview.
+2. ~~Two decisions~~ — **made on 2026-10-07, when the owner handed them over.**
+   The weather tile's Open-Meteo credit turned out not to be a choice. Read
+   again, the licence says "You must include a link next to any location
+   Open-Meteo data are displayed", and the tile shows the forecast. So the
+   missing link was a P1 (doc 19 §7) that 1.0.0 shipped, and 1.0.1 adds it.
+   The unused CAMS air-quality call is kept for the gauge (doc 10 §8), which
+   joins the parking lot below.
+3. ~~Repository hygiene~~ — **done 2026-10-07 with `gh`, except the social
+   preview**, which GitHub takes only through the repository's settings page.
+   - The `P0`–`P3` labels (doc 18 §3).
+   - The description.
+   - The topics: `astro` out; `sveltekit`, `local-first`, `pwa`, `dashboard`,
+     `widgets`, `vietnamese` and `lunar-calendar` in.
+
+**1.0.1 (2026-10-07)** carries the credit and nothing else. Its pull request is
+the first to carry a severity label, `P1`. It deploys when it merges. The tag,
+and the publish that announces it, wait on the owner, as doc 21 §1's release
+path has them.
 
 ## Release checklist (Week 8 gate, condensed)
 
@@ -1629,7 +1644,9 @@ each is on the owner's post-release list above, and what it finds is a 1.0.x.
   gate and green**; Lighthouse is the owner's.
 - [x] doc 10 §8 attribution/compliance all checked — every box ticked against
   a test. The one open row, CAMS, is data nothing shows, so no credit is due
-  yet; whether to keep fetching it is the owner's call.
+  yet, and the call is kept (2026-10-07). **This tick was wrong once.** The
+  weather tile's credit had been left to the owner as a choice, but Open-Meteo's
+  licence makes it a "must". 1.0.0 shipped without it, and 1.0.1 has it.
 - [ ] Legal texts final (vi+en) · LEGAL_VERSION=3 (2: 2026-09-23, Web Analytics + Turnstile; 3: 2026-09-29, the `cf_clearance` cookie) · gate verified pre-JS — **the gate is verified pre-JS** (`legal-gate.e2e.ts`), and LEGAL_VERSION is 3. "Final" is the owner's reading.
 - [x] Secrets grep clean (doc 21 §5) · headers verified in prod — the grep is a
   CI step, clean; and `e2e/prod-headers.e2e.ts` passed against tilepier.win on
@@ -1639,15 +1656,20 @@ each is on the owner's post-release list above, and what it finds is a 1.0.x.
 - [ ] Backup export/import round-trip on prod build — journey 6 covers the
   build; production is the owner's.
 - [ ] Rollback runbook tested once (deploy previous version) — the owner's drill.
-- [ ] Repo hygiene: topics, description, social preview, issue templates — **the
-  issue templates and the PR template exist**; the rest is the owner's.
+- [ ] Repo hygiene: topics, description, social preview, issue templates.
+  - **The issue templates and the PR template exist.**
+  - The description, the topics and the `P0`–`P3` labels were set on 2026-10-07.
+  - The social preview is the owner's: GitHub takes it only through the
+    repository's settings page.
 
 ## Post-1.0 parking lot (v1.x candidates, not commitments)
 
 per-breakpoint saved layouts · music visualizer + Safari FSA-adjacent
 improvements · VN equities (behind flag, source TBD) · quote-as-image ·
 calendar year view (worker-calc) · widget instances export as shareable
-preset · BroadcastChannel tab sync. (Turnstile left this list on 2026-09-23 — it's in front of `/api/*` now, doc 15 §3.)
+preset · BroadcastChannel tab sync · weather's AQI gauge and astronomy card
+(Week 4's depth cuts, doc 08 §1 — the air-quality call already runs, and its
+Copernicus credit comes with the gauge, doc 10 §8). (Turnstile left this list on 2026-09-23 — it's in front of `/api/*` now, doc 15 §3.)
 
 ## Slip policy
 

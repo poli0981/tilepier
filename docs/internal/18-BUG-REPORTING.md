@@ -67,8 +67,9 @@ Fields: `what-happened` (textarea, required) · `steps` (textarea) ·
 **Severity is set at triage, not asked of the reporter** (2026-10-06): one of
 the labels `P0`–`P3`, as doc 19 §7 defines them. A reporter sees one
 device and one moment; the level depends on how far the fault reaches, which
-is the maintainer's to read. The labels are created in the repository's
-settings, beside `bug`.
+is the maintainer's to read. The labels sit beside `bug` in the repository.
+They were created on 2026-10-07, each described by its doc 19 §7 row within
+GitHub's 100 characters.
 
 ## 4. In-app flow (Settings → "Báo lỗi" · also on the 500 page)
 
