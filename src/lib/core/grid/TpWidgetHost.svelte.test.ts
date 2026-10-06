@@ -5,6 +5,8 @@ import { setTileStatus, tileStatusChannel } from '$lib/core/tile-status';
 import type { TpTile } from './layout';
 import TpWidgetHost from './TpWidgetHost.svelte';
 import TpStubWidget from './__fixtures__/TpStubWidget.svelte';
+import TpThrowingWidget, { crash } from './__fixtures__/TpThrowingWidget.svelte';
+import { clearLog, readLog } from '$lib/core/log-buffer';
 
 /**
  * The host's half of doc 13 §7's badge.
@@ -146,5 +148,32 @@ describe('removal (doc 06 §4)', () => {
 			includeHidden: true
 		});
 		await expect.element(remove).toHaveAttribute('title', m['common.remove_tile_hint']());
+	});
+});
+
+describe('a widget that throws (doc 17 §6)', () => {
+	// The `error` state four widgets lean on — clock, timer, notes and todo
+	// name the host's boundary as theirs — and nothing tested it until Week 8.
+	afterEach(() => {
+		crash.on = true;
+		clearLog();
+	});
+
+	it('crashes into its own tile: a card, a line in the log, and a Retry that works', async () => {
+		clearLog();
+		const screen = render(TpWidgetHost, { tile: tile(), widget: TpThrowingWidget });
+
+		await expect.element(screen.getByRole('alert')).toHaveTextContent(m['common.widget_crashed']());
+		// A boundary catches the error itself, so SvelteKit's handleError never
+		// sees it; the log line is the only trace a bug report could carry.
+		expect(readLog().some((entry) => entry.level === 'error' && entry.src === 'boundary')).toBe(
+			true
+		);
+
+		crash.on = false;
+		await screen.getByRole('button', { name: m['common.retry']() }).click();
+
+		await expect.element(screen.getByTestId('throwing-recovered')).toBeInTheDocument();
+		await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
 	});
 });
