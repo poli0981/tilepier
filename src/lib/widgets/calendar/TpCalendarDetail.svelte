@@ -568,8 +568,9 @@
 		position: relative;
 	}
 
+	/* As in the tile: quieter than this month, still read (fg-dim, 4.6:1). */
 	.tp-cald__out {
-		color: var(--color-ink-500);
+		color: var(--color-fg-dim);
 	}
 
 	.tp-cald__day {
@@ -581,10 +582,6 @@
 		color: var(--color-fg-dim);
 		font-size: 0.5625rem;
 		line-height: 1.1;
-	}
-
-	.tp-cald__out .tp-cald__lunarday {
-		color: var(--color-ink-500);
 	}
 
 	.tp-cald__cell[data-accent='mung-mot'] .tp-cald__lunarday,
@@ -603,6 +600,12 @@
 	.tp-cald__selected {
 		background: var(--color-beacon-soft);
 		color: var(--color-fg);
+	}
+
+	/* fg-dim on the wash falls under 4.5:1; the quieter line keeps its place
+	   in the hierarchy at fg-mute. */
+	.tp-cald__selected .tp-cald__lunarday {
+		color: var(--color-fg-mute);
 	}
 
 	.tp-cald__dot {
@@ -706,7 +709,7 @@
 		flex: 1 1 8rem;
 		min-height: 2.5rem;
 		padding: 0 0.5rem;
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: var(--color-ink-950);
 		color: var(--color-fg);
@@ -718,7 +721,7 @@
 		width: 5rem;
 		min-height: 2.5rem;
 		padding: 0 0.5rem;
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: var(--color-ink-950);
 		color: var(--color-fg);

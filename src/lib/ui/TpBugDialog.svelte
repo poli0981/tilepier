@@ -78,7 +78,12 @@
 
 		<!-- Editable on purpose: doc 18 §4 wants the user to review and trim
 		     before anything leaves the device. -->
-		<textarea bind:value={body} rows="12" data-testid="bug-body" spellcheck="false"></textarea>
+		<textarea
+			bind:value={body}
+			rows="12"
+			aria-label={m['settings.report.body']()}
+			data-testid="bug-body"
+			spellcheck="false"></textarea>
 
 		<div class="tp-bug__actions">
 			<button type="button" class="tp-action" data-testid="bug-copy" onclick={copyAndOpen}>
@@ -151,7 +156,7 @@
 	textarea {
 		width: 100%;
 		box-sizing: border-box;
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: var(--color-ink-900);
 		padding: 0.5rem;
@@ -175,7 +180,7 @@
 		cursor: pointer;
 		font: inherit;
 		font-size: var(--text-2xs);
-		min-height: 36px;
+		min-height: 40px;
 		padding: 0 0.75rem;
 	}
 </style>

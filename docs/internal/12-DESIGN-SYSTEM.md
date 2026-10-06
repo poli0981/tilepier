@@ -33,6 +33,8 @@ base, teal beacon, gauge motif. No shared tokens with any other project.
 
   /* Scrollbar thumb (§9) — light theme #78858F */
   --color-scrollbar: #5C6B7A;
+  /* The edge of a text field, select or text area — light #8E887C */
+  --color-field: #5B6673;
 
   /* Beacon (accent) — derived per theme from --tp-accent, see below */
   --color-beacon:      #46D5C8;
@@ -83,6 +85,7 @@ The lowest ratio of each, across ink-950, -900 and -850:
 | warn / danger | 9.81 / 5.18 | 4.62 / 4.70 | 4.5 |
 | beacon, worst accent of any hue | 5.4 | 5.6 | 4.5 |
 | scrollbar thumb | 3.33 | 3.35 | 3 |
+| field edge | 3.11 | 3.12 | 3 |
 | chart steps 2–5 | 6.11 | 3.12 | 3 |
 
 The beacon row holds for text on every surface, for text on the beacon's own

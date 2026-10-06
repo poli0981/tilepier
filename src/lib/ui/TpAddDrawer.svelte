@@ -279,7 +279,7 @@
 		cursor: pointer;
 		font: inherit;
 		font-size: var(--text-2xs);
-		min-height: 32px;
+		min-height: 40px;
 		padding: 0 0.625rem;
 	}
 

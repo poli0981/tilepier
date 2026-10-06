@@ -221,8 +221,27 @@ show "on deck" disabled state. Search filters by name.
   the drawer set `overscroll-behavior: contain`: a wheel at the end of either
   stops there rather than scrolling the deck behind the scrim.
   (`e2e/overlays`, each test red on the parent.)
-- All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
-  (beacon, 2 px offset).
+- **Targets: 40 px in the chrome, the dialogs and every detail; 24 px inside a
+  tile** — the owner's Week 8 call (doc 23), WCAG 2.2's 2.5.8 floor for controls
+  packed into a 2 × 2 tile. One token carries it: `--tp-target` is 40 px on the
+  root and 24 px on a tile host, and a control a tile and a detail share sizes
+  itself from it. A label that activates its control counts as the target; a
+  link inside running text is exempt, as 2.5.8 exempts it. Visible
+  `:focus-visible` ring (beacon, 2 px offset).
+
+  **Week 8 found the rule had never been held.** The brand link was 23 px tall,
+  the edit strip's Done 24, the drawer's Add buttons 32, the Settings swatches
+  24, its select 18 — the browser's own — and its actions 36; the bot check's
+  retry, the coach's dismissal and the bug dialog's actions 32–36; the gate's
+  links 23. Across the fifteen details there were about fifty more, from a
+  16 px slider to 28 px row buttons. All of them meet it now, and
+  `e2e/a11y`'s `expectTargets` fails any control outside a tile under 40 × 40.
+  Inside a tile, axe's target-size rule holds 24 px — which is how the
+  calculator's 17–19 px keys at three rows were found (doc 07 §3).
+- **A field shows where it begins** (WCAG 1.4.11): text fields, selects and
+  text areas are edged in `--color-field`, 3:1 on every surface, where the
+  ink-700 hairline they had was 1.3:1 and was all there was. Containers keep
+  the hairline; a button is found by its words.
 - Contrast: **swept in Week 8, every token in both themes** (doc 12 §2's
   table). First measured 2026-08-28, when `widgets/toolbox/color.ts` gave the
   suite something to measure with: `fg` on `ink-900` 15.35:1, `fg-mute` 7.16:1
@@ -239,12 +258,16 @@ show "on deck" disabled state. Search filters by name.
   A second finding for the same audit, recorded 2026-08-28: **tile controls are
   below the 40 px target above.** The todo tile has shipped 36, 32 and 28 px
   controls since Week 2 and the toolbox tile follows it at 28 px, because three
-  40 px tabs plus a panel do not fit a 2×2 tile. Detail panels do hold the rule
-  and the toolbox detail is built to it. Either the rule wants a tile exception
-  or the tiles want redesigning; that is a Week 8 call, and it is written down
-  here so it is made rather than discovered.
+  40 px tabs plus a panel do not fit a 2×2 tile. **Decided in Week 8: a tile
+  exception at WCAG's 24 px** (the targets line above), which both tiles meet.
 
-  The full sweep of every semantic-on-surface pair remains Week 8 (doc 23).
+  **The rest of the Week 8 sweep** (`e2e/a11y`, axe-core at WCAG 2.2 A and AA)
+  found, besides contrast and targets: the calendar's days of the neighbouring
+  months, in tile and detail, drawn in the disabled grey (2.0:1) — they are
+  dates, read, so they are fg-dim now, and a selected day's lunar date moves to
+  fg-mute on its wash; a loading skeleton named with `aria-label` on a bare
+  `div`, which a name cannot attach to (`role="status"` now); the bug report's
+  text area and the timer's add-preset button, with no name at all.
 - Charts: every ECharts view paired with an accessible summary line
   (e.g., "AAPL 1M: +4.2%, range 182–199") — cheap, honest a11y.
 

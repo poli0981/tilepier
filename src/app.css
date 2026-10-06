@@ -138,6 +138,11 @@
 	   At least 3:1 against ink-950, -900 and -850. */
 	--color-scrollbar: #5c6b7a;
 
+	/* The edge of a text field, select or text area (WCAG 1.4.11): 3:1 against
+	   the surfaces it sits on, where the ink-700 hairline it had was 1.3:1 and
+	   was all that showed where a field began. Containers keep the hairline. */
+	--color-field: #5b6673;
+
 	/* Beacon (accent). JS only ever sets --tp-accent, the reader's choice
 	   (settings store); the beacon is derived from it per theme below, so any
 	   accent stays legible on both themes' surfaces, and the soft and deep values
@@ -216,6 +221,7 @@
 	--color-fg-dim: #616e77;
 
 	--color-scrollbar: #78858f;
+	--color-field: #8e887c;
 
 	/* The same hue at a lightness paper can carry. Without relative colour
 	   syntax the reader's accent cannot be darkened, so the default's is used. */
@@ -289,6 +295,12 @@
    the fallback 16 px while `main` hardcoded 24 px, and on anything wider than
    a phone the bar and the grid never lined up — `e2e/top-bar` measures it. */
 :root {
+	/* The smallest a control may be (doc 13 §8): 40 px in the chrome, the
+	   dialogs and every detail; a tile host sets 24 px, WCAG 2.2's 2.5.8 floor —
+	   the owner's Week 8 call for controls packed into a 2 × 2 tile. A control
+	   shared by a tile and a detail sizes itself from this rather than a
+	   number, so each gets its own. */
+	--tp-target: 40px;
 	--tp-bar-h: 48px;
 	--tp-page-pad: 16px;
 	--tp-deck-max: 1680px;

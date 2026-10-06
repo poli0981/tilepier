@@ -139,6 +139,7 @@ describe.each(THEMES)('the %s theme', (theme) => {
 
 	it.each([
 		'--color-scrollbar',
+		'--color-field',
 		'--color-chart-2',
 		'--color-chart-3',
 		'--color-chart-4',
@@ -209,6 +210,7 @@ describe('coverage', () => {
 		'--color-beacon-soft': 'beacon',
 		'--color-beacon-deep': 'beacon',
 		'--color-scrollbar': 'non-text',
+		'--color-field': 'non-text',
 		'--color-chart-2': 'non-text',
 		'--color-chart-3': 'non-text',
 		'--color-chart-4': 'non-text',

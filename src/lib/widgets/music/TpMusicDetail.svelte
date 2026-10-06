@@ -223,6 +223,8 @@
 
 	.tp-mdetail__volume input {
 		width: 6rem;
+		height: var(--tp-target);
+		margin: 0;
 		accent-color: var(--color-fg-mute);
 	}
 

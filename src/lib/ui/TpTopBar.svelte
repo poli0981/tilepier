@@ -178,6 +178,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		/* doc 13 §8: a 40 px target, like every control in the chrome. */
+		min-height: 40px;
 		color: var(--color-fg);
 		text-decoration: none;
 	}
@@ -242,7 +244,6 @@
 
 	.tp-bar__mode .tp-bar__inner {
 		justify-content: space-between;
-		padding-block: 0.25rem;
 	}
 
 	.tp-bar__mode button {
@@ -252,7 +253,8 @@
 		cursor: pointer;
 		font: inherit;
 		font-weight: 600;
-		min-height: 24px;
-		padding: 0 0.25rem;
+		/* doc 13 §8: 40 px, which sets the strip's height; it was 24. */
+		min-height: 40px;
+		padding: 0 0.75rem;
 	}
 </style>

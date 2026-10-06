@@ -75,8 +75,9 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		min-width: 36px;
-		min-height: 36px;
+		/* 36 in a tile, as it was; 40 in the detail (doc 13 §8). */
+		min-width: max(36px, var(--tp-target));
+		min-height: max(36px, var(--tp-target));
 		border: 0;
 		border-radius: var(--radius-ctl);
 		background: none;

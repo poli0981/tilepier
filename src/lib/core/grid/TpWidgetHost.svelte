@@ -207,6 +207,8 @@
 
 <style>
 	.tp-host {
+		/* doc 13 §8: inside a tile a target may be 24 px (WCAG 2.5.8). */
+		--tp-target: 24px;
 		position: relative;
 		display: flex;
 		flex-direction: column;

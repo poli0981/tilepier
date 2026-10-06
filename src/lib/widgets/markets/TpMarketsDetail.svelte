@@ -680,6 +680,7 @@
 	}
 
 	.tp-mkd__range {
+		min-height: var(--tp-target);
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-ctl);
 		background: transparent;
@@ -751,8 +752,8 @@
 
 	.tp-mkd__row-btn {
 		display: inline-flex;
-		width: 1.75rem;
-		height: 1.75rem;
+		width: var(--tp-target);
+		height: var(--tp-target);
 		align-items: center;
 		justify-content: center;
 		border: 0;
@@ -798,7 +799,8 @@
 
 	.tp-mkd__add-input,
 	.tp-mkd__add-kind {
-		border: 1px solid var(--color-ink-700);
+		min-height: var(--tp-target);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: transparent;
 		color: var(--color-fg);
@@ -813,6 +815,7 @@
 	}
 
 	.tp-mkd__add-btn {
+		min-height: var(--tp-target);
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-ctl);
 		background: transparent;
@@ -881,5 +884,17 @@
 		margin: 0;
 		color: var(--color-fg-dim);
 		font-size: var(--text-2xs);
+	}
+
+	/* The symbol picker was the browser's own select, 17 px tall. */
+	.tp-mkd__pick select {
+		min-height: var(--tp-target);
+		border: 1px solid var(--color-field);
+		border-radius: var(--radius-ctl);
+		background: transparent;
+		color: var(--color-fg);
+		font: inherit;
+		font-size: var(--text-xs);
+		padding-inline: 0.5rem;
 	}
 </style>

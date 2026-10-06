@@ -552,6 +552,7 @@
 	}
 
 	.tp-curd__retry {
+		min-height: var(--tp-target);
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-ctl);
 		background: none;

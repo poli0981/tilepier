@@ -84,7 +84,8 @@
 		flex: 1 1 12rem;
 		align-items: center;
 		gap: 0.375rem;
-		border: 1px solid var(--color-ink-700);
+		min-height: var(--tp-target);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		padding: 0 0.5rem;
 		color: var(--color-fg-dim);
@@ -111,6 +112,7 @@
 	}
 
 	.tp-rss-addf__submit {
+		min-height: var(--tp-target);
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;

@@ -184,7 +184,7 @@
 		color: var(--color-beacon);
 		cursor: pointer;
 		font: inherit;
-		min-height: 32px;
+		min-height: var(--tp-target);
 		padding: 0.25rem 0.6rem;
 	}
 </style>

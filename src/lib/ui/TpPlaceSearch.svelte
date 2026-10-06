@@ -248,6 +248,7 @@
 	}
 
 	.tp-pick__field input {
+		min-height: var(--tp-target);
 		flex: 1 1 auto;
 		min-width: 0;
 		border: 0;
@@ -330,6 +331,7 @@
 	}
 
 	.tp-pick__locate {
+		min-height: var(--tp-target);
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
