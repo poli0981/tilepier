@@ -74,6 +74,16 @@ describe('the date line (doc 07 §1)', () => {
 		await expect.element(screen.getByText('15/07 Bính Ngọ')).toBeInTheDocument();
 	});
 
+	it('is left off a one-row tile however wide, so the digits are not clipped', async () => {
+		// doc 08 §5: 3 × 1 is tier M (tier S is w ≤ 2 and h ≤ 1), but it has
+		// exactly the 34 px a 2 × 1 tile has. Keyed on the tier, the date line
+		// rendered into that row and clipped the hero digits by 4 px.
+		settings.patch({ locale: 'vi' });
+		const screen = render(TpClockWidget, props({ w: 3, h: 1, pxW: 322, pxH: 72, tier: 'M' }));
+		await expect.element(screen.getByText('16/07 Bính Ngọ')).not.toBeInTheDocument();
+		expect(screen.container.querySelector('.tp-clock__date')).toBeNull();
+	});
+
 	it('disappears with the whole date line at the smallest tier', async () => {
 		// doc 13 §3: at h = 1 the tile is a single hero value and nothing else.
 		settings.patch({ locale: 'vi' });

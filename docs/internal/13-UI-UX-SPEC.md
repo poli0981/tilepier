@@ -115,10 +115,14 @@ widgets were tuned against** (recorded 2026-09-29): `TpWidgetHost.svelte`
 gives **L** whenever `w >= 4 || h >= 4`, so 4×1, 4×2 and 2×4 are L too, not
 M. rss and markets read `size.tier === 'L'` as "roomy" and were checked on
 screen at those sizes. The doc follows the code here rather than the reverse;
-whether to narrow the host's rule to the one above is a question for Week 8's
-visual pass, where every widget can be looked at together. Until then a
-layout that needs a particular *shape* keys on `size.w` / `size.h` rather than
-on the tier — as quote and weather already do, and as music and media will.
+whether to narrow the host's rule to the one above was left for Week 8's
+visual pass, where every widget could be looked at together. **Decided in Week
+8: the host's rule stands**, and the L line above is read as it. Narrowing it
+would take 4×1, 4×2 and 2×4 back to M under fifteen widgets tuned against
+them, for a definition nothing else depends on. What the pass did settle is
+the corollary: a layout that needs a particular *shape* keys on `size.w` /
+`size.h`, never on the tier — as quote and weather do, as music and media do,
+and as the clock's date line now does (doc 08 §5).
 
 ## 4. Add-widget drawer
 
