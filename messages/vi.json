@@ -547,6 +547,8 @@
 	"common.place.rate_limited": "tìm quá nhiều lần — thử lại sau {seconds} giây",
 	"common.place.rate_limited_soon": "vừa tìm quá nhiều lần — thử lại sau giây lát",
 	"widget.weather.my_location": "vị trí của tôi",
+	"widget.weather.change_place": "đổi địa điểm",
+	"widget.weather.keep_place": "giữ địa điểm này",
 	"widget.weather.empty_detail": "chọn địa điểm trên thẻ trước đã",
 	"widget.weather.as_of": "số liệu {age}",
 	"widget.weather.chart_loading": "đang vẽ ngày tới",

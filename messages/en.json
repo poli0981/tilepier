@@ -548,6 +548,8 @@
 	"common.place.rate_limited_soon": "too many searches just now — try again in a moment",
 	"widget.weather.my_location": "my location",
 	"widget.weather.empty_detail": "pick a place on the tile first",
+	"widget.weather.change_place": "change place",
+	"widget.weather.keep_place": "keep this place",
 	"widget.weather.as_of": "as of {age}",
 	"widget.weather.chart_loading": "drawing the next day",
 	"widget.weather.chart_failed": "the chart could not be drawn",

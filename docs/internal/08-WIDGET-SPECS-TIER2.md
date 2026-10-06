@@ -37,8 +37,10 @@ where the next reader will look for them:
   drizzle into rain, grains into snow and hail into thunder - so nothing
   upstream sends renders as `unknown`. Widening the set is a change to
   `ui/icons/wmo.ts` alone.
-- **The stale badge is in the tile body, not the host header** (doc 13 §7 puts
-  it in the header). See doc 13 §3 for why, and for what it would take to move.
+- ~~**The stale badge is in the tile body, not the host header**~~ — moved to
+  the host header on 2026-08-31, where doc 13 §7 puts it, through
+  `core/tile-status` (doc 13 §3 records the move). Corrected here in Week 8;
+  the line had outlived the change by five weeks.
 - **The detail ships without the AQI gauge and the astronomy card**
   (2026-08-30) — depth cuts taken when Week 4 measured at four times its
   budget, per doc 23's slip policy. **The cloud band does ship**: it was held
@@ -65,6 +67,13 @@ It ships **in the tile**, as the `empty` state itself, and the reason is doc 13
 detail panel would make the one tile a new reader is most likely to try the one
 that does nothing until they go looking. The detail will still carry it when it
 lands, for changing a place rather than choosing the first one.
+
+**It landed in Week 8 (2026-10-06)**, five weeks after this paragraph promised
+it: until then a place, once picked, could be changed only by removing the tile
+and adding another. "Change place" at the top of the detail opens the same
+`TpPlaceSearch`, and the pick goes through `placeSettings` in `service.ts`,
+which the tile's first pick now shares — so both round to 2 dp and derive
+`useMyLocation` the same way.
 
 Three more decisions worth having written down:
 

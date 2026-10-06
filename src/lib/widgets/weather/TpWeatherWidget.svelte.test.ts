@@ -490,4 +490,33 @@ describe('the cache (doc 04 §2)', () => {
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('offline'));
 	});
+
+	it('stale-error: a failure over cached data keeps the reading and badges it, with a retry', async () => {
+		// doc 06 §3's `stale-error`, which the readout raised and no test watched
+		// until Week 8: an old payload, and a revalidation the Worker refused.
+		await db.apiCache.put({
+			key: weatherKey(HANOI.lat, HANOI.lon),
+			payload: { payload: WEATHER_PAYLOAD, meta: FRESH_META },
+			cachedAt: NOW.getTime() - 20 * 60_000
+		});
+		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
+
+		const screen = render(TpWeatherWidget, props());
+		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
+		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale-error'));
+		expect(tileStatus('wgt_wx')?.retry).not.toBeNull();
+	});
+
+	it('stale-error: a 429 over cached data is badged the same way (doc 04 §2)', async () => {
+		await db.apiCache.put({
+			key: weatherKey(HANOI.lat, HANOI.lon),
+			payload: { payload: WEATHER_PAYLOAD, meta: FRESH_META },
+			cachedAt: NOW.getTime() - 20 * 60_000
+		});
+		serve({ ok: false, error: { code: 'RATE_LIMITED', retryAfterS: 30 } }, { status: 429 });
+
+		const screen = render(TpWeatherWidget, props());
+		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
+		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale-error'));
+	});
 });
