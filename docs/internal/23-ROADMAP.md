@@ -1555,16 +1555,89 @@ production check, and fold into this week's matrix if not done first; the
 quota watch ended 2026-09-30 and its readout is still to be recorded here; the
 Binance.US probe from SJC is open.
 
+### As shipped (2026-10-06) — seven pull requests, and what is left for the owner
+
+Every item above was built except three that the cut order allowed, in seven
+stacked pull requests. Each one ran `pnpm clean && pnpm verify` and the whole
+e2e suite (the nightly half included) before it opened. Each regression test
+was seen red on its parent or under a mutation, and its PR body says which.
+
+| PR | branch | what it carries |
+|---|---|---|
+| #40 | 8-0 | the scrollbar gutter, the setting, overlays at 400 %, settings names |
+| #41 | 8a-1 | contrast for any accent in both themes, the axe gate, target sizes, the 3×1 clock |
+| #42 | 8a-2 | the shell precache, KEEP, warmed details, the budget-table test, the first-tile mark |
+| #43 | 8a-3 | the dependency audit over everything, one header list, SECURITY.md and security.txt, the weather credit, CI |
+| #44 | 8b-1 | the licences page as code (`licenses:gen`), P0–P3, the PR template, README ×2, CONTRIBUTING, the self-host guide |
+| #45 | 8b-1b | the DoD for fourteen widgets, after fixing what the audit found |
+| #46 | 8b-2 | `release.yml`, `notify.yml`, CHANGELOG, 1.0.0 |
+
+**Cut, in the plan's order:** `build:analyze` (R); the update toast end to
+end (O), left to the owner's matrix; screenshots and the social preview (Z2).
+**Moved:** SECURITY.md went from 8b-1 to 8a-3, beside security.txt.
+
+**What the week found that the plan had not:**
+
+- **`pnpm audit --prod` would have passed with eight high advisories.** Three
+  were in devalue, which svelte and SvelteKit ship from devDependencies. So
+  the gate audits everything. **It caught its first advisory within the
+  hour**: sharp, under miniflare's exact pin, which reached npm's data between
+  two CI runs of the PR that added the gate.
+- **A prerendered control is clickable before hydration.** That is how #42's
+  e2e went red once, on CI. 16× CPU throttling did not reproduce it. Delaying
+  the route modules by 1.5 s did, every time.
+- **The DoD audit found three bugs a reader could hit.**
+  - Notes and todo showed a failed read as an empty tile.
+  - A weather place could not be changed.
+  - The quote detail lacked what the one-row tile drops.
+  The same pass also found a gap the reader would not have seen: an offline
+  symbol search reported itself as an upstream failure. All four are fixed
+  in #45, with doc 19 §6's records written afterwards.
+- **`licenses:gen` reads the build.** `pnpm licenses list --prod` alone misses
+  svelte, SvelteKit, devalue, cookie and set-cookie-parser. The register test
+  found Paraglide to be MIT, not the Apache-2.0 the docs said.
+- **A red e2e run uploaded nothing.** No reporter wrote the report the
+  artifact step uploads.
+
+**Done by the owner on 2026-10-06, before the release:** the
+`DISCORD_RELEASES_WEBHOOK` secret added; the two retired `CLOUDFLARE_*`
+secrets deleted; the zone's HSTS `preload` confirmed as deliberate. The owner
+then asked for the stack to be merged in order and 1.0.0 released the same
+day; #39 (DOMPurify) closes itself, since 8b-2 takes 3.4.16.
+
+**Still the owner's, after the release — nothing here can be done from a
+build:**
+
+1. On production: the doc 19 §5 matrix; Lighthouse against doc 01's targets;
+   NVDA, keyboard only, 200 % and 400 % zoom; a backup export and import; the
+   rollback drill (doc 21 §4). A P0 or P1 found there is a 1.0.x.
+2. Two decisions: the weather tile's own Open-Meteo credit (doc 10 §8), and
+   whether to keep the unused CAMS air-quality call.
+3. Repository hygiene: the P0–P3 labels, the description and topics, the
+   social preview.
+
 ## Release checklist (Week 8 gate, condensed)
 
-- [ ] All widget DoDs checked (doc 19 §6) · zero P0/P1 bugs
-- [ ] Budgets green in CI · Lighthouse targets met (doc 01)
-- [ ] doc 10 §8 attribution/compliance all checked
-- [ ] Legal texts final (vi+en) · LEGAL_VERSION=3 (2: 2026-09-23, Web Analytics + Turnstile; 3: 2026-09-29, the `cf_clearance` cookie) · gate verified pre-JS
-- [ ] Secrets grep clean (doc 21 §5) · headers verified in prod
-- [ ] Backup export/import round-trip on prod build
-- [ ] Rollback runbook tested once (deploy previous version)
-- [ ] Repo hygiene: topics, description, social preview, issue templates
+Gone through 2026-10-06. A line is ticked where something holds it, and says
+what. **1.0.0 went out on the owner's instruction with the open lines open**:
+each is on the owner's post-release list above, and what it finds is a 1.0.x.
+
+- [ ] All widget DoDs checked (doc 19 §6) · zero P0/P1 bugs — **the DoDs are
+  done**: all fifteen recorded in doc 19 §6. P0/P1 can only be counted after
+  the owner's matrix.
+- [ ] Budgets green in CI · Lighthouse targets met (doc 01) — **budgets are a CI
+  gate and green**; Lighthouse is the owner's.
+- [x] doc 10 §8 attribution/compliance all checked — every box ticked against
+  a test. The one open row, CAMS, is data nothing shows, so no credit is due
+  yet; whether to keep fetching it is the owner's call.
+- [ ] Legal texts final (vi+en) · LEGAL_VERSION=3 (2: 2026-09-23, Web Analytics + Turnstile; 3: 2026-09-29, the `cf_clearance` cookie) · gate verified pre-JS — **the gate is verified pre-JS** (`legal-gate.e2e.ts`), and LEGAL_VERSION is 3. "Final" is the owner's reading.
+- [ ] Secrets grep clean (doc 21 §5) · headers verified in prod — **the grep is a
+  CI step, clean**; production headers wait on `e2e/prod-headers.e2e.ts`.
+- [ ] Backup export/import round-trip on prod build — journey 6 covers the
+  build; production is the owner's.
+- [ ] Rollback runbook tested once (deploy previous version) — the owner's drill.
+- [ ] Repo hygiene: topics, description, social preview, issue templates — **the
+  issue templates and the PR template exist**; the rest is the owner's.
 
 ## Post-1.0 parking lot (v1.x candidates, not commitments)
 
