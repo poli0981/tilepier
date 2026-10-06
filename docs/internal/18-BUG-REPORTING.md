@@ -64,6 +64,12 @@ Fields: `what-happened` (textarea, required) · `steps` (textarea) ·
 `[bug] `. Also `config.yml` with blank_issues_enabled: false and links
 (feature request template, discussions).
 
+**Severity is set at triage, not asked of the reporter** (2026-10-06): one of
+the labels `P0`–`P3`, as doc 19 §7 defines them. A reporter sees one
+device and one moment; the level depends on how far the fault reaches, which
+is the maintainer's to read. The labels are created in the repository's
+settings, beside `bug`.
+
 ## 4. In-app flow (Settings → "Báo lỗi" · also on the 500 page)
 
 1. Dialog shows: env block + last N log lines, editable preview, privacy
