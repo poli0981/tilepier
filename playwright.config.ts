@@ -25,8 +25,12 @@ const DEPLOYED = process.env.S3_BASE_URL;
 export default defineConfig({
 	testDir: 'e2e',
 	testMatch: '**/*.e2e.{ts,js}',
-	// The suite is a per-PR gate budgeted under three minutes (doc 19 §4).
+	// The suite is a per-PR gate budgeted under four minutes (doc 19 §4).
 	timeout: 30_000,
+	// On CI, the HTML report is what e2e.yml uploads when a run goes red, with a
+	// screenshot of each failure in it. Nothing wrote one until Week 8, so the
+	// artifact of a red run was empty.
+	reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
 	expect: { timeout: 5_000 },
 	use: {
 		baseURL: BASE_URL,
@@ -40,7 +44,8 @@ export default defineConfig({
 		ignoreHTTPSErrors: true,
 		// The certificate flag and the hermetic host rules, explained where they
 		// live. A spec that sets its own `launchOptions` must restate them.
-		launchOptions: { args: LAUNCH_ARGS }
+		launchOptions: { args: LAUNCH_ARGS },
+		screenshot: 'only-on-failure'
 	},
 	webServer: DEPLOYED
 		? undefined

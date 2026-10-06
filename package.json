@@ -21,7 +21,7 @@
 		"format": "prettier --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:e2e": "playwright install && playwright test",
+		"test:e2e": "playwright install chromium && playwright test",
 		"knip": "knip",
 		"budgets": "node scripts/check-budgets.mjs",
 		"verify": "pnpm run clean && pnpm run lint && pnpm run knip && pnpm run i18n:check && pnpm run i18n:audit && pnpm run tokens:audit && pnpm run test:cov && pnpm run build && pnpm run budgets",

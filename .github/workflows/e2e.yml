@@ -2,7 +2,7 @@
 #
 # doc 19 §4 heads the suite "every PR" while doc 21 §1 wires it label-gated —
 # a contradiction found 2026-08-10. Resolved toward doc 19: the suite is a
-# correctness gate and is budgeted at under three minutes, so it runs on every
+# correctness gate and is budgeted at under four minutes, so it runs on every
 # PR. The `e2e` label is kept as a way to force a run from a branch push.
 name: e2e
 
@@ -37,15 +37,20 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Install browsers
-        run: pnpm exec playwright install --with-deps chromium firefox webkit
+      # Chromium only. playwright.config.ts defines no projects, so the suite
+      # has never launched Firefox or WebKit, yet every run installed them: the
+      # step took 67 s for all three on 2026-10-06.
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       # The accessibility sweep's long half — every detail in both themes,
       # tagged @nightly in e2e/a11y — runs on the schedule only; a PR runs
-      # the per-surface half (doc 19 §4's three-minute budget).
+      # the per-surface half (doc 19 §4's four-minute budget).
       - name: Run smoke suite
         run: pnpm test:e2e ${{ github.event_name != 'schedule' && '--grep-invert @nightly' || '' }}
 
+      # The HTML report playwright.config.ts writes on CI. Until Week 8 no
+      # reporter wrote one, and #42's red run uploaded nothing at all.
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

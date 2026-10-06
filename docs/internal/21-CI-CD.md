@@ -20,7 +20,7 @@ workflows do not reliably inherit them. Every stub below includes them.
 | Stub | Trigger | Reusable target | Purpose |
 |------|---------|-----------------|---------|
 | `ci.yml` | PR + push main | `wf-node-ci.yml` | pnpm install → lint → svelte-check → knip → vitest (coverage gates) → build → budgets |
-| `e2e.yml` | PR + push main + nightly | `wf-playwright.yml` | Playwright smoke matrix |
+| `e2e.yml` | PR + push main + nightly | `wf-playwright.yml` | Playwright smoke suite, Chromium only (doc 19 §4) |
 | `codeql.yml` | push main + weekly | `wf-codeql.yml` (js-ts) | static analysis |
 | ~~`deploy.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
 | ~~`preview.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |

@@ -80,7 +80,18 @@ stays fast and uncovered for the inner loop. CI runs the covered form.
    `{@html}`: exactly two, one per profile, each inside the component that
    runs its sanitiser.
 
-## 4. Playwright smoke suite (fast, <3 min, every PR)
+## 4. Playwright smoke suite (fast, <4 min, every PR)
+
+**Four minutes since 2026-10-06, raised from three on a measurement** — the
+`N passed (Xm)` line of the e2e job, Chromium, two workers. Through Week 7 the
+suite ran 2.2–2.5 min on CI (139–148 tests); Week 8's accessibility sweep
+(`e2e/a11y.e2e.ts`, per-surface on every PR) took it to 3.3 min at 171. The
+sweep stays per-PR because what it guards is per-PR, and its long half — every
+detail in both themes — is nightly already. The job also stopped installing
+Firefox and WebKit, which the suite never launches (that step took 67 s for all
+three), outside this figure. A red run now uploads an HTML report with a
+screenshot of each failure; until then no reporter wrote one and the artifact
+was empty.
 
 1. First run: legal gate → accept → default deck renders → coach dismiss.
 2. Add widget → drag (edit mode) → resize → reload → layout persisted.
