@@ -22,7 +22,7 @@ test.describe('production', () => {
 	test.skip(!DEPLOYED, 'set S3_BASE_URL to the deployed origin — see the note above');
 	test.use({ baseURL: DEPLOYED });
 
-	test('sends every security header on prerendered pages and on a rendered 404', async ({
+	test('sends every security header on prerendered pages and a rendered 404, and security.txt', async ({
 		request
 	}) => {
 		for (const path of ['/', '/legal/privacy', '/no-such-page']) {
@@ -37,5 +37,10 @@ test.describe('production', () => {
 			// bot check — never on a page.
 			expect(headers['set-cookie'], path).toBeUndefined();
 		}
+
+		// RFC 9116's contact, from the origin it names as canonical.
+		const contact = await request.get('/.well-known/security.txt');
+		expect(contact.status()).toBe(200);
+		expect(await contact.text()).toContain('Canonical: https://tilepier.win/.well-known/');
 	});
 });

@@ -375,3 +375,16 @@ feed (VnExpress) arriving through the Worker's own egress.
 `SECURITY.md` in repo: private reporting via GitHub Security Advisories,
 response target 72 h, supported version = latest only. Dependabot/GHSA
 alerts enabled on the repo.
+
+**Written 2026-10-06**: specified here since Week 0, it did not exist until
+then. Private vulnerability reporting was confirmed on for the repository the
+same day. Beyond this paragraph it states a scope (the app, its Worker and the
+repository; not the upstream services, a compromised device, volumetric denial
+of service or unverified scanner output) and that there is no bounty.
+
+`static/.well-known/security.txt` (RFC 9116) names the same advisory form as
+its `Contact`, with `Policy` pointing at `SECURITY.md`. Its `Expires`
+(currently 2027-10-01) is the one field that needs a person:
+`security-txt.test.ts` turns CI red thirty days before it, and the fix is a new
+date less than a year ahead. `legal-gate.e2e.ts` checks the file is served, and
+`prod-headers.e2e.ts` that production serves it.

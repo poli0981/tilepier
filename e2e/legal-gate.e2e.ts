@@ -256,6 +256,18 @@ test('a page the Worker renders carries the same headers as a prerendered one', 
 	expect(headers['set-cookie']).toBeUndefined();
 });
 
+test('security.txt is served where RFC 9116 puts it', async ({ request }) => {
+	// A dot-directory under static/ has to survive the build and the asset
+	// upload both; `security-txt.test.ts` checks what the file says.
+	const response = await request.get('/.well-known/security.txt');
+
+	expect(response.status()).toBe(200);
+	expect(response.headers()['content-type']).toMatch(/^text\/plain/);
+	expect(await response.text()).toContain(
+		'Contact: https://github.com/poli0981/tilepier/security/advisories/new'
+	);
+});
+
 /** The page's `<meta>` CSP as directive → sorted values. SvelteKit appends its
  *  hashes after the configured sources, so order is not the contract —
  *  membership is. */

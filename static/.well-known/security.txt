@@ -1,0 +1,6 @@
+# TilePier's security contact (RFC 9116). The policy behind it is SECURITY.md.
+Contact: https://github.com/poli0981/tilepier/security/advisories/new
+Expires: 2027-10-01T00:00:00.000Z
+Preferred-Languages: en, vi
+Canonical: https://tilepier.win/.well-known/security.txt
+Policy: https://github.com/poli0981/tilepier/security/policy
