@@ -91,3 +91,29 @@ describe('the date line (doc 07 §1)', () => {
 		await expect.element(screen.getByText(/Bính Ngọ/)).not.toBeInTheDocument();
 	});
 });
+
+describe('at tier L', () => {
+	// doc 19 §6's first box — the tile at every density tier its manifest
+	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
+	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
+	it('keeps the date line, as at every height of two rows or more', async () => {
+		settings.patch({ locale: 'vi' });
+		const screen = render(TpClockWidget, props({ w: 6, h: 3, pxW: 660, pxH: 240, tier: 'L' }));
+
+		await expect.element(screen.getByText('16/07 Bính Ngọ')).toBeInTheDocument();
+	});
+});
+
+describe('teardown (doc 19 §6)', () => {
+	it('stops its second hand when the tile goes, leaving no timer behind', () => {
+		// The clock ticks on its own interval rather than the scheduler, so the
+		// scheduler's leak checks never saw it. Untested until Week 8.
+		const before = vi.getTimerCount();
+		const screen = render(TpClockWidget, props());
+		expect(vi.getTimerCount()).toBeGreaterThan(before);
+
+		screen.unmount();
+
+		expect(vi.getTimerCount()).toBe(before);
+	});
+});

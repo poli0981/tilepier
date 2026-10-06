@@ -3,6 +3,7 @@ import { cleanup, render } from 'vitest-browser-svelte';
 import type { TpApiMeta } from '$lib/api-types';
 import { swrCache } from '$lib/core/swr.svelte';
 import { createDb, type TpDb } from '$lib/core/storage/db';
+import { GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
 import { WEATHER_OK, WEATHER_PAYLOAD } from '$lib/core/__fixtures__/weather';
 import { m } from '$lib/paraglide/messages';
 import { online } from '$lib/stores/online.svelte';
@@ -95,6 +96,48 @@ describe('the panel', () => {
 		const screen = render(TpWeatherDetail, props());
 
 		await expect.element(screen.getByText(m['widget.weather.disclaimer']())).toBeVisible();
+	});
+
+	it('changes the place, at 2 dp as the tile picks one (doc 08 §1)', async () => {
+		// Until Week 8 a picked place could only be changed by removing the tile:
+		// the picker lived in the tile's empty state, and this detail — where doc
+		// 08 §1 put "changing a place" — had none.
+		const onUpdateSettings = vi.fn();
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				const body = url.includes('/api/geocode') ? GEOCODE_OK : WEATHER_OK;
+				return new Response(JSON.stringify(body), {
+					headers: { 'content-type': 'application/json' }
+				});
+			})
+		);
+		const screen = render(TpWeatherDetail, props({ onUpdateSettings }));
+
+		await screen.getByTestId('weather-change-place').click();
+		await screen.getByTestId('place-search').fill('hà n');
+		await screen.getByText('Hà Nam').click();
+
+		await vi.waitFor(() => {
+			expect(onUpdateSettings).toHaveBeenCalledWith({
+				place: { name: 'Hà Nam', lat: 20.54, lon: 105.92 },
+				useMyLocation: false
+			});
+		});
+		await expect.element(screen.getByTestId('place-search')).not.toBeInTheDocument();
+	});
+
+	it('can be left as it was', async () => {
+		serve(WEATHER_OK);
+		const onUpdateSettings = vi.fn();
+		const screen = render(TpWeatherDetail, props({ onUpdateSettings }));
+
+		await screen.getByTestId('weather-change-place').click();
+		await screen.getByRole('button', { name: m['widget.weather.keep_place']() }).click();
+
+		await expect.element(screen.getByTestId('weather-change-place')).toBeInTheDocument();
+		expect(onUpdateSettings).not.toHaveBeenCalled();
 	});
 
 	it('draws a row per day in the week strip', async () => {

@@ -643,6 +643,22 @@ describe('stocks in the detail (doc 09 §1)', () => {
 			await expect.element(down.getByText(m['widget.markets.search_failed']())).toBeInTheDocument();
 		});
 
+		it('offline: says a search needs the network, and does not ask (doc 17 §3)', async () => {
+			// Every failure read "search is unavailable right now" until Week 8 —
+			// an upstream's problem, to a reader whose own connection is off.
+			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
+			online.noteFetchResult('network-error');
+			online.noteFetchResult('network-error');
+			const screen = render(TpMarketsDetail, props());
+
+			await searchFor(screen, 'apple');
+
+			await expect
+				.element(screen.getByText(m['widget.markets.search_offline']()))
+				.toBeInTheDocument();
+			expect(asked(spy, '/api/stock/search')).toEqual([]);
+		});
+
 		it('never searches while a coin is being added', async () => {
 			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
 			const screen = render(TpMarketsDetail, props());

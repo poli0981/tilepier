@@ -484,6 +484,74 @@ boxes need naming rather than ticking.
   the cross rate is computed client-side because doc 11 §3 gives `/api/fx` no
   parameters.
 
+**The other fourteen, 2026-10-06 (Week 8) — all nine boxes met, after a pass
+that found what they were missing.** Writing these up was an audit, not a
+formality: each box was checked against the code and the tests, and where one
+was not met it was fixed before it was ticked (PR 8b-1b). What that pass
+found and fixed:
+
+- **notes and todo showed a failed read as empty** — "no notes yet", with an
+  offer to write the first, to a reader whose notes the tile could not read.
+  They say so now, with a retry. Neither tile had a component test; both do.
+- **A weather place could not be changed** once picked, except by removing the
+  tile; doc 08 §1 had put the picker in the detail and it was never built.
+- **The quote detail lacked the copy and the lunar date** that the one-row tile
+  drops on the promise that the detail keeps them.
+- **The markets symbol search said "unavailable" when the reader was offline**,
+  after spending a request on it.
+- **The host's crash card** — the `error` state of clock, timer, notes and
+  todo — had no test.
+- **Untested states and tiers:** map's `loading`, `offline` and `error`;
+  weather's `stale-error`; music's `loading`; the calculator's tape; tier L of
+  clock, timer, calendar, toolbox, weather and notes, tier S of quote, tier M of
+  music and todo; the clock's own timer on unmount; markets' two sources on
+  unmount.
+- **calendar had no as-built record** (doc 07 §6), and four doc lines had
+  outlived the code.
+
+Four boxes are met the same way by every widget, so they are recorded once:
+
+- **Detail and deep link (2).** Every manifest declares a detail, and
+  `/w/<id>` prerenders for each. The nightly sweep renders all fourteen deep
+  links in both themes (`e2e/a11y.e2e.ts`); per PR, the light-theme scan
+  covers the notes, calendar, weather and music details, and
+  `detail-expansion.e2e.ts` and journey 3 load the clock's and weather's
+  detail by URL.
+- **i18n (4).** `i18n:check` and `i18n:audit` gate CI, and no widget file
+  carries an exception.
+- **A11y (6).** The axe sweep above; the contrast suite, any accent, both
+  themes; chart summary lines where a chart is drawn — weather, currency,
+  markets — each asserted. The timer's history bars carry labels and are the
+  one chart-like view without a summary test.
+- **Perf (7).** The budget gate: the largest tile chunk is 2.7 KB of 40
+  (markets) and the largest detail 8.4 KB of 350 (media). No leak on remove:
+  the host and `s1-grid` for every tile, plus the widget's own unmount test
+  where it holds anything (the table's last column).
+
+| Widget   | Tiers rendered (sizes) | States, by doc 06 §3 class — and what the class makes N/A                                                                        | Offline (5)                              | Tests (8)                                                          | Unmount            | Deviations (9) |
+| -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------ | ------------------ | -------------- |
+| clock    | S M L (2×1–6×3)        | pure-client; `loading`, `empty` N/A (doc 07 §1); `error` the host's                                                              | local                                    | tile, service; detail by `detail-expansion` (9)                    | its own interval   | doc 07 §1      |
+| timer    | M L (2×2–4×3)          | pure-client; `loading`, `empty` N/A (doc 07 §2); `error` the host's; `permission-needed` (notifications)                         | local                                    | tile, service, history; detail by `timer.e2e`                      | s1-grid            | doc 07 §2      |
+| calc     | M L (2×2–4×4)          | pure-client; `loading` N/A; `empty` the tape; `error` inline                                                                     | local                                    | tile, detail, engine, convert                                       | —                  | doc 07 §3      |
+| notes    | M L (2×2–6×6)          | pure-client; all four, `error` a failed read (fixed)                                                                             | local                                    | tile (new), service, storage; journey 5                             | —                  | doc 07 §4      |
+| todo     | M L (2×2–4×6)          | pure-client; all four, two `empty`s, `error` a failed read (fixed)                                                               | local                                    | tile (new), service, storage                                        | —                  | doc 07 §5      |
+| calendar | M L (2×2–6×5)          | pure-client; `loading`, `empty` N/A on the tile (doc 07 §6, new); `error` inline; the detail's empty day                         | journey 4                                | tile, detail, service, storage                                      | midnight task      | doc 07 §6      |
+| toolbox  | M L (2×2–4×4)          | pure-client; `loading` N/A; `empty` ×2; `error` inline                                                                           | journey 4                                | tile, detail, service, color, password, qr                          | —                  | doc 07 §7      |
+| weather  | M L (2×2–6×4)          | cached-data, all seven; `permission-needed` (geolocation)                                                                        | badge over data; card with none          | tile, detail, service, chart; journey 3                             | scheduler + cache  | doc 08 §1      |
+| quote    | S M L (2×1–6×3)        | pure-client; `loading`, `error` inline; the detail's no-match                                                                    | journey 4                                | tile, detail, service                                               | midnight task      | doc 08 §3      |
+| rss      | M L (2×2–6×6)          | cached-data, all seven (`stale` at the service level); `permission-needed` forbidden, asserted                                    | card                                     | tile, detail, opml, pacing, service; `rss.e2e`                      | scheduler + cache  | doc 08 §4      |
+| map      | the tile has no tier-dependent layout; 4×3 and the no-WebGL card | map class: `stale`, `stale-error` N/A; `loading`, `offline`, `error`, no-WebGL; `permission-needed` (geolocation) | card                                     | tile, detail, places, TpMap; `map.e2e`                              | WebGL context      | doc 08 §5      |
+| markets  | M L (2×2–6×6)          | cached-data, all seven; `permission-needed` forbidden, asserted                                                                  | card; badge; search says so (fixed)      | tile, detail, service, chart                                        | 2 entries + caches | doc 09 §1      |
+| music    | S M L (2×1–6×3)        | media class: `loading`, `ready`, `empty`, `error`; `permission-needed` (fsa)                                                    | local files                              | tile, library, queue, playlists, collection, player, tags; journey   | player stops       | doc 09 §2      |
+| media    | M L (2×2–8×5)          | media class: `loading`, `ready`, `empty`, `error`; `permission-needed` forbidden, asserted                                     | local files                              | tile, player, picker, poster, recents, resume, session, keys, subtitles; journey | track + URL released | doc 09 §3 |
+
+Named rather than ticked, and left as they are: the clock's and the timer's
+details are exercised end to end rather than by a component test; rss's
+`stale` is asserted at the service level, where the rule lives; and two test
+fixtures carry a tier label the host would not give their size (rss's 3×4 "M",
+map's 4×3 "M") — harmless, since what each tile reads is the label or the
+pixels, but worth knowing before trusting one as a sample of its tier.
+
 ## 7. Severity (P0–P3)
 
 Defined 2026-10-06. The charter's release bar is "zero P0/P1 open bugs at tag

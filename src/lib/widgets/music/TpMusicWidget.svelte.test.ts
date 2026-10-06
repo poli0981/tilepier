@@ -149,6 +149,22 @@ describe('states (doc 06 §3)', () => {
 		}
 	});
 
+	it('loading: a gauge while the library is read, never a player with nothing in it', async () => {
+		// The tile's `loading` branch, untested until Week 8.
+		vi.spyOn(target.tracks, 'toArray').mockReturnValue(new Promise(() => undefined) as never);
+		const screen = show(WIDE);
+
+		await expect
+			.element(screen.getByRole('status', { name: m['widget.music.loading']() }))
+			.toBeInTheDocument();
+	});
+
+	it('at tier M, which no test had rendered: how to add music, as at the others', async () => {
+		const screen = show({ w: 3, h: 2, pxW: 320, pxH: 140, tier: 'M' });
+
+		await expect.element(screen.getByTestId('music-empty')).toBeVisible();
+	});
+
 	it('says so when the library cannot be read, and tries again', async () => {
 		vi.spyOn(target.tracks, 'toArray').mockRejectedValueOnce(new Error('blocked'));
 		const screen = show(WIDE);

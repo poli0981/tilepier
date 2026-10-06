@@ -209,6 +209,10 @@ call rather than per candle — and a few kilobytes on a 1M view.
   search the Worker refuses. Results are buttons; one already on the watchlist
   is disabled and says so. Company names are text nodes (CLAUDE.md rule 7).
   A coin is never searched — its list is the bundled top-list.
+  **With no network** (Week 8) the box says a search needs the network and asks
+  nothing — doc 17 §3's search-dependent class, as the place search already
+  did. Until then every failure read "search is unavailable right now", an
+  upstream's problem, to a reader whose own connection was off.
 
 ## 2. `music` — Local Music Player
 

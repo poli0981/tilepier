@@ -13,6 +13,7 @@ import { online } from '$lib/stores/online.svelte';
 import { settings } from '$lib/stores/settings.svelte';
 import { RSS_CADENCE, feedPacer } from './service';
 import TpRssWidget from './TpRssWidget.svelte';
+import manifest from './manifest';
 
 /**
  * The rss tile, in the browser project: `fetch` answers per feed URL, the clock
@@ -431,5 +432,14 @@ describe('refresh and lifetime', () => {
 		expect(log).toContain('rss:v1:');
 		expect(log).not.toContain('s3cr3t-t0ken');
 		expect(log).not.toContain('example.org');
+	});
+});
+
+describe('the manifest contract', () => {
+	it('declares no permissions, which is what forbids `permission-needed`', () => {
+		// doc 06 §3 makes the state required exactly when a manifest declares one,
+		// and forbidden otherwise — asserted, as markets and currency assert it,
+		// so it stays true if a permission is added without reading this.
+		expect(manifest.permissions).toBeUndefined();
 	});
 });

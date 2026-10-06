@@ -27,12 +27,17 @@
 	 *
 	 * States (doc 06 §3, pure-client class): `loading` while Dexie is read,
 	 * `empty` in two distinct shapes — no lists at all, or a list with nothing
-	 * on it — `ready`, and `error` through the host's boundary.
+	 * on it — `ready`, and `error`: a read that failed, said inline with a
+	 * retry, and a crash through the host's boundary. Until Week 8 a failed read
+	 * was caught and shown as one of the two empties.
 	 */
 	let { settings: tileSettings, size, onUpdateSettings }: TpWidgetProps = $props();
 
 	let lists = $state<TpTodoList[] | null>(null);
 	let todos = $state<TpTodo[]>([]);
+	let failed = $state(false);
+	/** Bumped by Retry, which re-runs both reads. */
+	let attempt = $state(0);
 	let text = $state('');
 
 	const list = $derived(lists === null ? null : resolveList(lists, tileSettings['listId']));
@@ -51,7 +56,9 @@
 	const done = $derived(ordered.filter((todo) => todo.done));
 
 	$effect(() => {
-		// Reads the lists once per mount (local storage, not the network).
+		// Reads the lists once per mount, and again on Retry (local storage, not
+		// the network).
+		void attempt;
 		let cancelled = false;
 
 		listLists()
@@ -61,7 +68,7 @@
 			.catch((error: unknown) => {
 				if (cancelled) return;
 				logEntry('warn', 'could not read todo lists', { src: 'widget', error });
-				lists = [];
+				failed = true;
 			});
 
 		return () => {
@@ -74,6 +81,7 @@
 		// changes. Depends on the id alone, deliberately: depending on the list
 		// *object* would re-read on every unrelated rename.
 		const id = list?.id;
+		void attempt;
 		if (id === undefined) {
 			todos = [];
 			return;
@@ -87,7 +95,7 @@
 			.catch((error: unknown) => {
 				if (cancelled) return;
 				logEntry('warn', 'could not read todos', { src: 'widget', error });
-				todos = [];
+				failed = true;
 			});
 
 		return () => {
@@ -124,10 +132,25 @@
 		// useful than "30/08" when you are deciding what to do first.
 		return { label: todo.due.slice(5).replace('-', '/'), state };
 	}
+
+	function retry(): void {
+		failed = false;
+		lists = null;
+		attempt += 1;
+	}
 </script>
 
 <div class="tp-todo" data-tier={size.tier}>
-	{#if lists === null}
+	{#if failed}
+		<!-- doc 06 §3's `error`: one sentence and a way to try again — never an
+		     empty state, which would tell the reader they have no lists. -->
+		<div class="tp-todo__state" role="alert" data-testid="todo-failed">
+			<p>{m['widget.todo.read_failed']()}</p>
+			<button type="button" class="tp-todo__action" onclick={retry}>
+				{m['common.retry']()}
+			</button>
+		</div>
+	{:else if lists === null}
 		<!-- doc 13 §7: skeleton, never a spinner. -->
 		<div class="tp-todo__state" aria-busy="true" data-testid="todo-loading">
 			<TpTideGauge size={32} animated level={0.4} />

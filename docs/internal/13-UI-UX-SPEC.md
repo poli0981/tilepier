@@ -122,7 +122,7 @@ would take 4×1, 4×2 and 2×4 back to M under fifteen widgets tuned against
 them, for a definition nothing else depends on. What the pass did settle is
 the corollary: a layout that needs a particular *shape* keys on `size.w` /
 `size.h`, never on the tier — as quote and weather do, as music and media do,
-and as the clock's date line now does (doc 08 §5).
+and as the clock's date line now does (doc 08 §3).
 
 ## 4. Add-widget drawer
 

@@ -3,7 +3,8 @@ import { cleanup, render } from 'vitest-browser-svelte';
 import { m } from '$lib/paraglide/messages';
 import { settings } from '$lib/stores/settings.svelte';
 import TpQuoteDetail from './TpQuoteDetail.svelte';
-import { loadCatalogue } from './service';
+import { attributionOf, bilingualPool, loadCatalogue, pickOfDay, quoteText } from './service';
+import { dateKeyOf } from '$lib/core/date-key';
 
 /** doc 08 §3's detail — browse, search, and the favourites the tile writes. */
 
@@ -143,5 +144,55 @@ describe('provenance', () => {
 		// than only on the licences page.
 		const screen = render(TpQuoteDetail, props());
 		await expect.element(screen.getByText(m['widget.quote.source_note']())).toBeInTheDocument();
+	});
+});
+
+describe("today's quote (doc 08 §3)", () => {
+	// The one-row tile drops the lunar date, the keep and the copy, on the
+	// promise that "the detail keeps all four". Until Week 8 it kept the
+	// attribution alone.
+	const picked = pickOfDay(bilingualPool(catalogue), dateKeyOf(AT.getTime()));
+	if (picked === null) throw new Error('the catalogue has no quote of the day');
+	const todays = picked;
+
+	it('copies the line with its attribution, as the tile does', async () => {
+		const writeText = vi.fn(() => Promise.resolve());
+		vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+		const screen = render(TpQuoteDetail, props());
+
+		await screen.getByTestId('today-copy').click();
+
+		const text = quoteText(todays, 'vi');
+		const attribution = attributionOf(todays);
+		expect(writeText).toHaveBeenCalledWith(
+			attribution === ''
+				? text
+				: `${text}
+— ${attribution}`
+		);
+		await expect
+			.element(screen.getByTestId('today-copy'))
+			.toHaveAttribute('aria-label', m['widget.quote.copied']());
+		vi.unstubAllGlobals();
+	});
+
+	it('keeps it from where it is, without finding it in the list', async () => {
+		const onUpdateSettings = vi.fn();
+		const screen = render(TpQuoteDetail, props({}, onUpdateSettings));
+
+		await screen.getByTestId('today-keep').click();
+
+		expect(onUpdateSettings).toHaveBeenCalledWith({ favourites: [todays.id] });
+	});
+
+	it('shows the lunar date in Vietnamese, and only there', async () => {
+		const screen = render(TpQuoteDetail, props());
+		await expect.element(screen.getByTestId('today-lunar')).toBeInTheDocument();
+
+		cleanup();
+		settings.patch({ locale: 'en' });
+		const english = render(TpQuoteDetail, props());
+		await expect.element(english.getByTestId('today-text')).toBeInTheDocument();
+		await expect.element(english.getByTestId('today-lunar')).not.toBeInTheDocument();
 	});
 });

@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { copyText } from '$lib/core/clipboard';
 	import { dateKeyOf } from '$lib/core/date-key';
 	import { logEntry } from '$lib/core/log-buffer';
+	import { lunarOf } from '$lib/lunar/amlich';
+	import { fmtLunarShort } from '$lib/lunar/format';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';
@@ -47,6 +50,43 @@
 		catalogue === null ? null : pickOfDay(bilingualPool(catalogue), today)
 	);
 
+	/**
+	 * What the one-row tile leaves out, carried here (doc 08 §3): the tile drops
+	 * the lunar footer, the keep and the copy at h = 1 on the understanding that
+	 * "the detail keeps all four". Until Week 8 it kept two — the attribution, and
+	 * a keep only by finding the quote again in the list below.
+	 */
+	const todayText = $derived(todayQuote === null ? '' : quoteText(todayQuote, settings.locale));
+	const todayAttribution = $derived(todayQuote === null ? '' : attributionOf(todayQuote));
+	const todayKept = $derived(todayQuote !== null && prefs.favourites.includes(todayQuote.id));
+
+	/** The tile's lunar footer, in the tile's words: vi only, the lunar date of
+	 *  the date shown. */
+	const lunar = $derived.by(() => {
+		if (settings.locale !== 'vi') return '';
+		const value = lunarOf(new Date(`${today}T00:00:00`));
+		return value === null ? '' : fmtLunarShort(value, 'vi');
+	});
+
+	let copied = $state(false);
+	let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		return () => {
+			if (copyTimer !== null) clearTimeout(copyTimer);
+		};
+	});
+
+	/** The tile's copy: the line, then the attribution on a line of its own. */
+	async function copyToday(): Promise<void> {
+		if (todayText === '') return;
+		const text = todayAttribution === '' ? todayText : `${todayText}\n— ${todayAttribution}`;
+		if (!(await copyText(text))) return;
+		copied = true;
+		if (copyTimer !== null) clearTimeout(copyTimer);
+		copyTimer = setTimeout(() => (copied = false), 1400);
+	}
+
 	const tags = $derived(catalogue === null ? [] : tagsOf(catalogue));
 	const authors = $derived(catalogue === null ? [] : authorsOf(catalogue));
 
@@ -88,6 +128,10 @@
 	function keep(id: string): void {
 		onUpdateSettings?.({ favourites: toggleFavourite(prefs.favourites, id) });
 	}
+
+	function keepToday(): void {
+		if (todayQuote !== null) keep(todayQuote.id);
+	}
 </script>
 
 <div class="tp-quoted">
@@ -99,12 +143,32 @@
 		{#if todayQuote !== null}
 			<section class="tp-quoted__today" aria-label={m['widget.quote.today']()}>
 				<h3>{m['widget.quote.today']()}</h3>
-				<blockquote data-testid="today-text">
-					{quoteText(todayQuote, settings.locale)}
-				</blockquote>
-				{#if attributionOf(todayQuote) !== ''}
-					<cite>{attributionOf(todayQuote)}</cite>
-				{/if}
+				<blockquote data-testid="today-text">{todayText}</blockquote>
+				<div class="tp-quoted__foot">
+					{#if todayAttribution !== ''}
+						<cite>{todayAttribution}</cite>
+					{/if}
+					{#if lunar !== ''}
+						<span class="tp-quoted__lunar tp-num" data-testid="today-lunar">{lunar}</span>
+					{/if}
+					<button
+						type="button"
+						aria-pressed={todayKept}
+						aria-label={todayKept ? m['widget.quote.unfavourite']() : m['widget.quote.favourite']()}
+						data-testid="today-keep"
+						onclick={keepToday}
+					>
+						<TpIcon name={todayKept ? 'check' : 'plus'} size={14} />
+					</button>
+					<button
+						type="button"
+						aria-label={copied ? m['widget.quote.copied']() : m['widget.quote.copy']()}
+						data-testid="today-copy"
+						onclick={() => void copyToday()}
+					>
+						<TpIcon name={copied ? 'check' : 'note'} size={14} />
+					</button>
+				</div>
 			</section>
 		{/if}
 
@@ -224,6 +288,23 @@
 		color: var(--color-fg-mute);
 		font-size: var(--text-2xs);
 		font-style: normal;
+	}
+
+	.tp-quoted__foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+	}
+
+	.tp-quoted__foot cite {
+		flex: 1 1 auto;
+	}
+
+	.tp-quoted__lunar {
+		color: var(--color-fg-dim);
+		font-size: var(--text-2xs);
 	}
 
 	.tp-quoted__filters {

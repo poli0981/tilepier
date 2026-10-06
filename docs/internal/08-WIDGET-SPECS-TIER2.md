@@ -37,8 +37,10 @@ where the next reader will look for them:
   drizzle into rain, grains into snow and hail into thunder - so nothing
   upstream sends renders as `unknown`. Widening the set is a change to
   `ui/icons/wmo.ts` alone.
-- **The stale badge is in the tile body, not the host header** (doc 13 §7 puts
-  it in the header). See doc 13 §3 for why, and for what it would take to move.
+- ~~**The stale badge is in the tile body, not the host header**~~ — moved to
+  the host header on 2026-08-31, where doc 13 §7 puts it, through
+  `core/tile-status` (doc 13 §3 records the move). Corrected here in Week 8;
+  the line had outlived the change by five weeks.
 - **The detail ships without the AQI gauge and the astronomy card**
   (2026-08-30) — depth cuts taken when Week 4 measured at four times its
   budget, per doc 23's slip policy. **The cloud band does ship**: it was held
@@ -65,6 +67,13 @@ It ships **in the tile**, as the `empty` state itself, and the reason is doc 13
 detail panel would make the one tile a new reader is most likely to try the one
 that does nothing until they go looking. The detail will still carry it when it
 lands, for changing a place rather than choosing the first one.
+
+**It landed in Week 8 (2026-10-06)**, five weeks after this paragraph promised
+it: until then a place, once picked, could be changed only by removing the tile
+and adding another. "Change place" at the top of the detail opens the same
+`TpPlaceSearch`, and the pick goes through `placeSettings` in `service.ts`,
+which the tile's first pick now shares — so both round to 2 dp and derive
+`useMyLocation` the same way.
 
 Three more decisions worth having written down:
 
@@ -180,6 +189,10 @@ every test, because the geocode fixture was tidier than the real answer:
   settings? → favorites are app data: Dexie table not needed; store id list
   in widget settings, cap 200), copy-as-text, share-quote-as-image
   (canvas render using design tokens) — stretch, cut-line if Week 4 tight.
+  **Share-as-image was cut**: the stretch on top of a slip-policy item ("quote
+  browse-detail", doc 23), so the first thing to go. Recorded only in
+  `TpQuoteDetail.svelte` until Week 8; the canvas work it would need is in
+  `widgets/toolbox/qr.ts` if it is ever wanted.
 - **Edge cases:** locale switch mid-day keeps the same quote id, swaps
   translation if the dataset has one.
 
@@ -190,6 +203,12 @@ no citation, no lunar footer, no keep, no copy, and the line ellipsised on one
 row. Dropping the lunar footer is the deviation from the paragraph above — it is
 the QuoteAtlas tie-in and it is genuinely gone at that size. The detail keeps
 all four, and a one-row tile is one press from it.
+
+**That last sentence was untrue until Week 8 (2026-10-06).** The detail showed
+today's quote with its attribution and nothing else: no lunar date, no copy, and
+a keep only by finding the quote again in the list below. Its "today" block now
+carries all four, in the tile's words — the lunar date in Vietnamese only, the
+copy as the line and then the attribution on its own line.
 
 The arithmetic is why. At `cellHeight: 72` (doc 06 §5.4) a one-row tile is 72 px
 tall, and the 28 px header, the 1 px borders and the body's own bottom padding
@@ -217,9 +236,10 @@ Two things about the shape of the fix are worth keeping:
    the 34, i.e. a loading state that overflows the ready state it stands in for.
 
 `sizes.min` stays `2x1` — one row is an allowed size, and now a designed one.
-It would not matter much if it changed: `toGridStackWidget` does not pass the
-manifest's min/max to gridstack, so every tile can be dragged to one row today
-regardless of what its manifest says (tracked separately).
+(This paragraph went on to say `toGridStackWidget` passed no min/max to
+gridstack, so any tile could be dragged to one row. That was fixed on
+2026-08-31, the day after it was written — doc 06 §7 — and the note outlived
+the fix until Week 8. The manifest's bounds are what a drag obeys.)
 
 ## 4. `rss` — RSS / News Reader
 

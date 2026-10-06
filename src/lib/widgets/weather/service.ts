@@ -1,6 +1,7 @@
 import type { TpApiMeta, TpMaybeNumber, TpWeatherHour, TpWeatherPayload } from '$lib/api-types';
 import { fetchEnvelope } from '$lib/core/api';
 import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
+import type { TpPlacePick } from '$lib/core/geocode';
 import type { TpDb } from '$lib/core/storage/db';
 import { zoneOffsetMinutes } from '$lib/i18n/fmt';
 import { CACHE_POLICY, cacheKey, geohash, roundCoord } from '$lib/shared-constants';
@@ -112,6 +113,31 @@ export function readSettings(bag: Record<string, unknown>): TpWeatherSettings {
 			typeof bag['useMyLocation'] === 'boolean'
 				? bag['useMyLocation']
 				: WEATHER_DEFAULTS.useMyLocation
+	};
+}
+
+/**
+ * The settings a picked place becomes — the tile's first pick and the detail's
+ * change of place alike, handed to the host rather than written to storage
+ * (doc 06 §2).
+ *
+ * **Rounded here**, to doc 08 §1's 2 dp. `TpPlaceSearch` hands back what the
+ * geocoder said — production answered `21.0283334, 105.854041` for Hà Nội —
+ * because the map keeps that precision for a saved place. Weather never uses
+ * more than 2 dp (`weatherUrl` and `readSettings` both round), so storing more
+ * in `tp.layout.v1` and in every backup is the part that would be wrong. The
+ * reader's own position arrives coarse already, and rounding it again changes
+ * nothing. A blank `name` means the place came from geolocation, which is
+ * also the flag that says the reader opted in, so `useMyLocation` is derived
+ * from the pick rather than tracked separately and left to disagree with it.
+ */
+export function placeSettings(place: TpPlacePick): {
+	place: TpWeatherPlace;
+	useMyLocation: boolean;
+} {
+	return {
+		place: { name: place.name, lat: roundCoord(place.lat), lon: roundCoord(place.lon) },
+		useMyLocation: place.name === ''
 	};
 }
 

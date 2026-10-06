@@ -311,7 +311,28 @@ the user picked that one.
   computation regardless of viewer zone (correctness of VN calendar), with
   a note in the detail footer.
 
-## 7. `toolbox` — QR · Password · Color
+### As built (recorded in Week 8)
+
+This section had no as-built record, though the widget shipped in Week 3 to
+the lines above: the grid, the lunar day per cell in Vietnamese, the event dots,
+the detail's agenda, CRUD, converter, can-chi and observances, and the UTC+7
+note in the detail's footer. What doc 06 §3 asks a spec section to name:
+
+- **The tile is read-only.** A button per cell would put forty-two tab stops on
+  the deck for a widget that is glanced at (doc 12 §1); picking a day, adding
+  an event and the lunar panel are the detail's.
+- **States (pure-client class).** `ready`, and `error` inline: when the event
+  read fails the grid stays up and says so. Two of the class's states are
+  unreachable for this widget, not missing: **no `loading`**, because the grid
+  is a computation over the date and is on screen in the first frame (only the
+  dots wait on IndexedDB, and a skeleton over a legible month would be worse
+  information); **no `empty`** on the tile, because a month always has days in
+  it — the empty this widget has is a day with nothing on it, in the detail's
+  agenda, with one way out of it.
+- **One midnight task** registered while mounted and gone on unmount; both are
+  tested.
+- **The can-chi setting is the detail's**: the tile has room for a number per
+  cell and nothing more, so it never shows can-chi.
 
 Three tabs in one widget (charter decision 2026-07-19).
 

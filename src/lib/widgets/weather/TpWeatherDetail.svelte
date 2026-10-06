@@ -2,6 +2,8 @@
 	import { untrack } from 'svelte';
 	import type { TpMaybeNumber } from '$lib/api-types';
 	import TpChart from '$lib/charts/TpChart.svelte';
+	import type { TpPlacePick } from '$lib/core/geocode';
+	import type { TpPositionSource } from '$lib/core/geolocate';
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpDetailProps } from '$lib/core/types';
 	import type { TpSwrHandle } from '$lib/core/swr.svelte';
@@ -10,12 +12,14 @@
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpWeatherIcon from '$lib/ui/icons/TpWeatherIcon.svelte';
 	import { wmoGlyph, type TpWmoGlyph } from '$lib/ui/icons/wmo';
+	import TpPlaceSearch from '$lib/ui/TpPlaceSearch.svelte';
 	import { hourlyOption } from './chart';
 	import {
 		CHART_HOURS,
 		currentHourIndex,
 		hourlyPoints,
 		isGap,
+		placeSettings,
 		readSettings,
 		weatherSource,
 		type TpWeatherReading
@@ -38,11 +42,31 @@
 	 * strip and the readings doc 08 §1 lists beside it.
 	 */
 	interface Props extends TpDetailProps {
-		/** Test seam, as on the tile: a throwaway Dexie rather than the reader's. */
+		/** Test seams, as on the tile: a throwaway Dexie rather than the reader's,
+		 *  and a position that needs no browser prompt. */
 		db?: TpDb | undefined;
+		positionSource?: TpPositionSource | undefined;
 	}
 
-	let { settings: tileSettings, db = undefined }: Props = $props();
+	let {
+		settings: tileSettings,
+		onUpdateSettings,
+		db = undefined,
+		positionSource = undefined
+	}: Props = $props();
+
+	/**
+	 * doc 08 §1: the tile picks the first place, as its own `empty` state; the
+	 * detail is where a place is changed. It said so from Week 4 and did not do
+	 * it until Week 8 — a place, once picked, could only be changed by removing
+	 * the tile and adding another.
+	 */
+	let choosing = $state(false);
+
+	function change(place: TpPlacePick): void {
+		onUpdateSettings?.(placeSettings(place));
+		choosing = false;
+	}
 
 	const prefs = $derived(readSettings(tileSettings));
 
@@ -156,6 +180,26 @@
 </script>
 
 <div class="tp-wxd" data-testid="weather-detail" data-status={status}>
+	{#if prefs.place !== null}
+		<div class="tp-wxd__place">
+			{#if choosing}
+				<TpPlaceSearch onPick={change} {positionSource} />
+				<button type="button" class="tp-wxd__change" onclick={() => (choosing = false)}>
+					{m['widget.weather.keep_place']()}
+				</button>
+			{:else}
+				<button
+					type="button"
+					class="tp-wxd__change"
+					data-testid="weather-change-place"
+					onclick={() => (choosing = true)}
+				>
+					{m['widget.weather.change_place']()}
+				</button>
+			{/if}
+		</div>
+	{/if}
+
 	{#if prefs.place === null}
 		<p class="tp-wxd__note" data-testid="weather-detail-empty">
 			{m['widget.weather.empty_detail']()}
@@ -370,6 +414,25 @@
 		margin: 0;
 		color: var(--color-fg-mute);
 		font-size: var(--text-2xs);
+	}
+
+	.tp-wxd__place {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	/* A control outside a tile: 40 px tall (doc 13 §8). */
+	.tp-wxd__change {
+		min-height: var(--tp-target);
+		padding: 0 0.75rem;
+		border: 1px solid var(--color-field);
+		border-radius: 0.5rem;
+		background: transparent;
+		color: var(--color-fg);
+		font-size: var(--text-xs);
+		cursor: pointer;
 	}
 
 	.tp-wxd__credit {

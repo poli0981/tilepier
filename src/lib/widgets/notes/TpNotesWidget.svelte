@@ -16,12 +16,17 @@
 	 * States (doc 06 §3, pure-client class): `ready`; `empty` when there are no
 	 * notes at all; `loading` while the first read of IndexedDB is in flight,
 	 * which unlike in the clock or the timer is a state this widget genuinely
-	 * reaches, because it genuinely has something to read; and `error` through
-	 * the host's boundary.
+	 * reaches, because it genuinely has something to read; and `error` — a read
+	 * that failed, said inline with a retry, and a crash through the host's
+	 * boundary. Until Week 8 a failed read was caught and shown as `empty`,
+	 * offering to write the first note to a reader whose notes it could not read.
 	 */
 	let { settings: tileSettings, size }: TpWidgetProps = $props();
 
 	let notes = $state<TpNote[] | null>(null);
+	let failed = $state(false);
+	/** Bumped by Retry, which re-runs the read. */
+	let attempt = $state(0);
 	let editing = $state(false);
 	let draft = $state('');
 	let writer: TpDexieWriter<{ id: string; body: string }> | null = null;
@@ -37,8 +42,10 @@
 	);
 
 	$effect(() => {
-		// Reads the collection once per mount. Local storage, not the network —
-		// doc 20 §3's "effects never fetch" is about swr() and a service layer.
+		// Reads the collection once per mount, and again on Retry. Local storage,
+		// not the network — doc 20 §3's "effects never fetch" is about swr() and a
+		// service layer.
+		void attempt;
 		let cancelled = false;
 
 		listNotes()
@@ -48,7 +55,7 @@
 			.catch((error: unknown) => {
 				if (cancelled) return;
 				logEntry('warn', 'could not read notes', { src: 'widget', error });
-				notes = [];
+				failed = true;
 			});
 
 		return () => {
@@ -106,10 +113,25 @@
 		notes = await listNotes();
 		beginEdit();
 	}
+
+	function retry(): void {
+		failed = false;
+		notes = null;
+		attempt += 1;
+	}
 </script>
 
 <div class="tp-notes" data-tier={size.tier}>
-	{#if notes === null}
+	{#if failed}
+		<!-- doc 06 §3's `error`: one sentence and a way to try again — never the
+		     empty state, which would tell the reader they have no notes. -->
+		<div class="tp-notes__state" role="alert" data-testid="notes-failed">
+			<p>{m['widget.notes.read_failed']()}</p>
+			<button type="button" class="tp-notes__action" onclick={retry}>
+				{m['common.retry']()}
+			</button>
+		</div>
+	{:else if notes === null}
 		<!-- doc 13 §7: skeleton, never a spinner. -->
 		<div class="tp-notes__state" aria-busy="true" data-testid="notes-loading">
 			<TpTideGauge size={32} animated level={0.4} />
