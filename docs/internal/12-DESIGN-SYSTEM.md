@@ -29,12 +29,12 @@ base, teal beacon, gauge motif. No shared tokens with any other project.
   /* Text */
   --color-fg:      #DEE7EE;   /* primary text */
   --color-fg-mute: #8FA0B0;   /* secondary */
-  --color-fg-dim:  #5C6B7A;   /* tertiary, timestamps */
+  --color-fg-dim:  #738292;   /* tertiary, timestamps (#5C6B7A until Week 8) */
 
   /* Scrollbar thumb (§9) — light theme #78858F */
   --color-scrollbar: #5C6B7A;
 
-  /* Beacon (accent) */
+  /* Beacon (accent) — derived per theme from --tp-accent, see below */
   --color-beacon:      #46D5C8;
   --color-beacon-soft: #46D5C81F;  /* 12% wash */
   --color-beacon-deep: #2AA79C;    /* hover/pressed */
@@ -45,6 +45,10 @@ base, teal beacon, gauge motif. No shared tokens with any other project.
   --color-warn:   #E8B750;   /* stale, amber lamp */
   --color-danger: #E45C5C;
 
+  /* Chart series 2–5 (§4.3) — charts only */
+  --color-chart-2: #7B8FF2;  --color-chart-3: #8798A8;
+  --color-chart-4: #D9A441;  --color-chart-5: #C084D6;
+
   /* Shape & depth */
   --radius-tile: 14px;  --radius-ctl: 8px;
   --shadow-tile: 0 1px 0 #FFFFFF0A inset, 0 8px 24px #00000059;
@@ -52,9 +56,39 @@ base, teal beacon, gauge motif. No shared tokens with any other project.
 ```
 
 Light theme: mirrored ramp on warm paper (`#F4F1EA` page, `#FFFFFF` tiles,
-ink text `#1A222B`, same beacon). Theme switch = `data-theme` attribute on
+ink text `#1A222B`). Theme switch = `data-theme` attribute on
 `<html>`; ECharts re-themes dynamically (v6 capability) via the token
 bridge in `lib/charts` — one source of truth, charts never hardcode hex.
+
+**Until Week 8 the light theme kept the dark theme's beacon and semantic
+colours, and nothing had measured them on paper.** The beacon — also the focus
+ring — was 1.81:1 on white; the gate's Accept button set paper text on it at
+1.60:1, before any script, for every reader whose system is light; `up` was
+2.12, `warn` 1.86. The light theme now carries its own: `fg-dim` #616E77,
+`up` #007D40, `down` #B94637, `warn` #916400, `danger` #C13B3F, chart steps
+#6E81E3 · #7A8A9A · #B27F05 · #AD72C2, and a beacon derived for paper (below).
+Each was solved by keeping the dark colour's OKLCH hue and chroma and moving
+only its lightness until it cleared the ratio on all three light surfaces.
+
+Measured by `ui/contrast.svelte.test.ts` — the real stylesheet, the real
+store, the browser resolving every token, the pixels painted and read back.
+The lowest ratio of each, across ink-950, -900 and -850:
+
+| token | dark | light | need |
+|---|--:|--:|--:|
+| fg | 14.53 | 14.24 | 4.5 |
+| fg-mute | 6.78 | 6.26 | 4.5 |
+| fg-dim | 4.62 | 4.65 | 4.5 |
+| up / down | 8.59 / 5.99 | 4.65 / 4.66 | 4.5 |
+| warn / danger | 9.81 / 5.18 | 4.62 / 4.70 | 4.5 |
+| beacon, worst accent of any hue | 5.4 | 5.6 | 4.5 |
+| scrollbar thumb | 3.33 | 3.35 | 3 |
+| chart steps 2–5 | 6.11 | 3.12 | 3 |
+
+The beacon row holds for text on every surface, for text on the beacon's own
+wash, and for ink-950 text on the beacon and on its pressed shade. A colour
+token the suite has not given a role fails it, so a new one cannot ship
+unmeasured.
 
 **Built 2026-08-30, and one rule makes the whole claim true or false.**
 `chart.setTheme()` merges into a chart's *defaults*, so any colour left in the
@@ -81,11 +115,21 @@ Accent is user-overridable in Settings (stored `tp.settings.accent`);
 derived soft/deep values computed in OKLCH so any accent stays usable.
 Semantic colors are **not** overridable.
 
-Mechanically: JavaScript sets **only** `--color-beacon` on `<html>`.
-`--color-beacon-soft` and `--color-beacon-deep` are derived in `app.css` with
-`color-mix(in oklch, …)`, so there is no runtime colour module to ship, and a
-custom accent stays correct in both themes. (Clarified 2026-08-19 — "computed
-in OKLCH at runtime" was read as needing a JS colour library.)
+Mechanically: JavaScript sets **only** `--tp-accent` on `<html>` — the
+reader's choice, as chosen. `app.css` derives `--color-beacon` from it per
+theme with relative colour syntax, holding the accent's hue and moving its
+lightness to the far side of the surfaces — at least 0.66 in OKLCH on deep
+water, at most 0.44 on paper — with chroma capped at 0.16. `--color-beacon-soft`
+and `--color-beacon-deep` derive from the beacon with `color-mix(in oklch, …)`
+and `oklch(from …)`. There is no runtime colour module to ship, and any accent
+— a swatch or anything the colour picker returns — stays legible in both
+themes; none of the six swatches moves in the dark theme. An engine without
+relative colour syntax shows the accent as chosen in the dark theme and the
+default's paper teal (#00665D) in the light one. (Clarified 2026-08-19 —
+"computed in OKLCH at runtime" was read as needing a JS colour library.
+Amended Week 8: the store set `--color-beacon` itself until then, and an
+inline value outranks every theme rule, so the light theme could not darken an
+accent it could not reach.)
 
 ## 2a. Spacing
 
@@ -154,10 +198,18 @@ watches change, it's mono + tnum. No exceptions.**
    `beacon · #7B8FF2 · #8798A8 · #D9A441 · #C084D6`, in `charts/theme.ts`, and
    it descends in weight on purpose: a third series is usually context behind
    the first two rather than a rival to them, and the accent has to stay the
-   one beacon in the view (rule 1). Only step 1 is a token — the accent is
-   user-overridable, so series-1 follows it. **None of steps 3–5 is one of the
-   six selectable accents**, which a test asserts: a reader who picks harbor
-   blue would otherwise get two series in one colour.
+   one beacon in the view (rule 1). Step 1 is the beacon — the accent is
+   user-overridable, so series-1 follows it — and since Week 8 steps 2–5 are
+   tokens too (`--color-chart-2…5`), with light-theme values of their own.
+   **A step that reads as the reader's own accent is skipped.** This said, until
+   Week 8, that none of steps 3–5 was one of the six selectable accents, and a
+   test asserted exactly that — while step 2 *was* one (harbor blue), and amber
+   and violet sat 0.06 and 0.03 in OKLab from steps 4 and 5. Three of six
+   swatches drew a second series in the reader's colour. `chartTheme` now
+   drops any step closer than 0.12 in OKLab to series-1 and moves the rest up,
+   in order, with the text colour as the last resort. The bridge paints each
+   token to a pixel rather than reading its text, so the derived beacon
+   reaches the chart as the colour the theme gave it.
    **The candle pair is not in that ramp, and could not be** (added
    2026-09-01, with the markets detail). ECharts takes a candlestick's four
    colours from `itemStyle.color`/`color0`/`borderColor`/`borderColor0` rather

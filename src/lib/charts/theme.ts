@@ -18,10 +18,10 @@ export interface TpChartTokens {
 	fg: string;
 	fgDim: string;
 	grid: string;
-	/** doc 12 §4.3's five-step ramp. Only series-1 is a token — the accent is
-	 *  user-overridable and the primary series follows it; the rest are fixed,
-	 *  charts-only, and calibrated against each other rather than against the
-	 *  UI palette. */
+	/** doc 12 §4.3's five-step ramp. Series-1 is the beacon — the accent is
+	 *  user-overridable and the primary series follows it; 2–5 are charts-only
+	 *  tokens (`--color-chart-2…5`), calibrated against each other rather than
+	 *  against the UI palette, with values of their own in the light theme. */
 	series1: string;
 	series2: string;
 	series3: string;
@@ -42,21 +42,13 @@ export interface TpChartTokens {
 }
 
 /**
- * Literal hex, and it has to be.
- *
- * `getComputedStyle().getPropertyValue()` on a custom property returns the
- * substituted-but-*unresolved* token text, so `color-mix(in oklch, …)` and
- * `oklch(from …)` arrive at zrender as those strings — and zrender's colour
- * parser handles named colours, `#rgb(a)`, `#rrggbb(aa)`, `rgb(a)` and `hsl(a)`
- * and silently returns nothing for anything else. A chart drawn from a derived
- * token is invisible rather than wrong, which is harder to notice.
- *
- * These fall back to doc 12 §2's dark values, for the case that matters in
- * practice: a component test renders without `app.css`, so every read misses.
+ * doc 12 §2's dark values, for a token that is missing or cannot be painted —
+ * the case that matters in practice being a component test, which renders
+ * without `app.css`, so every read misses.
  */
 const FALLBACK: TpChartTokens = {
 	fg: '#DEE7EE',
-	fgDim: '#5C6B7A',
+	fgDim: '#738292',
 	grid: '#3A4756',
 	series1: '#46D5C8',
 	// Harbor blue — charts only, never a UI token (doc 12 §4.3).
@@ -74,31 +66,107 @@ const FALLBACK: TpChartTokens = {
 	down: '#E8705F'
 };
 
-/** Anything that is not a literal hex is refused rather than passed on, so a
- *  derived token fails at the boundary instead of drawing nothing. */
-function hexOr(value: string, fallback: string): string {
-	const trimmed = value.trim();
-	return /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(trimmed) ? trimmed : fallback;
+/**
+ * A colour token as the `#rrggbb` it paints, or null.
+ *
+ * zrender's colour parser takes named colours, `#rgb(a)`, `#rrggbb(aa)`,
+ * `rgb(a)` and `hsl(a)` and silently returns nothing for anything else, so a
+ * chart drawn from `oklch(…)` or `color-mix(…)` is invisible rather than
+ * wrong. And `getPropertyValue()` on a custom property returns its
+ * substituted-but-*unresolved* text — which is how a derived token used to
+ * arrive. Until Week 8 the bridge therefore refused anything but literal hex.
+ * That was safe while the store set the beacon to the reader's hex; once the
+ * beacon was derived per theme in app.css (doc 12 §2), refusing it would have
+ * pinned every chart's first series to the default teal, in both themes.
+ *
+ * So the token is painted: the engine resolves it as a `color`, a 1 × 1 canvas
+ * draws that, and the pixel is the answer. A token the root does not define
+ * is null before anything is painted — `color: var(--missing)` would quietly
+ * paint the inherited text colour — and so is one this engine cannot parse.
+ */
+function painted(root: HTMLElement, name: string): string | null {
+	const raw = getComputedStyle(root).getPropertyValue(name).trim();
+	if (raw === '' || !CSS.supports('color', raw)) return null;
+
+	const probe = document.createElement('span');
+	probe.style.color = `var(${name})`;
+	root.appendChild(probe);
+	const resolved = getComputedStyle(probe).color;
+	probe.remove();
+
+	const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+	if (context === null) return null;
+	// Transparent first: a value the canvas cannot parse leaves the previous
+	// fill in place, and a transparent pixel reads as "no answer".
+	context.fillStyle = 'rgba(0, 0, 0, 0)';
+	context.fillStyle = resolved;
+	context.fillRect(0, 0, 1, 1);
+	const [r = 0, g = 0, b = 0, a = 0] = context.getImageData(0, 0, 1, 1).data;
+	if (a === 0) return null;
+	return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 }
 
 export function readChartTokens(root: HTMLElement = document.documentElement): TpChartTokens {
-	const style = getComputedStyle(root);
-	const read = (name: string, fallback: string): string =>
-		hexOr(style.getPropertyValue(name), fallback);
+	const read = (name: string, fallback: string): string => painted(root, name) ?? fallback;
 
 	return {
 		fg: read('--color-fg', FALLBACK.fg),
 		fgDim: read('--color-fg-dim', FALLBACK.fgDim),
 		grid: read('--color-ink-500', FALLBACK.grid),
-		// The accent is user-overridable (doc 12 §2), so series-1 follows it.
+		// The beacon, derived from the reader's accent (doc 12 §2): series-1
+		// follows it, at the lightness the theme gives it.
 		series1: read('--color-beacon', FALLBACK.series1),
-		series2: FALLBACK.series2,
-		series3: FALLBACK.series3,
-		series4: FALLBACK.series4,
-		series5: FALLBACK.series5,
+		series2: read('--color-chart-2', FALLBACK.series2),
+		series3: read('--color-chart-3', FALLBACK.series3),
+		series4: read('--color-chart-4', FALLBACK.series4),
+		series5: read('--color-chart-5', FALLBACK.series5),
 		up: read('--color-up', FALLBACK.up),
 		down: read('--color-down', FALLBACK.down)
 	};
+}
+
+/** A `#rrggbb` in OKLab, or null for anything else. */
+function oklab(hex: string): [number, number, number] | null {
+	const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+	if (match === null) return null;
+	const [r, g, b] = match.slice(1, 4).map((pair) => {
+		const c = Number.parseInt(pair, 16) / 255;
+		return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+	}) as [number, number, number];
+	const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+	const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+	const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+	return [
+		0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+		1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+		0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
+	];
+}
+
+/** Closer than this in OKLab, two series read as one line (doc 12 §4.3). */
+const DISTINCT_SERIES = 0.12;
+
+function distance(a: string, b: string): number {
+	const [x, y] = [oklab(a), oklab(b)];
+	if (x === null || y === null) return Number.POSITIVE_INFINITY;
+	return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+}
+
+/**
+ * Steps 2–5 for this reader. Series 1 is their accent, so a step that reads as
+ * the same colour is skipped and the next takes its place, in order — the ramp
+ * descends in weight on purpose — with the text colour as the last resort.
+ * Until Week 8 the ramp was fixed and a test asserted that steps 3–5 were not
+ * one of the six swatches; step 2 *was* one (harbor blue), and amber and violet
+ * sat 0.06 and 0.03 from steps 4 and 5, so three of the six swatches drew a
+ * second series in the reader's own colour.
+ */
+function laterSeries(tokens: TpChartTokens): string[] {
+	const candidates = [tokens.series2, tokens.series3, tokens.series4, tokens.series5, tokens.fg];
+	const kept = candidates.filter((colour) => distance(colour, tokens.series1) >= DISTINCT_SERIES);
+	// Only a five-series chart could show two in the text colour; none exists.
+	while (kept.length < 4) kept.push(tokens.fg);
+	return kept.slice(0, 4);
 }
 
 /**
@@ -122,7 +190,7 @@ export function chartTheme(tokens: TpChartTokens): Record<string, unknown> {
 		// doc 12 §3: numbers the reader watches are mono, and an axis is nothing
 		// but numbers the reader watches.
 		textStyle: { color: tokens.fg, fontFamily: 'JetBrains Mono, ui-monospace, monospace' },
-		color: [tokens.series1, tokens.series2, tokens.series3, tokens.series4, tokens.series5],
+		color: [tokens.series1, ...laterSeries(tokens)],
 		categoryAxis: axis,
 		valueAxis: axis,
 		timeAxis: axis,

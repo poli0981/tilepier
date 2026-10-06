@@ -223,19 +223,18 @@ show "on deck" disabled state. Search filters by name.
   (`e2e/overlays`, each test red on the parent.)
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).
-- Contrast: **measured 2026-08-28**, when `widgets/toolbox/color.ts` gave the
-  suite something to measure with. `fg` on `ink-900` is **15.35:1** and `fg-mute`
-  is **7.16:1** — both comfortably AA, and both better than the 11.9 and 5.1 this
-  line asserted before anything had computed them. `color.test.ts` now asserts
-  the pair against the tokens, so the two cannot drift apart again.
-
-  **`fg-dim` on `ink-900` is 3.51:1**, which is AA for large text only and fails
-  AA for normal text. doc 12 §2 gives it "tertiary, timestamps", and it is used
-  at `--text-2xs` for the notes updated-ago line, the clock's zone deltas and the
-  calendar's lunar day numbers — all normal-size text. Left as measured rather
-  than fixed here: raising it is a design-token change, and doc 23 puts the
-  contrast audit in Week 8 where the whole ramp can move together. Recorded so
-  that audit starts from a known finding rather than rediscovering it.
+- Contrast: **swept in Week 8, every token in both themes** (doc 12 §2's
+  table). First measured 2026-08-28, when `widgets/toolbox/color.ts` gave the
+  suite something to measure with: `fg` on `ink-900` 15.35:1, `fg-mute` 7.16:1
+  — better than the 11.9 and 5.1 this line had asserted — and `fg-dim` 3.51:1,
+  AA for large text only, while it set the notes updated-ago line, the clock's
+  zone deltas and the calendar's lunar days at `--text-2xs`. That test checked
+  colours it had typed itself, so it could never have failed on a token, and
+  the light theme had never been measured at all: its beacon and focus ring
+  were 1.81:1 on white and the gate's Accept button 1.60:1.
+  `ui/contrast.svelte.test.ts` now measures the real stylesheet in the browser,
+  for both themes and any accent, and was red on 45 cases before the fix.
+  `fg-dim` is #738292 dark (4.62:1 at worst) and #616E77 light (4.65:1).
 
   A second finding for the same audit, recorded 2026-08-28: **tile controls are
   below the 40 px target above.** The todo tile has shipped 36, 32 and 28 px

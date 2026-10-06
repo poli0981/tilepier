@@ -41,14 +41,31 @@ describe('chartTheme', () => {
 		]);
 	});
 
-	it('does not hand a later series one of the selectable accents', () => {
-		// A reader can set the accent to any of six colours (doc 12 §2), and
-		// series-1 follows it. If step 3, 4 or 5 were one of those, that reader's
-		// chart would draw two series in the same colour.
-		const accents = ['#46d5c8', '#7b8ff2', '#e8b750', '#57c785', '#e8705f', '#b48ce8'];
-		const later = [TOKENS.series3, TOKENS.series4, TOKENS.series5].map((c) => c.toLowerCase());
+	it('skips a later series that would read as the reader’s own accent', () => {
+		// A reader can set the accent to any of six swatches (doc 12 §2), and
+		// series-1 follows it. Until Week 8 this asserted only that steps 3–5
+		// were not *equal* to a swatch — while step 2 was one (harbor blue), and
+		// amber and violet sat 0.06 and 0.03 in OKLab from steps 4 and 5. Distinct
+		// is a distance, not an inequality: a step closer than 0.12 is skipped and
+		// the rest move up, in order, with the text colour as the last resort.
+		const later = (accent: string): string[] =>
+			(chartTheme({ ...TOKENS, series1: accent }).color as string[]).slice(1);
 
-		for (const colour of later) expect(accents, colour).not.toContain(colour);
+		// Harbor blue is step 2, and 0.11 from step 5.
+		expect(later('#7b8ff2')).toEqual([TOKENS.series3, TOKENS.series4, TOKENS.fg, TOKENS.fg]);
+		// Amber is 0.06 from step 4.
+		expect(later('#e8b750')).toEqual([TOKENS.series2, TOKENS.series3, TOKENS.series5, TOKENS.fg]);
+		// Violet is 0.03 from step 5 and 0.08 from step 2.
+		expect(later('#b48ce8')).toEqual([TOKENS.series3, TOKENS.series4, TOKENS.fg, TOKENS.fg]);
+		// Teal, green and coral are far from every step.
+		for (const accent of ['#46d5c8', '#57c785', '#e8705f']) {
+			expect(later(accent), accent).toEqual([
+				TOKENS.series2,
+				TOKENS.series3,
+				TOKENS.series4,
+				TOKENS.series5
+			]);
+		}
 	});
 
 	it('themes every axis kind, not only the one the first chart happens to use', () => {

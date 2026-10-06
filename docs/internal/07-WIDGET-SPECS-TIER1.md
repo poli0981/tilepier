@@ -361,7 +361,8 @@ twice: a QR tab with nothing typed, and a password tab before the first press.
 `error` is inline for text that will not fit a QR and for a hex field that is
 not a colour yet. `stale`, `stale-error` and `offline` are N/A by class.
 
-The colour tab's contrast maths is **not only this widget's**. doc 13 §8 puts a
-contrast audit of every semantic-on-surface pair in Week 8 and had asserted two
-figures without computing them; `color.ts` is where that audit gets its
-arithmetic, and running it corrected both (see doc 13 §8).
+The colour tab's contrast maths was **first written for more than this
+widget**: doc 13 §8 had asserted two figures without computing them, and
+running `color.ts` corrected both. The Week 8 audit itself measures the tokens
+in the browser, with an independent formula (`ui/contrast.svelte.test.ts`,
+doc 12 §2), so `color.ts` now serves the tab alone.

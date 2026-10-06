@@ -131,18 +131,20 @@
 	/* Text */
 	--color-fg: #dee7ee; /* primary text */
 	--color-fg-mute: #8fa0b0; /* secondary */
-	--color-fg-dim: #5c6b7a; /* tertiary, timestamps */
+	--color-fg-dim: #738292; /* tertiary, timestamps — 4.6:1 on ink-850 (Week 8) */
 
 	/* Scrollbar thumb (doc 12 §9). Neutral rather than the beacon (doc 12 §4.1),
 	   and a token of its own so that raising fg-dim does not make it louder.
 	   At least 3:1 against ink-950, -900 and -850. */
 	--color-scrollbar: #5c6b7a;
 
-	/* Beacon (accent). JS only ever sets --color-beacon (settings store); the
-	   two derived values are computed here in OKLCH so a user-chosen accent
-	   stays usable in both themes without shipping a colour module (doc 12 §2).
-	   The defaults resolve to the doc's #46D5C81F and #2AA79C. */
-	--color-beacon: #46d5c8;
+	/* Beacon (accent). JS only ever sets --tp-accent, the reader's choice
+	   (settings store); the beacon is derived from it per theme below, so any
+	   accent stays legible on both themes' surfaces, and the soft and deep values
+	   are derived from the beacon (doc 12 §2). Without relative colour syntax the
+	   beacon is the accent as chosen. The defaults resolve to the doc's
+	   #46D5C81F and #2AA79C. */
+	--color-beacon: var(--tp-accent);
 	--color-beacon-soft: color-mix(in oklch, var(--color-beacon) 12%, transparent);
 	/* Static default; the derived form is applied below, behind @supports.
 	   Lightning CSS emits a fallback for color-mix() on its own but cannot for
@@ -155,6 +157,14 @@
 	--color-down: #e8705f; /* losses (red-orange, CB-safer vs green) */
 	--color-warn: #e8b750; /* stale, amber lamp */
 	--color-danger: #e45c5c;
+
+	/* Chart series 2–5 (doc 12 §4.3). Charts only, never UI; tokens rather than
+	   constants in lib/charts so the light theme can carry its own and the
+	   contrast suite can read them. Series 1 is the beacon. */
+	--color-chart-2: #7b8ff2; /* harbor blue */
+	--color-chart-3: #8798a8;
+	--color-chart-4: #d9a441;
+	--color-chart-5: #c084d6;
 
 	/* Layout (doc 12 §2a). Restates Tailwind's default on purpose: the doc names
 	   it as the only spacing scale, and a scale that exists only by inheritance
@@ -180,7 +190,18 @@
 	--text-hero: 3rem; /* 48 — hero numerals */
 }
 
-/* Light theme: mirrored ramp on warm paper, same beacon (doc 12 §2).
+/* The reader's accent (doc 12 §2): the one property the settings store sets,
+   inline on <html>. This is the default it overrides. */
+:root {
+	--tp-accent: #46d5c8;
+}
+
+/* Light theme: mirrored ramp on warm paper (doc 12 §2). Until Week 8 it kept
+   the dark theme's beacon and semantic colours, which were never measured on
+   paper: the beacon was 1.81:1 on white, and the gate's Accept button set paper
+   text on it at 1.60:1. Every colour here clears 4.5:1 as text on all three
+   light surfaces (non-text chart series 3:1) — `ui/contrast.svelte.test.ts`
+   reads these values and fails if one does not.
    Theme switch is a `data-theme` attribute on <html>; ECharts re-themes from
    these same tokens via the bridge in lib/charts — charts never hardcode hex. */
 :root[data-theme='light'] {
@@ -192,12 +213,25 @@
 
 	--color-fg: #1a222b;
 	--color-fg-mute: #4d5a67;
-	--color-fg-dim: #78858f;
+	--color-fg-dim: #616e77;
 
 	--color-scrollbar: #78858f;
 
+	/* The same hue at a lightness paper can carry. Without relative colour
+	   syntax the reader's accent cannot be darkened, so the default's is used. */
+	--color-beacon: #00665d;
 	/* A wash needs more of itself to read on warm paper than on deep water. */
 	--color-beacon-soft: color-mix(in oklch, var(--color-beacon) 16%, transparent);
+
+	--color-up: #007d40;
+	--color-down: #b94637;
+	--color-warn: #916400;
+	--color-danger: #c13b3f;
+
+	--color-chart-2: #6e81e3;
+	--color-chart-3: #7a8a9a;
+	--color-chart-4: #b27f05;
+	--color-chart-5: #ad72c2;
 	--shadow-tile: 0 1px 0 #ffffff inset, 0 6px 18px #00000014;
 }
 
@@ -205,6 +239,31 @@
    (doc 12 §2). Same lightness ratio as the #46D5C8 → #2AA79C default pair. */
 @supports (color: oklch(from red l c h)) {
 	:root {
+		--color-beacon-deep: oklch(from var(--color-beacon) calc(l * 0.8) c h);
+	}
+}
+
+/* The beacon, from any accent, legible on the theme it is drawn on (Week 8).
+   Hue kept; lightness held on the far side of the surfaces — at least 0.66 on
+   deep water, at most 0.44 on paper — and chroma capped at 0.16 so the result
+   stays in gamut. Chosen by sweeping every hue: the worst case is 5.4:1 dark
+   and 5.6:1 light, as text on every surface and as a fill under ink-950, and
+   none of the six offered swatches moves in the dark theme. 0.46 was tried
+   first and failed on paper under its own wash — the edit strip, a pressed
+   toggle — at 4.2:1. The condition
+   tests the exact `max()` form: an engine that typed `l` as a percentage
+   would accept `calc(l * 0.8)` above and drop this as invalid. */
+@supports (color: oklch(from red max(l, 0.5) min(c, 0.1) h)) {
+	:root {
+		--color-beacon: oklch(from var(--tp-accent) max(l, 0.66) min(c, 0.16) h);
+		/* The pressed fill still carries ink-950 text, so it may darken only
+		   as far as 0.6 (5:1) — a floor accent's 0.8 × 0.66 would be 3.7:1. */
+		--color-beacon-deep: oklch(from var(--color-beacon) max(calc(l * 0.8), 0.6) c h);
+	}
+
+	:root[data-theme='light'] {
+		--color-beacon: oklch(from var(--tp-accent) min(l, 0.44) min(c, 0.16) h);
+		/* On paper the pressed fill darkens freely: its text is paper. */
 		--color-beacon-deep: oklch(from var(--color-beacon) calc(l * 0.8) c h);
 	}
 }

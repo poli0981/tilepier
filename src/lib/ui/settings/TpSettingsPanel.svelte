@@ -24,6 +24,7 @@
 	import { deck } from '$lib/stores/deck.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpBugDialog from '$lib/ui/TpBugDialog.svelte';
+	import { ACCENTS, ACCENT_NAMES } from './accents';
 
 	/**
 	 * doc 13 §10. A route rather than a modal, and no save button — every
@@ -37,16 +38,6 @@
 	 * noise, and a control that has never worked is worse. It lands in Week 2,
 	 * when there is data worth round-tripping.
 	 */
-
-	/** doc 12 §2: the accent is user-overridable, semantic colours are not. These
-	 *  six are the offered swatches — data the user picks from, not styling, so
-	 *  they are the one place a literal colour is right. tokens-audit-ignore */
-	const ACCENTS = ['#46d5c8', '#7b8ff2', '#e8b750', '#57c785', '#e8705f', '#b48ce8'] as const;
-
-	/** What a screen reader says for each swatch, in ACCENTS' order: a colour's
-	 *  name rather than six hex digits. By position, so the colours stay on the
-	 *  one line tokens:audit exempts. */
-	const ACCENT_NAMES = ['teal', 'blue', 'amber', 'green', 'coral', 'violet'] as const;
 
 	function accentLabel(index: number): string {
 		return m[`settings.appearance.accent_${ACCENT_NAMES[index] ?? 'custom'}`]();
