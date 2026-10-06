@@ -397,15 +397,26 @@ channel. Both fixed, both with fixtures in those shapes.
 **Gone through 2026-10-06.** A box is ticked only where something holds it —
 a test, a CI step, or a measurement with its date — and names it; an open box
 says what is missing. Open-Meteo's licence page, read the same day, asks for a
-link to it "next to any location Open-Meteo data are displayed"; this list
-asks for the detail and the licences page, as doc 16 §5 always has, and the
-tile is the owner's call (doc 23, Week 8).
+link to it "next to any location Open-Meteo data are displayed". This list
+asked for the detail and the licences page, as doc 16 §5 always had, and left
+the tile to the owner.
+
+**Read again on 2026-10-07, the sentence is a "must"** ("You must include a
+link…"), and the tile shows the same forecast the detail does. The tile's
+missing link was therefore a P1 by doc 19 §7, which 1.0.0 shipped and 1.0.1
+fixes (doc 23, Week 8).
 
 - [x] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail —
   the detail with a link to each (`TpWeatherDetail.svelte.test.ts` › credits
   Open-Meteo with links to it and to CC BY 4.0), and the licences page, whose
   register links both since 8b-1 (`legal-gate.e2e.ts` › the licences page
   carries every licence that ships; `register.test.ts` holds the row).
+- [x] Open-Meteo link on the weather tile, under the reading (1.0.1).
+  - `TpWeatherWidget.svelte.test.ts` › links to Open-Meteo beside the reading.
+  - `TpWeatherReadout.svelte.test.ts` holds the link whole in a 2 × 2 tile.
+    The payload's sentence (206 px) does not fit there, so the link's text is
+    the domain (105 px), with the sentence as its title.
+  - `e2e/a11y` scans the link with the tile's data in place.
 - [x] ER-API attribution link rendered wherever rates shown —
   `TpCurrencyWidget.svelte.test.ts` (the tile's credit: href and rel) and
   `TpCurrencyDetail.svelte.test.ts` › credits ExchangeRate-API with a real link.
@@ -444,4 +455,10 @@ Added 2026-10-06, for sources this list predates or missed:
   call with every forecast and the payload carries `air`, but the AQI gauge
   was a Week 4 cut, so no reader sees a figure and no credit is due yet. One
   becomes due with the gauge. Until then it is an upstream call per forecast
-  that nothing reads, which is the owner's to keep or drop (doc 23, Week 8).
+  that nothing reads.
+  - **Kept, 2026-10-07.** The gauge was cut for time, not decided against
+    (doc 08 §1).
+  - Dropping the call would change the payload, its cache key and the
+    normaliser, and the gauge would only undo all three.
+  - The box stays open until the gauge lands, with Copernicus's credit
+    beside it (doc 23's parking lot).

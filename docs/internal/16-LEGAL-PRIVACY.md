@@ -240,7 +240,7 @@ unambiguous insertion point.
 
 | Item | License | Obligation |
 |------|---------|-----------|
-| Open-Meteo data | CC BY 4.0 (non-commercial API tier) | credit + link (weather detail + licenses) |
+| Open-Meteo data | CC BY 4.0 (non-commercial API tier) | a link beside its data (weather tile + detail; the tile since 1.0.1, doc 10 §8) + credit on licenses |
 | ExchangeRate-API open endpoint | free w/ attribution | visible link where rates shown |
 | OpenStreetMap data (tiles, geocoding) | ODbL | "© OpenStreetMap contributors" on map + licenses |
 | OpenFreeMap | free tiles | courtesy credit |

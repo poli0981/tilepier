@@ -4,6 +4,15 @@ Every release of TilePier, newest first. The format follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-10-07
+
+### Fixed
+
+- **The weather tile links to Open-Meteo.** Open-Meteo's licence requires a
+  link beside every display of its data. The detail and the licences page had
+  one, but the tile, which shows the same forecast, did not. It now carries
+  "Open-Meteo.com" under the reading, sized to fit the smallest tile.
+
 ## [1.0.0] - 2026-10-06
 
 The first release. TilePier has run at [tilepier.win](https://tilepier.win)
@@ -102,4 +111,5 @@ than tags. No 0.x version was ever cut.
 - **Two tabs at once.** The last write wins, and the contents of the database
   refresh on reload.
 
+[1.0.1]: https://github.com/poli0981/tilepier/releases/tag/v1.0.1
 [1.0.0]: https://github.com/poli0981/tilepier/releases/tag/v1.0.0

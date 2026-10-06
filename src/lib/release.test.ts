@@ -33,7 +33,9 @@ describe('the changelog and the version', () => {
 
 	it("gives that version's notes something to say", () => {
 		const notes = notesFor(changelog, version);
-		expect(notes).toMatch(/^### Added$/m);
+		// Any of Keep a Changelog's kinds of change. This asked for `### Added`
+		// until 1.0.1, a patch with nothing to add.
+		expect(notes).toMatch(/^### (Added|Changed|Deprecated|Removed|Fixed|Security)$/m);
 		expect(notes).not.toContain('## [');
 	});
 });

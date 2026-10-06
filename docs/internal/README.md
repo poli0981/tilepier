@@ -4,8 +4,10 @@
 **Repo:** `poli0981/tilepier` · **Prefix:** `Tp*` · **License:** GPL-3.0-only
 **Target domain:** `tilepier.win` (Cloudflare Workers custom domain)
 **Suite version:** 1.0 · **Date:** 2026-07-19
-**Status:** 1.0.0 prepared (2026-10-06): Weeks 0–8 built, the release path in
-place, and the tag waits on the owner's production checks (doc 23, Week 8). The public side of the repository is the
+**Status:** 1.0.0 released 2026-10-06 (Weeks 0–8); 1.0.1, the weather tile's
+Open-Meteo link, merged 2026-10-07, with its tag waiting on the owner. The
+owner's production checks remain (doc 23, Week 8). The public side of the
+repository is the
 root README, CONTRIBUTING.md, SECURITY.md and `docs/self-hosting.md`; this
 suite is the source of truth behind them.
 
