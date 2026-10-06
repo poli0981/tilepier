@@ -41,3 +41,18 @@ for (const width of [375, 768, 1280, 1920]) {
 		).toBeLessThan(1);
 	});
 }
+
+test('in edit mode, scrolling to a focused control clears the strip too (doc 13 §1)', async ({
+	page
+}) => {
+	await openDeck(page);
+	const padding = (): Promise<string> =>
+		page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingTop);
+	expect(await padding()).toBe('48px');
+
+	await page.keyboard.press('e');
+	await expect(page.getByTestId('edit-strip')).toBeVisible();
+	// The bar (48) and the strip below it (40): a control Tab lands on must
+	// not end up under either.
+	expect(await padding()).toBe('88px');
+});

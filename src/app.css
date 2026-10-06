@@ -367,6 +367,18 @@ html[lang='en'] [data-locale]:not([data-locale='en']) {
 	display: none;
 }
 
+/* Visually hidden, still read (doc 13 §8): a live region, or a name the
+   layout has no room to show. Clipped rather than `display: none`, which
+   would take it out of the accessibility tree too. */
+.tp-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 /* Rule: if it's a number the user watches change, it's mono + tnum.
    No exceptions (doc 12 §3). */
 .tp-num {

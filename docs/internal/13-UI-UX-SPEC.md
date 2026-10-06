@@ -214,6 +214,12 @@ show "on deck" disabled state. Search filters by name.
   - Escape and modified keys pass on.
   - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
+- **Edit mode is said aloud and kept clear of** (Week 8). A status region in
+  the bar, present from the first paint so its change is announced, says the
+  deck is being edited however edit mode was entered — the bar's toggle had
+  `aria-pressed`, but `e` leaves focus where it was and nothing spoke. And
+  while the strip hangs under the bar, `scroll-padding-top` is the bar plus the
+  strip (88 px), so a control Tab scrolls to is never under either.
 - **Every overlay scrolls inside itself** (WCAG 1.4.10). An overlay is
   `position: fixed`, so the page cannot scroll to anything it cannot show, and
   at 400 % zoom — 320 × 256 CSS px — the gate, the bug dialog and the

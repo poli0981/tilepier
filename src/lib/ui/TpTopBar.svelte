@@ -130,6 +130,13 @@
 	</div>
 </header>
 
+<!-- doc 13 §8: the mode, said aloud. Present from the start, because a live
+     region inserted with its text already in it is not reliably announced;
+     the bar's toggle has aria-pressed, but `e` leaves focus where it was. -->
+<p class="tp-sr" role="status" data-testid="edit-announce">
+	{ui.editMode ? m['common.editing']() : ''}
+</p>
+
 {#if ui.editMode}
 	<!-- doc 13 §2: a slim beacon strip under the bar names the mode. -->
 	<div class="tp-bar__mode" data-testid="edit-strip">
@@ -231,6 +238,13 @@
 	.tp-bar__button[aria-pressed='true'] {
 		color: var(--color-beacon);
 		background: var(--color-beacon-soft);
+	}
+
+	/* In edit mode the strip hangs under the bar, so anything scrolled into
+	   view — by Tab, by a fragment — has to clear both (WCAG 2.4.11). The
+	   strip is its Done button's height, the chrome's target. */
+	:global(html:has(.tp-bar__mode)) {
+		scroll-padding-top: calc(var(--tp-bar-h) + var(--tp-target));
 	}
 
 	.tp-bar__mode {
