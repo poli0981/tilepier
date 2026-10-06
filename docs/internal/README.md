@@ -4,8 +4,8 @@
 **Repo:** `poli0981/tilepier` · **Prefix:** `Tp*` · **License:** GPL-3.0-only
 **Target domain:** `tilepier.win` (Cloudflare Workers custom domain)
 **Suite version:** 1.0 · **Date:** 2026-07-19
-**Status:** Weeks 0–7 shipped to production; Week 8 — hardening, then the
-1.0.0 release — in progress (doc 23). The public side of the repository is the
+**Status:** 1.0.0 prepared (2026-10-06): Weeks 0–8 built, the release path in
+place, and the tag waits on the owner's production checks (doc 23, Week 8). The public side of the repository is the
 root README, CONTRIBUTING.md, SECURITY.md and `docs/self-hosting.md`; this
 suite is the source of truth behind them.
 

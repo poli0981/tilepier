@@ -24,8 +24,27 @@ workflows do not reliably inherit them. Every stub below includes them.
 | `codeql.yml` | push main + weekly | `wf-codeql.yml` (js-ts) | static analysis |
 | ~~`deploy.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
 | ~~`preview.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
-| `release.yml` | tag `v*` | `wf-release.yml` | GitHub Release + changelog |
-| `notify.yml` | release published | `wf-notify.yml` | Discord/Telegram ping |
+| `release.yml` | tag `v*`; dispatch, a dry run by default | — (authored here) | a **draft** GitHub Release from `CHANGELOG.md`, once the tag is checked to name `package.json`'s version on `main`; the owner publishes it |
+| `notify.yml` | release published; dispatch | `poli0981/.github` `announce-release.yml`, pinned by SHA | Discord, when `DISCORD_RELEASES_WEBHOOK` is set |
+
+**The release path, built 2026-10-06 (Week 8).** A tag `v*` runs
+`release.yml`. It refuses a tag that does not name `package.json`'s version,
+or that is not on `main` — a pushed tag can be neither moved nor deleted under
+the ruleset, so the check comes before anything is made. It then writes the
+release notes from that version's `CHANGELOG.md` section
+(`scripts/release-notes.mjs`, held to the version by `release.test.ts`) and
+creates the release as a **draft**. A draft, because a release created with
+`GITHUB_TOKEN` never triggers `release: published` workflows (GitHub's guard
+against recursion), so one the workflow published itself would never be
+announced. The owner publishes the draft: the last human check, and the event
+`notify.yml` waits for. `notify.yml` skips, rather than fails, when the
+webhook secret is missing, and passes the shared workflow that one secret by
+name rather than `secrets: inherit`. The pin covers the workflow file; the
+posting script it fetches comes from that repository's `main`. Telegram,
+named in the row this replaced, was never set up and is not.
+
+Before tagging: `gh workflow run release.yml -f tag=v1.0.0` runs the checks
+and prints the notes without creating anything.
 
 ## 2. Permissions matrix (explicit in every caller)
 
