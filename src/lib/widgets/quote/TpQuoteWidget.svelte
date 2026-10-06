@@ -68,8 +68,9 @@
 	 * the two actions go, which is the whole point: the footer is 21 of those
 	 * pixels and it was the footer that pushed the line down to a 7-pixel slot
 	 * and cut it through the middle of the glyphs. Nothing is lost that the
-	 * detail does not have — it carries the attribution, the copy and the keep.
-	 * doc 08 §3 carries the deviation, because the lunar footer goes with them.
+	 * detail does not have: it carries the attribution, the lunar date, the copy
+	 * and the keep for today's quote. (This said so from 2026-08-30, and was true
+	 * of the attribution alone until Week 8.)
 	 */
 	const short = $derived(size.h <= 1);
 

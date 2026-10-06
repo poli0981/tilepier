@@ -189,6 +189,10 @@ every test, because the geocode fixture was tidier than the real answer:
   settings? → favorites are app data: Dexie table not needed; store id list
   in widget settings, cap 200), copy-as-text, share-quote-as-image
   (canvas render using design tokens) — stretch, cut-line if Week 4 tight.
+  **Share-as-image was cut**: the stretch on top of a slip-policy item ("quote
+  browse-detail", doc 23), so the first thing to go. Recorded only in
+  `TpQuoteDetail.svelte` until Week 8; the canvas work it would need is in
+  `widgets/toolbox/qr.ts` if it is ever wanted.
 - **Edge cases:** locale switch mid-day keeps the same quote id, swaps
   translation if the dataset has one.
 
@@ -199,6 +203,12 @@ no citation, no lunar footer, no keep, no copy, and the line ellipsised on one
 row. Dropping the lunar footer is the deviation from the paragraph above — it is
 the QuoteAtlas tie-in and it is genuinely gone at that size. The detail keeps
 all four, and a one-row tile is one press from it.
+
+**That last sentence was untrue until Week 8 (2026-10-06).** The detail showed
+today's quote with its attribution and nothing else: no lunar date, no copy, and
+a keep only by finding the quote again in the list below. Its "today" block now
+carries all four, in the tile's words — the lunar date in Vietnamese only, the
+copy as the line and then the attribution on its own line.
 
 The arithmetic is why. At `cellHeight: 72` (doc 06 §5.4) a one-row tile is 72 px
 tall, and the 28 px header, the 1 px borders and the body's own bottom padding
