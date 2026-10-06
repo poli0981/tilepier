@@ -136,7 +136,7 @@
 		{#if !ready}
 			<!-- doc 13 §7: a skeleton, never a spinner. The module is a real lazy
 			     chunk, so this is a frame that actually happens. -->
-			<div class="tp-chart__skeleton" aria-label={loadingLabel}></div>
+			<div class="tp-chart__skeleton" role="status" aria-label={loadingLabel}></div>
 		{/if}
 	{/if}
 	<figcaption data-testid="chart-summary">{summary}</figcaption>

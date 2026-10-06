@@ -142,7 +142,7 @@
 		     theoretical one. One bar at a row tall: three of them are 30 pixels
 		     of the 34 there are, which is a loading state that overflows into the
 		     ready one it is standing in for. -->
-		<div class="tp-quote__skeleton" aria-label={m['widget.quote.loading']()}>
+		<div class="tp-quote__skeleton" role="status" aria-label={m['widget.quote.loading']()}>
 			<span></span>
 			{#if !short}
 				<span></span><span></span>

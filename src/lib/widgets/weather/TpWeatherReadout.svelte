@@ -258,7 +258,7 @@
 			</div>
 		{:else}
 			<!-- doc 13 §7: a skeleton in ink-850, never a spinner inside a tile. -->
-			<div class="tp-wx__skeleton" aria-label={m['widget.weather.loading']()}>
+			<div class="tp-wx__skeleton" role="status" aria-label={m['widget.weather.loading']()}>
 				<span></span><span></span>
 			</div>
 		{/if}

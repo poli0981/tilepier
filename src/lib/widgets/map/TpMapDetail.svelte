@@ -214,7 +214,7 @@
 				/>
 			{/key}
 			{#if status === 'loading'}
-				<div class="tp-mapd__veil" aria-label={m['widget.map.loading']()}></div>
+				<div class="tp-mapd__veil" role="status" aria-label={m['widget.map.loading']()}></div>
 			{:else if status !== 'ready'}
 				<div
 					class="tp-mapd__veil tp-mapd__veil--card"

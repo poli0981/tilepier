@@ -31,7 +31,7 @@
 </script>
 
 {#if !collection.loaded}
-	<div class="tp-mstate" aria-busy="true" aria-label={m['widget.music.loading']()}>
+	<div class="tp-mstate" role="status" aria-busy="true" aria-label={m['widget.music.loading']()}>
 		<TpTideGauge size={flat ? 20 : 32} animated level={0.35} />
 	</div>
 {:else if collection.failed}

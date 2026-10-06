@@ -114,6 +114,7 @@
 			-->
 			<span
 				class="tp-host__badge"
+				role="img"
 				data-kind={status.kind}
 				data-testid="tile-badge"
 				title={status.kind === 'offline'

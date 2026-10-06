@@ -277,7 +277,7 @@
 {:else if view === 'loading'}
 	<!-- doc 12 §7: skeleton blocks, never a spinner. One bar per watched row, so
 	     the tile does not resize when the answer arrives. -->
-	<div class="tp-mk-skeleton" aria-label={m['widget.markets.loading']()}>
+	<div class="tp-mk-skeleton" role="status" aria-label={m['widget.markets.loading']()}>
 		{#each prefs.watchlist as entry (entryId(entry))}
 			<div class="tp-mk-skeleton__row"></div>
 		{/each}
@@ -345,10 +345,13 @@
 						{@const direction = changeDirection(quote.change, settings.locale)}
 						<!-- doc 12 §4.2: `Intl` places the sign before the colour is
 						     applied, so colour reinforces rather than carries. -->
+						<!-- role="img" so the sentence is read in place of the figure: an
+						     aria-label on a bare span is dropped, not read. -->
 						<span
 							class="tp-mk-row__change tp-num"
 							class:tp-mk-row__change--up={direction === 'up'}
 							class:tp-mk-row__change--down={direction === 'down'}
+							role="img"
 							aria-label={row.entry.kind === 'stock'
 								? m['widget.markets.change_label_day']({ change })
 								: m['widget.markets.change_label']({ change })}

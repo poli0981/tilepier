@@ -73,7 +73,13 @@
 	of doc 19 §3.6 behind it in `sanitize.svelte.test.ts`. There is no prop, no
 	branch and no other assignment that can put anything else here.
 -->
-<div class="tp-md" aria-busy={pipeline === null} aria-label={label} data-testid="markdown">
+<div
+	class="tp-md"
+	role="region"
+	aria-busy={pipeline === null}
+	aria-label={label}
+	data-testid="markdown"
+>
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html html}
 </div>

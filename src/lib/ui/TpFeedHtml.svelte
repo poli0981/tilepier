@@ -64,6 +64,7 @@
 -->
 <div
 	class="tp-feed-html"
+	role="region"
 	{lang}
 	aria-busy={sanitizer === null}
 	aria-label={label}

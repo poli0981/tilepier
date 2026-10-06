@@ -234,7 +234,7 @@
 				one-row tile has, so the loading state would overflow the ready state
 				it stands in for.
 			-->
-			<div class="tp-cur__skeleton" aria-label={m['widget.currency.loading']()}>
+			<div class="tp-cur__skeleton" role="status" aria-label={m['widget.currency.loading']()}>
 				<span></span>
 				{#if !flat}<span></span>{/if}
 			</div>

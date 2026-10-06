@@ -278,6 +278,16 @@ show "on deck" disabled state. Search filters by name.
   fg-mute on its wash; a loading skeleton named with `aria-label` on a bare
   `div`, which a name cannot attach to (`role="status"` now); the bug report's
   text area and the timer's add-preset button, with no name at all.
+
+  **And a name on nothing, fourteen times.** `aria-label` on a bare `div` or
+  `span` is dropped by assistive technology. Eleven were loading skeletons; one
+  was the tile's status lamp at h = 1, whose name is the only channel there
+  (§3, so the one thing it was for did not happen); one was the markets
+  change chip's sentence. The sweep caught it only when a scan landed while
+  something was still loading — one full run in several — so
+  `ui/aria-names.test.ts` now reads every component for the pattern instead.
+  Skeletons are `role="status"`, named content a region, the lamp and the
+  chip `role="img"`.
 - Charts: every ECharts view paired with an accessible summary line
   (e.g., "AAPL 1M: +4.2%, range 182–199") — cheap, honest a11y.
 
