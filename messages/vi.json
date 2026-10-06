@@ -37,6 +37,7 @@
 	"common.offline.body": "Không có kết nối. Bàn làm việc và dữ liệu đã lưu vẫn ở nguyên trên máy bạn.",
 	"common.tile.stale": "từ {age}",
 	"common.tile.stale_hint": "số liệu gần nhất nhận được — bản mới đang trên đường",
+	"common.tile.unavailable": "Widget này chưa có trên máy; lần tải đầu tiên cần có mạng.",
 	"common.tile.offline_short": "mất mạng",
 	"common.tile.offline_hint": "đang hiện bản đã lưu — ô này cần mạng để cập nhật",
 	"common.toast.rate_limited": "vừa có quá nhiều yêu cầu — bàn làm việc sẽ bắt kịp sau ít phút",

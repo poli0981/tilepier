@@ -1,6 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { acceptGate } from './_lib/gate';
 
 /**
  * Spike S5 — vite-plugin-pwa × adapter-cloudflare (doc 22 §S5).
@@ -177,6 +178,159 @@ test.describe('S5 · PWA on adapter-cloudflare', () => {
 				})
 				.toBe(true);
 		}
+	});
+});
+
+/**
+ * The Week 8 PWA pass (doc 17 §2): the shell is precached, what a reader uses
+ * is kept as it is used, and the details of the widgets on their deck are
+ * fetched while they are idle.
+ */
+test.describe('the shell, and what the reader uses', () => {
+	/** Source module → emitted file, from the client build's Vite manifest. */
+	const manifest = JSON.parse(
+		readFileSync(
+			join(process.cwd(), '.svelte-kit', 'output', 'client', '.vite', 'manifest.json'),
+			'utf8'
+		)
+	) as Record<string, { file: string }>;
+
+	function chunk(source: string): string {
+		const entry = manifest[source];
+		if (entry === undefined) throw new Error(`${source} is not in the client manifest`);
+		return `/_app/immutable/${entry.file.replace(/^_app\/immutable\//, '')}`;
+	}
+
+	const WIDGET_CHUNKS = Object.keys(manifest)
+		.filter((source) => /^src\/lib\/widgets\/[^/]+\/Tp\w+(Widget|Detail)\.svelte$/.test(source))
+		.map(chunk);
+
+	async function cachedPaths(page: Page): Promise<string[]> {
+		return page.evaluate(async () => {
+			const found: string[] = [];
+			for (const name of await caches.keys()) {
+				for (const request of await (await caches.open(name)).keys()) {
+					found.push(new URL(request.url).pathname);
+				}
+			}
+			return found;
+		});
+	}
+
+	test('an install precaches the shell and no widget at all', async ({ page }) => {
+		// Before Week 8 the precache was every file in the build: all fifteen
+		// tiles and details and ECharts, for every visitor, on the first visit.
+		// The gate is left up, so no deck mounts and nothing beyond the shell
+		// is used.
+		expect(WIDGET_CHUNKS.length).toBe(30);
+		await page.goto('/');
+		await awaitServiceWorker(page);
+		await awaitPrecache(page);
+
+		const cached = new Set(await cachedPaths(page));
+		expect(WIDGET_CHUNKS.filter((path) => cached.has(path))).toEqual([]);
+		expect(cached.has(chunk('src/lib/charts/echarts.ts'))).toBe(false);
+		// …while the pages and their own preloads are all there.
+		for (const page of ['/', '/offline', '/settings']) expect(cached.has(page), page).toBe(true);
+	});
+
+	test('a detail never opened opens with no connection', async ({ page, context }) => {
+		await acceptGate(page, { dismissCoach: true });
+		await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+		await awaitServiceWorker(page);
+
+		// core/warm.ts fetches the deck's details once a worker controls the
+		// page and the reader is idle; the worker keeps what it fetched.
+		const detail = chunk('src/lib/widgets/calendar/TpCalendarDetail.svelte');
+		await expect
+			.poll(async () => (await cachedPaths(page)).includes(detail), {
+				timeout: 20_000,
+				message: 'the calendar detail was never kept'
+			})
+			.toBe(true);
+
+		// And everything this first visit loaded before the worker was in
+		// control — the grid, the tiles — has been handed over (KEEP). Going
+		// offline before that finishes was the first draft's race.
+		await expect
+			.poll(
+				() =>
+					page.evaluate(async () => {
+						const kept = new Set<string>();
+						for (const name of await caches.keys()) {
+							for (const request of await (await caches.open(name)).keys()) {
+								kept.add(new URL(request.url).pathname);
+							}
+						}
+						return performance
+							.getEntriesByType('resource')
+							.map((entry) => new URL(entry.name).pathname)
+							.filter((path) => path.startsWith('/_app/immutable/') && !kept.has(path));
+					}),
+				{ timeout: 20_000, message: 'something the page loaded was never kept' }
+			)
+			.toEqual([]);
+
+		// Only the worker's cache may answer from here: the browser's own HTTP
+		// cache would otherwise serve the chunk and prove nothing.
+		const cdp = await context.newCDPSession(page);
+		await cdp.send('Network.clearBrowserCache');
+		await context.setOffline(true);
+		await page.reload();
+		await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+
+		// The calendar tile is the one holding a table (as journey-4 finds it).
+		await page
+			.locator('.grid-stack-item')
+			.filter({ has: page.locator('table') })
+			.first()
+			.getByRole('button', { name: 'mở chi tiết' })
+			.click();
+		await expect(page.getByTestId('event-title')).toBeVisible();
+
+		await context.setOffline(false);
+	});
+
+	test('a widget never loaded, added with no connection, says so', async ({ page, context }) => {
+		const errors: string[] = [];
+		page.on('pageerror', (error) => errors.push(error.message));
+		await acceptGate(page, { dismissCoach: true });
+		await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+		await awaitServiceWorker(page);
+
+		const cdp = await context.newCDPSession(page);
+		await cdp.send('Network.clearBrowserCache');
+		await context.setOffline(true);
+
+		// The calculator is not on the seeded deck, so its chunk was never
+		// fetched; the drawer still offers it.
+		await page.getByTestId('open-drawer').click();
+		await page.getByTestId('add-calc').click();
+		await expect(page.getByTestId('widget-unavailable')).toBeVisible();
+		expect(errors).toEqual([]);
+
+		await context.setOffline(false);
+	});
+
+	test('activating a new worker deletes every older cache', async ({ page }) => {
+		await page.addInitScript(() => {
+			void caches.open('tp-cache-from-an-older-deploy');
+		});
+		await page.goto('/');
+		await awaitServiceWorker(page);
+		await expect
+			.poll(() => page.evaluate(async () => (await caches.keys()).join(',')))
+			.not.toContain('from-an-older-deploy');
+	});
+
+	test('the app is installable', async ({ page, context }) => {
+		await page.goto('/');
+		await awaitServiceWorker(page);
+		const cdp = await context.newCDPSession(page);
+		const { installabilityErrors } = (await cdp.send('Page.getInstallabilityErrors')) as {
+			installabilityErrors: { errorId: string }[];
+		};
+		expect(installabilityErrors.map((error) => error.errorId)).toEqual([]);
 	});
 });
 

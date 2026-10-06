@@ -13,6 +13,8 @@
 	import { legalGate } from '$lib/stores/legal.svelte';
 	import { ui } from '$lib/stores/ui.svelte';
 	import TpDetailOverlay from '$lib/ui/TpDetailOverlay.svelte';
+	import TpWidgetUnavailable from '$lib/ui/TpWidgetUnavailable.svelte';
+	import { warmDetails } from '$lib/core/warm';
 
 	/**
 	 * The deck (doc 03 §Rendering). The page is prerendered, but nothing renders
@@ -45,17 +47,15 @@
 
 		void Promise.all([
 			import('$lib/core/grid/TpGrid.svelte'),
-			Promise.all(
-				ids.map(async (id) => {
-					const manifest = getManifest(id);
-					if (manifest === undefined) return null;
-					return [id, (await manifest.loadWidget()).default] as const;
-				})
-			)
+			Promise.all(ids.map(async (id) => [id, await loadTile(id)] as const))
 		]).then(([grid, loaded]) => {
 			if (cancelled) return;
-			components = Object.fromEntries(loaded.filter((entry) => entry !== null));
+			components = Object.fromEntries(
+				loaded.filter((entry): entry is [string, Component<TpWidgetProps>] => entry[1] !== null)
+			);
 			TpGrid = grid.default;
+			// doc 17 §2: the details of what is on the deck, kept for offline.
+			warmDetails(ids.filter(isWidgetId));
 		});
 
 		return () => {
@@ -128,12 +128,28 @@
 			return;
 		}
 
-		const manifest = getManifest(tile.widgetId);
-		if (manifest === undefined) return;
-
-		const loaded = (await manifest.loadWidget()).default;
+		const loaded = await loadTile(tile.widgetId);
+		if (loaded === null) return;
 		components = { ...(components ?? {}), [tile.widgetId]: loaded };
 		grid.addTile(tile, loaded);
+		if (isWidgetId(tile.widgetId)) warmDetails([tile.widgetId]);
+	}
+
+	/**
+	 * A widget's tile component, or the unavailable card when its chunk cannot
+	 * be fetched — offline, for a widget this browser has never loaded (doc 17
+	 * §2). One failure must not take the deck with it: the chunks used to load
+	 * in a single `Promise.all`, so one rejection left the whole deck blank.
+	 * The failed load is not remembered, so a reload with a connection retries.
+	 */
+	async function loadTile(id: string): Promise<Component<TpWidgetProps> | null> {
+		const manifest = getManifest(id);
+		if (manifest === undefined) return null;
+		try {
+			return (await manifest.loadWidget()).default;
+		} catch {
+			return TpWidgetUnavailable;
+		}
 	}
 
 	function onLayoutChange(layout: TpLayout): void {

@@ -24,40 +24,43 @@ gate has not been accepted.
 
 ## 2. PWA / Service worker (Spike S5 governs mechanism)
 
-- Precache: app shell (entry, layout, fonts, icon sprite, `/offline`).
-- Runtime: **network-first for navigations** with offline fallback;
-  hashed immutable assets cache-first (they're content-hashed);
-  `/api/*` **never** SW-cached (the client already has Dexie apiCache —
-  double-caching creates staleness confusion).
+- **What is cached, and when** (rewritten in Week 8; this section had said
+  three different things about it):
+  - **Precached at install: the shell.** Everything in `static/` (fonts,
+    `boot.js`, icons, the manifest), every prerendered page — `/offline`
+    among them — and the hashed files that `/`, `/offline` and `/settings`
+    preload, read from the copies just cached. About 400 KB gz.
+  - **Kept as it is used:** any `/_app/immutable/` file the page fetches
+    through the worker, cache-first, a `200` only (a `206` is `ok` too, and
+    `cache.put` refuses it). MapLibre's modules and the music tag worker are
+    in that path although `build` never lists them (corrected 2026-09-29).
+  - **Handed over (KEEP):** what the page loaded before the worker controlled
+    it — on a first visit, the grid and every tile on the deck. `pwa.svelte.ts`
+    posts the page's resource-timing URLs once a worker is in control, and
+    the worker keeps the same-origin hashed ones, from the HTTP cache.
+  - **Fetched while idle:** the detail of every widget on the deck
+    (`core/warm.ts`), once a worker controls the page, online, never under
+    Save-Data, one at a time. So a detail never opened opens with no
+    connection — the gap journey #4 found on 2026-08-28 and worked around.
+  - **Carried forward:** a new version's install takes a hashed file it
+    needs from the older version's cache when it is there; the same hash is
+    the same bytes, so a deploy downloads what changed. Never for `static/`
+    files or pages, whose contents change under the same URL.
+- **Until Week 8 the precache was the whole build**: every tile and detail
+  chunk and ECharts, 269 files and 883 KB gz on every visitor's first visit,
+  for a deck that uses five widgets. `e2e/s5-pwa` now asserts an install
+  caches no widget at all, and was red against the old worker with 32.
+- **The one thing that now needs a connection: a widget this browser has
+  never loaded, added from the drawer while offline.** Its tile is a card
+  saying so, with a way to try again (`TpWidgetUnavailable`) — never a blank,
+  and never the whole deck: the deck loaded its tiles in one `Promise.all`, so
+  before Week 8 one chunk that failed to load would have left it empty.
+- Runtime: **network-first for navigations** with offline fallback (the
+  cached page, then `/offline`); `/api/*` **never** SW-cached (the client
+  already has Dexie apiCache — double-caching creates staleness confusion).
 - Update flow: SW `waiting` → quiet toast "phiên bản mới — tải lại"
-  (skipWaiting only on user action; never reload under the user).
-- **Corrected 2026-09-25: every widget chunk *is* precached.**
-  `src/service-worker.ts` installs `[...build, ...files, ...prerendered]` —
-  all of Vite's hashed output, every widget's tile and detail chunk included,
-  in a cache named for the build version, so each deploy re-downloads it all.
-  The bullet below described the intent, not the code; narrowing the list is
-  the Week 8 PWA pass. MapLibre is the exception by construction: its modules
-  are copied beside the build rather than built (doc 22 §S6), so they are not
-  in `build` and arrive with the first map rather than the first visit.
-- **Corrected 2026-09-29: output outside `build` is cached on first use.**
-  "Arrive with the first map" was half true — they arrived, and were cached
-  nowhere, because the cache-first rule matched only paths in `build` and
-  `files`. The music tag worker is the same case (Vite builds workers on their
-  own, outside the client manifest). So a map or a library scan with no
-  connection failed even after the reader had used it online. The cache-first
-  rule now covers every `/_app/immutable/` path, writing on first use and only
-  a `200` (a `206` is `ok` too, and `cache.put` refuses it).
-  `e2e/s5-pwa` fetches both from a controlled page and was watched failing
-  before the change.
-- **Widget chunks are not precached, and that has a visible consequence.**
-  Found 2026-08-28 by journey #4: opening a widget's detail for the *first* time
-  with no connection fails, because the chunk has never been fetched and
-  cache-first has nothing to serve. The precache list above is the app shell by
-  design — precaching fifteen widgets' tile and detail chunks would make the
-  install heavy for a deck that uses four of them. The options are a
-  runtime-cache rule that keeps whatever has been opened once, or precaching the
-  chunks of the widgets actually on the deck. Both are Week 8 PWA-pass work
-  (doc 23); recorded here so that pass starts from a known finding.
+  (skipWaiting only on user action; never reload under the user). Activation
+  deletes every older cache (`e2e/s5-pwa`).
 - Install: standard manifest (name, icons incl. maskable, theme colors both
   schemes); no install nagging — browser affordance only. **The icons are
   fetched by `e2e/s5-pwa`, not only declared** (2026-09-29).

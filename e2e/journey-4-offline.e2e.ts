@@ -27,14 +27,13 @@ import { acceptGate } from './_lib/gate';
  * revalidates, meets a refusal, and shows the `stale-error` badge doc 13 §7
  * gives a retry button — which is the reader's own refresh.
  *
- * **One real limit these tests found and work around rather than hide.** A
- * widget's detail is a lazy chunk (doc 06 §1) and doc 17 §2's precache list is
- * the app shell, not every widget chunk — so opening a detail for the *first*
- * time with no connection fails, because the chunk has never been fetched and
- * cache-first has nothing to serve. Every case below therefore visits the
- * surface once while online and then goes offline, which is also what a person
- * does. The gap itself is recorded in doc 17 §2 for the Week 8 PWA pass; it is
- * a precache-list decision, not a bug in any widget.
+ * **One real limit these tests found, and Week 8 closed.** A widget's detail
+ * is a lazy chunk (doc 06 §1), so opening one for the *first* time with no
+ * connection used to fail: the chunk had never been fetched. Since Week 8 the
+ * details of the widgets on the deck are fetched while the reader is idle
+ * (`core/warm.ts`, doc 17 §2), and `e2e/s5-pwa` opens one never opened, with
+ * only the worker's cache to answer. The cases below still visit each surface
+ * online first, which is also what a person does.
  */
 
 /**

@@ -9,6 +9,37 @@
  * and `skipWaiting` fires **only** on user action. Never reload under the user.
  */
 
+/**
+ * Resolves once a service worker controls this page: now, or when the first
+ * one claims it (`clients.claim()` on activate). Never, where there is none.
+ */
+export function whenControlled(): Promise<void> {
+	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+		return new Promise(() => undefined);
+	}
+	if (navigator.serviceWorker.controller !== null) return Promise.resolve();
+	return new Promise((resolve) => {
+		navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
+	});
+}
+
+/**
+ * Hands the worker the hashed files this page loaded before it was in control
+ * (doc 17 §2): on a first visit, the grid and every tile on the deck. The
+ * precache is only the shell since Week 8, so without this a deck that worked
+ * online would open offline without its tiles.
+ */
+function keepWhatLoaded(): void {
+	const urls = performance
+		.getEntriesByType('resource')
+		.map((entry) => entry.name)
+		.filter((name) => {
+			const url = new URL(name, location.href);
+			return url.origin === location.origin && url.pathname.startsWith('/_app/immutable/');
+		});
+	navigator.serviceWorker.controller?.postMessage({ type: 'KEEP', urls });
+}
+
 class PwaState {
 	/** A new version is installed and waiting to take over. */
 	updateReady = $state(false);
@@ -31,6 +62,8 @@ class PwaState {
 			// support is an enhancement, and the deck is local-first regardless.
 			return;
 		}
+
+		void whenControlled().then(keepWhatLoaded);
 
 		// Already waiting when the page loaded (a previous visit installed it).
 		if (registration.waiting && navigator.serviceWorker.controller) {

@@ -30,17 +30,79 @@ const sw = self as unknown as ServiceWorkerGlobalScope;
 const CACHE = `tp-cache-${version}`;
 
 /**
- * The app shell (doc 17 §2). `build` is the hashed immutable output, `files`
- * is static/ (fonts, boot.js, icons), `prerendered` is the HTML SvelteKit
- * generated — including /offline, which is the point.
+ * The app shell (doc 17 §2): `files` is static/ (fonts, boot.js, icons, the
+ * manifest), `prerendered` is every page SvelteKit rendered — /offline among
+ * them, which is the point — and the hashed output those pages load first.
+ *
+ * Until Week 8 this was all of `build` as well: every tile and detail chunk
+ * and ECharts, 269 files and 883 KB gz on a first visit, for widgets the reader
+ * may never add. The shell is about 400 KB. What a reader *uses* is kept as it
+ * is used (the fetch handler, and KEEP below), and the details of the widgets
+ * on their deck are fetched while they are idle (`core/warm.ts`).
  */
-const PRECACHE = [...build, ...files, ...prerendered];
+const SHELL = [...files, ...prerendered];
+
+/** The pages whose own preloads are the shell: the deck, and the two pages a
+ *  reader reaches with no connection. */
+const SHELL_PAGES = ['/', '/offline', '/settings'];
 
 const OFFLINE_URL = '/offline';
 
+/** Every `<link rel="modulepreload"|"stylesheet">` href in a page. */
+function preloads(html: string): string[] {
+	const found: string[] = [];
+	for (const tag of html.match(/<link\b[^>]*>/g) ?? []) {
+		if (!/\brel="(?:modulepreload|stylesheet)"/.test(tag)) continue;
+		const href = /\bhref="([^"]+)"/.exec(tag)?.[1];
+		if (href !== undefined) found.push(href);
+	}
+	return found;
+}
+
+/**
+ * Puts each hashed file in the new cache, from an older version's cache when
+ * it is already there: a content hash that did not change is the same bytes,
+ * so a deploy only downloads what changed. Never for `files` or pages, whose
+ * URLs stay the same while their contents change.
+ */
+async function keepImmutable(cache: Cache, paths: Iterable<string>): Promise<void> {
+	for (const path of paths) {
+		if (!path.startsWith('/_app/immutable/')) continue;
+		if (await cache.match(path)) continue;
+		const carried = await caches.match(path);
+		if (carried !== undefined) {
+			await cache.put(path, carried);
+			continue;
+		}
+		try {
+			const response = await fetch(path);
+			if (response.status === 200) await cache.put(path, response);
+		} catch {
+			// Best effort: a file that will not come now is cached on first use.
+		}
+	}
+}
+
 sw.addEventListener('install', (event) => {
 	event.waitUntil(
-		caches.open(CACHE).then((cache) => cache.addAll(PRECACHE))
+		(async () => {
+			const cache = await caches.open(CACHE);
+			await cache.addAll(SHELL);
+
+			// The hashed half of the shell is whatever the shell's pages preload,
+			// read from the copies just cached rather than fetched again.
+			const shell = new Set<string>();
+			for (const page of SHELL_PAGES) {
+				const response = await cache.match(page);
+				if (response === undefined) continue;
+				const base = new URL(page, sw.location.href);
+				for (const href of preloads(await response.text())) {
+					const url = new URL(href, base);
+					if (url.origin === sw.location.origin) shell.add(url.pathname);
+				}
+			}
+			await keepImmutable(cache, shell);
+		})()
 		// No skipWaiting here: doc 17 §2 is explicit that a new version waits
 		// for the user. The message handler below is the only way through.
 	);
@@ -57,9 +119,30 @@ sw.addEventListener('activate', (event) => {
 	);
 });
 
-/** The update toast calls this; nothing else may skip waiting. */
+/**
+ * The update toast sends SKIP_WAITING; nothing else may skip waiting.
+ *
+ * KEEP carries the hashed files the page loaded before this worker controlled
+ * it — on a first visit that is the grid and every tile on the deck, none of
+ * which went through the fetch handler below. They come from the HTTP cache,
+ * so nothing is downloaded twice. Same-origin `/_app/immutable/` only.
+ */
 sw.addEventListener('message', (event) => {
-	if (event.data?.type === 'SKIP_WAITING') void sw.skipWaiting();
+	const data = event.data as { type?: unknown; urls?: unknown } | null;
+	if (data?.type === 'SKIP_WAITING') {
+		void sw.skipWaiting();
+	} else if (data?.type === 'KEEP' && Array.isArray(data.urls)) {
+		const paths = data.urls.flatMap((value: unknown) => {
+			if (typeof value !== 'string') return [];
+			try {
+				const url = new URL(value, sw.location.href);
+				return url.origin === sw.location.origin ? [url.pathname] : [];
+			} catch {
+				return [];
+			}
+		});
+		event.waitUntil(caches.open(CACHE).then((cache) => keepImmutable(cache, paths)));
+	}
 });
 
 sw.addEventListener('fetch', (event) => {
@@ -81,9 +164,11 @@ sw.addEventListener('fetch', (event) => {
 	// music tag worker, which Vite builds on its own. Both were fetched from the
 	// network every time and cached nowhere, so a map or a library scan with no
 	// connection failed even after the reader had used it online. They are
-	// cached on first use rather than precached; what to precache is the Week 8
-	// PWA pass (doc 17 §2). MapLibre's folder is named by version rather than by
-	// hash, which is safe only because every deploy opens a fresh cache.
+	// cached on first use rather than precached (doc 17 §2), like every chunk
+	// beyond the shell since Week 8. MapLibre's folder is named by version
+	// rather than by hash, which is safe only because every deploy opens a
+	// fresh cache — and why carrying files forward (`keepImmutable`) is
+	// limited to what the new version itself asks for.
 	if (
 		build.includes(url.pathname) ||
 		files.includes(url.pathname) ||
