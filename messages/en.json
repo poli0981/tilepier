@@ -618,6 +618,7 @@
 	"widget.markets.search_add": "add {symbol}, {name}",
 	"widget.markets.search_empty": "no US stock matches “{query}”",
 	"widget.markets.search_failed": "search is unavailable right now — type the symbol instead",
+	"widget.markets.search_offline": "a search needs the network — type the symbol instead",
 	"widget.rss.title": "Feeds",
 	"widget.rss.blurb": "Headlines from the feeds you follow, in one list",
 	"widget.rss.loading": "reading your feeds",

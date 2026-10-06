@@ -431,6 +431,24 @@ describe('the stock half (doc 09 §1)', () => {
 		expect(asked).toContain('/api/stock/quote?symbols=AAPL');
 	});
 
+	it('leaves nothing behind when it goes: both scheduler entries and every cache entry', async () => {
+		// doc 19 §6's "no scheduler leaks on remove", for the one tile that holds
+		// two sources. Until Week 8 only its badge was checked on the way out.
+		serveRoutes({
+			'/api/crypto/ticker': json(CRYPTO_OK),
+			'/api/stock/quote': json(STOCK_OK)
+		});
+		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
+		expect(scheduler.size).toBe(2);
+		expect(swrCache.size).toBeGreaterThan(0);
+
+		screen.unmount();
+
+		expect(scheduler.size).toBe(0);
+		expect(swrCache.size).toBe(0);
+	});
+
 	it('calls a stock move the day’s rather than 24 hours’', async () => {
 		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
 		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));

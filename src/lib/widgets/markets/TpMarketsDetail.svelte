@@ -7,6 +7,7 @@
 	import type { TpDetailProps } from '$lib/core/types';
 	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
 	import { m } from '$lib/paraglide/messages';
+	import { online } from '$lib/stores/online.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
 	import { candleSummary, candlestickOption } from './chart';
@@ -317,12 +318,17 @@
 
 	let search = $state.raw<TpSwrHandle<TpSearchReading> | null>(null);
 
+	/** doc 17 §3's search-dependent class: with no network, a line that says so
+	 *  and no request — not a failure that reads as the upstream's. Until Week 8
+	 *  every failure said "search is unavailable right now". */
+	const searchOffline = $derived(term !== null && !online.isOnline);
+
 	// A subscription, not a fetch: the effect hands the question to `swr`, which
 	// owns the request, the day-long cache and the abort when the reader types
 	// on (CLAUDE.md rule 6).
 	$effect(() => {
 		const current = term;
-		if (current === null) {
+		if (current === null || searchOffline) {
 			search = null;
 			return;
 		}
@@ -571,6 +577,8 @@
 							</li>
 						{/each}
 					</ul>
+				{:else if searchOffline}
+					<p class="tp-mkd__hint">{m['widget.markets.search_offline']()}</p>
 				{:else if searchFailed}
 					<p class="tp-mkd__hint">{m['widget.markets.search_failed']()}</p>
 				{:else if search?.data !== undefined}
