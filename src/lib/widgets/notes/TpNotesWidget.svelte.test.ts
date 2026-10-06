@@ -79,3 +79,16 @@ describe('the notes tile (doc 07 §4)', () => {
 		await expect.element(screen.getByRole('heading', { name: 'Back' })).toBeInTheDocument();
 	});
 });
+
+describe('at tier L', () => {
+	// The tests above render tier M; doc 19 §6 asks for every tier allowed.
+	it('renders the note as at tier M', async () => {
+		await createNote('# Shopping\nmilk', db);
+		const screen = render(TpNotesWidget, {
+			...props(),
+			size: { w: 4, h: 6, pxW: 440, pxH: 480, tier: 'L' }
+		});
+
+		await expect.element(screen.getByRole('heading', { name: 'Shopping' })).toBeInTheDocument();
+	});
+});

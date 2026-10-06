@@ -97,3 +97,17 @@ describe('the todo tile (doc 07 §5)', () => {
 		await expect.element(screen.getByText('mua rau')).toBeInTheDocument();
 	});
 });
+
+describe('at tier M', () => {
+	// The tests above render tier L; doc 19 §6 asks for every tier allowed.
+	it('renders the open items as at tier L', async () => {
+		const list = await createList('Chợ', db);
+		await createTodo(list.id, 'mua rau');
+		const screen = render(TpTodoWidget, {
+			...props({ listId: list.id }),
+			size: { w: 2, h: 2, pxW: 200, pxH: 200, tier: 'M' }
+		});
+
+		await expect.element(screen.getByText('mua rau')).toBeInTheDocument();
+	});
+});
