@@ -73,13 +73,28 @@ describe('the panel', () => {
 		await expect.element(screen.getByTestId('chart-summary')).toBeVisible();
 	});
 
-	it('renders the attribution the payload carries', async () => {
-		// doc 10 §8 / doc 16 §5. It rides inside the payload precisely so the UI
-		// cannot forget it, which only works if the UI actually prints it.
+	it('credits Open-Meteo with links to it and to CC BY 4.0, as both ask', async () => {
+		// doc 10 §8 / doc 16 §5. The credit rides inside the payload so the UI
+		// cannot forget it. Open-Meteo asks for a link to it beside its data, and
+		// CC BY 4.0 for a link to the licence; until Week 8 this was a line of
+		// plain text, and the test passed for printing a name.
+		serve(WEATHER_OK);
+		const screen = render(TpWeatherDetail, props());
+		const credit = screen.getByTestId('weather-attribution');
+
+		await expect
+			.element(credit.getByRole('link', { name: WEATHER_PAYLOAD.attribution }))
+			.toHaveAttribute('href', 'https://open-meteo.com/');
+		await expect
+			.element(credit.getByRole('link', { name: m['widget.weather.licence']() }))
+			.toHaveAttribute('href', 'https://creativecommons.org/licenses/by/4.0/');
+	});
+
+	it('says, beside the forecast, that a forecast can be wrong (doc 16 §4)', async () => {
 		serve(WEATHER_OK);
 		const screen = render(TpWeatherDetail, props());
 
-		await expect.element(screen.getByTestId('weather-attribution')).toHaveTextContent('Open-Meteo');
+		await expect.element(screen.getByText(m['widget.weather.disclaimer']())).toBeVisible();
 	});
 
 	it('draws a row per day in the week strip', async () => {

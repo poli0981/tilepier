@@ -101,7 +101,7 @@ export const WEATHER_PAYLOAD: TpWeatherPayload = {
 		}
 	],
 	air: { europeanAqi: 42, pm25: 11.3, pm10: 18, ozone: 60, no2: 12 },
-	attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
+	attribution: 'Weather data by Open-Meteo.com'
 };
 
 export const WEATHER_OK: TpApiResponse<TpWeatherPayload> = {

@@ -394,12 +394,54 @@ channel. Both fixed, both with fixtures in those shapes.
 
 ## 8. Compliance checklist (gate for Week 8, doc 23)
 
-- [ ] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail
-- [ ] ER-API attribution link rendered wherever rates shown
-- [ ] © OpenStreetMap contributors visible on every map render (built 2026-09-25: attribution never compact — doc 10 §6; `TpMap.svelte.test.ts` asserts it)
-- [ ] © OpenMapTiles visible on every map render (CC BY 4.0; same control, same test)
-- [ ] Photon/komoot credited on licenses page
-- [ ] Finnhub / Twelve Data credit lines in markets detail footer
-- [ ] "Not investment advice / data may be delayed" disclaimer in markets
-- [ ] Nominatim UA string set and 24 h caching verified
-- [ ] No API key present in any client bundle (CI grep, doc 21 §5)
+**Gone through 2026-10-06.** A box is ticked only where something holds it —
+a test, a CI step, or a measurement with its date — and names it; an open box
+says what is missing. Open-Meteo's licence page, read the same day, asks for a
+link to it "next to any location Open-Meteo data are displayed"; this list
+asks for the detail and the licences page, as doc 16 §5 always has, and the
+tile is the owner's call (doc 23, Week 8).
+
+- [ ] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail —
+  **the detail since 2026-10-06**, with a link to each
+  (`TpWeatherDetail.svelte.test.ts` › credits Open-Meteo with links to it and
+  to CC BY 4.0). The licences page names both and links neither; that half
+  lands with the register in 8b-1.
+- [x] ER-API attribution link rendered wherever rates shown —
+  `TpCurrencyWidget.svelte.test.ts` (the tile's credit: href and rel) and
+  `TpCurrencyDetail.svelte.test.ts` › credits ExchangeRate-API with a real link.
+- [x] © OpenStreetMap contributors visible on every map render (built 2026-09-25: attribution never compact — doc 10 §6; `TpMap.svelte.test.ts` asserts it).
+  The test holds the control on and uncompacted; its words are OpenFreeMap's
+  TileJSON, read 2026-09-25 (§6), so a change upstream is the owner's
+  production check (doc 19 §5) to catch, not this suite's.
+- [x] © OpenMapTiles visible on every map render (CC BY 4.0; same control, same test)
+- [ ] Photon/komoot credited on licenses page — the row is there; nothing holds
+  it yet. The register test of 8b-1 does (doc 16 §5 ↔ the page).
+- [x] Finnhub / Twelve Data credit lines in markets detail footer —
+  `TpMarketsDetail.svelte.test.ts` › carries the stock footnote and credits
+  both upstreams.
+- [x] "Not investment advice / data may be delayed" disclaimer in markets —
+  `TpMarketsDetail.svelte.test.ts` › carries doc 16 §4's disclaimer,
+  permanently rather than on a condition.
+- [x] Nominatim UA string set and 24 h caching verified —
+  `geocode/server.test.ts` › sends the User-Agent Nominatim policy requires;
+  the TTL is doc 11 §4's, held by `shared-constants.test.ts`, and a `HIT` was
+  read on production 2026-08-28 (doc 19 §5).
+- [x] No API key present in any client bundle (CI grep, doc 21 §5) — `ci.yml` ›
+  Client bundle secret and CDN gate.
+
+Added 2026-10-06, for sources this list predates or missed:
+
+- [x] Binance.US credited wherever crypto prices are shown —
+  `TpMarketsDetail.svelte.test.ts` › renders the credit line the payload
+  carries.
+- [x] OpenFreeMap credited — first in the map's own attribution (the same
+  control and test as OpenStreetMap's), and on the licences page.
+- [x] The forecast disclaimer on the weather detail (doc 16 §4) —
+  `TpWeatherDetail.svelte.test.ts` › says, beside the forecast, that a
+  forecast can be wrong.
+- [ ] **CAMS**, the Copernicus Atmosphere Monitoring Service, behind Open-Meteo's
+  air-quality data — **fetched, never shown.** The Worker makes the air-quality
+  call with every forecast and the payload carries `air`, but the AQI gauge
+  was a Week 4 cut, so no reader sees a figure and no credit is due yet. One
+  becomes due with the gauge. Until then it is an upstream call per forecast
+  that nothing reads, which is the owner's to keep or drop (doc 23, Week 8).

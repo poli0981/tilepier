@@ -60,7 +60,7 @@ const PAYLOAD = {
 	hourly: [],
 	daily: [],
 	air: null,
-	attribution: 'Weather data by Open-Meteo (CC BY 4.0)'
+	attribution: 'Weather data by Open-Meteo.com'
 };
 
 function seedCache(kv: KVNamespace & { store: Map<string, string> }, ageMs: number): void {
