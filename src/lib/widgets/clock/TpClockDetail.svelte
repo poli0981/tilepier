@@ -354,6 +354,9 @@
 
 	.tp-clockd__strip {
 		width: 100%;
+		/* The track stays thin; the box is the target (doc 13 §8). It was 16 px. */
+		height: 40px;
+		margin: 0;
 		accent-color: var(--color-beacon);
 	}
 
@@ -527,6 +530,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		/* The label is the checkbox's target: 40 px of it (doc 13 §8). */
+		min-height: 40px;
 		cursor: pointer;
 	}
 </style>

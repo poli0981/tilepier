@@ -214,7 +214,7 @@
 				/>
 			{/key}
 			{#if status === 'loading'}
-				<div class="tp-mapd__veil" aria-label={m['widget.map.loading']()}></div>
+				<div class="tp-mapd__veil" role="status" aria-label={m['widget.map.loading']()}></div>
 			{:else if status !== 'ready'}
 				<div
 					class="tp-mapd__veil tp-mapd__veil--card"
@@ -472,7 +472,7 @@
 
 	.tp-mapd__name input,
 	.tp-mapd__rename {
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: transparent;
 		color: var(--color-fg);
@@ -521,6 +521,11 @@
 	}
 
 	.tp-mapd__link {
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--tp-target);
+		min-width: var(--tp-target);
+		justify-content: center;
 		border: 0;
 		background: transparent;
 		color: var(--color-beacon);

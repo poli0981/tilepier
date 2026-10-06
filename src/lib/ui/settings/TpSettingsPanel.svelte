@@ -24,6 +24,7 @@
 	import { deck } from '$lib/stores/deck.svelte';
 	import { settings } from '$lib/stores/settings.svelte';
 	import TpBugDialog from '$lib/ui/TpBugDialog.svelte';
+	import { ACCENTS, ACCENT_NAMES } from './accents';
 
 	/**
 	 * doc 13 §10. A route rather than a modal, and no save button — every
@@ -37,16 +38,6 @@
 	 * noise, and a control that has never worked is worse. It lands in Week 2,
 	 * when there is data worth round-tripping.
 	 */
-
-	/** doc 12 §2: the accent is user-overridable, semantic colours are not. These
-	 *  six are the offered swatches — data the user picks from, not styling, so
-	 *  they are the one place a literal colour is right. tokens-audit-ignore */
-	const ACCENTS = ['#46d5c8', '#7b8ff2', '#e8b750', '#57c785', '#e8705f', '#b48ce8'] as const;
-
-	/** What a screen reader says for each swatch, in ACCENTS' order: a colour's
-	 *  name rather than six hex digits. By position, so the colours stay on the
-	 *  one line tokens:audit exempts. */
-	const ACCENT_NAMES = ['teal', 'blue', 'amber', 'green', 'coral', 'violet'] as const;
 
 	function accentLabel(index: number): string {
 		return m[`settings.appearance.accent_${ACCENT_NAMES[index] ?? 'custom'}`]();
@@ -759,6 +750,26 @@
 		flex-wrap: wrap;
 	}
 
+	/* A label beside its control is part of the target, so it gets the height;
+	   the select is drawn as a field (doc 13 §8, WCAG 1.4.11). It was the
+	   browser's own, 18 px tall. */
+	.tp-row > label {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+
+	.tp-row select {
+		border: 1px solid var(--color-field);
+		border-radius: var(--radius-ctl);
+		background: none;
+		color: var(--color-fg);
+		font: inherit;
+		font-size: var(--text-2xs);
+		min-height: 40px;
+		padding: 0 0.5rem;
+	}
+
 	.tp-note {
 		margin: 0.5rem 0 0;
 		color: var(--color-fg-dim);
@@ -786,6 +797,7 @@
 		font: inherit;
 		font-size: var(--text-2xs);
 		min-height: 40px;
+		min-width: 40px;
 		padding: 0 0.75rem;
 	}
 
@@ -800,9 +812,10 @@
 		gap: 0.375rem;
 	}
 
+	/* doc 13 §8: 40 px targets — the swatches were 24 and the picker 28. */
 	.tp-swatch {
-		width: 24px;
-		height: 24px;
+		width: 40px;
+		height: 40px;
 		border: 2px solid transparent;
 		border-radius: 50%;
 		background: var(--swatch);
@@ -815,9 +828,9 @@
 	}
 
 	.tp-swatches input[type='color'] {
-		width: 28px;
-		height: 28px;
-		border: 1px solid var(--color-ink-700);
+		width: 40px;
+		height: 40px;
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: none;
 		padding: 2px;
@@ -831,7 +844,7 @@
 		cursor: pointer;
 		font: inherit;
 		font-size: var(--text-2xs);
-		min-height: 36px;
+		min-height: 40px;
 		padding: 0 0.75rem;
 	}
 
@@ -853,6 +866,9 @@
 	}
 
 	.tp-links a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
 		color: var(--color-beacon);
 		font-size: var(--text-xs);
 	}
@@ -912,13 +928,13 @@
 	}
 
 	.tp-secret {
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: none;
 		color: var(--color-fg);
 		font: inherit;
 		font-size: var(--text-2xs);
-		min-height: 36px;
+		min-height: 40px;
 		padding: 0 0.5rem;
 	}
 

@@ -69,6 +69,9 @@
 
 	input {
 		flex: 1;
+		/* The track stays thin; the box is the target (doc 13 §8). */
+		height: var(--tp-target);
+		margin: 0;
 		accent-color: var(--color-beacon);
 	}
 </style>

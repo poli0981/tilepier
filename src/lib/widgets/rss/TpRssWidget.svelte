@@ -180,7 +180,7 @@
 	</div>
 {:else if view === 'loading'}
 	<!-- doc 12 §7: skeleton blocks, never a spinner. -->
-	<div class="tp-rss-skeleton" aria-label={m['widget.rss.loading']()}>
+	<div class="tp-rss-skeleton" role="status" aria-label={m['widget.rss.loading']()}>
 		{#each SKELETON_ROWS as row (row)}
 			<div class="tp-rss-skeleton__row"></div>
 		{/each}

@@ -75,7 +75,7 @@ describe('applyToDocument', () => {
 		expect(root.getAttribute('data-theme')).toBe('light');
 		expect(root.getAttribute('lang')).toBe('en');
 		expect(root.getAttribute('data-motion')).toBe('reduced');
-		expect(root.style.getPropertyValue('--color-beacon')).toBe('#ff8800');
+		expect(root.style.getPropertyValue('--tp-accent')).toBe('#ff8800');
 	});
 
 	it('resolves theme "system" against the media query', () => {
@@ -91,13 +91,16 @@ describe('applyToDocument', () => {
 		expect(document.documentElement.getAttribute('data-theme')).toBe(expected);
 	});
 
-	it('sets only --color-beacon, leaving the derived variants to CSS', () => {
+	it('sets only --tp-accent, leaving the beacon and its variants to CSS', () => {
 		seed({ accent: '#ff8800' });
 		settings.hydrate();
 
 		settings.applyToDocument();
 
+		// An inline beacon would outrank the theme rules that keep it legible
+		// on paper (doc 12 §2) — the reason the store stopped setting it.
 		const inline = document.documentElement.style;
+		expect(inline.getPropertyValue('--color-beacon')).toBe('');
 		expect(inline.getPropertyValue('--color-beacon-soft')).toBe('');
 		expect(inline.getPropertyValue('--color-beacon-deep')).toBe('');
 	});

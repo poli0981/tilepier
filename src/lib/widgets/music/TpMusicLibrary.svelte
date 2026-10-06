@@ -159,7 +159,7 @@
 	.tp-mlist__search,
 	select {
 		min-height: 36px;
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: var(--color-ink-900);
 		color: var(--color-fg);

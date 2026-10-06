@@ -105,3 +105,18 @@ describe('hide on scroll', () => {
 		expect(bar().getBoundingClientRect().height).toBe(before);
 	});
 });
+
+describe('edit mode, for a screen reader (doc 13 §8)', () => {
+	it('announces entering edit mode, however it was entered', async () => {
+		// The bar's toggle carries aria-pressed, but `e` leaves focus where it
+		// was, and nothing said the deck had changed mode.
+		const screen = render(TpTopBar);
+		const status = screen.getByTestId('edit-announce');
+		await expect.element(status).toHaveAttribute('role', 'status');
+		await expect.element(status).toHaveTextContent('');
+
+		ui.toggleEdit();
+
+		await expect.element(status).not.toHaveTextContent('');
+	});
+});

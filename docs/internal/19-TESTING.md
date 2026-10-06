@@ -8,6 +8,7 @@
 | Component | Vitest 4 browser mode (`@vitest/browser-playwright` + `vitest-browser-svelte`) | widget states (loading/empty/stale/error), settings round-trips, a11y roles |
 | API (Worker) | Vitest + adapter platform-proxy (miniflare-backed) | endpoint validation, KV cache hit/miss/stale, breaker transitions, envelope shapes |
 | Mocked network | MSW 2 | upstream fixtures per API (recorded, trimmed) |
+| A11y | axe-core through `@axe-core/playwright`, WCAG 2.2 A + AA (`e2e/a11y`, Week 8) | every surface; targets ≥ 40 px outside tiles |
 | E2E | Playwright — **Chromium only** (corrected 2026-09-29: `playwright.config.ts` has never defined `projects`, although `e2e.yml` installs all three; Firefox and Safari are §5's manual matrix) | smoke journeys (§4) |
 
 Test files co-located: `foo.ts` + `foo.test.ts`; fixtures in
@@ -305,6 +306,25 @@ files each carried the number as a literal.
 copies, before the rss journey (`e2e/rss.e2e.ts`) became a ninth. Its
 `dismissCoach` option is journey #4's variant, which also clears doc 13 §9's
 coach before clicking a tile.
+
+**The accessibility sweep** (`e2e/a11y`, Week 8) runs axe-core at WCAG 2.2 A
+and AA over every surface a reader meets, and holds every control outside a
+tile to doc 13 §8's 40 px (`expectTargets`). A PR scans each kind of surface
+once — the light theme throughout, the dark gate, deck and settings, and the
+375 px deck and sheet; the schedule adds every detail in both themes and the
+prose pages (`@nightly`, which `e2e.yml` leaves out of PR runs). `/api/*`
+answers 503, so no scan depends on an upstream and each networked widget's
+error state is scanned too. Three things it taught:
+- **The deck must hold all fifteen widgets.** `/w/<id>` for a widget that is
+  not on the deck offers to pin it instead of showing the detail; the first
+  draft scanned ten "details" that were pin offers.
+- **Scan settled pixels.** A panel caught mid-fade blends with the page and
+  reads as a contrast failure no reader sees; `expectClean` waits for every
+  finite animation first (a looping one, like a loading gauge, never ends).
+- **What it found** is in doc 13 §8 and doc 07 §3: the calendar's neighbouring
+  months in the disabled grey, a skeleton named without a role, two controls
+  without names, and the calculator's 17–19 px keys — with the 40 px rule
+  itself unheld across the chrome and the details.
 
 And an eighth, found on 2026-10-06: **no test had ever seen a scrollbar.**
 Playwright launches headless Chromium with `--hide-scrollbars`, in this suite

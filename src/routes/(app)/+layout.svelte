@@ -202,6 +202,14 @@
 		display: block;
 	}
 
+	/* doc 13 §8: 40 px targets — a row of links, not a sentence. */
+	.tp-gate__links a,
+	.tp-gate__lang a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+	}
+
 	.tp-gate__links a {
 		color: var(--color-fg-mute);
 		text-decoration-color: var(--color-ink-500);

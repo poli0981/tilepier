@@ -75,8 +75,9 @@ test('a custom accent reaches the derived tokens, not just the base', async ({ p
 
 	await page.getByTestId('accent-e8b750').click();
 
-	// doc 12 §2: JS sets only --color-beacon; soft and deep are derived in CSS,
-	// so an accent that only changed the base would be a silent half-change.
+	// doc 12 §2: JS sets only --tp-accent; the beacon, soft and deep are all
+	// derived in CSS, so an accent that only changed the base would be a silent
+	// half-change.
 	const soft = await page.evaluate(() =>
 		getComputedStyle(document.documentElement).getPropertyValue('--color-beacon-soft').trim()
 	);

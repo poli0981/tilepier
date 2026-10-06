@@ -722,6 +722,9 @@
 
 	.tp-rssd__opml-action {
 		position: relative;
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--tp-target);
 		border: 0;
 		background: transparent;
 		color: var(--color-beacon);

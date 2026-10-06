@@ -243,8 +243,10 @@
 		vertical-align: middle;
 	}
 
+	/* Days of the neighbouring months: quieter than this month's, still read.
+	   ink-500 (2.0:1) until Week 8's sweep; fg-dim is text at 4.6:1. */
 	.tp-cal__out {
-		color: var(--color-ink-500);
+		color: var(--color-fg-dim);
 	}
 
 	.tp-cal__day {
@@ -262,10 +264,6 @@
 		color: var(--color-fg-dim);
 		font-size: 0.5625rem;
 		line-height: 1.1;
-	}
-
-	.tp-cal__out .tp-cal__lunarday {
-		color: var(--color-ink-500);
 	}
 
 	/* doc 07 §6: the lunar month boundaries are what a Vietnamese reader looks

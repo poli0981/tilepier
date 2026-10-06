@@ -25,5 +25,5 @@ beforeEach(() => {
 	// app.html ships lang="vi"; restore that rather than leaving it unset, so a
 	// test that never touches locale sees the same starting point as the app.
 	root.setAttribute('lang', 'vi');
-	root.style.removeProperty('--color-beacon');
+	root.style.removeProperty('--tp-accent');
 });

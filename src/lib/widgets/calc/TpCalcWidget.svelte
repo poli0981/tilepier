@@ -19,7 +19,19 @@
 	 * unreachable — there is nothing to fetch and a calculator showing zero is
 	 * showing an answer, not an absence.
 	 */
-	let { size }: TpWidgetProps = $props();
+	let { size, onOpenDetail }: TpWidgetProps = $props();
+
+	/**
+	 * doc 07 §3 at WCAG 2.2's 2.5.8: a key is at least 24 px tall, or there is no
+	 * keypad. Five rows of 24 px with 3 px gaps, the display (51 px at its
+	 * largest) and the host's chrome need a host 232 px tall — four rows of the
+	 * grid. Shorter, the keys were 17–19 px (5 px at 2 × 2), so the tile shows
+	 * the display and opens the detail's keypad instead; typing still works,
+	 * from the button's focus. Measured, not tiered: `size.pxH` is the host's
+	 * own height.
+	 */
+	const KEYPAD_MIN_HOST_PX = 232;
+	const compact = $derived(size.pxH < KEYPAD_MIN_HOST_PX);
 
 	/** The keypad, row by row. Symbols only: every glyph here is language-free,
 	 *  which is why they are literals and the two word-buttons are not. */
@@ -112,42 +124,53 @@
 		{/if}
 	</div>
 
-	<div class="tp-calc__pad">
+	{#if compact}
 		<button
 			type="button"
-			class="tp-calc__key tp-calc__key--ghost"
-			aria-label={m['widget.calc.clear']()}
-			data-testid="calc-clear"
-			onclick={() => calc.clear()}
+			class="tp-calc__open"
+			data-testid="calc-open"
+			onclick={() => onOpenDetail?.()}
 		>
-			<TpIcon name="close" size={14} />
+			{m['widget.calc.open_keypad']()}
 		</button>
-		<button
-			type="button"
-			class="tp-calc__key tp-calc__key--ghost"
-			aria-label={m['widget.calc.backspace']()}
-			data-testid="calc-backspace"
-			onclick={() => calc.backspace()}
-		>
-			<TpIcon name="edit" size={14} />
-		</button>
-		<button type="button" class="tp-calc__key" onclick={() => calc.append('(')}>(</button>
-		<button type="button" class="tp-calc__key" onclick={() => calc.append(')')}>)</button>
+	{:else}
+		<div class="tp-calc__pad">
+			<button
+				type="button"
+				class="tp-calc__key tp-calc__key--ghost"
+				aria-label={m['widget.calc.clear']()}
+				data-testid="calc-clear"
+				onclick={() => calc.clear()}
+			>
+				<TpIcon name="close" size={14} />
+			</button>
+			<button
+				type="button"
+				class="tp-calc__key tp-calc__key--ghost"
+				aria-label={m['widget.calc.backspace']()}
+				data-testid="calc-backspace"
+				onclick={() => calc.backspace()}
+			>
+				<TpIcon name="edit" size={14} />
+			</button>
+			<button type="button" class="tp-calc__key" onclick={() => calc.append('(')}>(</button>
+			<button type="button" class="tp-calc__key" onclick={() => calc.append(')')}>)</button>
 
-		{#each KEYS as row, rowIndex (rowIndex)}
-			{#each row as key (key)}
-				<button
-					type="button"
-					class="tp-calc__key"
-					class:accent={key === '='}
-					data-testid="calc-key-{key}"
-					onclick={() => press(key)}
-				>
-					{key}
-				</button>
+			{#each KEYS as row, rowIndex (rowIndex)}
+				{#each row as key (key)}
+					<button
+						type="button"
+						class="tp-calc__key"
+						class:accent={key === '='}
+						data-testid="calc-key-{key}"
+						onclick={() => press(key)}
+					>
+						{key}
+					</button>
+				{/each}
 			{/each}
-		{/each}
-	</div>
+		</div>
+	{/if}
 </section>
 
 <style>
@@ -214,8 +237,25 @@
 		cursor: pointer;
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		min-height: 0;
+		min-height: 24px;
 		padding: 0;
+	}
+
+	.tp-calc__open {
+		flex: none;
+		border: 1px solid var(--color-ink-700);
+		border-radius: var(--radius-ctl);
+		background: var(--color-ink-950);
+		color: var(--color-fg-mute);
+		cursor: pointer;
+		font: inherit;
+		font-size: var(--text-2xs);
+		min-height: 40px;
+		padding: 0 0.75rem;
+	}
+
+	.tp-calc__open:hover {
+		color: var(--color-fg);
 	}
 
 	.tp-calc__key:hover {

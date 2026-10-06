@@ -426,8 +426,8 @@
 		background: none;
 		color: var(--color-beacon);
 		cursor: pointer;
-		min-width: 36px;
-		min-height: 36px;
+		min-width: var(--tp-target);
+		min-height: var(--tp-target);
 	}
 
 	ul {
@@ -535,7 +535,7 @@
 
 	.tp-todod__add input,
 	.tp-todod__date {
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: none;
 		color: var(--color-fg);

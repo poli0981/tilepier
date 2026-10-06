@@ -159,7 +159,7 @@
 
 		{#if status === 'loading'}
 			<!-- doc 12 §7: a skeleton over the space the map will fill. -->
-			<div class="tp-map-tile__skeleton" aria-label={m['widget.map.loading']()}></div>
+			<div class="tp-map-tile__skeleton" role="status" aria-label={m['widget.map.loading']()}></div>
 		{:else if status !== 'ready'}
 			<div class="tp-map-tile__card" data-testid="map-fallback" data-reason={status}>
 				<p class="tp-map-card__line">

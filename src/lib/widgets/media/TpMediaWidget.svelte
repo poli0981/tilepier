@@ -84,7 +84,12 @@
 </script>
 
 {#if reading && media.shelfStatus === 'loading'}
-	<div class="tp-media tp-media--state" aria-busy="true" aria-label={m['widget.media.loading']()}>
+	<div
+		class="tp-media tp-media--state"
+		role="status"
+		aria-busy="true"
+		aria-label={m['widget.media.loading']()}
+	>
 		<TpTideGauge size={roomy ? 32 : 20} animated level={0.35} />
 	</div>
 {:else if reading}

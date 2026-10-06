@@ -115,10 +115,14 @@ widgets were tuned against** (recorded 2026-09-29): `TpWidgetHost.svelte`
 gives **L** whenever `w >= 4 || h >= 4`, so 4×1, 4×2 and 2×4 are L too, not
 M. rss and markets read `size.tier === 'L'` as "roomy" and were checked on
 screen at those sizes. The doc follows the code here rather than the reverse;
-whether to narrow the host's rule to the one above is a question for Week 8's
-visual pass, where every widget can be looked at together. Until then a
-layout that needs a particular *shape* keys on `size.w` / `size.h` rather than
-on the tier — as quote and weather already do, and as music and media will.
+whether to narrow the host's rule to the one above was left for Week 8's
+visual pass, where every widget could be looked at together. **Decided in Week
+8: the host's rule stands**, and the L line above is read as it. Narrowing it
+would take 4×1, 4×2 and 2×4 back to M under fifteen widgets tuned against
+them, for a definition nothing else depends on. What the pass did settle is
+the corollary: a layout that needs a particular *shape* keys on `size.w` /
+`size.h`, never on the tier — as quote and weather do, as music and media do,
+and as the clock's date line now does (doc 08 §5).
 
 ## 4. Add-widget drawer
 
@@ -210,6 +214,12 @@ show "on deck" disabled state. Search filters by name.
   - Escape and modified keys pass on.
   - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
+- **Edit mode is said aloud and kept clear of** (Week 8). A status region in
+  the bar, present from the first paint so its change is announced, says the
+  deck is being edited however edit mode was entered — the bar's toggle had
+  `aria-pressed`, but `e` leaves focus where it was and nothing spoke. And
+  while the strip hangs under the bar, `scroll-padding-top` is the bar plus the
+  strip (88 px), so a control Tab scrolls to is never under either.
 - **Every overlay scrolls inside itself** (WCAG 1.4.10). An overlay is
   `position: fixed`, so the page cannot scroll to anything it cannot show, and
   at 400 % zoom — 320 × 256 CSS px — the gate, the bug dialog and the
@@ -221,31 +231,63 @@ show "on deck" disabled state. Search filters by name.
   the drawer set `overscroll-behavior: contain`: a wheel at the end of either
   stops there rather than scrolling the deck behind the scrim.
   (`e2e/overlays`, each test red on the parent.)
-- All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
-  (beacon, 2 px offset).
-- Contrast: **measured 2026-08-28**, when `widgets/toolbox/color.ts` gave the
-  suite something to measure with. `fg` on `ink-900` is **15.35:1** and `fg-mute`
-  is **7.16:1** — both comfortably AA, and both better than the 11.9 and 5.1 this
-  line asserted before anything had computed them. `color.test.ts` now asserts
-  the pair against the tokens, so the two cannot drift apart again.
+- **Targets: 40 px in the chrome, the dialogs and every detail; 24 px inside a
+  tile** — the owner's Week 8 call (doc 23), WCAG 2.2's 2.5.8 floor for controls
+  packed into a 2 × 2 tile. One token carries it: `--tp-target` is 40 px on the
+  root and 24 px on a tile host, and a control a tile and a detail share sizes
+  itself from it. A label that activates its control counts as the target; a
+  link inside running text is exempt, as 2.5.8 exempts it. Visible
+  `:focus-visible` ring (beacon, 2 px offset).
 
-  **`fg-dim` on `ink-900` is 3.51:1**, which is AA for large text only and fails
-  AA for normal text. doc 12 §2 gives it "tertiary, timestamps", and it is used
-  at `--text-2xs` for the notes updated-ago line, the clock's zone deltas and the
-  calendar's lunar day numbers — all normal-size text. Left as measured rather
-  than fixed here: raising it is a design-token change, and doc 23 puts the
-  contrast audit in Week 8 where the whole ramp can move together. Recorded so
-  that audit starts from a known finding rather than rediscovering it.
+  **Week 8 found the rule had never been held.** The brand link was 23 px tall,
+  the edit strip's Done 24, the drawer's Add buttons 32, the Settings swatches
+  24, its select 18 — the browser's own — and its actions 36; the bot check's
+  retry, the coach's dismissal and the bug dialog's actions 32–36; the gate's
+  links 23. Across the fifteen details there were about fifty more, from a
+  16 px slider to 28 px row buttons. All of them meet it now, and
+  `e2e/a11y`'s `expectTargets` fails any control outside a tile under 40 × 40.
+  Inside a tile, axe's target-size rule holds 24 px — which is how the
+  calculator's 17–19 px keys at three rows were found (doc 07 §3).
+- **A field shows where it begins** (WCAG 1.4.11): text fields, selects and
+  text areas are edged in `--color-field`, 3:1 on every surface, where the
+  ink-700 hairline they had was 1.3:1 and was all there was. Containers keep
+  the hairline; a button is found by its words.
+- Contrast: **swept in Week 8, every token in both themes** (doc 12 §2's
+  table). First measured 2026-08-28, when `widgets/toolbox/color.ts` gave the
+  suite something to measure with: `fg` on `ink-900` 15.35:1, `fg-mute` 7.16:1
+  — better than the 11.9 and 5.1 this line had asserted — and `fg-dim` 3.51:1,
+  AA for large text only, while it set the notes updated-ago line, the clock's
+  zone deltas and the calendar's lunar days at `--text-2xs`. That test checked
+  colours it had typed itself, so it could never have failed on a token, and
+  the light theme had never been measured at all: its beacon and focus ring
+  were 1.81:1 on white and the gate's Accept button 1.60:1.
+  `ui/contrast.svelte.test.ts` now measures the real stylesheet in the browser,
+  for both themes and any accent, and was red on 45 cases before the fix.
+  `fg-dim` is #738292 dark (4.62:1 at worst) and #616E77 light (4.65:1).
 
   A second finding for the same audit, recorded 2026-08-28: **tile controls are
   below the 40 px target above.** The todo tile has shipped 36, 32 and 28 px
   controls since Week 2 and the toolbox tile follows it at 28 px, because three
-  40 px tabs plus a panel do not fit a 2×2 tile. Detail panels do hold the rule
-  and the toolbox detail is built to it. Either the rule wants a tile exception
-  or the tiles want redesigning; that is a Week 8 call, and it is written down
-  here so it is made rather than discovered.
+  40 px tabs plus a panel do not fit a 2×2 tile. **Decided in Week 8: a tile
+  exception at WCAG's 24 px** (the targets line above), which both tiles meet.
 
-  The full sweep of every semantic-on-surface pair remains Week 8 (doc 23).
+  **The rest of the Week 8 sweep** (`e2e/a11y`, axe-core at WCAG 2.2 A and AA)
+  found, besides contrast and targets: the calendar's days of the neighbouring
+  months, in tile and detail, drawn in the disabled grey (2.0:1) — they are
+  dates, read, so they are fg-dim now, and a selected day's lunar date moves to
+  fg-mute on its wash; a loading skeleton named with `aria-label` on a bare
+  `div`, which a name cannot attach to (`role="status"` now); the bug report's
+  text area and the timer's add-preset button, with no name at all.
+
+  **And a name on nothing, fourteen times.** `aria-label` on a bare `div` or
+  `span` is dropped by assistive technology. Eleven were loading skeletons; one
+  was the tile's status lamp at h = 1, whose name is the only channel there
+  (§3, so the one thing it was for did not happen); one was the markets
+  change chip's sentence. The sweep caught it only when a scan landed while
+  something was still loading — one full run in several — so
+  `ui/aria-names.test.ts` now reads every component for the pattern instead.
+  Skeletons are `role="status"`, named content a region, the lamp and the
+  chip `role="img"`.
 - Charts: every ECharts view paired with an accessible summary line
   (e.g., "AAPL 1M: +4.2%, range 182–199") — cheap, honest a11y.
 

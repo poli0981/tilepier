@@ -210,8 +210,9 @@ Two things about the shape of the fix are worth keeping:
    `TpClockWidget` splits the same decision both ways — its date line is behind
    `size.tier !== 'S'` and its zone rows behind `size.h >= 2` — and only the
    second is right: measured at 3x1 it renders the date line into 34 px and
-   clips its own hero digits by 4 px. Tracked separately; the same reading of
-   doc 13 §3 applies.
+   clips its own hero digits by 4 px. **Fixed in Week 8**: the date line is
+   keyed on `size.h >= 2` too, with a test at 3 × 1 that was red on the
+   parent — the same reading of doc 13 §3.
 2. **The loading skeleton is one bar at h = 1, not three.** Three are 30 px of
    the 34, i.e. a loading state that overflows the ready state it stands in for.
 

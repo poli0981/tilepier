@@ -268,7 +268,7 @@
 		min-height: 2rem;
 		flex: 0 0 auto;
 		padding: 0 0.5rem;
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: var(--color-ink-950);
 		color: var(--color-fg);

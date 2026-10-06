@@ -130,6 +130,13 @@
 	</div>
 </header>
 
+<!-- doc 13 §8: the mode, said aloud. Present from the start, because a live
+     region inserted with its text already in it is not reliably announced;
+     the bar's toggle has aria-pressed, but `e` leaves focus where it was. -->
+<p class="tp-sr" role="status" data-testid="edit-announce">
+	{ui.editMode ? m['common.editing']() : ''}
+</p>
+
 {#if ui.editMode}
 	<!-- doc 13 §2: a slim beacon strip under the bar names the mode. -->
 	<div class="tp-bar__mode" data-testid="edit-strip">
@@ -178,6 +185,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		/* doc 13 §8: a 40 px target, like every control in the chrome. */
+		min-height: 40px;
 		color: var(--color-fg);
 		text-decoration: none;
 	}
@@ -231,6 +240,13 @@
 		background: var(--color-beacon-soft);
 	}
 
+	/* In edit mode the strip hangs under the bar, so anything scrolled into
+	   view — by Tab, by a fragment — has to clear both (WCAG 2.4.11). The
+	   strip is its Done button's height, the chrome's target. */
+	:global(html:has(.tp-bar__mode)) {
+		scroll-padding-top: calc(var(--tp-bar-h) + var(--tp-target));
+	}
+
 	.tp-bar__mode {
 		position: sticky;
 		top: var(--tp-bar-h);
@@ -242,7 +258,6 @@
 
 	.tp-bar__mode .tp-bar__inner {
 		justify-content: space-between;
-		padding-block: 0.25rem;
 	}
 
 	.tp-bar__mode button {
@@ -252,7 +267,8 @@
 		cursor: pointer;
 		font: inherit;
 		font-weight: 600;
-		min-height: 24px;
-		padding: 0 0.25rem;
+		/* doc 13 §8: 40 px, which sets the strip's height; it was 24. */
+		min-height: 40px;
+		padding: 0 0.75rem;
 	}
 </style>

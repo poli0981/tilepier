@@ -169,6 +169,7 @@
 					<button
 						type="button"
 						class="tp-timerd__addpreset"
+						aria-label={m['widget.timer.preset_add']()}
 						disabled={timer.presets.length >= MAX_PRESETS ||
 							timer.presets.includes(timer.durationMs)}
 						data-testid="timer-add-preset"
@@ -357,7 +358,7 @@
 
 	.tp-timerd__num input {
 		width: 4.5rem;
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: none;
 		color: var(--color-fg);
@@ -392,7 +393,7 @@
 		cursor: pointer;
 		font: inherit;
 		font-size: var(--text-2xs);
-		min-height: 34px;
+		min-height: var(--tp-target);
 		padding: 0 0.5rem;
 	}
 
@@ -400,7 +401,8 @@
 	.tp-timerd__action {
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-ctl);
-		min-height: 36px;
+		min-height: var(--tp-target);
+		min-width: var(--tp-target);
 	}
 
 	.tp-timerd__addpreset:disabled {
@@ -409,6 +411,7 @@
 	}
 
 	.tp-timerd__drop {
+		min-width: var(--tp-target);
 		color: var(--color-fg-dim);
 	}
 
@@ -457,6 +460,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		/* The label is the checkbox's target. */
+		min-height: var(--tp-target);
 		cursor: pointer;
 	}
 </style>

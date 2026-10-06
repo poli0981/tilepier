@@ -356,7 +356,7 @@ is omitted (no scheduler entry at all).
 |----|----------|-----|---------|-----|-------|---------|
 | clock | time | 2×1 | 3×2 | 6×3 | yes | — (local 1 s) |
 | timer | time | 2×2 | 3×2 | 4×3 | yes | — (local) |
-| calc | tools | 2×2 | 3×3 | 4×4 | no | — |
+| calc | tools | 2×2 | 3×4 | 4×4 | no | — |
 | notes | productivity | 2×2 | 3×3 | 6×6 | yes (per-note pin) | — |
 | todo | productivity | 2×2 | 3×3 | 4×6 | yes (per-list) | — |
 | calendar | time | 2×2 | 3×3 | 6×5 | no | midnight |

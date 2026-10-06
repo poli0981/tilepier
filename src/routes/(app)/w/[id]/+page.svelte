@@ -123,7 +123,12 @@
 		</div>
 	{:else}
 		<!-- doc 13 §7: skeleton, never a spinner. -->
-		<div class="tp-w__state" aria-busy="true" aria-label={m['common.detail.loading']()}>
+		<div
+			class="tp-w__state"
+			role="status"
+			aria-busy="true"
+			aria-label={m['common.detail.loading']()}
+		>
 			<TpTideGauge size={48} animated level={0.35} />
 		</div>
 	{/if}
@@ -152,6 +157,9 @@
 	}
 
 	.tp-w__back {
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--tp-target);
 		color: var(--color-fg-mute);
 		font-size: var(--text-xs);
 		text-underline-offset: 3px;

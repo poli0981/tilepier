@@ -8,6 +8,15 @@ import { readChartTokens } from './theme';
 
 let host: HTMLElement | null = null;
 
+/** Within one step per channel: a round trip through a colour space can land
+ *  one either side of the original byte. */
+function near(actual: string, expected: string): boolean {
+	const bytes = (hex: string): number[] =>
+		[1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16));
+	const [a, b] = [bytes(actual), bytes(expected)];
+	return a.every((channel, index) => Math.abs(channel - (b[index] ?? -9)) <= 1);
+}
+
 function withTokens(declarations: Record<string, string>): HTMLElement {
 	const el = document.createElement('div');
 	for (const [name, value] of Object.entries(declarations)) el.style.setProperty(name, value);
@@ -50,20 +59,27 @@ describe('readChartTokens', () => {
 		});
 	});
 
-	it('refuses a derived token rather than handing zrender something it drops', () => {
+	it('resolves a derived token to the hex it paints', () => {
 		// `getComputedStyle` returns a custom property's substituted-but-unresolved
-		// text, so `color-mix()` and `oklch()` arrive as those strings — and
-		// zrender's parser handles named colours, #rgb(a), #rrggbb(aa), rgb(a) and
-		// hsl(a), returning nothing for anything else. A chart drawn from one is
-		// invisible rather than wrong, which is the harder failure to notice.
+		// text, and zrender drops anything that is not hex, rgb or hsl — a chart
+		// drawn from `oklch()` is invisible rather than wrong. Until Week 8 this
+		// refused such a token; now that the beacon is derived per theme it is
+		// painted instead, or every chart's first series would be the default
+		// teal whatever the reader chose.
 		const el = withTokens({
-			'--color-beacon': 'color-mix(in oklch, #46d5c8 60%, white)',
-			'--color-fg': 'oklch(from #dee7ee l c h)'
+			'--color-beacon': 'oklch(from #b48ce8 l c h)',
+			'--color-fg': 'color-mix(in srgb, #ffffff 50%, #000000)'
 		});
 
 		const tokens = readChartTokens(el);
-		expect(tokens.series1).toBe('#46D5C8');
-		expect(tokens.fg).toBe('#DEE7EE');
+		expect(near(tokens.series1, '#b48ce8')).toBe(true);
+		expect(near(tokens.fg, '#808080')).toBe(true);
+	});
+
+	it('falls back on a value the engine cannot paint', () => {
+		const el = withTokens({ '--color-beacon': 'not a colour at all' });
+
+		expect(readChartTokens(el).series1).toBe('#46D5C8');
 	});
 
 	it('falls back when a token is missing entirely', () => {
@@ -75,9 +91,9 @@ describe('readChartTokens', () => {
 		for (const value of Object.values(tokens)) expect(value).toMatch(/^#[0-9a-f]{6}$/i);
 	});
 
-	it('follows a user-chosen accent, because series-1 is the accent', () => {
-		// doc 12 §2: the accent is overridable in Settings, and JavaScript sets
-		// exactly one property — `--color-beacon` — on `<html>`.
+	it('follows a user-chosen accent, because series-1 is the beacon', () => {
+		// doc 12 §2: the accent is overridable in Settings; JavaScript sets
+		// `--tp-accent` on `<html>`, and app.css derives `--color-beacon` from it.
 		const el = withTokens({ '--color-beacon': '#b48ce8' });
 		expect(readChartTokens(el).series1).toBe('#b48ce8');
 	});

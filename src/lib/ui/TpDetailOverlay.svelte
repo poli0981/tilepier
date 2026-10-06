@@ -279,7 +279,12 @@
 			</div>
 		{:else}
 			<!-- doc 13 §7: skeleton, never a spinner. The motion masks the load. -->
-			<div class="tp-detail__state" aria-busy="true" aria-label={m['common.detail.loading']()}>
+			<div
+				class="tp-detail__state"
+				role="status"
+				aria-busy="true"
+				aria-label={m['common.detail.loading']()}
+			>
 				<TpTideGauge size={48} animated level={0.35} />
 			</div>
 		{/if}

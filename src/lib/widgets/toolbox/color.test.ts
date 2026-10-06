@@ -16,11 +16,11 @@ import {
 /**
  * doc 07 §7's colour tab.
  *
- * The contrast figures are checked against **the design tokens themselves**,
- * not against this module's own output. doc 13 §8 states the ratio of two token
- * pairs as fact and doc 13 §8's Week 8 audit rests on them, so if the ramp and
- * the doc ever disagree CI should say so — which is exactly what happened the
- * first time this ran.
+ * The contrast figures are fixtures for this module's arithmetic: colours
+ * typed here, with ratios measured once and cross-checked. Until Week 8 this
+ * header said they were checked against the design tokens, which a test that
+ * types its own hex cannot do; the tokens are measured by
+ * `ui/contrast.svelte.test.ts`, in the browser, from app.css itself.
  */
 
 const BLACK: TpRgb = { r: 0, g: 0, b: 0 };
@@ -129,13 +129,14 @@ describe('contrastRatio', () => {
 		expect(contrastRatio(a, b)).toBeCloseTo(contrastRatio(b, a), 10);
 	});
 
-	it('agrees with the figures doc 13 §8 states for the token pairs', () => {
-		// doc 13 §8 asserted 11.9 and 5.1 before anything had computed them.
-		// Measured here on 2026-08-28 they are 15.35 and 7.16 — both better than
-		// claimed, both still wrong as written, and both now checked against the
-		// tokens so the doc and the ramp cannot drift apart again. Cross-checked
-		// against a second implementation written from the WCAG 2.1 text, which
-		// agreed to ten places.
+	it('reproduces the figures first measured for the dark ramp', () => {
+		// Arithmetic against fixed colours: the pairs doc 13 §8 measured on
+		// 2026-08-28, cross-checked then against a second implementation written
+		// from the WCAG 2.1 text, which agreed to ten places. These are this
+		// module's fixtures, not the tokens — the hex is typed here, so no token
+		// change could fail this test, which is why it no longer says it checks
+		// them. The tokens themselves are measured by `ui/contrast.svelte.test.ts`
+		// in the engine that draws them (Week 8).
 		const ink900 = { r: 0x0b, g: 0x0f, b: 0x14 };
 		expect(parseHex('#0B0F14')).toEqual(ink900);
 
@@ -152,9 +153,8 @@ describe('contrastRatio', () => {
 		expect(contrastRatio(fgMute as TpRgb, ink900)).toBeCloseTo(7.16, 2);
 		expect(contrastVerdict(contrastRatio(fgMute as TpRgb, ink900))).toBe('AAA');
 
-		// The finding doc 13 §8 now records for the Week 8 audit: `fg-dim` is a
-		// large-text pass and a normal-text failure, and it is used at
-		// `--text-2xs` in three widgets.
+		// The finding that started the Week 8 audit: the old `fg-dim`, #5C6B7A,
+		// is a large-text pass and a normal-text failure. The token is #738292 now.
 		expect(contrastRatio(fgDim as TpRgb, ink900)).toBeCloseTo(3.51, 2);
 		expect(contrastVerdict(contrastRatio(fgDim as TpRgb, ink900))).toBe('AA-large');
 	});

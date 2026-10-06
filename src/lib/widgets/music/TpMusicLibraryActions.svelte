@@ -163,7 +163,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
-		min-height: 36px;
+		min-height: var(--tp-target);
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-ctl);
 		background: none;

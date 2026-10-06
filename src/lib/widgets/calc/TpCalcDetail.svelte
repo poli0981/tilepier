@@ -266,7 +266,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		min-height: 36px;
+		min-height: var(--tp-target);
 	}
 
 	.tp-calcd__tape {
@@ -356,7 +356,7 @@
 	.tp-calcd__convert input,
 	.tp-calcd__convert output,
 	.tp-calcd__convert select {
-		border: 1px solid var(--color-ink-700);
+		border: 1px solid var(--color-field);
 		border-radius: var(--radius-ctl);
 		background: none;
 		color: var(--color-fg);

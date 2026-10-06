@@ -47,6 +47,7 @@
 		"qrcode-generator": "^2.0.4"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "^4.13.0",
 		"@eslint/js": "^10.0.1",
 		"@fontsource/be-vietnam-pro": "^5.3.0",
 		"@fontsource/jetbrains-mono": "^5.3.0",

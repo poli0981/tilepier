@@ -2,10 +2,10 @@
  * Colour maths for doc 07 §7's third tab: parsing, the WCAG contrast check,
  * and the tint/shade ramp.
  *
- * The contrast half is not only the widget's. doc 13 §8 puts a contrast audit
- * of every semantic-on-surface pair in Week 8, and doc 12 §4 already asserts
- * figures for two of them — so this is where that audit gets its arithmetic,
- * and it is written to be reusable rather than to serve one panel.
+ * The contrast half was first written to give doc 13 §8's Week 8 audit its
+ * arithmetic. The audit itself measures the tokens in the engine that paints
+ * them (`ui/contrast.svelte.test.ts`, with its own independent formula), so
+ * this module serves the widget's tab.
  *
  * sRGB throughout, which is what `#rrggbb` means and what WCAG 2.1 defines its
  * relative luminance over.

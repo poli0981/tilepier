@@ -262,9 +262,12 @@ class SettingsStore {
 	 * Mirrors settings onto `<html>`. Called from a `$effect` in the root
 	 * layout — reading the state here is what makes that effect re-run.
 	 *
-	 * Only `--color-beacon` is set: the soft and deep variants are derived with
-	 * `color-mix(in oklch, …)` in app.css, so a custom accent stays usable in
-	 * both themes without shipping a colour module (doc 12 §2).
+	 * Only `--tp-accent` is set — the reader's choice, as chosen. app.css derives
+	 * the beacon from it per theme and the soft and deep variants from the
+	 * beacon, so a custom accent stays legible in both themes without shipping
+	 * a colour module (doc 12 §2). Setting `--color-beacon` itself, as this did
+	 * until Week 8, put an inline value above every theme rule: the light theme
+	 * could not darken an accent it could not reach.
 	 */
 	applyToDocument(): void {
 		if (typeof document === 'undefined') return;
@@ -276,7 +279,7 @@ class SettingsStore {
 		// boot.js never ran — is the shown, themed scrollbar (doc 12 §9).
 		if (this.scrollbars === 'hidden') root.setAttribute('data-scrollbars', 'hidden');
 		else root.removeAttribute('data-scrollbars');
-		root.style.setProperty('--color-beacon', this.#value.accent);
+		root.style.setProperty('--tp-accent', this.#value.accent);
 	}
 
 	dispose(): void {
