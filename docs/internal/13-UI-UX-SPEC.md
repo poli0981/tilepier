@@ -291,6 +291,12 @@ and stacked below. **No save button** — every control writes through
 `stores/settings.svelte.ts` immediately. Local-first means there is nothing to
 submit.
 
+A choice group (`role="group"`) is named by **its own row's label**, never by
+its section's heading, and a swatch by its colour's name, never its hex. Until
+2026-10-06 the theme and motion groups were both labelled by the Appearance
+heading, so a screen reader announced two groups called "Appearance", and the
+swatches were read out as six hex digits.
+
 | # | Section | Contents | Lands |
 |---|---------|----------|-------|
 | 1 | Ngôn ngữ / Language | vi \| en segmented control; changing it reloads (doc 14 §1) | Week 1 |

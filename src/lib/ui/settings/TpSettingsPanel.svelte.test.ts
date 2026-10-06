@@ -91,6 +91,35 @@ describe('round-trips', () => {
 	});
 });
 
+describe('names for assistive technology', () => {
+	it('names each choice group by its own row, not by its section', async () => {
+		// Until 2026-10-06 the theme and motion groups were both labelled by the
+		// Appearance heading, so a screen reader announced two groups called
+		// "Appearance" and neither said what it chose.
+		const screen = render(TpSettingsPanel);
+
+		for (const label of [
+			m['settings.language.label'](),
+			m['settings.appearance.theme'](),
+			m['settings.appearance.motion'](),
+			m['settings.appearance.scrollbars']()
+		]) {
+			await expect.element(screen.getByRole('group', { name: label, exact: true })).toBeVisible();
+		}
+	});
+
+	it('names the accent swatches by colour rather than by hex', async () => {
+		const screen = render(TpSettingsPanel);
+
+		await expect
+			.element(screen.getByRole('button', { name: m['settings.appearance.accent_teal']() }))
+			.toHaveAttribute('aria-pressed', 'true');
+		await screen.getByRole('button', { name: m['settings.appearance.accent_violet']() }).click();
+
+		expect(settings.accent).toBe('#b48ce8');
+	});
+});
+
 describe('deck', () => {
 	it('restores the seeded layout', async () => {
 		const screen = render(TpSettingsPanel);

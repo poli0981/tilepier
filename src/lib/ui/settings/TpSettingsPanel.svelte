@@ -43,6 +43,15 @@
 	 *  they are the one place a literal colour is right. tokens-audit-ignore */
 	const ACCENTS = ['#46d5c8', '#7b8ff2', '#e8b750', '#57c785', '#e8705f', '#b48ce8'] as const;
 
+	/** What a screen reader says for each swatch, in ACCENTS' order: a colour's
+	 *  name rather than six hex digits. By position, so the colours stay on the
+	 *  one line tokens:audit exempts. */
+	const ACCENT_NAMES = ['teal', 'blue', 'amber', 'green', 'coral', 'violet'] as const;
+
+	function accentLabel(index: number): string {
+		return m[`settings.appearance.accent_${ACCENT_NAMES[index] ?? 'custom'}`]();
+	}
+
 	const THEMES = ['dark', 'light', 'system'] as const;
 	const MOTION = ['system', 'on', 'off'] as const;
 	const SCROLLBARS = ['shown', 'hidden'] as const;
@@ -237,8 +246,8 @@
 	<section aria-labelledby="s-language">
 		<h2 id="s-language">{m['settings.language.title']()}</h2>
 		<div class="tp-row">
-			<span>{m['settings.language.label']()}</span>
-			<div class="tp-segmented" role="group" aria-labelledby="s-language">
+			<span id="s-language-label">{m['settings.language.label']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-language-label">
 				{#each LOCALES as locale (locale)}
 					<button
 						type="button"
@@ -258,8 +267,8 @@
 		<h2 id="s-appearance">{m['settings.appearance.title']()}</h2>
 
 		<div class="tp-row">
-			<span>{m['settings.appearance.theme']()}</span>
-			<div class="tp-segmented" role="group" aria-labelledby="s-appearance">
+			<span id="s-theme">{m['settings.appearance.theme']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-theme">
 				{#each THEMES as theme (theme)}
 					<button
 						type="button"
@@ -276,13 +285,13 @@
 		<div class="tp-row">
 			<span>{m['settings.appearance.accent']()}</span>
 			<div class="tp-swatches">
-				{#each ACCENTS as accent (accent)}
+				{#each ACCENTS as accent, index (accent)}
 					<button
 						type="button"
 						class="tp-swatch"
 						class:selected={settings.accent === accent}
 						style="--swatch: {accent}"
-						aria-label={accent}
+						aria-label={accentLabel(index)}
 						aria-pressed={settings.accent === accent}
 						data-testid="accent-{accent.slice(1)}"
 						onclick={() => settings.patch({ accent })}
@@ -298,8 +307,8 @@
 		</div>
 
 		<div class="tp-row">
-			<span>{m['settings.appearance.motion']()}</span>
-			<div class="tp-segmented" role="group" aria-labelledby="s-appearance">
+			<span id="s-motion">{m['settings.appearance.motion']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-motion">
 				{#each MOTION as value (value)}
 					<button
 						type="button"
@@ -313,7 +322,7 @@
 			</div>
 		</div>
 
-		<!-- doc 12 §9. Named by its own row, not the section. -->
+		<!-- doc 12 §9. -->
 		<div class="tp-row">
 			<span id="s-scrollbars">{m['settings.appearance.scrollbars']()}</span>
 			<div class="tp-segmented" role="group" aria-labelledby="s-scrollbars">
