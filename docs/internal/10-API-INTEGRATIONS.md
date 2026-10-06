@@ -401,11 +401,11 @@ link to it "next to any location Open-Meteo data are displayed"; this list
 asks for the detail and the licences page, as doc 16 §5 always has, and the
 tile is the owner's call (doc 23, Week 8).
 
-- [ ] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail —
-  **the detail since 2026-10-06**, with a link to each
-  (`TpWeatherDetail.svelte.test.ts` › credits Open-Meteo with links to it and
-  to CC BY 4.0). The licences page names both and links neither; that half
-  lands with the register in 8b-1.
+- [x] Open-Meteo link + CC BY 4.0 notice on licenses page and weather detail —
+  the detail with a link to each (`TpWeatherDetail.svelte.test.ts` › credits
+  Open-Meteo with links to it and to CC BY 4.0), and the licences page, whose
+  register links both since 8b-1 (`legal-gate.e2e.ts` › the licences page
+  carries every licence that ships; `register.test.ts` holds the row).
 - [x] ER-API attribution link rendered wherever rates shown —
   `TpCurrencyWidget.svelte.test.ts` (the tile's credit: href and rel) and
   `TpCurrencyDetail.svelte.test.ts` › credits ExchangeRate-API with a real link.
@@ -414,8 +414,8 @@ tile is the owner's call (doc 23, Week 8).
   TileJSON, read 2026-09-25 (§6), so a change upstream is the owner's
   production check (doc 19 §5) to catch, not this suite's.
 - [x] © OpenMapTiles visible on every map render (CC BY 4.0; same control, same test)
-- [ ] Photon/komoot credited on licenses page — the row is there; nothing holds
-  it yet. The register test of 8b-1 does (doc 16 §5 ↔ the page).
+- [x] Photon/komoot credited on licenses page — `register.test.ts` holds the
+  page's register to doc 16 §5 row for row (8b-1).
 - [x] Finnhub / Twelve Data credit lines in markets detail footer —
   `TpMarketsDetail.svelte.test.ts` › carries the stock footnote and credits
   both upstreams.

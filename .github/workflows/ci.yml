@@ -79,6 +79,12 @@ jobs:
       - name: Bundle budgets
         run: pnpm budgets
 
+      # doc 16 §5. The licence appendix on /legal/licenses is generated from the
+      # build, so a package that starts shipping without its licence on the page
+      # fails here: `pnpm build && pnpm licenses:gen`, then commit the file.
+      - name: Licence appendix
+        run: pnpm licenses:gen --check
+
       # doc 21 §5. Greps the built client assets for key names, common key
       # formats, and CDN hosts (doc 15 §6). Any hit fails the build.
       - name: Client bundle secret and CDN gate

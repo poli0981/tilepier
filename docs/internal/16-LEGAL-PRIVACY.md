@@ -200,6 +200,44 @@ Week 8 script — the page had no defined interim content):
 The page marks the boundary with an HTML comment so the Week 8 generator has an
 unambiguous insertion point.
 
+**Both halves built as code on 2026-10-06.**
+
+- **The register is data**, `src/lib/legal/register.ts`, and
+  `register.test.ts` holds it to this table row for row, by each row's Item
+  cell. The page had kept its own list since Week 1 and had fallen two rows
+  behind this one (the quote dataset, qrcode-generator) while naming no icon
+  source. Sources with one place to go are links now, and so are the licences
+  with a canonical text. One correction came out of it: **Paraglide is MIT**
+  (Opral US Inc.), not Apache-2.0 as the deps row said.
+- **The appendix is `pnpm licenses:gen`**, which writes
+  `src/lib/legal/licenses.generated.json` after a build. "Reads
+  `package.json` + this list" was not enough: `pnpm licenses list --prod`
+  misses svelte and SvelteKit, and devalue, cookie and set-cookie-parser under
+  them — devDependencies whose code ships in the Worker and the page. So it
+  takes the union of the build's own module graph (the page, the server, the
+  music tag worker; recorded by `scripts/vite-shipped.ts`), the modules the
+  adapter's `_worker.js` names (worktop), `pnpm licenses list --prod` (what
+  wrangler bundles at deploy, and MapLibre's dependencies inside its vendored
+  files), and a short list with reasons: Paraglide's compiled runtime,
+  Tailwind's preflight, the adapter's worker entry, the two font packages, and
+  Lucide's licence for the hand-adapted icon geometry
+  (`src/lib/ui/icons/LICENSE-lucide.txt`). The union errs wide on purpose:
+  a package listed that does not ship costs a paragraph, one missing is the
+  breach. NOTICE files are kept (Apache-2.0 §4(d)).
+- **A package that ships no licence file** is read from its README's licence
+  section, or from the notice that opens its main file (qrcode-generator's,
+  which carries the DENSO WAVE trademark line), plus the MIT text it names.
+  Three ship no text at all and declare MIT — `@nodable/entities`,
+  `murmurhash-js`, `worktop`; for them the page shows the MIT licence with the
+  declared author as the holder, and says so. Anything else stops the
+  generator until a person has read it.
+- **`pnpm licenses:gen --check` runs in CI after the build**, so a dependency
+  that starts shipping without its licence on the page fails the pull request.
+  Versions are left out of the file, so a patch release does not churn it.
+- **The page has `csr = false`**: about 150 KB of licence text stays HTML and
+  never becomes JavaScript. It is also left out of the service worker's
+  precache (doc 17 §2), so offline it falls back to the offline page.
+
 | Item | License | Obligation |
 |------|---------|-----------|
 | Open-Meteo data | CC BY 4.0 (non-commercial API tier) | credit + link (weather detail + licenses) |
@@ -210,7 +248,7 @@ unambiguous insertion point.
 | Photon (komoot) | Apache-2.0 service | credit on licenses |
 | Nominatim | policy: UA + caching | technical compliance (doc 10 §6) + credit |
 | Finnhub / Twelve Data / Binance.US | per ToS | credit lines in markets detail + licenses (Binance.US replaced Binance 2026-09-23, whose WAF refuses Cloudflare Workers — doc 10 §4) (Stooq left the register 2026-09-23 with the fallback it served, doc 10 §5) |
-| gridstack (MIT), ECharts (Apache-2.0), MapLibre (BSD-3), Dexie (Apache-2.0), Svelte/Kit (MIT), Tailwind (MIT), marked (MIT), DOMPurify (Apache-2.0/MPL dual), music-metadata (MIT), Paraglide (Apache-2.0), fast-xml-parser (MIT), icon sources (ISC) | — | license texts reproduced in licenses page bundle |
+| gridstack (MIT), ECharts (Apache-2.0), MapLibre (BSD-3), Dexie (Apache-2.0), Svelte/Kit (MIT), Tailwind (MIT), marked (MIT), DOMPurify (Apache-2.0/MPL dual), music-metadata (MIT), Paraglide (MIT), fast-xml-parser (MIT), icon sources (ISC) | — | license texts reproduced in licenses page bundle |
 | Bundled quote dataset (from QuoteAtlas) | CC0 1.0 for curation and own translations; originals public-domain | `src/lib/widgets/quote/data/DATA-LICENSE.md`, the source note in the quote detail, and a line on the licences page. `scripts/quotes-import.mjs` refuses to build if an entry marked `quoted-with-attribution` appears, and `service.test.ts` asserts the same rule over the shipped file |
 | qrcode-generator (Kazuhiko Arase) | MIT | licence text in the licences page bundle; "QR Code" is a registered trademark of DENSO WAVE, which the library's own notice records and this page carries |
 | Be Vietnam Pro, JetBrains Mono | OFL 1.1 | OFL text shipped with fonts; fonts not sold separately |

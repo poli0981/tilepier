@@ -354,8 +354,12 @@ width is not.
 
 ## 5. Manual test matrix (release gate)
 
-Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android
-Chrome. Music FSA path: Chromium only + fallback verified on Firefox. Brave is
+Browsers: Chrome, Edge, Firefox, Safari (macOS), iOS Safari, Android Chrome —
+the last two majors of each, iOS 17 at the oldest, as doc 02 targets (Version
+and CVE policy, item 8). (This
+line said "Safari 17" until Week 8, two majors behind that target; the
+scrollbar colour of doc 12 §9 needs Safari 26.2, and older Safari draws its own
+scrollbar, which is the fallback.) Music FSA path: Chromium only + fallback verified on Firefox. Brave is
 Chromium without File System Access (switched off by default), so it is a
 fallback browser too: 100+ songs imported and played there, and in Firefox, on
 production on 2026-09-29 (doc 22 §S7).
@@ -437,6 +441,11 @@ run.
 
 ## 6. Widget Definition of Done (per widget, tracked in PR template)
 
+The PR template (`.github/pull_request_template.md`, Week 8) carries these
+nine boxes; it did not exist before, so until then they were tracked in the
+records below and in each week's PR bodies.
+
+
 - [ ] Tile view at every allowed density tier (S/M/L as applicable)
 - [ ] Detail view (if manifest declares one) incl. deep-link render
 - [ ] Every doc 06 §3 state **required for this widget's doc 17 §3 class**
@@ -474,3 +483,18 @@ boxes need naming rather than ticking.
   change column is absent rather than zero before a second day is recorded, and
   the cross rate is computed client-side because doc 11 §3 gives `/api/fx` no
   parameters.
+
+## 7. Severity (P0–P3)
+
+Defined 2026-10-06. The charter's release bar is "zero P0/P1 open bugs at tag
+time" (doc 01), and neither level had a definition, so the bar could not be
+measured. A bug takes the highest level any row fits, set by the maintainer at
+triage as a label on the issue (doc 18 §3). Where two readings are possible,
+take the higher and say why in the issue.
+
+| Level | What it is | For example | At release |
+| ----- | ---------- | ----------- | ---------- |
+| **P0** | Data lost; a security or privacy exposure; the shell, the gate or the deck unusable | a restore that brings back less than the backup holds; a reader's data leaving the device unasked; a security header or the CSP gone; a deck that does not render | Blocks every release. Fixed, or rolled back (doc 21 §4), the day it is found |
+| **P1** | A widget's main job broken; a legal obligation unmet; a WCAG 2.2 A/AA failure that blocks a task | a tile that never leaves its skeleton; an old number shown as current; a missing credit or disclaimer (doc 10 §8, doc 16 §4–5); a control with no keyboard path | Blocks a release: no tag while one is open |
+| **P2** | Wrong, with a way round it; a secondary function broken | a detail that needs a reload to update; a layout that degrades at one density; an A/AA failure with an equal alternative beside it | May ship, named under "Known limitations" in `CHANGELOG.md` |
+| **P3** | Cosmetic: copy, polish, an inconsistency that misleads nobody | a glyph a pixel off; a misworded note in `?debug=1` output | Whenever |

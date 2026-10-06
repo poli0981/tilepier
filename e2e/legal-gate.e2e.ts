@@ -202,6 +202,29 @@ test('prose pages ship both locales and show one', async ({ page }) => {
 	}
 });
 
+test('the licences page carries every licence that ships, and runs no script (doc 16 §5)', async ({
+	page
+}) => {
+	const scripts: string[] = [];
+	page.on('request', (request) => {
+		const path = new URL(request.url()).pathname;
+		if (path.startsWith('/_app/') && path.endsWith('.js')) scripts.push(path);
+	});
+	await page.goto('/legal/licenses');
+
+	// The devDependencies whose code ships, which `pnpm licenses list --prod`
+	// cannot see — the reason licenses:gen reads the build's module graph.
+	const appendix = page.getByTestId('licence-appendix');
+	for (const name of ['@sveltejs/kit', 'devalue', 'set-cookie-parser', 'worktop']) {
+		await expect(appendix.locator('summary', { hasText: name }).first()).toBeAttached();
+	}
+	// The register's sources are links now.
+	await expect(page.locator("[data-locale='vi'] a[href='https://open-meteo.com/']")).toHaveCount(1);
+
+	// `csr = false`: the text stays HTML, and the page loads no app script.
+	expect(scripts).toEqual([]);
+});
+
 test('the gate links to every prose page', async ({ page }) => {
 	await page.goto('/');
 	const gate = page.locator(".tp-gate [data-locale='vi']");

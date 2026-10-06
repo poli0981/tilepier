@@ -59,7 +59,7 @@ conventions. Shared client/server types live in `lib/api-types.ts` only.
 
 ## 4. Lint / format / dead code
 
-- ESLint 9 flat config: `typescript-eslint` strict-type-checked +
+- ESLint 10 flat config (9 until the 2026-08-10 registry re-check, doc 02): `typescript-eslint` strict-type-checked +
   `eslint-plugin-svelte` recommended + custom rules: no-restricted-imports
   (cross-widget imports, doc 03 §"boundaries"), `svelte/no-at-html-tags`
   error, no `console.log` (only warn/error which the ring buffer wraps).
