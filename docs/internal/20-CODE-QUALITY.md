@@ -96,7 +96,7 @@ after it reshaped the entire Week 1 commit plan.)
 | Entry (shell + registry + tier-1 essentials) | ≤ 200 KB JS |
 | CSS total | ≤ 45 KB |
 | Each widget tile chunk | ≤ 40 KB |
-| Detail chunks w/ ECharts (weather, currency, markets) | ≤ 350 KB each, excluding the shared echarts chunk |
+| Detail chunks (excluding the shared echarts chunk) | ≤ 350 KB each — every detail, not only the three that chart |
 | Shared echarts core chunk (lazy, counted once) | ≤ 330 KB |
 | maplibre (vendored modules: main, shared, worker — on first map mount) | ≤ 300 KB |
 | music tag worker (music-metadata, one file — scans only) | ≤ 80 KB |
@@ -111,7 +111,11 @@ after it reshaped the entire Week 1 commit plan.)
 
 Enforced by a `scripts/check-budgets.mjs` reading the Rolldown manifest in
 CI (`pnpm build && pnpm budgets`); budget table lives in one JSON consumed
-by both the script and this doc's regeneration.
+by both the script and this doc's regeneration. **`src/lib/budgets-doc.test.ts`
+holds this table to that JSON, row by row** — since Week 8. §8 had promised
+such a test from the start and none existed; the detail row had already
+drifted, named here for the three charting details while the gate measured
+every detail under another name.
 
 Measured 2026-08-10 by spike S4: entry 1.7 KB gz, CSS 6.2 KB gz, fonts
 148.4 KB raw, echarts 183.4 KB gz, maplibre 263.8 KB gz. Only maplibre is

@@ -135,3 +135,23 @@ test.describe('S4 · lazy chunk loading', () => {
 		expect(vendored).toEqual(expect.arrayContaining(['maplibre-gl-shared.mjs', 'maplibre-gl.mjs']));
 	});
 });
+
+test('the first tile on screen is marked, once, for the cold-load figure (doc 01)', async ({
+	page
+}) => {
+	await page.goto('/');
+	const accept = page.getByRole('button', { name: 'Tôi đồng ý' });
+	await expect(accept).toBeEnabled();
+	await accept.click();
+	await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+
+	await expect
+		.poll(() => page.evaluate(() => performance.getEntriesByName('tp:first-tile').length))
+		.toBe(1);
+	// A reload is the cold load doc 01 times; it marks again, once.
+	await page.reload();
+	await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+	await expect
+		.poll(() => page.evaluate(() => performance.getEntriesByName('tp:first-tile').length))
+		.toBe(1);
+});
