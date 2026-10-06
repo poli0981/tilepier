@@ -41,7 +41,7 @@
 		"dompurify": "^3.4.16",
 		"echarts": "^6.1.0",
 		"fast-xml-parser": "^5.10.1",
-		"gridstack": "^12.6.0",
+		"gridstack": "^14.0.0",
 		"maplibre-gl": "^6.10.0",
 		"marked": "^18.0.9",
 		"music-metadata": "^11.16.1",
