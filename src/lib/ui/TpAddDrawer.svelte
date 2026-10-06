@@ -150,7 +150,7 @@
 		right: 0;
 		bottom: 0;
 		z-index: 61;
-		width: min(24rem, 100vw);
+		width: min(24rem, 100%);
 		overflow-y: auto;
 		border-left: 1px solid var(--color-ink-700);
 		background: var(--color-ink-850);

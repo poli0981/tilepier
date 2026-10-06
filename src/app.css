@@ -238,6 +238,15 @@ html {
 	/* The top bar is sticky, so anything scrolled into view — by Tab, by a
 	   fragment link — would otherwise land underneath it (WCAG 2.4.11). */
 	scroll-padding-top: var(--tp-bar-h);
+	/* The deck scrolls the window, and gridstack counts its columns from the
+	   grid's width (doc 06 §5.4). Without a reserved gutter, a classic
+	   scrollbar appearing narrows the grid by its own width — entering edit
+	   mode adds the strip, which is enough to tip a deck that fits into one that
+	   scrolls — and at a breakpoint that flips the column count under the
+	   reader. `stable` keeps the width the same whether the page overflows or
+	   not; overlay scrollbars reserve nothing either way. Fixed surfaces size
+	   themselves with `100%`, never `100vw`, which would reach under the gutter. */
+	scrollbar-gutter: stable;
 	background: var(--color-ink-950);
 	color: var(--color-fg);
 	font-family: var(--font-sans);

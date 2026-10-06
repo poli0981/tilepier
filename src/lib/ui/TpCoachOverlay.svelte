@@ -50,7 +50,7 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.75rem;
-		max-width: min(26rem, calc(100vw - 2 * var(--tp-page-pad)));
+		max-width: min(26rem, calc(100% - 2 * var(--tp-page-pad)));
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
 		background: var(--color-ink-850);

@@ -76,7 +76,7 @@
 		left: 50%;
 		z-index: 71;
 		transform: translate(-50%, -50%);
-		width: min(22rem, calc(100vw - 2rem));
+		width: min(22rem, calc(100% - 2rem));
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
 		background: var(--color-ink-850);

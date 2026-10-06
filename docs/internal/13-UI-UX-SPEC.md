@@ -151,6 +151,11 @@ show "on deck" disabled state. Search filters by name.
   layouts = v1.x backlog item — document limitation in About).
 - Touch: drag/resize only in edit mode (long-press to enter), preventing
   scroll-hijack; detail panels become full-screen sheets under 768 px.
+- The page reserves its scrollbar gutter (doc 06 §5.4), so a fixed surface
+  — the drawer, the detail panel and its full-screen sheet, the dialogs, the
+  coach — sizes itself with `100%`, never `100vw`. `100vw` includes the
+  scrollbar, so a sheet sized with it ran 15 px under the page's scrollbar on
+  Windows, where its close button sits. (2026-10-06, `e2e/scrollbars`.)
 
 ## 7. States (visual definitions)
 
