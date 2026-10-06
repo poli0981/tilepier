@@ -1,8 +1,10 @@
 # 23 · Roadmap — 8 Weeks to v1.0
 
-Solo-dev cadence; each week ends with a working deployable `main`.
-Milestone tags `v0.<week>` deployed to production domain from Week 1
-(dogfooding in prod is the QA strategy).
+Solo-dev cadence; each week ends with a working deployable `main`, deployed
+to the production domain from Week 1 (dogfooding in prod is the QA strategy).
+The plan was a milestone tag `v0.<week>` for each; **none was ever cut**
+(found 2026-10-06) — every merge to `main` deployed, and the merge commits are
+the record. The first tag is `v1.0.0`, at the end of Week 8.
 
 ## Week 0 (≈5 days) — Spikes · **COMPLETE 2026-08-10, gate open**
 S1–S5 per doc 22 + exit review. **Gate:** all spikes green-or-fallbacked.

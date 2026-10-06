@@ -62,7 +62,7 @@ jobs:
     uses: poli0981/.github/.github/workflows/wf-node-ci.yml@main
     with:
       node-version: "24"
-      pnpm-version: "10"
+      pnpm-version: "11"
       run-budgets: true
 ```
 

@@ -98,6 +98,8 @@ tilepier/
 │  │  ├─ charts/                 # echarts setup: core init, theme bridge
 │  │  ├─ lunar/                  # Hồ Ngọc Đức algorithm (ported from QuoteAtlas)
 │  │  ├─ i18n/                   # paraglide output + helpers
+│  │  ├─ legal/                  # the licences register + generated appendix (doc 16 §5)
+│  │  ├─ server/                 # server-only: the security header list (doc 15 §2)
 │  │  └─ stores/                 # app-level runes stores (settings, theme, online)
 │  ├─ routes/
 │  │  ├─ +layout.svelte / +layout.ts
@@ -119,13 +121,15 @@ tilepier/
 │  │     ├─ geocode/+server.ts
 │  │     └─ _lib/ (kv-cache.ts, ratelimit.ts, upstream.ts, respond.ts)
 │  ├─ hooks.server.ts            # security headers, error shaping
-│  └─ service-worker.ts          # if S5 forces hand-rolled SW
+│  └─ service-worker.ts          # hand-rolled, as S5 decided (doc 17 §2)
 ├─ e2e/                          # Playwright
 ├─ static/                       # fonts (self-hosted), icons, manifest
-├─ docs/internal/                # this suite (gitignored — decide at init)
-├─ .github/workflows/            # caller stubs (doc 21)
+├─ docs/internal/                # this suite (committed)
+├─ docs/self-hosting.md          # running a copy on another domain
+├─ .github/workflows/            # ci, e2e, codeql — authored here (doc 21)
 ├─ .github/dependabot.yml        # dependency updates (doc 21 §6)
-├─ wrangler.toml                 # Worker name, KV binding, custom domain
+├─ wrangler.jsonc                # Worker name, KV binding; the domain is bound in the dashboard (doc 21 §4)
+├─ README.md · README.vi.md · CONTRIBUTING.md · SECURITY.md · LICENSE
 ├─ eslint.config.js · knip.jsonc · prettier.config.js
 └─ package.json · pnpm-lock.yaml · svelte.config.js · vite.config.ts
 ```

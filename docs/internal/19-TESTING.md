@@ -354,8 +354,12 @@ width is not.
 
 ## 5. Manual test matrix (release gate)
 
-Browsers: Chrome, Edge, Firefox, Safari 17 (macOS), iOS Safari, Android
-Chrome. Music FSA path: Chromium only + fallback verified on Firefox. Brave is
+Browsers: Chrome, Edge, Firefox, Safari (macOS), iOS Safari, Android Chrome —
+the last two majors of each, iOS 17 at the oldest, as doc 02 targets (Version
+and CVE policy, item 8). (This
+line said "Safari 17" until Week 8, two majors behind that target; the
+scrollbar colour of doc 12 §9 needs Safari 26.2, and older Safari draws its own
+scrollbar, which is the fallback.) Music FSA path: Chromium only + fallback verified on Firefox. Brave is
 Chromium without File System Access (switched off by default), so it is a
 fallback browser too: 100+ songs imported and played there, and in Firefox, on
 production on 2026-09-29 (doc 22 §S7).
@@ -437,15 +441,15 @@ run.
 
 ## 6. Widget Definition of Done (per widget, tracked in PR template)
 
-- [ ] Tile view at every allowed density tier (S/M/L as applicable)
-- [ ] Detail view (if manifest declares one) incl. deep-link render
-- [ ] Every doc 06 §3 state **required for this widget's doc 17 §3 class**
-      implemented and component-tested; the states that class marks N/A are
 The PR template (`.github/pull_request_template.md`, Week 8) carries these
 nine boxes; it did not exist before, so until then they were tracked in the
 records below and in each week's PR bodies.
 
 
+- [ ] Tile view at every allowed density tier (S/M/L as applicable)
+- [ ] Detail view (if manifest declares one) incl. deep-link render
+- [ ] Every doc 06 §3 state **required for this widget's doc 17 §3 class**
+      implemented and component-tested; the states that class marks N/A are
       named in the PR rather than quietly skipped (doc 06 §3 table, added
       2026-08-27 — this line previously read "all states", which no tier-1
       widget can honour)
