@@ -61,6 +61,18 @@ describe('round-trips', () => {
 		expect(settings.motionOK).toBe(false);
 	});
 
+	it('hides scrollbars, and names the control by its own row', async () => {
+		const screen = render(TpSettingsPanel);
+
+		await screen.getByTestId('scrollbars-hidden').click();
+
+		expect(settings.scrollbars).toBe('hidden');
+		expect(stored()?.['scrollbars']).toBe('hidden');
+		await expect
+			.element(screen.getByRole('group', { name: m['settings.appearance.scrollbars']() }))
+			.toBeVisible();
+	});
+
 	it('toggles the 24-hour clock', async () => {
 		const screen = render(TpSettingsPanel);
 

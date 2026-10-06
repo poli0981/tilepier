@@ -294,7 +294,7 @@ submit.
 | # | Section | Contents | Lands |
 |---|---------|----------|-------|
 | 1 | Ngôn ngữ / Language | vi \| en segmented control; changing it reloads (doc 14 §1) | Week 1 |
-| 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off) | Week 1 |
+| 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off), scrollbars (shown \| hidden, doc 12 §9 — added Week 8) | Week 1 |
 | 3 | Hiển thị / Display | 24-hour clock, week starts on | Week 1 |
 | 4 | Bàn làm việc / Deck | reset layout to the seeded default (confirm) | Week 1 |
 | 5 | Sao lưu / Backup | export JSON, import with dry-run diff (doc 05 §6) | Week 2 ✓ |

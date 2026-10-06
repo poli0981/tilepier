@@ -138,6 +138,19 @@ describe('validation', () => {
 		expect(isBackup({ ...backup, settings: { schemaVersion: 1 } })).toBe(false);
 	});
 
+	it('accepts settings written before the scrollbar setting existed', async () => {
+		// doc 05 §5's additive rule, seen from the importer: no backup taken
+		// before 2026-10-06 has `scrollbars`, and every one of them must restore.
+		const backup = await sample();
+		const before: Record<string, unknown> = { ...backup.settings };
+		delete before['scrollbars'];
+
+		expect(isBackup({ ...backup, settings: before })).toBe(true);
+		expect(isBackup({ ...backup, settings: { ...backup.settings, scrollbars: 'sideways' } })).toBe(
+			false
+		);
+	});
+
 	it('rejects a table that is not rows with ids', async () => {
 		const backup = await sample();
 		expect(isBackup({ ...backup, dexie: { ...backup.dexie, notes: 'nope' } })).toBe(false);
@@ -251,6 +264,18 @@ describe('replace', () => {
 
 		expect(result.layout).toEqual(LAYOUT);
 		expect(result.settings.schemaVersion).toBe(1);
+	});
+
+	it('carries the scrollbar setting across', async () => {
+		const backup = await buildBackup(
+			LAYOUT,
+			{ ...defaultSettings(), scrollbars: 'hidden' },
+			freshDb()
+		);
+
+		const result = await applyImport(backup, 'replace', freshDb());
+
+		expect(result.settings.scrollbars).toBe('hidden');
 	});
 
 	it('empties a table the file has nothing for', async () => {

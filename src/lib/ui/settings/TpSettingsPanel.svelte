@@ -45,6 +45,7 @@
 
 	const THEMES = ['dark', 'light', 'system'] as const;
 	const MOTION = ['system', 'on', 'off'] as const;
+	const SCROLLBARS = ['shown', 'hidden'] as const;
 
 	let estimate = $state<{ usage: number; quota: number } | null>(null);
 	let eraseArmed = $state(false);
@@ -311,6 +312,24 @@
 				{/each}
 			</div>
 		</div>
+
+		<!-- doc 12 §9. Named by its own row, not the section. -->
+		<div class="tp-row">
+			<span id="s-scrollbars">{m['settings.appearance.scrollbars']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-scrollbars">
+				{#each SCROLLBARS as value (value)}
+					<button
+						type="button"
+						aria-pressed={settings.scrollbars === value}
+						data-testid="scrollbars-{value}"
+						onclick={() => settings.patch({ scrollbars: value })}
+					>
+						{m[`settings.appearance.scrollbars_${value}`]()}
+					</button>
+				{/each}
+			</div>
+		</div>
+		<p class="tp-note">{m['settings.appearance.scrollbars_note']()}</p>
 	</section>
 
 	<section aria-labelledby="s-display">

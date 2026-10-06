@@ -13,7 +13,7 @@
  *     prerenderer cannot know — so without this script every returning user
  *     would see the gate flash on each load. Setting data-legal="ok" here lets
  *     CSS hide it before paint.
- *  2. Theme, so there is no dark/light flash.
+ *  2. Theme and the scrollbar setting, so neither flashes.
  *  3. Locale on <html lang>, which matters for hyphenation and screen readers.
  *
  * Keep this file dependency-free, tiny, and defensive: a throw here would
@@ -65,6 +65,8 @@
 					: 'dark';
 		}
 		root.setAttribute('data-theme', theme);
+		// Only when hidden, as the settings store does (doc 12 §9).
+		if (settings.scrollbars === 'hidden') root.setAttribute('data-scrollbars', 'hidden');
 
 		// The gate's language switch is a ?lang= link pair rather than a button,
 		// so it works before hydration — doc 16 §2 puts a language toggle on the

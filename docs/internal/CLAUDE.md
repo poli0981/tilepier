@@ -125,8 +125,9 @@ fails the build. Slice commits vertically — a primitive plus its first consume
    from `@theme` tokens — no raw hex in components.
 10. **Storage:** localStorage only for `tp.layout.v1` / `tp.settings.v1` /
     `tp.legal.v1` (versioned, migrated) — `core/storage/local.ts` types the key
-    off `LOCAL_KEYS` so a fourth one will not compile. Everything else Dexie
-    (`src/lib/core/storage/db.ts`). Schema changes = append a new
+    off `LOCAL_KEYS` so a fourth one will not compile. A new field with a
+    default is optional rather than a version bump (doc 05 §5's additive
+    rule). Everything else Dexie (`src/lib/core/storage/db.ts`). Schema changes = append a new
     `db.version(n)`, never edit shipped versions. Add a migration test.
     Preferences that want their own key (debug flag, coach dismissal) go inside
     `tp.settings.v1` instead.

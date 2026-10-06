@@ -14,7 +14,7 @@ import { beforeEach } from 'vitest';
  * chase.
  */
 
-const RESET_ATTRIBUTES = ['data-theme', 'data-motion', 'data-legal'];
+const RESET_ATTRIBUTES = ['data-theme', 'data-motion', 'data-legal', 'data-scrollbars'];
 
 beforeEach(() => {
 	localStorage.clear();

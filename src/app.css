@@ -133,6 +133,11 @@
 	--color-fg-mute: #8fa0b0; /* secondary */
 	--color-fg-dim: #5c6b7a; /* tertiary, timestamps */
 
+	/* Scrollbar thumb (doc 12 §9). Neutral rather than the beacon (doc 12 §4.1),
+	   and a token of its own so that raising fg-dim does not make it louder.
+	   At least 3:1 against ink-950, -900 and -850. */
+	--color-scrollbar: #5c6b7a;
+
 	/* Beacon (accent). JS only ever sets --color-beacon (settings store); the
 	   two derived values are computed here in OKLCH so a user-chosen accent
 	   stays usable in both themes without shipping a colour module (doc 12 §2).
@@ -188,6 +193,8 @@
 	--color-fg: #1a222b;
 	--color-fg-mute: #4d5a67;
 	--color-fg-dim: #78858f;
+
+	--color-scrollbar: #78858f;
 
 	/* A wash needs more of itself to read on warm paper than on deep water. */
 	--color-beacon-soft: color-mix(in oklch, var(--color-beacon) 16%, transparent);
@@ -258,6 +265,25 @@ html {
 body {
 	margin: 0;
 	min-height: 100dvh;
+}
+
+/* Scrollbars (doc 12 §9): thin, in the theme's colours, standard properties
+   only — a `::-webkit-scrollbar` rule is ignored wherever these are set.
+   `scrollbar-color` inherits, so one declaration reaches every scroller;
+   `scrollbar-width` does not, hence the universal selector. Hidden is
+   `scrollbar-width: none` and never `overflow: hidden`: the page and every
+   pane still scroll by wheel, keyboard and touch. */
+:root {
+	scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+* {
+	scrollbar-width: thin;
+}
+
+:root[data-scrollbars='hidden'],
+:root[data-scrollbars='hidden'] * {
+	scrollbar-width: none;
 }
 
 /* Bilingual prerendering (doc 14 §6). Prerendered prose ships in both locales,

@@ -3,7 +3,7 @@ import { acceptGate } from './_lib/gate';
 import { LAUNCH_ARGS } from './_lib/launch';
 
 /**
- * Scrollbars as a reader on Windows sees them (doc 06 §5.4, doc 19 §4).
+ * Scrollbars as a reader on Windows sees them (doc 12 §9, doc 06 §5.4, doc 19 §4).
  *
  * Every other spec runs with no scrollbars at all. Playwright launches headless
  * Chromium with `--hide-scrollbars`, in this suite and in Vitest's browser mode
@@ -136,4 +136,57 @@ test('a detail shown as a full-screen sheet stays clear of the scrollbar (doc 13
 
 	await page.getByTestId('detail-close').click();
 	await expect(panel).toBeHidden();
+});
+
+test('hidden scrollbars take no width, and the page still scrolls (doc 12 §9)', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1000, height: 500 });
+	await acceptGate(page, { dismissCoach: true });
+	await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+	await classicScrollbarWidth(page);
+	const gutter = (): Promise<number> =>
+		page.evaluate(() => window.innerWidth - document.documentElement.clientWidth);
+	expect(await gutter(), 'shown: the page keeps its gutter').toBeGreaterThan(0);
+
+	await page.goto('/settings');
+	await page.getByTestId('scrollbars-hidden').click();
+	await page.goto('/');
+	await expect(page.locator('.grid-stack-item').first()).toBeVisible();
+	expect(await overflows(page), 'the deck scrolls at this size').toBe(true);
+	expect(await gutter(), 'hidden: no gutter at all').toBe(0);
+
+	// Hidden is not overflow: hidden. The keyboard still scrolls the page.
+	await page.evaluate(() => {
+		if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+	});
+	await page.keyboard.press('PageDown');
+	await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+});
+
+test('a hidden setting applies before any app script runs (doc 12 §9)', async ({ page }) => {
+	await page.addInitScript(() => {
+		localStorage.setItem(
+			'tp.settings.v1',
+			JSON.stringify({
+				schemaVersion: 1,
+				locale: 'vi',
+				theme: 'dark',
+				accent: '#46d5c8',
+				clock24h: true,
+				weekStartsOn: 1,
+				reducedMotion: 'system',
+				coachDismissed: true,
+				debug: false,
+				scrollbars: 'hidden'
+			})
+		);
+	});
+	// No app script reaches the page, so whatever marks <html> is static/boot.js
+	// — and with it, the first paint never draws a scrollbar the reader hid.
+	await page.route('**/_app/immutable/**', (route) => route.abort());
+
+	await page.goto('/');
+
+	await expect(page.locator('html')).toHaveAttribute('data-scrollbars', 'hidden');
 });
