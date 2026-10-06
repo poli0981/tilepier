@@ -10,6 +10,7 @@ import { resumeKey, savePoster, saveResume } from './resume';
 import { media } from './store.svelte';
 import TpMediaDetail from './TpMediaDetail.svelte';
 import TpMediaWidget from './TpMediaWidget.svelte';
+import manifest from './manifest';
 
 /**
  * The video tile and the detail around the player (doc 09 §3): one click from
@@ -307,5 +308,14 @@ describe('TpMediaDetail', () => {
 		await expect.element(screen.getByTestId('media-player')).toBeInTheDocument();
 		await expect.element(screen.getByText('Phim thử.mp4')).toBeVisible();
 		await expect.element(screen.getByTestId('media-open-another')).toBeVisible();
+	});
+});
+
+describe('the manifest contract', () => {
+	it('declares no permissions, which is what forbids `permission-needed`', () => {
+		// doc 06 §3 makes the state required exactly when a manifest declares one,
+		// and forbidden otherwise — asserted, as markets and currency assert it,
+		// so it stays true if a permission is added without reading this.
+		expect(manifest.permissions).toBeUndefined();
 	});
 });

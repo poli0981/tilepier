@@ -103,3 +103,17 @@ describe('at tier L', () => {
 		await expect.element(screen.getByText('16/07 Bính Ngọ')).toBeInTheDocument();
 	});
 });
+
+describe('teardown (doc 19 §6)', () => {
+	it('stops its second hand when the tile goes, leaving no timer behind', () => {
+		// The clock ticks on its own interval rather than the scheduler, so the
+		// scheduler's leak checks never saw it. Untested until Week 8.
+		const before = vi.getTimerCount();
+		const screen = render(TpClockWidget, props());
+		expect(vi.getTimerCount()).toBeGreaterThan(before);
+
+		screen.unmount();
+
+		expect(vi.getTimerCount()).toBe(before);
+	});
+});
