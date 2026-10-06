@@ -310,6 +310,10 @@ feed (VnExpress) arriving through the Worker's own egress.
   (2026-10-06) is `undici@<7.29.1 → ^7.29.1` under miniflare — ten advisories,
   two high (GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3), in dev tooling only —
   because miniflare pins `7.29.0` exactly, so no range of its own will move.
+  The third, the same day, is `sharp@<0.35.5 → ^0.35.5` (GHSA-wq5f-xc86-pv6w,
+  high), under miniflare's exact pin of `0.35.4` for its Images binding: **the
+  audit gate's first catch**, an advisory that reached npm's data between two
+  CI runs of the pull request that added the gate.
 - **An override is for a parent that will not move. A stale lock is the
   commoner case** (2026-10-06): five packages carried high or moderate
   advisories whose fixes sat inside their parents' own ranges — `devalue`
