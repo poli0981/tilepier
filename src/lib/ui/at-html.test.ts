@@ -34,6 +34,12 @@ const ALLOWED = ['src/lib/ui/TpFeedHtml.svelte', 'src/lib/ui/TpMarkdown.svelte']
  * also took `//` for a comment everywhere, so `href="//x">{@html y}` hid a
  * live `{@html` from the count. A scan never reads its own output, and in
  * markup `//` is text.
+ *
+ * The tags are found by comparing strings, not by a regular expression: the
+ * first version of this scan used one, `/^<(script|style)[\s>]/`, and CodeQL
+ * flagged it as js/bad-tag-filter (alert #8), since a closing tag may carry
+ * whitespace before its `>` and that pattern's pair, `</script>`, did not.
+ * The parser accepts `</script >`, so the scan does too.
  */
 function markup(source: string): string {
 	let text = '';
@@ -46,16 +52,30 @@ function markup(source: string): string {
 			continue;
 		}
 		const end = source.indexOf(skip.close, index + skip.open);
-		index = end === -1 ? source.length : end + skip.close.length;
+		if (end === -1) break;
+		const after = end + skip.close.length;
+		// A comment ends at `-->`; a closing tag at the first `>` after its name.
+		index = skip.close === '-->' ? after : source.indexOf('>', after) + 1 || source.length;
 	}
 	return text;
 }
 
-/** What starts at `index` and is not markup: its opener's length and its closer. */
+/** The blocks whose contents are not markup. Lower case, as Svelte has them:
+ *  `<Script>` is a component. */
+const BLOCKS = ['script', 'style'] as const;
+
+/** What starts at `index` and is not markup: its opener's length, and the text
+ *  that starts its end. */
 function skipped(source: string, index: number): { open: number; close: string } | null {
 	if (source.startsWith('<!--', index)) return { open: 4, close: '-->' };
-	const block = /^<(script|style)[\s>]/.exec(source.slice(index, index + 8));
-	return block ? { open: block[0].length, close: `</${block[1]}>` } : null;
+	for (const tag of BLOCKS) {
+		const open = tag.length + 1;
+		const next = source.charAt(index + open);
+		if (source.startsWith(`<${tag}`, index) && (next === '>' || next.trim() === '')) {
+			return { open, close: `</${tag}` };
+		}
+	}
+	return null;
 }
 
 function uses(file: string): number {
@@ -81,6 +101,9 @@ describe('{@html} (doc 15 §4)', () => {
 		expect(markup('<script lang="ts">\n\t// {@html x}\n</script>ok')).toBe('ok');
 		expect(markup('<script module>/* {@html x} */</script>ok')).toBe('ok');
 		expect(markup('<style>/* {@html x} */</style>ok')).toBe('ok');
+		// A closing tag may carry whitespace before its `>`, as the parser allows.
+		expect(markup('<script>// {@html x}\n</script >ok')).toBe('ok');
+		expect(markup('<style>/* {@html x} */</style\n>ok')).toBe('ok');
 		// The one comment here is `<!-- -->`; what follows it is text, and live.
 		// The replace loop this replaced called it a comment too.
 		expect(markup('<!<!-- -->-- {@html x} -->')).toContain('{@html');
