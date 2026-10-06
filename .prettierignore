@@ -35,3 +35,7 @@ wrangler.jsonc
 # hide whether the vectors themselves moved — which is the one thing a diff of
 # this file has to be able to say.
 /src/lib/lunar/__fixtures__/
+
+# Written by `pnpm licenses:gen` (doc 16 §5) and checked byte for byte against
+# the build in CI; formatting it by hand would only make the check fail.
+/src/lib/legal/licenses.generated.json

@@ -30,7 +30,8 @@ ESLint 10 flat · Prettier 3 · knip.
 ## Commands
 
 ```
-pnpm verify         # clean → lint → knip → i18n:check → test:cov → build → budgets
+pnpm verify         # clean → lint → knip → i18n:check/audit → tokens:audit →
+                    #   test:cov → build → budgets → licenses:gen --check
 pnpm dev            # dev server
 pnpm build          # clean + wrangler types + production build
 pnpm preview        # build, then wrangler dev against the built worker
@@ -49,10 +50,12 @@ pnpm i18n:check     # en/vi catalogue drift (CI-blocking)
 pnpm i18n:audit     # hardcoded strings in .svelte (CI-blocking from Week 2)
 pnpm tokens:audit   # raw hex outside app.css (CI-blocking from Week 2)
 pnpm fonts:sync     # re-copy font subsets from @fontsource, enforces budget
+pnpm licenses:gen   # after build: the licence appendix of /legal/licenses
+                    #   (--check in CI; doc 16 §5)
 ```
 
-Not written yet, each landing with the feature that needs it:
-`licenses:gen` (Week 8, doc 16 §5) · `build:analyze` (on demand, doc 20 §6).
+Not written yet, landing with the need for it: `build:analyze` (on demand,
+doc 20 §6).
 
 The three gates above exit non-zero by default; `i18n:audit` and
 `tokens:audit` take `--report-only` for a local sweep. Both were turned on in

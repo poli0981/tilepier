@@ -39,8 +39,13 @@ const CACHE = `tp-cache-${version}`;
  * may never add. The shell is about 400 KB. What a reader *uses* is kept as it
  * is used (the fetch handler, and KEEP below), and the details of the widgets
  * on their deck are fetched while they are idle (`core/warm.ts`).
+ *
+ * One prerendered page is left out: /legal/licenses carries every shipped
+ * licence, about 150 KB of text a first visit has no use for (doc 16 §5).
+ * Offline it falls back to /offline like any page not kept.
  */
-const SHELL = [...files, ...prerendered];
+const NOT_PRECACHED = new Set(['/legal/licenses']);
+const SHELL = [...files, ...prerendered.filter((path) => !NOT_PRECACHED.has(path))];
 
 /** The pages whose own preloads are the shell: the deck, and the two pages a
  *  reader reaches with no connection. */

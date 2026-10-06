@@ -29,7 +29,10 @@ gate has not been accepted.
   - **Precached at install: the shell.** Everything in `static/` (fonts,
     `boot.js`, icons, the manifest), every prerendered page — `/offline`
     among them — and the hashed files that `/`, `/offline` and `/settings`
-    preload, read from the copies just cached. About 400 KB gz.
+    preload, read from the copies just cached. About 400 KB gz. One
+    prerendered page is left out: `/legal/licenses`, about 150 KB of licence
+    text a first visit has no use for (doc 16 §5); offline it falls back to
+    `/offline`, and once read online it is kept like any page.
   - **Kept as it is used:** any `/_app/immutable/` file the page fetches
     through the worker, cache-first, a `200` only (a `206` is `ok` too, and
     `cache.put` refuses it). MapLibre's modules and the music tag worker are

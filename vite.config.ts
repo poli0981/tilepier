@@ -6,6 +6,7 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { maplibreVendor } from './scripts/vite-maplibre';
+import { shippedPackages } from './scripts/vite-shipped';
 
 // Adapter, CSP, and compilerOptions live in svelte.config.js (doc 03 §Repo
 // structure) so there is one place to look for framework configuration.
@@ -66,8 +67,15 @@ export default defineConfig({
 		tailwindcss(),
 		// MapLibre's three modules, copied rather than bundled (scripts/vite-maplibre.ts).
 		maplibreVendor(),
+		// Which installed packages the bundles hold, for `pnpm licenses:gen`
+		// (scripts/vite-shipped.ts) — here for the page and the server, and in
+		// `worker.plugins` for the music tag worker, which Vite builds apart.
+		shippedPackages('app'),
 		sveltekit()
 	],
+	worker: {
+		plugins: () => [shippedPackages('worker')]
+	},
 	define: {
 		__TP_BUILD__: JSON.stringify(buildInfo())
 	},

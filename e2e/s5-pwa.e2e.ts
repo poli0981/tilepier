@@ -232,6 +232,10 @@ test.describe('the shell, and what the reader uses', () => {
 		expect(cached.has(chunk('src/lib/charts/echarts.ts'))).toBe(false);
 		// …while the pages and their own preloads are all there.
 		for (const page of ['/', '/offline', '/settings']) expect(cached.has(page), page).toBe(true);
+		// The legal pages too, but for the licences, about 150 KB of text a first
+		// visit has no use for (doc 16 §5).
+		expect(cached.has('/legal/privacy')).toBe(true);
+		expect(cached.has('/legal/licenses')).toBe(false);
 	});
 
 	test('a detail never opened opens with no connection', async ({ page, context }) => {
