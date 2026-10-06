@@ -368,6 +368,12 @@ Cloudflare hosts to nowhere, and CI has no Turnstile secret):
   "what changed" line.
 - **curl** without a pass and with a cache-busting parameter gets `401`; with
   the operator's bearer it gets `200`.
+- **Security headers** (added 2026-10-06): `S3_BASE_URL=https://tilepier.win
+  pnpm exec playwright test e2e/prod-headers.e2e.ts` passes — a prerendered
+  page, a legal page and a Worker-rendered 404 each carry doc 15 §2's list
+  exactly, `frame-ancestors 'none'`, and no cookie. The zone sits between the
+  Worker and the reader, so only this run sees what a zone setting adds or
+  rewrites.
 
 And for the stock half of `markets` (Week 5b), which needs the deployed keys:
 

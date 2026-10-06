@@ -16,8 +16,9 @@ const BASE_URL = `https://localhost:${PORT}`;
  * Four of its tests do, and they failed on a refused connection the first time
  * the whole file ran with `S3_BASE_URL` set — which is why they now skip.)
  *
- * Every other spec needs the local server, so this variable is for that file
- * alone.
+ * `e2e/prod-headers.e2e.ts` (Week 8) reads production's headers the same way.
+ * Every other spec needs the local server, so this variable is for those two
+ * files alone.
  */
 const DEPLOYED = process.env.S3_BASE_URL;
 

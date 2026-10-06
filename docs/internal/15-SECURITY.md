@@ -39,7 +39,15 @@ said "set in `hooks.server.ts` for all HTML responses". Both halves were wrong:
 1. **The hook never runs for most pages.** The shell and the legal pages are
    prerendered and served straight from the ASSETS binding, so `handle` is
    bypassed. Everything except CSP therefore lives in the root `_headers` file,
-   with `hooks.server.ts` keeping a copy for dynamically rendered responses.
+   with `hooks.server.ts` setting the same list on dynamically rendered
+   responses. **One list since 2026-10-06**: `src/lib/server/security-headers.ts`
+   is what the hook imports; `security-headers.test.ts` holds `_headers`' `/*`
+   block and the block above to it (and `_headers`' `frame-ancestors` to
+   `svelte.config.js`); `legal-gate.e2e.ts` holds a prerendered page and a
+   Worker-rendered 404 to it value for value — until then the two paths agreed
+   by a comment, and Permissions-Policy was checked for a substring. After a
+   deploy, `e2e/prod-headers.e2e.ts` does the same against production when
+   `S3_BASE_URL` names it (doc 19 §5).
 2. **`script-src 'self'` alone breaks the app.** This doc claimed "scripts stay
    strict (no inline, no eval — Rolldown output complies)". Rolldown does
    comply; SvelteKit does not. It emits a small inline `<script>` carrying

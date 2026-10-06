@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { SECURITY_HEADERS } from '../src/lib/server/security-headers';
 import { seedLayout } from './_lib/seed';
 
 /**
@@ -214,14 +215,13 @@ test('security headers are set on HTML responses', async ({ request }) => {
 	const response = await request.get('/');
 	const headers = response.headers();
 
-	expect(headers['strict-transport-security']).toContain('max-age=31536000');
-	// Matches the zone's own HSTS in production, which replaces this header at
-	// the edge (doc 15 §2) — so what this suite sees is what readers get.
-	expect(headers['strict-transport-security']).toContain('preload');
-	expect(headers['x-content-type-options']).toBe('nosniff');
-	expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
-	expect(headers['cross-origin-opener-policy']).toBe('same-origin');
-	expect(headers['permissions-policy']).toContain('geolocation=(self)');
+	// Every one, value for value — Permissions-Policy was only checked for a
+	// substring until Week 8. HSTS matches the zone's own in production, which
+	// replaces this header at the edge (doc 15 §2), `preload` included — so
+	// what this suite sees is what readers get.
+	for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+		expect(headers[name], name).toBe(value);
+	}
 
 	// Ignored in a <meta> CSP by spec, so it has to arrive as a header — and
 	// *only* it: a second full policy here would be enforced alongside the
@@ -231,6 +231,28 @@ test('security headers are set on HTML responses', async ({ request }) => {
 	// doc 16 §3: the app itself sets no cookie. The one cookie on the site,
 	// Cloudflare's cf_clearance, comes from the edge after a passed bot check
 	// (LEGAL_VERSION 3), never from a response of the app.
+	expect(headers['set-cookie']).toBeUndefined();
+});
+
+test('a page the Worker renders carries the same headers as a prerendered one', async ({
+	request
+}) => {
+	// `/` above comes from the ASSETS binding with `_headers`; a 404 is rendered
+	// by the Worker, where the hook sets the same list (doc 15 §2). Nothing
+	// held the two paths together but a comment until Week 8.
+	const response = await request.get('/no-such-page');
+	expect(response.status()).toBe(404);
+	expect(response.headers()['content-type']).toContain('text/html');
+	const headers = response.headers();
+
+	for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+		expect(headers[name], name).toBe(value);
+	}
+
+	// Rendered rather than prerendered, SvelteKit sends its policy as a header
+	// instead of a <meta>, and a header can carry frame-ancestors itself.
+	expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+	expect(headers['content-security-policy']).toContain("default-src 'self'");
 	expect(headers['set-cookie']).toBeUndefined();
 });
 
