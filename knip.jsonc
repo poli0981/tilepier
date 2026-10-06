@@ -42,7 +42,10 @@
 
 	// CSS is in `project` so knip follows `@import 'tailwindcss'` in app.css and
 	// stops reporting tailwindcss as an unused dependency.
-	"project": ["src/**/*.{js,ts,svelte,css}", "scripts/**/*.mjs"],
+	// e2e/ joined it in Week 8: the suite's own imports are dependencies too
+	// (@axe-core/playwright is used nowhere else), and a helper in e2e/_lib that
+	// nothing calls any more is dead code like any other.
+	"project": ["src/**/*.{js,ts,svelte,css}", "scripts/**/*.mjs", "e2e/**/*.ts"],
 
 	"ignore": ["worker-configuration.d.ts", ".svelte-kit/**"],
 
