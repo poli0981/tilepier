@@ -210,6 +210,17 @@ show "on deck" disabled state. Search filters by name.
   - Escape and modified keys pass on.
   - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
+- **Every overlay scrolls inside itself** (WCAG 1.4.10). An overlay is
+  `position: fixed`, so the page cannot scroll to anything it cannot show, and
+  at 400 % zoom — 320 × 256 CSS px — the gate, the bug dialog and the
+  shortcuts sheet were taller than the screen. Until 2026-10-06 the gate's
+  Accept button could not be reached at that size. The dialogs cap themselves
+  at the screen's height minus their margin and scroll. The gate scrolls as a
+  whole, and centres its panel with auto margins, so a panel too tall to centre
+  starts at the top instead of overflowing both ends. The detail's body and
+  the drawer set `overscroll-behavior: contain`: a wheel at the end of either
+  stops there rather than scrolling the deck behind the scrim.
+  (`e2e/overlays`, each test red on the parent.)
 - All interactive targets ≥ 40 px touch, visible `:focus-visible` ring
   (beacon, 2 px offset).
 - Contrast: **measured 2026-08-28**, when `widgets/toolbox/color.ts` gave the

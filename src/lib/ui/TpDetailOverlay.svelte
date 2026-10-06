@@ -379,6 +379,9 @@
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow: auto;
+		/* A wheel at the end of the detail stops here rather than scrolling the
+		   deck behind the scrim. */
+		overscroll-behavior: contain;
 		padding: 1rem;
 	}
 

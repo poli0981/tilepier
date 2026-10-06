@@ -146,17 +146,23 @@
 <style>
 	/* The gate is the default state; acceptance removes it. Failing closed means
 	   a broken stylesheet or a blocked boot.js leaves the gate up, not down. */
+	/* At 400 % zoom (320 × 256 CSS px, WCAG 1.4.10) the panel is taller than
+	   the screen, so the gate scrolls inside itself. Auto margins centre the
+	   panel while it fits and let it start at the top when it does not;
+	   `place-items: center` overflowed both ends instead, putting the
+	   heading above a scroll origin nothing can reach. */
 	.tp-gate {
 		position: fixed;
 		inset: 0;
 		z-index: 100;
 		display: grid;
-		place-items: center;
+		overflow-y: auto;
 		padding: 1.5rem;
 		background: var(--color-ink-950);
 	}
 
 	.tp-gate__panel {
+		margin: auto;
 		max-width: 34rem;
 		border: 1px solid var(--color-ink-700);
 		border-radius: var(--radius-tile);
