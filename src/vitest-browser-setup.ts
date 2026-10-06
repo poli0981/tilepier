@@ -14,6 +14,26 @@ import { beforeEach } from 'vitest';
  * chase.
  */
 
+/**
+ * No test reaches the dev server's `/api/*`. Those routes are SvelteKit server
+ * code, which this browser-mode server cannot run: a request that got there
+ * printed "Cannot read properties of undefined (reading 'wrapDynamicImport')"
+ * from `get_hooks`, on every run of the weather and rss tile tests (found in
+ * Week 8). The requests were late ones — work still in flight after a test
+ * had handed `fetch` back with `vi.unstubAllGlobals()` — so they changed no
+ * result, only the output. A test that wants an answer stubs `fetch`, as every
+ * one already does; what reaches the real one now fails as a network error
+ * would, here, instead of in the server.
+ */
+const realFetch = globalThis.fetch.bind(globalThis);
+globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+	const url = new URL(input instanceof Request ? input.url : String(input), location.href);
+	if (url.origin === location.origin && url.pathname.startsWith('/api/')) {
+		return Promise.reject(new TypeError(`no test talks to the dev server: ${url.pathname}`));
+	}
+	return realFetch(input, init);
+};
+
 const RESET_ATTRIBUTES = ['data-theme', 'data-motion', 'data-legal', 'data-scrollbars'];
 
 beforeEach(() => {
