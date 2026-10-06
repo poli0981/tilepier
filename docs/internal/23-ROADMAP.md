@@ -1436,7 +1436,122 @@ PWA per S5 outcome · a11y audit (contrast pairs, focus, SR pass) · perf
 pass vs budgets · full manual matrix (doc 19 §5) · doc 10 §8 compliance
 checklist · security header verification · public `README.md` (features,
 screenshots, self-host guide) + CONTRIBUTING + SECURITY.md · CHANGELOG ·
-tag `v1.0.0` → release workflow → notify.
+tag `v1.0.0` → release workflow → notify. Added by the owner on 2026-10-06:
+**scrollbars in the theme's colours, and a setting to hide them.**
+
+### Measured before it was started (2026-10-06)
+
+Thirty-one items scored the way Weeks 4–7 were, then reviewed against the
+code: **≈26.85 focused days against a five-day week — 5.4×** (Week 7 5.55×).
+The owner's own time is separate: about a day and a half for the doc 19 §5
+matrix, and half a day for Lighthouse, NVDA, the rollback drill and repo
+hygiene.
+
+| | item | complexity | difficulty | days |
+|---|---|:--:|:--:|--:|
+| 0 | this entry | 1 | 1 | 0.25 |
+| A | a stable scrollbar gutter, `100vw` → `100%`, an e2e harness with real scrollbars | 2 | 4 | 1.0 |
+| B | the scrollbar setting as an optional field, `boot.js`, the settings row | 3 | 3 | 1.25 |
+| C | overlays that scroll at 400 % zoom; no scroll chaining | 2 | 2 | 0.5 |
+| D | settings controls named by their own rows; swatches by colour | 1 | 1 | 0.25 |
+| G | contrast: a per-theme accent, light semantic colours, `fg-dim`, the chart bridge, a suite that reads the real tokens | 4 | 5 | 2.75 |
+| H | the axe gate | 3 | 3 | 1.0 |
+| I | fixes the sweep and the audit demand | 4 | 3 | 1.5 |
+| J | the 3×1 clock; the density and target-size calls | 2 | 2 | 0.5 |
+| K | screen-reader semantics: the windowed list, edit mode | 2 | 3 | 0.5 |
+| L | precache the shell, keep what was used, warm the deck's details | 4 | 4 | 2.0 |
+| M | old caches purged; installability | 2 | 2 | 0.5 |
+| N | a new version reuses unchanged files | 2 | 3 | 0.5 |
+| O | the update toast end to end | 3 | 4 | 0.75 |
+| P | the manifest description | 1 | 1 | 0.1 |
+| Q | perf pass: a first-tile mark, the budget-table test | 2 | 3 | 1.0 |
+| R | `build:analyze` | 1 | 1 | 0.25 |
+| E | CodeQL #7, the undici floor | 1 | 1 | 0.25 |
+| S | one header set on two delivery paths, Permissions-Policy, a production spec | 2 | 2 | 0.75 |
+| T | `pnpm audit` in CI; the docs say Dependabot | 2 | 2 | 0.5 |
+| U | `security.txt` | 1 | 1 | 0.25 |
+| V | the weather credit and disclaimer, the register, doc 10 §8 | 3 | 2 | 1.0 |
+| W | CI: Chromium only, an HTML report | 1 | 1 | 0.25 |
+| X | `licenses:gen` and the appendix | 4 | 3 | 1.75 |
+| Y | P0–P3, a DoD record per widget, a PR template | 3 | 3 | 2.0 |
+| Z | README (EN, VI), CONTRIBUTING, SECURITY, the self-host guide | 3 | 2 | 1.5 |
+| Z2 | screenshots and the social preview | 1 | 1 | 0.5 |
+| F | doc drift | 2 | 1 | 0.25 |
+| AA | CHANGELOG and its version test | 2 | 2 | 0.5 |
+| AB | `release.yml`, `notify.yml`, the notes script | 3 | 4 | 1.0 |
+| AC | 1.0.0 and the last docs | 1 | 1 | 0.25 |
+| AD | contingency: P0/P1 from the matrix and the drill | — | — | 1.5 |
+
+**Five owner decisions.** Scrollbars are **shown or hidden**, shown by
+default; hidden applies everywhere, and every way of scrolling still works.
+They are drawn with the **standard properties only** — `scrollbar-width:
+thin` and a `scrollbar-color` token — with no `::-webkit-scrollbar` path and
+no script. **Controls inside a tile** may be 24 px with spacing (WCAG 2.2
+§2.5.8), while chrome, details and dialogs keep 40 px: the call doc 13 §8 left
+for this week. **Notify is Discord**, through `poli0981/.github`'s
+`announce-release.yml`. And the setting is **an optional field in
+`tp.settings.v1`, not a version bump**: an older build ignores a key it does
+not know and keeps it, because every write spreads the stored object. A
+rollback, a tab that falls back offline to the previous build's precache, and
+two tabs on two builds all keep the reader's settings, where a v2 would have
+reset theme, language and accent in each case (doc 05 §5).
+
+**Split as 8-0 — scrolling; 8a — hardening, in three PRs** (8a-1
+accessibility, stacked on 8-0; 8a-2 PWA and performance; 8a-3 security,
+compliance and CI); **8b — release** (8b-1 the licences, DoD and public docs;
+8b-2 the workflows and 1.0.0). Cut first if the week runs hot:
+`build:analyze`, README.vi, the update-toast e2e, carry-forward,
+`security.txt`, the manifest line, `dependabot.yml`, the nightly-only axe
+scans, screenshots, the screen-reader semantics (unless NVDA rates them P1),
+the first-tile mark; last, the shell precache falls back to precache-all with
+carry-forward. Never cut anything that guards a reader: the gutter, the
+overlays, contrast, the per-PR axe gate and its A/AA fixes, headers,
+compliance, the licences, DoD, the release mechanics.
+
+**Found by the measurement and the review, before any Week 8 code:**
+
+1. **The page scrollbar flips the deck's column count.** The deck scrolls the
+   window, gridstack counts columns from `.grid-stack`'s `clientWidth`, and
+   the edit strip's 32 px make a deck that fits the screen overflow it. With
+   classic scrollbars the grid narrows by the scrollbar's width, and near
+   1328, 816 and 512 px the count flips 12↔6 on entering edit mode.
+   `tp.layout.v1` survives — `engine.save()` hands back the cached 12-column
+   layout — but the deck jumps, and drags made at the flipped count are not
+   kept. Five fixed surfaces sized with `100vw` would slide under the gutter
+   that fixes it.
+2. **The light theme was never contrast-checked.** The beacon is 1.81:1 on
+   white, and it is also the focus ring; the gate's Accept button sets paper
+   text on it at **1.60:1**, served before any script to every reader whose
+   system is light. `up` is 2.12, `warn` 1.86, chart series 2–5 2.25–2.98,
+   and `fg-dim` 3.33–3.51 in both themes, in 127 places. CSS alone cannot
+   fix the accent: the store writes `--color-beacon` inline, and an inline
+   style beats any theme rule.
+3. **`color.test.ts` pins contrast to hex it typed itself**, so no token
+   change could fail it.
+4. **The gate, the bug dialog and the shortcuts sheet cannot scroll**: at
+   400 % zoom the Accept button is off-screen with no way to reach it.
+5. **Playwright launches headless Chromium with `--hide-scrollbars`**, in e2e
+   and in Vitest's browser mode alike, so every geometry assertion in the
+   suite has run against zero-width scrollbars.
+6. **A release created with `GITHUB_TOKEN` never fires `release:
+   published`**, so a notify workflow on that event would never run; and a
+   `v*` tag cannot be moved or deleted once pushed (the `release-tags`
+   ruleset). The release workflow makes a draft, and publishing it is the
+   owner's last check and what notifies.
+7. **The precache is the whole build**: 269 files, 883 KB gz, every tile and
+   detail chunk and ECharts among them, against a shell of about 400 KB. Doc
+   17 §2 says three different things about it.
+8. **`pnpm licenses list --prod` would miss code that ships**: the Svelte and
+   Kit runtimes, Paraglide's runtime and Tailwind's preflight are
+   devDependencies that end up in the bundle.
+9. **Two promised CI gates do not exist** — `pnpm audit --prod` (doc 15 §6)
+   and Renovate, where Dependabot security updates run instead — and two
+   retired Cloudflare secrets are still in the repository.
+
+**Carried, with dates:** M6 (#26, #28) and M7 (#35–#37) wait on the owner's
+production check, and fold into this week's matrix if not done first; the
+quota watch ended 2026-09-30 and its readout is still to be recorded here; the
+Binance.US probe from SJC is open.
 
 ## Release checklist (Week 8 gate, condensed)
 
