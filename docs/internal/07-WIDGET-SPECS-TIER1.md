@@ -118,7 +118,12 @@ implemented, and is required, because the manifest declares
 ## 3. `calc` — Calculator & Unit Converter
 
 - **Tile:** 4-op calculator with keyboard input when focused; result line
-  shows thousands separators per locale.
+  shows thousands separators per locale. **The keypad needs a host 232 px tall**
+  (four grid rows): its keys are at least 24 px (WCAG 2.2's 2.5.8, the floor
+  doc 13 §8 sets inside a tile). A shorter tile shows the display and an "open
+  the keypad" button into the detail, and typing still works from that
+  button's focus. Week 8's sweep found the keys 17–19 px tall at three rows —
+  the default size — and 5 px at 2 × 2, so the default became 3 × 4.
 - **Detail:** tape history (session-only, copy row), scientific row
   (%, √, x², 1/x, ±), and the converter: categories length/mass/temp/
   data/area/volume/speed/time. Conversion factors are a static table;

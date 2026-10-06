@@ -166,3 +166,52 @@ describe('locale', () => {
 		await expect.element(screen.getByTestId('calc-result')).toHaveTextContent('1.234.567');
 	});
 });
+
+describe('the keypad and the tile’s height (doc 07 §3, WCAG 2.5.8)', () => {
+	it('shows no keypad in a tile too short for 24 px keys, and opens the detail instead', async () => {
+		const onOpenDetail = vi.fn();
+		const screen = render(TpCalcWidget, {
+			...props(),
+			size: { w: 3, h: 3, pxW: 322, pxH: 192, tier: 'M' as const },
+			onOpenDetail
+		});
+
+		await expect.element(screen.getByTestId('calc-open')).toBeVisible();
+		expect(screen.container.querySelector('.tp-calc__pad')).toBeNull();
+
+		await screen.getByTestId('calc-open').click();
+		expect(onOpenDetail).toHaveBeenCalledOnce();
+	});
+
+	it('still takes typed input in that compact tile', async () => {
+		const screen = render(TpCalcWidget, {
+			...props(),
+			size: { w: 2, h: 2, pxW: 206, pxH: 120, tier: 'M' as const }
+		});
+
+		// The same delegation the keypad uses: keys pressed on a focused
+		// control inside the tile bubble to its handler.
+		const open = screen.getByTestId('calc-open').element() as HTMLElement;
+		open.focus();
+		for (const key of '12+3') {
+			open.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+		}
+
+		await expect.element(screen.getByTestId('calc-result')).toHaveTextContent('15');
+	});
+
+	it('lays out keys at least 24 px tall in a tile of four rows', async () => {
+		const host = document.createElement('div');
+		host.style.cssText = 'height: 224px; width: 300px; display: flex; flex-direction: column;';
+		document.body.appendChild(host);
+		const screen = render(TpCalcWidget, {
+			target: host,
+			props: { ...props(), size: { w: 3, h: 4, pxW: 322, pxH: 264, tier: 'L' as const } }
+		});
+
+		const keys = Array.from(screen.container.querySelectorAll<HTMLElement>('.tp-calc__key'));
+		expect(keys.length).toBe(20);
+		for (const key of keys) expect(key.getBoundingClientRect().height).toBeGreaterThanOrEqual(24);
+		host.remove();
+	});
+});

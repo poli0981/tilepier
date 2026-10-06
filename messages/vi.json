@@ -252,6 +252,7 @@
 	"widget.timer.permission_ask": "cho phép thông báo",
 	"widget.timer.cycle_progress": "{done}/{total} phiên trong chu kỳ này",
 	"widget.calc.title": "Máy tính",
+	"widget.calc.open_keypad": "Mở bàn phím",
 	"widget.calc.blurb": "Bốn phép tính, số thập phân chính xác, kèm bộ đổi đơn vị.",
 	"widget.calc.entry": "Biểu thức",
 	"widget.calc.result": "Kết quả",

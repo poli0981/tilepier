@@ -252,6 +252,7 @@
 	"widget.timer.permission_ask": "allow notifications",
 	"widget.timer.cycle_progress": "{done} of {total} sessions this cycle",
 	"widget.calc.title": "Calculator",
+	"widget.calc.open_keypad": "Open the keypad",
 	"widget.calc.blurb": "Four functions, exact decimals, and a unit converter.",
 	"widget.calc.entry": "Expression",
 	"widget.calc.result": "Result",
