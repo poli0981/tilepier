@@ -107,7 +107,16 @@
 		<div class="tp-w__state">
 			<TpTideGauge size={48} level={0.2} />
 			<p>{m['common.detail.pin_note']()}</p>
-			<button type="button" class="tp-w__pin" data-testid="pin-to-deck" onclick={pin}>
+			<!-- Disabled until hydration attaches the handler, as the gate's Accept
+			     is: the page is prerendered, so the button is on screen before its
+			     onclick, and a press in between did nothing at all. -->
+			<button
+				type="button"
+				class="tp-w__pin"
+				data-testid="pin-to-deck"
+				disabled={!browser}
+				onclick={pin}
+			>
 				{m['common.detail.pin']()}
 			</button>
 		</div>
@@ -198,5 +207,11 @@
 		font-size: var(--text-2xs);
 		min-height: 40px;
 		padding: 0 0.75rem;
+	}
+
+	/* The first frames, before hydration — the gate's Accept looks the same. */
+	.tp-w__pin:disabled {
+		cursor: default;
+		opacity: 0.6;
 	}
 </style>
