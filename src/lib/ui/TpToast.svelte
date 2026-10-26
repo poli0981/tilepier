@@ -53,6 +53,9 @@
 		box-shadow: var(--shadow-tile);
 	}
 
+	/* doc 13 §8's 40 × 40 outside a tile. It was 21 × 32 until 2026-10-26, which
+	   the nightly sweep caught only on the nights a toast was up while it
+	   scanned (toast-targets.svelte.test.ts now holds the size). */
 	.tp-toast__dismiss {
 		border: 0;
 		background: none;
@@ -60,6 +63,7 @@
 		cursor: pointer;
 		font: inherit;
 		padding: 0.25rem 0.4rem;
-		min-height: 32px;
+		min-width: var(--tp-target);
+		min-height: var(--tp-target);
 	}
 </style>
