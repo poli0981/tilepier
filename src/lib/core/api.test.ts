@@ -93,8 +93,6 @@ describe('envelope errors (doc 17 §4)', () => {
 	});
 
 	it('falls back to the retry-after header when there is no envelope value', async () => {
-		// The zone rule (doc 11 §7) blocks before the Worker runs, so its 429 has
-		// a header and no body of ours at all.
 		serve(
 			http.get(`${BASE}/api/weather`, () =>
 				HttpResponse.json(
@@ -105,6 +103,38 @@ describe('envelope errors (doc 17 §4)', () => {
 		);
 
 		await expect(fetchEnvelope(URL_WEATHER)).rejects.toMatchObject({ retryAfterS: 17 });
+	});
+
+	it("reads the zone rule's own 429 page as RATE_LIMITED, not MALFORMED", async () => {
+		// The zone rule (doc 11 §7) blocks before the Worker runs, so its 429 is
+		// Cloudflare's HTML page with no body of ours at all. This test said so
+		// until 2026-10-27 while serving an envelope, and the real page read as
+		// MALFORMED: no rss pause, no global notice.
+		serve(
+			http.get(`${BASE}/api/weather`, () =>
+				HttpResponse.text('<!doctype html><title>Error 1015</title>You are being rate limited', {
+					status: 429,
+					headers: { 'content-type': 'text/html', 'retry-after': '10' }
+				})
+			)
+		);
+
+		await expect(fetchEnvelope(URL_WEATHER)).rejects.toMatchObject({
+			code: 'RATE_LIMITED',
+			retryAfterS: 10
+		});
+	});
+
+	it('reads a 429 with JSON that is not ours — a custom zone response — the same way', async () => {
+		serve(
+			http.get(`${BASE}/api/weather`, () =>
+				HttpResponse.json({ error: 'slow down' }, { status: 429 })
+			)
+		);
+
+		const error = (await fetchEnvelope(URL_WEATHER).catch((e: unknown) => e)) as TpApiError;
+		expect(error.code).toBe('RATE_LIMITED');
+		expect(error.retryAfterS).toBeUndefined();
 	});
 
 	it('prefers the envelope value over the header when both are there', async () => {
