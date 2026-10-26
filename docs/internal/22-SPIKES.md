@@ -75,6 +75,36 @@ inert — a real drag leaves the serialised layout unchanged.
 this harness, which is now a cheap and meaningful acceptance test rather than a
 manual inspection.
 
+### Re-run on gridstack 14.0.0 — 2026-10-26 · **GREEN**
+
+The harness did its job as the acceptance test for the major: every check in
+`e2e/s1-grid` passed on 14.0.0 unchanged. That covers the 50
+add/remove/rebuild cycles with wrapper, host and tile counts agreeing, the
+layout round trip, the 1440 → 420 → 1440 column collapse, view-mode inertness,
+the painted 12 px inset, and the min/max clamp, a stored out-of-bounds size
+included. Journeys #1 and #2 passed with it. What 14 needed from `TpGrid`:
+
+- **`float: false` is gone**, replaced by `mode`, whose default `'top'` means
+  what `float: false` did. Nothing is set now.
+- **`GridStack.init()` and `addWidget()` are typed nullable.** `init` answers
+  null without a document or without the element; `addWidget` answers nothing
+  for an empty or string definition, or when its own element hook makes none.
+  Neither can happen here, so `TpGrid` throws a named error rather than mount
+  nothing, and leave a tile in the deck with no host.
+- **Resize handles carry z-index 100 and 101.** `.grid-stack` set no stacking
+  context, so a hovered tile's handle painted over the top bar (50), the
+  drawer (60, 61) and the detail (90, 91). The grid is now `isolation:
+  isolate`, and journey #2 checks that the handles' nearest stacking context
+  is the grid. A hit test could not show it: an open overlay makes the deck
+  inert, and `elementFromPoint` skips inert content that is still painted.
+- **Since 13.1 the wrappers are reordered** to match the layout after every
+  `change`, inside `addWidget` too. The Svelte hosts are held by reference, so
+  the ownership in this section's first finding is unchanged, and the counts
+  above say so.
+- **Unchanged**, as rules 8 and 13 of doc 06 §5 assume: `removeAll` inside a
+  batch still leaves wrappers behind, `addWidget` still fires `change`
+  synchronously, and `save()` still omits `w` and `h` at their minimum.
+
 ## S2 · File System Access persistence + fallback — 1 day
 
 - **Build:** pick folder → persist handle in Dexie → reload →

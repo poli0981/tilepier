@@ -102,7 +102,7 @@
 <svelte:head><title>Spike S1 — gridstack × Svelte 5</title></svelte:head>
 
 <main>
-	<h1>Spike S1 — gridstack 12.6 × Svelte 5</h1>
+	<h1>Spike S1 — gridstack 14 × Svelte 5</h1>
 
 	<div class="controls">
 		<button type="button" data-testid="add" onclick={add}>add</button>

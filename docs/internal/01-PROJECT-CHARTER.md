@@ -110,6 +110,8 @@ suite stays the single source of truth.
   toolchain and nothing in v1 depends on 10.x behaviour. TypeScript stays on
   6.0.x and gridstack on 12.6.x despite 7.0.2 / 13.0.2 shipping — each gets its
   own PR, and gridstack's is gated on Spike S1 passing first (doc 02 note 7).
+  Both were taken on 2026-10-26: TypeScript 7 for `tsc`, and gridstack 14
+  once S1 ran green on it (doc 02 note 9).
 - 2026-08-10 · CI workflows are authored locally in `.github/workflows/` and
   extracted to `poli0981/.github` later → the seven `wf-*.yml` reusable
   workflows doc 21 §1 calls **do not exist** in that org repo (verified

@@ -6,7 +6,7 @@
 ┌────────────────────────── Browser ──────────────────────────┐
 │  SvelteKit app (SPA-ish, SSR only for shell + legal pages)  │
 │                                                             │
-│  Dashboard shell ── gridstack 12 (imperative DOM)           │
+│  Dashboard shell ── gridstack 14 (imperative DOM)           │
 │    └─ TpWidgetHost per tile ── mounts widget component      │
 │  Widget Registry (manifests, lazy import)                   │
 │  Central Scheduler (one ticker, per-widget cadence)         │

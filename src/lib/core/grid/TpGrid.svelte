@@ -100,6 +100,20 @@
 		return el.querySelector<HTMLElement>('.grid-stack-item-content');
 	}
 
+	/**
+	 * A wrapper for `tile`, from gridstack. Since gridstack 14 `addWidget` is
+	 * typed as maybe-undefined: it answers nothing for an empty or string
+	 * definition, or when its own element hook makes no element — none of which
+	 * a tile from `toGridStackWidget` can be. So nothing here is a bug, and it
+	 * throws rather than leave a tile in the deck with no host.
+	 */
+	function place(tile: TpTile): GridItemHTMLElement {
+		const el = grid?.addWidget(toGridStackWidget(tile));
+		if (el === undefined)
+			throw new Error(`TpGrid: gridstack made no wrapper for ${tile.instanceId}`);
+		return el;
+	}
+
 	function mountHost(tile: TpTile, el: GridItemHTMLElement, override?: Component<TpWidgetProps>) {
 		const target = contentElOf(el);
 		if (!target) return;
@@ -206,7 +220,7 @@
 			return;
 		}
 
-		const el = grid.addWidget(toGridStackWidget(tile));
+		const el = place(tile);
 		mountHost(tile, el, widget);
 		emitLayout();
 	}
@@ -231,10 +245,11 @@
 
 		suppressChange = true;
 		try {
-			// Teardown happens OUTSIDE batch mode. gridstack 12.6 defers DOM work
-			// while batching, and `removeAll(true, …)` called inside a batch leaves
-			// every `.grid-stack-item` wrapper in the document — the nodes detach
-			// from the grid's model but not from the DOM. Measured: wrappers grew
+			// Teardown happens OUTSIDE batch mode. gridstack defers DOM work while
+			// batching (12.6 did, and 14 still does), and `removeAll(true, …)`
+			// called inside a batch leaves every `.grid-stack-item` wrapper in the
+			// document — the nodes detach from the grid's model but not from the
+			// DOM. Measured: wrappers grew
 			// 7 → 15 → 25 → 37 across three rebuild cycles while hosts and tiles
 			// stayed correct. That is precisely the detached-node growth doc 22 §S1
 			// is looking for, and it is silent: nothing throws, nothing warns.
@@ -248,7 +263,7 @@
 			try {
 				for (const tile of next) {
 					tileById.set(tile.instanceId, tile);
-					mountHost(tile, grid.addWidget(toGridStackWidget(tile)));
+					mountHost(tile, place(tile));
 				}
 			} finally {
 				grid.batchUpdate(false);
@@ -322,12 +337,13 @@
 	});
 
 	function setup(el: HTMLDivElement) {
-		grid = GridStack.init(
+		const created = GridStack.init(
 			{
 				column: 12,
 				cellHeight: 72,
 				margin: 12,
-				float: false,
+				// No `mode`: its default, 'top', floats tiles up as `float: false`
+				// did until gridstack 14 replaced that option.
 				// doc 06 §5.4. Breakpoints are grid-width based; below 480 the deck
 				// collapses to a single column.
 				columnOpts: {
@@ -344,6 +360,11 @@
 			},
 			el
 		);
+		// Null only without a document or without the element (gridstack 14 says
+		// so in its types). This is the container this component rendered, on
+		// the client, so a null is a bug, and says so.
+		if (created === null) throw new Error('TpGrid: gridstack could not take its container');
+		grid = created;
 
 		grid.on('change', emitLayout);
 
@@ -373,7 +394,7 @@
 		try {
 			for (const tile of tiles) {
 				tileById.set(tile.instanceId, tile);
-				mountHost(tile, grid.addWidget(toGridStackWidget(tile)));
+				mountHost(tile, place(tile));
 			}
 		} finally {
 			suppressChange = false;
@@ -431,8 +452,16 @@
 ></div>
 
 <style>
+	/*
+	 * A stacking context of its own. gridstack 14 gives the resize handles
+	 * z-index 100 and 101, and the dragged tile 10000; in the page's context
+	 * a hovered tile's handle painted over the top bar (50), the drawer (60) and
+	 * the detail (90). Inside the grid they still rise above the tiles, which
+	 * is what gridstack wants them for, and no further.
+	 */
 	.grid-stack {
 		width: 100%;
+		isolation: isolate;
 	}
 
 	/* Faint dot lattice while editing (doc 13 §2). */
