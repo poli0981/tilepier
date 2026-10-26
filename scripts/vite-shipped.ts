@@ -50,7 +50,13 @@ export function shippedPackages(label: string): Plugin {
 			mkdirSync(SHIPPED_DIR, { recursive: true });
 			writeFileSync(
 				join(SHIPPED_DIR, `${file.join('-')}.json`),
-				`${JSON.stringify([...roots].sort(), null, '\t')}\n`
+				// Code-unit order, as `sort()` alone gives it, but said: the file
+				// must come out byte-identical on every machine.
+				`${JSON.stringify(
+					[...roots].sort((a, b) => Number(a > b) - Number(a < b)),
+					null,
+					'\t'
+				)}\n`
 			);
 		}
 	};

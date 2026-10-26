@@ -96,7 +96,8 @@ export class TpVideoController {
 	#retried = false;
 	#focused = false;
 	#disposed = false;
-	readonly #restored: Promise<void>;
+	/** The reader's volume and this video's place, read back; set by `open`. */
+	#restored: Promise<void> = Promise.resolve();
 	/** The video's resume key; `null` when it has none, and nothing is kept. */
 	#key: string | null = null;
 	/** Where to go once the length is known: a resume, or back after a retry. */
@@ -105,7 +106,21 @@ export class TpVideoController {
 	#prefs: TpMediaPrefs = { volume: 1, muted: false };
 	#lastSaved = 0;
 
-	constructor(video: HTMLVideoElement, box: HTMLElement, file: TpMediaFile) {
+	/**
+	 * The player for `file` in `video`, already reading back its place and
+	 * loading. A factory, not a constructor that starts the work: what a
+	 * constructor sets going cannot be awaited and escapes whoever built the
+	 * object (SonarQube S7059), and this way nothing can hold a controller that
+	 * never started.
+	 */
+	static open(video: HTMLVideoElement, box: HTMLElement, file: TpMediaFile): TpVideoController {
+		const controller = new TpVideoController(video, box, file);
+		controller.#restored = controller.#restore();
+		void controller.#load();
+		return controller;
+	}
+
+	private constructor(video: HTMLVideoElement, box: HTMLElement, file: TpMediaFile) {
 		this.#video = video;
 		this.#box = box;
 		this.#file = file;
@@ -146,9 +161,6 @@ export class TpVideoController {
 			if (document.visibilityState === 'hidden') this.#saveOnExit();
 		});
 		this.#on(window, 'pagehide', () => this.#saveOnExit());
-
-		this.#restored = this.#restore();
-		void this.#load();
 	}
 
 	/** The player is going: silence, and let go of everything it held. */

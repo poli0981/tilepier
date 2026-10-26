@@ -1,5 +1,6 @@
 import { foldForSearch } from '$lib/i18n/fold';
 import { isValidZone, zoneOffsetMinutes } from '$lib/i18n/fmt';
+import { byCodeUnit } from '$lib/order';
 
 /**
  * World-clock logic for doc 07 §1's detail view.
@@ -104,7 +105,7 @@ export function homeZone(): string {
  */
 export function allZones(): readonly string[] {
 	try {
-		return Intl.supportedValuesOf('timeZone').map(canonicalZone).sort();
+		return Intl.supportedValuesOf('timeZone').map(canonicalZone).sort(byCodeUnit);
 	} catch {
 		// Older runtimes without supportedValuesOf still format zones fine; they
 		// just cannot enumerate. The picker degrades to "type a zone", which is

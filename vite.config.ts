@@ -5,8 +5,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { maplibreVendor } from './scripts/vite-maplibre';
-import { shippedPackages } from './scripts/vite-shipped';
+import { maplibreVendor } from './scripts/vite-maplibre.ts';
+import { shippedPackages } from './scripts/vite-shipped.ts';
 
 // Adapter, CSP, and compilerOptions live in svelte.config.js (doc 03 §Repo
 // structure) so there is one place to look for framework configuration.

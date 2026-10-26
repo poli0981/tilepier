@@ -205,7 +205,9 @@ sw.addEventListener('fetch', (event) => {
 					const response = await fetch(request);
 					if (response.ok) {
 						const cache = await caches.open(CACHE);
-						cache.put(request, response.clone());
+						// To waitUntil, as the assets above: a floating write could be cut
+						// off with the worker, and a failed one went unseen.
+						event.waitUntil(cache.put(request, response.clone()).catch(() => undefined));
 					}
 					return response;
 				} catch {

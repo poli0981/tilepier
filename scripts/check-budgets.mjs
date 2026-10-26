@@ -127,8 +127,9 @@ for (const budget of config.budgets) {
 		continue;
 	}
 
-	// Per-file rows: the largest single chunk decides.
-	const worst = matched.reduce((a, b) => (sizeOf(a) >= sizeOf(b) ? a : b));
+	// Per-file rows: the largest single chunk decides. `matched` is not empty
+	// here (the branch above), and the first entry seeds the search.
+	const worst = matched.reduce((a, b) => (sizeOf(a) >= sizeOf(b) ? a : b), matched[0]);
 	const ok = sizeOf(worst) <= limit;
 	if (!ok) failed += 1;
 	console.log(

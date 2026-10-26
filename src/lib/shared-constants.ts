@@ -1,4 +1,5 @@
 import type { TpCryptoInterval, TpFeedUrlRejection, TpStockInterval } from './api-types';
+import { byCodeUnit } from './order';
 
 /**
  * Constants shared by client and Worker.
@@ -238,7 +239,7 @@ export function canonicalSymbols(symbols: readonly string[]): string[] {
 		const symbol = raw.trim().toUpperCase();
 		if (isMarketSymbol(symbol)) seen.add(symbol);
 	}
-	return [...seen].sort();
+	return [...seen].sort(byCodeUnit);
 }
 
 /**
