@@ -1,5 +1,5 @@
-import { STOCK_INTERVALS, STOCK_RANGES, type TpStockInterval } from '$lib/api-types';
-import { isMarketSymbol, stockSearchText } from '$lib/shared-constants';
+import { STOCK_INTERVALS, STOCK_RANGES, type TpStockInterval } from '#lib/api-types.js';
+import { isMarketSymbol, stockSearchText } from '#lib/shared-constants.js';
 import { parseCryptoTickerQuery, type TpCryptoTickerQuery } from './crypto-query';
 
 /**

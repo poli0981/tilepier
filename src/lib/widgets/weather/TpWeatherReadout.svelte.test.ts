@@ -1,14 +1,14 @@
 import '../../../app.css';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { scheduler } from '$lib/core/scheduler';
-import { swrCache } from '$lib/core/swr.svelte';
-import { tileStatusChannel } from '$lib/core/tile-status';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { WEATHER_OK } from '$lib/core/__fixtures__/weather';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { scheduler } from '#lib/core/scheduler.js';
+import { swrCache } from '#lib/core/swr.svelte.js';
+import { tileStatusChannel } from '#lib/core/tile-status.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { WEATHER_OK } from '#lib/core/__fixtures__/weather.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpWeatherReadout from './TpWeatherReadout.svelte';
 
 /**

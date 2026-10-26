@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
-	import { previousLegalVersion } from '$lib/core/legal';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { legalGate } from '$lib/stores/legal.svelte';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
-	import TpBotCheck from '$lib/ui/TpBotCheck.svelte';
-	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
-	import TpToast from '$lib/ui/TpToast.svelte';
-	import TpShortcutsSheet from '$lib/ui/TpShortcutsSheet.svelte';
-	import TpTopBar from '$lib/ui/TpTopBar.svelte';
-	import type { TpWidgetId } from '$lib/core/types';
+	import { previousLegalVersion } from '#lib/core/legal.js';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpAddDrawer from '#lib/ui/TpAddDrawer.svelte';
+	import TpBotCheck from '#lib/ui/TpBotCheck.svelte';
+	import TpCoachOverlay from '#lib/ui/TpCoachOverlay.svelte';
+	import TpToast from '#lib/ui/TpToast.svelte';
+	import TpShortcutsSheet from '#lib/ui/TpShortcutsSheet.svelte';
+	import TpTopBar from '#lib/ui/TpTopBar.svelte';
+	import type { TpWidgetId } from '#lib/core/types.js';
 
 	let { children } = $props();
 
@@ -92,11 +92,10 @@
 				</p>
 				<p>{m['legal.gate.summary'](undefined, { locale })}</p>
 				<p class="tp-gate__links">
-					<a href={resolve('/legal/terms')}>{m['legal.terms.title'](undefined, { locale })}</a>
-					<a href={resolve('/legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
-					<a href={resolve('/legal/licenses')}>{m['legal.licenses.title'](undefined, { locale })}</a
-					>
-					<a href={resolve('/about')}>{m['about.title'](undefined, { locale })}</a>
+					<a href={resolve('legal/terms')}>{m['legal.terms.title'](undefined, { locale })}</a>
+					<a href={resolve('legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
+					<a href={resolve('legal/licenses')}>{m['legal.licenses.title'](undefined, { locale })}</a>
+					<a href={resolve('about')}>{m['about.title'](undefined, { locale })}</a>
 				</p>
 				<!--
 					The gate is in the prerendered HTML so it appears pre-JS (doc 16 §2),
@@ -119,8 +118,8 @@
 			     through a template literal, and the query is what carries the
 			     choice (doc 14 §6). -->
 			<!-- eslint-disable svelte/no-navigation-without-resolve -->
-			<a href={`${resolve('/')}?lang=vi`} hreflang="vi">Tiếng Việt</a>
-			<a href={`${resolve('/')}?lang=en`} hreflang="en">English</a>
+			<a href={`${resolve('/(app)')}?lang=vi`} hreflang="vi">Tiếng Việt</a>
+			<a href={`${resolve('/(app)')}?lang=en`} hreflang="en">English</a>
 			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</p>
 	</div>

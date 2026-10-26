@@ -1,4 +1,4 @@
-import type { TpWidgetManifest } from '$lib/core/registry';
+import type { TpWidgetManifest } from '#lib/core/registry.js';
 
 /**
  * doc 06 §7, weather row. `multiInstance: true` is "per-place": a second tile

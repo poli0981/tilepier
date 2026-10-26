@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { untrack, type Component } from 'svelte';
-	import { pushState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { isDetailState, type TpDetailState } from '$lib/core/detail';
-	import type TpGridType from '$lib/core/grid/TpGrid.svelte';
-	import type { TpLayout, TpTile } from '$lib/core/grid/layout';
-	import { getManifest } from '$lib/core/registry';
-	import { isWidgetId, type TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { legalGate } from '$lib/stores/legal.svelte';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpDetailOverlay from '$lib/ui/TpDetailOverlay.svelte';
-	import TpWidgetUnavailable from '$lib/ui/TpWidgetUnavailable.svelte';
-	import { warmDetails } from '$lib/core/warm';
+	import { isDetailState, type TpDetailState } from '#lib/core/detail.js';
+	import type TpGridType from '#lib/core/grid/TpGrid.svelte';
+	import type { TpLayout, TpTile } from '#lib/core/grid/layout.js';
+	import { getManifest } from '#lib/core/registry.js';
+	import { isWidgetId, type TpWidgetProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpDetailOverlay from '#lib/ui/TpDetailOverlay.svelte';
+	import TpWidgetUnavailable from '#lib/ui/TpWidgetUnavailable.svelte';
+	import { warmDetails } from '#lib/core/warm.js';
 
 	/**
 	 * The deck (doc 03 §Rendering). The page is prerendered, but nothing renders
@@ -46,7 +46,7 @@
 		const ids = [...new Set(deck.widgetIds)];
 
 		void Promise.all([
-			import('$lib/core/grid/TpGrid.svelte'),
+			import('#lib/core/grid/TpGrid.svelte'),
 			Promise.all(ids.map(async (id) => [id, await loadTile(id)] as const))
 		]).then(([grid, loaded]) => {
 			if (cancelled) return;
@@ -192,7 +192,9 @@
 			// which a DOMRect does not reliably do.
 			...(rect === null
 				? {}
-				: { rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } })
+				: {
+						rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+					})
 		};
 
 		// `/(app)/w/[id]` rather than `/w/[id]`: SvelteKit's generated RouteId
@@ -206,7 +208,7 @@
 		// shape, and same reason, as the gate's `?lang=` links in +layout.svelte.
 		const url = `${resolve('/(app)/w/[id]', { id: tile.widgetId })}?i=${encodeURIComponent(instanceId)}`;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		pushState(url, { detail });
+		void goto(url, { shallow: true, state: { detail } });
 	}
 
 	/** Narrowed rather than trusted: `page.state` is restored verbatim from a

@@ -1,4 +1,4 @@
-import { db as defaultDb, type TpDb, type TpPlaylist } from '$lib/core/storage/db';
+import { db as defaultDb, type TpDb, type TpPlaylist } from '#lib/core/storage/db.js';
 import { moved, PLAYLIST_NAME_MAX, readPlaylist } from './service';
 
 /**

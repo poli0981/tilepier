@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDb, type TpDb } from '$lib/core/storage/db';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
 import { collection } from './collection.svelte';
 import { saveMusicRoot } from './library';
 import { player } from './player.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
 
 	/**
 	 * A tile whose code is not on this device and could not be fetched (doc 17

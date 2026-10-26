@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BACKOFF } from '$lib/shared-constants';
-import { online } from '$lib/stores/online.svelte';
+import { BACKOFF } from '#lib/shared-constants.js';
+import { online } from '#lib/stores/online.svelte.js';
 import { TpApiError } from './api';
 import { nextMidnight, scheduler } from './scheduler';
 

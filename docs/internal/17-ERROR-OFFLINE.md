@@ -63,7 +63,10 @@ gate has not been accepted.
   already has Dexie apiCache — double-caching creates staleness confusion).
 - Update flow: SW `waiting` → quiet toast "phiên bản mới — tải lại"
   (skipWaiting only on user action; never reload under the user). Activation
-  deletes every older cache (`e2e/s5-pwa`).
+  deletes every older cache (`e2e/s5-pwa`). That is the one update signal:
+  SvelteKit 3's hourly poll of `/_app/version.json` is off
+  (`version.pollInterval: 0`, SvelteKit 2's default), since the `updated` flag
+  it sets is read by nothing here.
 - Install: standard manifest (name, icons incl. maskable, theme colors both
   schemes); no install nagging — browser affordance only. **The icons are
   fetched by `e2e/s5-pwa`, not only declared** (2026-09-29).
@@ -71,8 +74,10 @@ gate has not been accepted.
     at a missing file.
   - The 404 that file returned also carried SvelteKit's preload `Link` header,
     which Chromium applied to the page. That was Brave's "preloaded but not used"
-    warning for the error page's CSS, and a 404 now drops the header
-    (`hooks.server.ts`).
+    warning for the error page's CSS, and `hooks.server.ts` dropped the header
+    from a 404 until SvelteKit 3, which sends none at all
+    (`output.linkHeaderPreload` is off by default). `e2e/error-pages` still
+    holds a missing file's 404 to having none.
 - **Resolved 2026-08-10 (spike S5): the fallback is what ships.**
   vite-plugin-pwa does fight adapter-cloudflare. `@vite-pwa/sveltekit` builds
   its precache manifest from SvelteKit's internal layout (`client/…`,
@@ -81,12 +86,22 @@ gate has not been accepted.
   `manifestTransforms` rewrite fixes that, but the Workbox runtime then failed
   to execute inside the worker and the spike's box ran out.
 
-  `src/service-worker.ts` implements the three behaviours above directly, using
-  `$service-worker`'s `build` / `files` / `prerendered` — the URLs SvelteKit
-  actually serves, which removes the path-translation problem at the root. It
-  is ~110 lines and 1.1 KB gz, against a 15 KB Workbox runtime. Registration
-  and the update prompt live in `src/lib/core/pwa.svelte.ts`; the toast is
+  `src/service-worker/index.ts` implements the three behaviours above directly,
+  using `$app/manifest`'s `assets` / `prerendered` (`$service-worker`'s
+  `files` / `prerendered` until SvelteKit 3) — the files SvelteKit actually
+  serves, which removes the path-translation problem at the root. It is ~110
+  lines and 1.4 KB gz, against a 15 KB Workbox runtime. Registration and the
+  update prompt live in `src/lib/core/pwa.svelte.ts`; the toast is
   `TpUpdateToast`. `e2e/s5-pwa.e2e.ts` asserts all four pass criteria.
+
+  **Since SvelteKit 3 it is an ES module** (2026-10-26), in a folder of its own
+  whose tsconfig gives it the worker's types instead of the page's.
+  `pwa.svelte.ts` registers it with `type: 'module'`, and SvelteKit's own
+  registration is off (`serviceWorker: { register: false }`): two
+  registrations of different types would each install a fresh worker, and the
+  reader would be offered an update on every load. A module service worker
+  needs Firefox 147, Safari 15 or Chrome 91, inside doc 02's targets; an older
+  browser's registration fails, is caught, and costs offline support only.
 
 ## 3. Offline degradation contract (per widget class)
 

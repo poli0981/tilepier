@@ -1,11 +1,12 @@
 import type { RequestHandler } from './$types';
+import { env } from 'cloudflare:workers';
 import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { ttlSeconds } from '../../_lib/kv-cache';
 import { parseFxHistoryQuery } from '../../_lib/fx-history-query';
 import { assembleHistory, readSnapshots, snapshotDates } from '../../_lib/fx-snapshots';
 import { FX_ATTRIBUTION } from '../../_lib/normalize';
-import type { TpFxHistoryPayload } from '$lib/api-types';
+import type { TpFxHistoryPayload } from '#lib/api-types.js';
 
 /**
  * `GET /api/fx/history?pair=USD-VND&days=90` — doc 11 §3, doc 10 §3.
@@ -31,10 +32,10 @@ import type { TpFxHistoryPayload } from '$lib/api-types';
  * honest representation on the wire.
  */
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseFxHistoryQuery(url);

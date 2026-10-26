@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { fmtDate, fmtTime } from '$lib/i18n/fmt';
-	import { lunarOfDate } from '$lib/lunar/amlich';
-	import { fmtLunarShort } from '$lib/lunar/format';
-	import { settings } from '$lib/stores/settings.svelte';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { fmtDate, fmtTime } from '#lib/i18n/fmt.js';
+	import { lunarOfDate } from '#lib/lunar/amlich.js';
+	import { fmtLunarShort } from '#lib/lunar/format.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import {
 		TILE_ZONE_ROWS,
 		normaliseZones,

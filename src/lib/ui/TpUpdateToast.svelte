@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { pwa } from '$lib/core/pwa.svelte';
-	import { m } from '$lib/paraglide/messages';
+	import { pwa } from '#lib/core/pwa.svelte.js';
+	import { m } from '#lib/paraglide/messages.js';
 
 	/**
 	 * Bottom-centre, max one visible, only for global events (doc 13 §7).

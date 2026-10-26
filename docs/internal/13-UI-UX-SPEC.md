@@ -133,7 +133,7 @@ show "on deck" disabled state. Search filters by name.
 
 ## 5. Detail expansion (FLIP)
 
-1. Tap tile (view mode) → capture tile rect → `pushState('/w/{id}?i=…')`
+1. Tap tile (view mode) → capture tile rect → shallow `goto('/w/{id}?i=…')`
    → overlay scrim (ink-950 @ 80%) → detail container animates from tile
    rect to centered panel (max 1120×min(86vh)) — transform+opacity only,
    260 ms spring.

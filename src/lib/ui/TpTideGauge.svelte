@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { settings } from '$lib/stores/settings.svelte';
+	import { settings } from '#lib/stores/settings.svelte.js';
 
 	/**
 	 * "Tide gauge" — the house motif (doc 12 §5). A vertical tick ruler like the

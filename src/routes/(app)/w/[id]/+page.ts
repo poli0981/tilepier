@@ -1,4 +1,4 @@
-import { MANIFESTS } from '$lib/core/registry';
+import { MANIFESTS } from '#lib/core/registry.js';
 
 /**
  * The detail deep link (doc 06 §6, doc 13 §5.4).

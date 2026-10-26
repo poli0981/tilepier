@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PASS_HEADER } from '$lib/shared-constants';
+import { PASS_HEADER } from '#lib/shared-constants.js';
 import { PassGate, type TpPassStatus } from './pass';
 
 /**

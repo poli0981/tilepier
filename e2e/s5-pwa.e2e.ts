@@ -142,12 +142,13 @@ test.describe('S5 · PWA on adapter-cloudflare', () => {
 	});
 
 	test('hashed output the Vite manifest cannot list is cached on first use', async ({ page }) => {
-		// doc 17 §2 (2026-09-29). `$service-worker`'s `build` list comes from the
-		// Vite client manifest, and two kinds of output never appear in it: the
-		// MapLibre modules scripts/vite-maplibre.ts copies in, and the tag worker
-		// Vite builds on its own. Neither was precached nor cached on use, so a
-		// first map or a first library scan with no connection failed even after
-		// the reader had used both online.
+		// doc 17 §2 (2026-09-29). The worker's list of hashed output (`build` from
+		// `$service-worker` then, `immutable` from `$app/manifest` since SvelteKit
+		// 3) comes from the Vite client manifest, and two kinds of output never
+		// appear in it: the MapLibre modules scripts/vite-maplibre.ts copies in,
+		// and the tag worker Vite builds on its own. Neither was precached nor
+		// cached on use, so a first map or a first library scan with no
+		// connection failed even after the reader had used both online.
 		const immutable = join(process.cwd(), '.svelte-kit', 'cloudflare', '_app', 'immutable');
 		const maplibre = readdirSync(immutable).find((name) => name.startsWith('maplibre-'));
 		const worker = readdirSync(join(immutable, 'workers')).find((name) =>
@@ -325,6 +326,32 @@ test.describe('the shell, and what the reader uses', () => {
 		await expect
 			.poll(() => page.evaluate(async () => (await caches.keys()).join(',')))
 			.not.toContain('from-an-older-deploy');
+	});
+
+	test('a reload under the same worker offers no update', async ({ page }) => {
+		// doc 17 §2's toast is for a new deploy and nothing else. SvelteKit 3
+		// builds the worker as an ES module and would register it as one: a
+		// second registration of another type installs a fresh worker every time
+		// either runs, so every load would offer the reader an "update".
+		// `pwa.svelte.ts` registers it alone, as a module, with SvelteKit's own
+		// registration off (vite.config.ts).
+		await page.goto('/');
+		await awaitServiceWorker(page);
+		await expect
+			.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+			.toBe(true);
+
+		await page.reload();
+		await awaitServiceWorker(page);
+		// Time for a stray registration to fetch the script and install.
+		await page.waitForTimeout(2_000);
+
+		const pending = await page.evaluate(async () => {
+			const reg = await navigator.serviceWorker.getRegistration();
+			return { waiting: Boolean(reg?.waiting), installing: Boolean(reg?.installing) };
+		});
+		expect(pending).toEqual({ waiting: false, installing: false });
+		await expect(page.getByTestId('update-toast')).toHaveCount(0);
 	});
 
 	test('the app is installable', async ({ page, context }) => {

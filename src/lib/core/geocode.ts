@@ -1,5 +1,5 @@
-import type { TpGeocodePayload, TpGeocodeResult } from '$lib/api-types';
-import { fetchEnvelope } from '$lib/core/api';
+import type { TpGeocodePayload, TpGeocodeResult } from '#lib/api-types.js';
+import { fetchEnvelope } from '#lib/core/api.js';
 
 /**
  * Place search (doc 08 §1 and §5, upstream doc 10 §6) — the weather tile's

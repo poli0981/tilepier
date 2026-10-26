@@ -1,16 +1,16 @@
-import { isLayout, LAYOUT_VERSION, type TpLayout, type TpTile } from '$lib/core/grid/layout';
-import { newInstanceId } from '$lib/core/ids';
-import { logEntry } from '$lib/core/log-buffer';
-import { getManifest } from '$lib/core/registry';
+import { isLayout, LAYOUT_VERSION, type TpLayout, type TpTile } from '#lib/core/grid/layout.js';
+import { newInstanceId } from '#lib/core/ids.js';
+import { logEntry } from '#lib/core/log-buffer.js';
+import { getManifest } from '#lib/core/registry.js';
 import {
 	createDebouncedWriter,
 	readVersioned,
 	writeVersioned,
 	type TpDebouncedWriter,
 	type TpVersionedSpec
-} from '$lib/core/storage/local';
-import { LOCAL_KEYS } from '$lib/shared-constants';
-import { isWidgetId, type TpWidgetId } from '$lib/core/types';
+} from '#lib/core/storage/local.js';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
+import { isWidgetId, type TpWidgetId } from '#lib/core/types.js';
 
 /**
  * The deck — `tp.layout.v1` (doc 05 §2) and everything that reads or writes it.

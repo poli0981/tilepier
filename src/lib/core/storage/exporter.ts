@@ -1,5 +1,5 @@
-import { isLayout, type TpLayout } from '$lib/core/grid/layout';
-import { isSettings, type TpSettings } from '$lib/stores/settings.svelte';
+import { isLayout, type TpLayout } from '#lib/core/grid/layout.js';
+import { isSettings, type TpSettings } from '#lib/stores/settings.svelte.js';
 import {
 	db,
 	type TpDb,

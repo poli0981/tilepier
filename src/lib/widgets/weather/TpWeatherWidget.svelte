@@ -1,15 +1,15 @@
 <script lang="ts">
-	import type { TpPlacePick } from '$lib/core/geocode';
+	import type { TpPlacePick } from '#lib/core/geocode.js';
 	import {
 		browserGeoPermission,
 		type TpPermissionSource,
 		type TpPositionSource
-	} from '$lib/core/geolocate';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpPlaceSearch from '$lib/ui/TpPlaceSearch.svelte';
+	} from '#lib/core/geolocate.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
+	import TpPlaceSearch from '#lib/ui/TpPlaceSearch.svelte';
 	import TpWeatherReadout from './TpWeatherReadout.svelte';
 	import { placeSettings, readSettings, weatherKey } from './service';
 

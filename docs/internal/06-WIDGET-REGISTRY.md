@@ -340,8 +340,9 @@ every batch, and fifty net-neutral cycles must leave all three at baseline.
 ## 6. Detail expansion handshake
 
 Grid tile → detail is a FLIP transition (doc 13 §5): host measures tile rect,
-pushes `/w/[id]?i=<instanceId>` via `pushState` (shallow routing), overlay
-mounts the detail chunk while animating from the tile rect. Closing reverses;
+pushes `/w/[id]?i=<instanceId>` by a shallow `goto` (shallow routing;
+`pushState` until SvelteKit 3), overlay mounts the detail chunk while animating
+from the tile rect. Closing reverses;
 browser Back also closes (popstate handler). Direct load of `/w/[id]` renders
 the detail full-screen without animation and offers "Pin to deck" if no
 instance exists.

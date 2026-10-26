@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpGeocodePayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpGeocodePayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { normalizeQuery, parseGeocodeQuery } from '../_lib/geocode-query';
+import { bind } from '../_lib/__fixtures__/workers';
 
 /**
  * doc 11 §3's second endpoint, and the first with a **fallback chain**.
@@ -36,13 +37,12 @@ function call(
 	const url = new URL(`https://tilepier.win/api/geocode${options.search ?? '?q=Hà Nội&lang=vi'}`);
 	const request = new Request(url, { headers: options.headers ?? {} });
 
-	return (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: { env: { TILEPIER_CACHE: KVNamespace | undefined } };
-		}) => Promise<Response>
-	)({ request, url, platform: { env: { TILEPIER_CACHE: kv } } });
+	bind({ TILEPIER_CACHE: kv });
+
+	return (GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>)({
+		request,
+		url
+	});
 }
 
 /** `response.json()` is `unknown` under `strict`, and every assertion below

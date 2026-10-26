@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TpEvent } from '$lib/core/storage/db';
+import type { TpEvent } from '#lib/core/storage/db.js';
 import {
 	countByDateKey,
 	lunarMonthSpan,

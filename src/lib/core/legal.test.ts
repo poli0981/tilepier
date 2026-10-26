@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { LEGAL_VERSION } from '$lib/shared-constants';
+import { LEGAL_VERSION } from '#lib/shared-constants.js';
 
 /**
  * static/boot.js runs before the bundle exists, so it cannot import

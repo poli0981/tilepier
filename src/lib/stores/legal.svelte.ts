@@ -1,4 +1,4 @@
-import { acceptLegal, hasAcceptedLegal } from '$lib/core/legal';
+import { acceptLegal, hasAcceptedLegal } from '#lib/core/legal.js';
 
 /**
  * Whether the legal gate has been passed, as state the app can wait on

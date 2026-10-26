@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { TpMaybeNumber } from '$lib/api-types';
-	import { useRefresh } from '$lib/core/refresh.svelte';
-	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
-	import { fmtRelative } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpWeatherIcon from '$lib/ui/icons/TpWeatherIcon.svelte';
-	import { wmoGlyph, type TpWmoGlyph } from '$lib/ui/icons/wmo';
-	import type { TpTileSize } from '$lib/core/types';
+	import type { TpMaybeNumber } from '#lib/api-types.js';
+	import { useRefresh } from '#lib/core/refresh.svelte.js';
+	import { setTileStatus, type TpTileStatus } from '#lib/core/tile-status.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
+	import { fmtRelative } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpWeatherIcon from '#lib/ui/icons/TpWeatherIcon.svelte';
+	import { wmoGlyph, type TpWmoGlyph } from '#lib/ui/icons/wmo.js';
+	import type { TpTileSize } from '#lib/core/types.js';
 	import {
 		currentHourIndex,
 		isGap,

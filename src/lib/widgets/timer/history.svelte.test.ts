@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { dateKeyOf } from '$lib/core/date-key';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { dateKeyOf } from '#lib/core/date-key.js';
 import { HISTORY_DAYS, focusHistory, logFocusSession } from './service';
 
 /**

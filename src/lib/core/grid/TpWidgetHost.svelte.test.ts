@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { m } from '$lib/paraglide/messages';
-import { setTileStatus, tileStatusChannel } from '$lib/core/tile-status';
+import { m } from '#lib/paraglide/messages.js';
+import { setTileStatus, tileStatusChannel } from '#lib/core/tile-status.js';
 import type { TpTile } from './layout';
 import TpWidgetHost from './TpWidgetHost.svelte';
 import TpStubWidget from './__fixtures__/TpStubWidget.svelte';
 import TpThrowingWidget from './__fixtures__/TpThrowingWidget.svelte';
 import { crash } from './__fixtures__/crash';
-import { clearLog, readLog } from '$lib/core/log-buffer';
+import { clearLog, readLog } from '#lib/core/log-buffer.js';
 
 /**
  * The host's half of doc 13 §7's badge.

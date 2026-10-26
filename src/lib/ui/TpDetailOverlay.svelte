@@ -1,13 +1,17 @@
 <script lang="ts">
 	import { untrack, type Component } from 'svelte';
-	import { forgetDetailComponent, loadDetailComponent, type TpDetailState } from '$lib/core/detail';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { widgetLabels } from '$lib/i18n/widget-labels';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import {
+		forgetDetailComponent,
+		loadDetailComponent,
+		type TpDetailState
+	} from '#lib/core/detail.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { widgetLabels } from '#lib/i18n/widget-labels.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 	import { trapTab, watchFullscreen, type TpFullscreenWatch } from './dialog-keys';
 
 	/**

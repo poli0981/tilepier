@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { useRefresh } from '$lib/core/refresh.svelte';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
+	import { useRefresh } from '#lib/core/refresh.svelte.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
 	import { RSS_CADENCE, feedSource, type TpFeedReading } from './service';
 
 	/**

@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import type { TpHealthReport } from '$lib/api-types';
-import { readLog } from '$lib/core/log-buffer';
-import { m } from '$lib/paraglide/messages';
-import { LOCAL_KEYS } from '$lib/shared-constants';
-import { deck } from '$lib/stores/deck.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import type { TpHealthReport } from '#lib/api-types.js';
+import { readLog } from '#lib/core/log-buffer.js';
+import { m } from '#lib/paraglide/messages.js';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
+import { deck } from '#lib/stores/deck.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpSettingsPanel from './TpSettingsPanel.svelte';
 
 /**

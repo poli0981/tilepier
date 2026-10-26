@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CACHE_POLICY, RATE_LIMIT, cacheKey } from '$lib/shared-constants';
-import { ER_API_BODY, FX_PAYLOAD } from '$lib/core/__fixtures__/fx';
+import { CACHE_POLICY, RATE_LIMIT, cacheKey } from '#lib/shared-constants.js';
+import { ER_API_BODY, FX_PAYLOAD } from '#lib/core/__fixtures__/fx.js';
 import { GET } from './+server';
+import { bind, settle } from '../_lib/__fixtures__/workers';
 
 /**
  * `/api/fx` — doc 11 §3, doc 10 §3.
@@ -58,24 +59,13 @@ async function call(options: CallOptions = {}): Promise<CallResult> {
 	const kv = options.kv === undefined ? fakeKv() : (options.kv ?? undefined);
 	const url = new URL('https://tilepier.win/api/fx');
 	const request = new Request(url, { headers: options.headers ?? {} });
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv });
 
 	const response = await (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: { TILEPIER_CACHE: KVNamespace | undefined };
-				ctx: { waitUntil: (p: Promise<unknown>) => void };
-			};
-		}) => Promise<Response>
-	)({
-		request,
-		url,
-		platform: { env: { TILEPIER_CACHE: kv }, ctx: { waitUntil: (p) => void pending.push(p) } }
-	});
+		GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>
+	)({ request, url });
 
-	return { response, settled: Promise.all(pending) };
+	return { response, settled: settle() };
 }
 
 /** Resolves every upstream call with one body. */

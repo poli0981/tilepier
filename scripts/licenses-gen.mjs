@@ -6,11 +6,16 @@
 // What ships is the union of four answers, because no one of them is whole:
 //
 //  1. The build's own module graph — the page, the server and the music tag
-//     worker — recorded by scripts/vite-shipped.ts. It is the only source that
-//     sees svelte, SvelteKit, devalue, cookie and set-cookie-parser, which are
-//     devDependencies (or under them) and ship anyway.
-//  2. The adapter's _worker.js, bundled by esbuild, which names each module it
-//     inlined in a path comment (worktop, for one).
+//     worker — recorded by scripts/vite-shipped.ts. It sees svelte, SvelteKit,
+//     devalue and cookie, which are devDependencies (or under them) and ship
+//     anyway.
+//  2. The Worker as a deploy bundles it. adapter-cloudflare 8 writes its entry
+//     unbundled, and wrangler inlines SvelteKit's server runtime and what that
+//     imports (esm-env, for one) at deploy, past every graph the build
+//     records. `wrangler deploy --dry-run` makes the same bundle without
+//     uploading it, and esbuild names each module it inlined in a path comment.
+//     Until adapter 8 the adapter bundled the worker itself and _worker.js
+//     carried the comments, which is why, read there, they went quiet.
 //  3. `pnpm licenses list --prod`: everything wrangler bundles at deploy rather
 //     than Vite at build, and MapLibre's dependencies, whose code is inside the
 //     vendored MapLibre files rather than in any graph.
@@ -21,12 +26,14 @@
 // so a patch release does not churn the file; identical texts are kept once.
 
 import { execSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const OUT = 'src/lib/legal/licenses.generated.json';
 const SHIPPED_DIR = '.svelte-kit/tp-shipped';
 const WORKER = '.svelte-kit/cloudflare/_worker.js';
+/** Where `workerBundle` has wrangler write the Worker it would upload. */
+const WORKER_BUNDLE = '.svelte-kit/tp-worker';
 
 /** Packages that ship without going through any graph the build can read. */
 const EXTRA = [
@@ -191,6 +198,18 @@ function licenceOf(dir, pkg) {
 	);
 }
 
+/** The Worker exactly as `wrangler deploy` would upload it (step 2 above). */
+function workerBundle() {
+	rmSync(WORKER_BUNDLE, { recursive: true, force: true });
+	execSync(`pnpm exec wrangler deploy --dry-run --outdir ${WORKER_BUNDLE}`, {
+		stdio: ['ignore', 'ignore', 'inherit']
+	});
+	return readdirSync(WORKER_BUNDLE)
+		.filter((name) => name.endsWith('.js'))
+		.map((name) => readFileSync(join(WORKER_BUNDLE, name), 'utf8'))
+		.join('\n');
+}
+
 function shippedRoots() {
 	if (!existsSync(SHIPPED_DIR) || !existsSync(WORKER)) {
 		throw new Error('no build to read: run `pnpm build` first');
@@ -199,7 +218,7 @@ function shippedRoots() {
 	for (const file of readdirSync(SHIPPED_DIR).filter((name) => name.endsWith('.json'))) {
 		for (const root of JSON.parse(readFileSync(join(SHIPPED_DIR, file), 'utf8'))) roots.add(root);
 	}
-	for (const line of readFileSync(WORKER, 'utf8').split('\n')) {
+	for (const line of workerBundle().split('\n')) {
 		const comment = /^\/\/ (\S*node_modules\/\S+)$/.exec(line.trim())?.[1];
 		const root = comment === undefined ? null : rootOf(comment);
 		if (root !== null) roots.add(root);

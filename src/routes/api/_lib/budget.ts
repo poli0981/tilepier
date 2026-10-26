@@ -1,4 +1,4 @@
-import { STOCK_BUDGET } from '$lib/shared-constants';
+import { STOCK_BUDGET } from '#lib/shared-constants.js';
 
 /**
  * Twelve Data's two limits (doc 11 §5, doc 10 §5): 800 credits a day on

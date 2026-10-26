@@ -5,8 +5,8 @@ import type { TpWidgetManifest } from './registry';
 import type { TpDetailProps } from './types';
 
 /**
- * doc 06 §6. The history half of the handshake belongs to SvelteKit's
- * `pushState` and is exercised by the overlay's component test and journey #2;
+ * doc 06 §6. The history half of the handshake belongs to SvelteKit's shallow
+ * `goto` and is exercised by the overlay's component test and journey #2;
  * what is checked here is the half that is pure — the guard over restored
  * history state, and the chunk cache.
  */

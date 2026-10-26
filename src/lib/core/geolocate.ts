@@ -1,4 +1,4 @@
-import { roundCoord } from '$lib/shared-constants';
+import { roundCoord } from '#lib/shared-constants.js';
 
 /**
  * The browser side of doc 08 §1's "use my location" — the permission question

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
-	import TpProse from '$lib/ui/TpProse.svelte';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpProse from '#lib/ui/TpProse.svelte';
 
 	/**
 	 * doc 13 §11. Two other docs already pointed at this page for their
@@ -25,7 +25,7 @@
 			<p>{m['about.what_is'](undefined, { locale })}</p>
 			<p>
 				{m['about.privacy_line'](undefined, { locale })}
-				<a href={resolve('/legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
+				<a href={resolve('legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
 			</p>
 
 			<h2>{m['about.limitations.title'](undefined, { locale })}</h2>
@@ -39,7 +39,7 @@
 				·
 				<a href={REPO}>{m['about.links.repo'](undefined, { locale })}</a>
 				·
-				<a href={resolve('/legal/licenses')}>{m['about.links.licence'](undefined, { locale })}</a>
+				<a href={resolve('legal/licenses')}>{m['about.links.licence'](undefined, { locale })}</a>
 			</p>
 		</div>
 	{/each}

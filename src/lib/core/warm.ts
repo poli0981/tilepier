@@ -1,6 +1,6 @@
-import { whenControlled } from '$lib/core/pwa.svelte';
-import { getManifest } from '$lib/core/registry';
-import type { TpWidgetId } from '$lib/core/types';
+import { whenControlled } from '#lib/core/pwa.svelte.js';
+import { getManifest } from '#lib/core/registry.js';
+import type { TpWidgetId } from '#lib/core/types.js';
 
 /**
  * Fetches the detail chunks of the widgets on the deck while the reader is

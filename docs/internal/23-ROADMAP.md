@@ -780,7 +780,9 @@ meeting the second source it had been written for:
 7. **The adapter replays cacheable GETs before any hook runs.** So
    `/api/_health` must be `no-store` or it replays an authorised report to
    anyone, and the Turnstile gate guards cache misses — upstream spend — rather
-   than the data (#12, #14). A property, recorded in doc 15 §3 as one.
+   than the data (#12, #14). A property, recorded in doc 15 §3 as one. (Since
+   adapter-cloudflare 8 it is `hooks.server.ts`'s edge cache that answers
+   first, at the same point and to the same rules, doc 11 §2.)
 8. **Cloudflare's Turnstile testing secrets are 35 characters**, not the 23 this
    project's own setup notes gave. Found only by the end-to-end run against
    `pnpm preview` with the real `api.js`; the stubbed suite could not (#14).

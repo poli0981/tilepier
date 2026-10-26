@@ -37,9 +37,10 @@ describe('licenses.generated.json (doc 16 §5)', () => {
 			'@sveltejs/kit',
 			'devalue',
 			'cookie',
-			'set-cookie-parser',
 			'@sveltejs/adapter-cloudflare',
-			'worktop',
+			// Only in the Worker wrangler bundles at deploy (licenses-gen step 2),
+			// since adapter-cloudflare 8 stopped bundling it at build.
+			'esm-env',
 			'@inlang/paraglide-js',
 			'tailwindcss',
 			'@fontsource/be-vietnam-pro',

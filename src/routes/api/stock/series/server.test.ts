@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpStockSeriesPayload } from '$lib/api-types';
-import { cacheKey, STOCK_BUDGET } from '$lib/shared-constants';
+import type { TpStockSeriesPayload } from '#lib/api-types.js';
+import { cacheKey, STOCK_BUDGET } from '#lib/shared-constants.js';
 import { GET } from './+server';
+import { bind, settle } from '../../_lib/__fixtures__/workers';
 
 /**
  * `/api/stock/series` (doc 11 §3, §5): the one route that spends a budgeted
@@ -131,25 +132,11 @@ async function call(
 	env: { TWELVEDATA_KEY?: string; FINNHUB_KEY?: string } = {}
 ): Promise<{ response: Response; settled: Promise<unknown> }> {
 	const url = new URL(`https://tilepier.win/api/stock/series${search}`);
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv, TWELVEDATA_KEY: TD_KEY, FINNHUB_KEY: FH_KEY, ...env });
 	const response = await (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: { TILEPIER_CACHE: KVNamespace; TWELVEDATA_KEY?: string; FINNHUB_KEY?: string };
-				ctx: { waitUntil: (p: Promise<unknown>) => void };
-			};
-		}) => Promise<Response>
-	)({
-		request: new Request(url),
-		url,
-		platform: {
-			env: { TILEPIER_CACHE: kv, TWELVEDATA_KEY: TD_KEY, FINNHUB_KEY: FH_KEY, ...env },
-			ctx: { waitUntil: (p) => void pending.push(p) }
-		}
-	});
-	return { response, settled: Promise.all(pending) };
+		GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>
+	)({ request: new Request(url), url });
+	return { response, settled: settle() };
 }
 
 async function read(response: Response): Promise<{

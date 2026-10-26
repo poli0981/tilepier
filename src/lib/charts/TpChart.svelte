@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { logEntry } from '$lib/core/log-buffer';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import type { TpChart } from './echarts';
 	import type { TpChartOption } from './options';
 	import { chartTheme, readChartTokens } from './theme';

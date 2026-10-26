@@ -43,7 +43,7 @@ said "set in `hooks.server.ts` for all HTML responses". Both halves were wrong:
    responses. **One list since 2026-10-06**: `src/lib/server/security-headers.ts`
    is what the hook imports; `security-headers.test.ts` holds `_headers`' `/*`
    block and the block above to it (and `_headers`' `frame-ancestors` to
-   `svelte.config.js`); `legal-gate.e2e.ts` holds a prerendered page and a
+   the CSP's, `src/lib/server/csp.ts`); `legal-gate.e2e.ts` holds a prerendered page and a
    Worker-rendered 404 to it value for value — until then the two paths agreed
    by a comment, and Permissions-Policy was checked for a substring. After a
    deploy, `e2e/prod-headers.e2e.ts` does the same against production when
@@ -55,9 +55,10 @@ said "set in `hooks.server.ts` for all HTML responses". Both halves were wrong:
    renders perfectly — only interactivity dies, silently. Found by an e2e test
    where clicking the gate's accept button did nothing.
 
-   The CSP is therefore emitted by SvelteKit itself, configured in
-   `svelte.config.js` under `kit.csp` with `mode: 'hash'`, so the policy
-   carries a `sha256-` hash for that script. Hash rather than nonce because a
+   The CSP is therefore emitted by SvelteKit itself, configured by its `csp`
+   option with `mode: 'hash'` (`src/lib/server/csp.ts`, passed to
+   `sveltekit()` in vite.config.ts since SvelteKit 3; `svelte.config.js`'s
+   `kit.csp` before), so the policy carries a `sha256-` hash for that script. Hash rather than nonce because a
    nonce must be unique per response and prerendered pages cannot have one.
    Never add a second CSP in `_headers` or the hook: browsers enforce each
    policy independently, so a second one without the hash re-breaks hydration.
@@ -161,9 +162,10 @@ analytics or waits on Cloudflare.
      `/api/_health`). Refusal is `401 VERIFY_REQUIRED`, `no-store`. The
      client drops the refused pass (compare-and-swap, so a late tile cannot
      discard a newer pass) and retries once.
-   - **What it protects is upstream spend, not the data.** The adapter
-     replays cached GETs from `caches.default` *before* hooks run, so a URL
-     already cached answers without a pass for up to half its TTL. That is
+   - **What it protects is upstream spend, not the data.** The edge cache
+     (doc 11 §2) answers cached GETs from `caches.default` *before* the gate
+     runs — the adapter's worker until adapter-cloudflare 8, the hook since —
+     so a URL already cached answers without a pass for up to half its TTL. That is
      public data at no cost. What the pass guards is the MISS that reaches
      an upstream — threat (c) in §1.
    - **siteverify down is not the app down.** A timeout, a 5xx or
@@ -321,7 +323,8 @@ feed (VnExpress) arriving through the Worker's own egress.
   in 3.4.17), vite's high, and zod's under knip, the last a lock refresh — the
   gate working as the paragraph above says, on a commit nobody had touched.
   The `sharp` floor came out the same week: wrangler 4.152's miniflare pins
-  0.35.5 itself.
+  0.35.5 itself. So did `cookie`'s, with SvelteKit 3, which asks for
+  `cookie` ^2; nothing in the tree is below 0.7 any more.
 - **The Node version is held by `.node-version`, not by `engines`**
   (2026-10-26). `.npmrc`'s `engine-strict=true` had done nothing since
   pnpm 11, which reads only auth and registry settings from that file, so

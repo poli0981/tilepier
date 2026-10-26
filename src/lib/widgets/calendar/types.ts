@@ -1,4 +1,4 @@
-import type { TpLunarDate, TpSolarDate } from '$lib/lunar/amlich';
+import type { TpLunarDate, TpSolarDate } from '#lib/lunar/amlich.js';
 
 /** doc 07 §6. */
 

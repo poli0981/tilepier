@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TpWidgetProps } from '$lib/core/types';
+	import type { TpWidgetProps } from '#lib/core/types.js';
 	import { crash } from './crash';
 
 	/**

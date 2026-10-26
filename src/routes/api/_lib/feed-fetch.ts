@@ -1,5 +1,5 @@
-import type { TpFeedUnavailable } from '$lib/api-types';
-import { UPSTREAM, parseFeedUrl } from '$lib/shared-constants';
+import type { TpFeedUnavailable } from '#lib/api-types.js';
+import { UPSTREAM, parseFeedUrl } from '#lib/shared-constants.js';
 import { UpstreamError, readCappedBytes, toUpstreamError } from './upstream';
 
 /**

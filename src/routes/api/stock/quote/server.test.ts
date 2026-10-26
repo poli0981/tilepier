@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpStockQuotePayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpStockQuotePayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
+import { bind, settle } from '../../_lib/__fixtures__/workers';
 
 /**
  * `/api/stock/quote` (doc 11 §3): cached per symbol, fetched per symbol, one
@@ -43,25 +44,11 @@ async function call(
 	const url = new URL(
 		`https://tilepier.win/api/stock/quote${options.search ?? '?symbols=AAPL,MSFT'}`
 	);
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv, FINNHUB_KEY: options.finnhubKey ?? KEY });
 	const response = await (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: { TILEPIER_CACHE: KVNamespace | undefined; FINNHUB_KEY?: string };
-				ctx: { waitUntil: (p: Promise<unknown>) => void };
-			};
-		}) => Promise<Response>
-	)({
-		request: new Request(url, { headers: options.headers ?? {} }),
-		url,
-		platform: {
-			env: { TILEPIER_CACHE: kv, FINNHUB_KEY: options.finnhubKey ?? KEY },
-			ctx: { waitUntil: (p) => void pending.push(p) }
-		}
-	});
-	return { response, settled: Promise.all(pending) };
+		GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>
+	)({ request: new Request(url, { headers: options.headers ?? {} }), url });
+	return { response, settled: settle() };
 }
 
 async function body(response: Response): Promise<{

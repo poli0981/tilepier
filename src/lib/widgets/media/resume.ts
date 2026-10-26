@@ -1,5 +1,5 @@
-import { sha256Hex } from '$lib/core/hash';
-import { db, putPlaybackNow, type TpDb } from '$lib/core/storage/db';
+import { sha256Hex } from '#lib/core/hash.js';
+import { db, putPlaybackNow, type TpDb } from '#lib/core/storage/db.js';
 import {
 	lruVictims,
 	readPrefs,

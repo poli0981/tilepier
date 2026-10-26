@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { m } from '$lib/paraglide/messages';
-import { toasts } from '$lib/stores/toast.svelte';
+import { m } from '#lib/paraglide/messages.js';
+import { toasts } from '#lib/stores/toast.svelte.js';
 import TpToast from './TpToast.svelte';
 
 /**

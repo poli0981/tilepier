@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { logEntry } from '$lib/core/log-buffer';
+	import { logEntry } from '#lib/core/log-buffer.js';
 
 	/**
 	 * The **second and last** `{@html}` in the application (doc 15 §4), and the
@@ -30,14 +30,14 @@
 
 	let { source, lang, label }: Props = $props();
 
-	type Sanitizer = typeof import('$lib/core/sanitize');
+	type Sanitizer = typeof import('#lib/core/sanitize.js');
 
 	let sanitizer = $state<Sanitizer | null>(null);
 
 	$effect(() => {
 		let cancelled = false;
 
-		void import('$lib/core/sanitize')
+		void import('#lib/core/sanitize.js')
 			.then((module) => {
 				if (!cancelled) sanitizer = module;
 			})

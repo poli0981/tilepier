@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import type { TpLayout } from '$lib/core/grid/layout';
-import { defaultSettings } from '$lib/stores/settings.svelte';
+import type { TpLayout } from '#lib/core/grid/layout.js';
+import { defaultSettings } from '#lib/stores/settings.svelte.js';
 import { createDb, type TpDb } from './db';
 import {
 	BACKUP_VERSION,

@@ -7,8 +7,8 @@ import type { Plugin } from 'vite';
  * `pnpm licenses:gen` (doc 16 §5).
  *
  * `pnpm licenses list --prod` cannot answer that here: svelte and SvelteKit,
- * and devalue, cookie and set-cookie-parser under them, are devDependencies
- * whose code ships in the Worker and the page. A hand-kept list of them would
+ * and devalue and cookie under them, are devDependencies whose code ships in
+ * the Worker and the page. A hand-kept list of them would
  * drift the first time an import moved, so the module graph is read instead:
  * every chunk of every environment — the page, the server, the music tag
  * worker — names the modules it holds, and each one under `node_modules/`

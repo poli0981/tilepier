@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TpTodo, TpTodoList } from '$lib/core/storage/db';
+import type { TpTodo, TpTodoList } from '#lib/core/storage/db.js';
 import { countDone, dueState, filterTodos, moveList, resolveList, sortTodos } from './service';
 
 /**

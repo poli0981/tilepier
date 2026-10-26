@@ -9,13 +9,13 @@
 
 <script lang="ts">
 	import type { Component } from 'svelte';
-	import { logEntry } from '$lib/core/log-buffer';
-	import { getManifest } from '$lib/core/registry';
-	import { tileStatus } from '$lib/core/tile-status';
-	import type { TpTileSize, TpWidgetProps } from '$lib/core/types';
-	import { widgetLabels } from '$lib/i18n/widget-labels';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import { getManifest } from '#lib/core/registry.js';
+	import { tileStatus } from '#lib/core/tile-status.js';
+	import type { TpTileSize, TpWidgetProps } from '#lib/core/types.js';
+	import { widgetLabels } from '#lib/i18n/widget-labels.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import type { TpTile } from './layout';
 
 	/**

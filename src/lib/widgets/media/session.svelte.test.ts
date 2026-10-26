@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { claimPlayback, playbackOwner, resetPlayback } from '$lib/core/playback';
-import type { TpMediaSession } from '$lib/core/media-session';
+import { claimPlayback, playbackOwner, resetPlayback } from '#lib/core/playback.js';
+import type { TpMediaSession } from '#lib/core/media-session.js';
 import { videoSession } from './session';
 
 /**

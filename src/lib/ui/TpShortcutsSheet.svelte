@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
 	 * doc 13 §8's shortcuts sheet, opened with `?`. v1 keeps global keys

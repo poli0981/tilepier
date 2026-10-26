@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { m } from '$lib/paraglide/messages';
-import { settings } from '$lib/stores/settings.svelte';
+import { m } from '#lib/paraglide/messages.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpQuoteDetail from './TpQuoteDetail.svelte';
 import { attributionOf, bilingualPool, loadCatalogue, pickOfDay, quoteText } from './service';
-import { dateKeyOf } from '$lib/core/date-key';
+import { dateKeyOf } from '#lib/core/date-key.js';
 
 /** doc 08 §3's detail — browse, search, and the favourites the tile writes. */
 

@@ -1,5 +1,5 @@
-import { sha256Hex } from '$lib/core/hash';
-import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
+import { sha256Hex } from '#lib/core/hash.js';
+import { db as defaultDb, type TpDb, type TpTrack } from '#lib/core/storage/db.js';
 import type { TpCover, TpTagReply, TpTagRequest, TpTags } from './tags';
 
 /**

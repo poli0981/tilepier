@@ -51,6 +51,11 @@
 	// Each line names the week that wires it — delete the line then, do not let
 	// this list quietly become permanent.
 	"ignoreDependencies": [
+		// Not a package: `cloudflare:workers` is the Workers runtime's own module
+		// (the endpoints' bindings since adapter-cloudflare 8), which knip reads
+		// as a dependency named `cloudflare`. Nothing installs it, and nothing
+		// should.
+		"cloudflare",
 		// Copied into static/fonts by scripts/sync-fonts.mjs at setup time;
 		// never imported from source, so knip cannot see the edge.
 		"@fontsource/be-vietnam-pro",

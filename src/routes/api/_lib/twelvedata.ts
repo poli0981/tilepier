@@ -1,4 +1,4 @@
-import type { TpStockInterval } from '$lib/api-types';
+import type { TpStockInterval } from '#lib/api-types.js';
 
 /**
  * Twelve Data (doc 10 §5): stock series, the one budgeted upstream — 800

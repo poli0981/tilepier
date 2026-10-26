@@ -1,4 +1,4 @@
-import { RATE_LIMIT } from '$lib/shared-constants';
+import { RATE_LIMIT } from '#lib/shared-constants.js';
 
 /**
  * In-Worker soft limiter (doc 11 §7).

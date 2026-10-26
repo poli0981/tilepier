@@ -1,5 +1,5 @@
-import { db as defaultDb, type TpDb, type TpSavedPlace } from '$lib/core/storage/db';
-import { logEntry } from '$lib/core/log-buffer';
+import { db as defaultDb, type TpDb, type TpSavedPlace } from '#lib/core/storage/db.js';
+import { logEntry } from '#lib/core/log-buffer.js';
 import { PLACE_NAME_MAX, readPlace } from './service';
 
 /**

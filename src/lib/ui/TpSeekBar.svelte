@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { fmtDuration } from '$lib/i18n/fmt';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { fmtDuration } from '#lib/i18n/fmt.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 
 	/**
 	 * A player's seek bar (doc 09 §2–§3), shared by music and media, which may not

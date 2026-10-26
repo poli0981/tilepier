@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
-import { LEGAL_VERSION, LOCAL_KEYS } from '$lib/shared-constants';
+import { LEGAL_VERSION, LOCAL_KEYS } from '#lib/shared-constants.js';
 import { legalGate } from './legal.svelte';
 
 /**

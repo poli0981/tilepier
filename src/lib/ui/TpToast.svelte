@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages';
-	import { toasts } from '$lib/stores/toast.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import { toasts } from '#lib/stores/toast.svelte.js';
 
 	/**
 	 * doc 13 §7's toast: bottom-centre, one at a time, four seconds — the 429

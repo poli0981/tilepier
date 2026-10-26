@@ -1,10 +1,10 @@
 import { flushSync } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { claimPlayback, resetPlayback } from '$lib/core/playback';
-import { createDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
-import { m } from '$lib/paraglide/messages';
-import { deck } from '$lib/stores/deck.svelte';
-import { toasts } from '$lib/stores/toast.svelte';
+import { claimPlayback, resetPlayback } from '#lib/core/playback.js';
+import { createDb, type TpDb, type TpTrack } from '#lib/core/storage/db.js';
+import { m } from '#lib/paraglide/messages.js';
+import { deck } from '#lib/stores/deck.svelte.js';
+import { toasts } from '#lib/stores/toast.svelte.js';
 import { saveMusicRoot } from './library';
 import { player, SAVE_EVERY_MS, type TpPlayerNotice } from './player.svelte';
 

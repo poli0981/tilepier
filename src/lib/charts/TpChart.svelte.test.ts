@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpChart from './TpChart.svelte';
 import { baseOption, type TpChartOption } from './options';
 

@@ -1,5 +1,5 @@
-import { BACKOFF, SCHEDULER_TICK_MS } from '$lib/shared-constants';
-import { online } from '$lib/stores/online.svelte';
+import { BACKOFF, SCHEDULER_TICK_MS } from '#lib/shared-constants.js';
+import { online } from '#lib/stores/online.svelte.js';
 import { TpApiError } from './api';
 import type { TpRefresh } from './registry';
 

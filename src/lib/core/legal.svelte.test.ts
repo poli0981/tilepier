@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LEGAL_VERSION, LOCAL_KEYS } from '$lib/shared-constants';
+import { LEGAL_VERSION, LOCAL_KEYS } from '#lib/shared-constants.js';
 import { acceptLegal, hasAcceptedLegal, previousLegalVersion } from './legal';
 
 /**

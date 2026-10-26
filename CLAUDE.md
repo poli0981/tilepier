@@ -18,15 +18,15 @@ no cookie.
 
 ## Stack (do not substitute)
 
-Node 26 (`.node-version`) · pnpm 11 · SvelteKit ≥2.69.3 (adapter-cloudflare)
-· Svelte 5 **runes only** · TypeScript 7 strict, ES2025 (`tsc` is 7.0; the
-tools read the 6.0 API through an npm alias, doc 02) · Vite 8 (Rolldown —
-`build.rolldownOptions`) · Tailwind 4.3 (CSS-first `@theme`, no config js)
-· gridstack 14 · ECharts 6.1 (lazy, tree-shaken imports from
-`echarts/core`) · Dexie 4 · Paraglide JS 2 · MapLibre GL 6 + OpenFreeMap ·
-music-metadata · marked + DOMPurify · fast-xml-parser 5 · Vitest 5
-(browser mode via @vitest/browser-playwright) · Playwright · MSW 3 ·
-ESLint 10 flat · Prettier 3 · knip.
+Node 26 (`.node-version`) · pnpm 11 · SvelteKit 3.1 (adapter-cloudflare 8;
+configured in `vite.config.ts`, no svelte.config.js) · Svelte 5 **runes only**
+· TypeScript 7 strict, ES2025 (`tsc` is 7.0; the tools read the 6.0 API
+through an npm alias, doc 02) · Vite 8 (Rolldown — `build.rolldownOptions`) ·
+Tailwind 4.3 (CSS-first `@theme`, no config js) · gridstack 14 · ECharts 6.1
+(lazy, tree-shaken imports from `echarts/core`) · Dexie 4 · Paraglide JS 2 ·
+MapLibre GL 6 + OpenFreeMap · music-metadata · marked + DOMPurify ·
+fast-xml-parser 5 · Vitest 5 (browser mode via @vitest/browser-playwright) ·
+Playwright · MSW 3 · ESLint 10 flat · Prettier 3 · knip.
 
 ## Commands
 
@@ -41,7 +41,8 @@ pnpm run deploy:prod # build, then wrangler deploy (note: `pnpm deploy` is a
 pnpm gen            # regenerate worker-configuration.d.ts from wrangler.jsonc
 pnpm clean          # remove build output
 pnpm lint           # prettier --check + eslint + svelte-check + typecheck
-pnpm typecheck      # tsc --noEmit with TypeScript 7 (the app's tsconfig)
+pnpm typecheck      # tsc --noEmit with TypeScript 7 (the app's tsconfig, then
+                    #   the service worker's own)
 pnpm format         # prettier --write
 pnpm test           # vitest (node + browser projects)
 pnpm test:cov       # the same, with doc 19 §2 coverage thresholds (what CI runs)
@@ -71,13 +72,13 @@ Three ordering rules worth knowing before they cost you an hour:
   a new secret is named there first.
 - **Lint before build, or clean first.** Two separate tools break on leftover
   build output. `svelte-check` walks the workspace directory regardless of
-  tsconfig excludes, so a stale `.svelte-kit/cloudflare` produces hundreds of
-  errors in generated code. And `wrangler types` emits an extra
-  `Cloudflare.GlobalProps.mainModule` block *only when `_worker.js` exists*, so
-  `wrangler types --check` fails against the committed file whenever build
-  output is lying around — the committed file is the clean-tree form, which is
-  what `pnpm verify` and CI produce. If `--check` says the types are stale,
-  run `pnpm clean` before reaching for `pnpm gen`.
+  tsconfig excludes, so a stale `.svelte-kit/cloudflare` (or `cloudflare-tmp`)
+  produces hundreds of errors in generated code. And `wrangler types` emits an
+  extra `Cloudflare.GlobalProps.mainModule` block *only when `_worker.js`
+  exists*, so `wrangler types --check` fails against the committed file
+  whenever build output is lying around — the committed file is the
+  clean-tree form, which is what `pnpm verify` and CI produce. If `--check`
+  says the types are stale, run `pnpm clean` before reaching for `pnpm gen`.
 - **Paraglide output is generated, gitignored, and needed before lint.** The
   Vite plugin emits `src/lib/paraglide/` at dev/build time, but `pnpm lint` runs
   first — so `i18n:compile` runs at the head of `lint` and `test`. Five tools
@@ -110,6 +111,9 @@ fails the build. Slice commits vertically — a primitive plus its first consume
    `TURNSTILE_SECRET_KEY`) exist only in the Worker env, as Secret-type
    variables. Never import them into client-reachable code paths. Name a new
    one in `.dev.vars.example` and run `pnpm gen`; add it to the CI grep.
+   Server code reads every binding from `cloudflare:workers` (`env`,
+   `waitUntil`) inside a handler: adapter-cloudflare 8 passes no `platform`,
+   and a page being prerendered has no env to read.
 5. **Finnhub free tier has no stock candles** (403). Series come from
    Twelve Data (budgeted, 800/day); quotes and search from Finnhub. Don't
    "simplify" this split. There is no third source: Stooq, the old EOD
@@ -156,7 +160,7 @@ src/lib/widgets/     15 widget folders (see docs 07–09 for specs)
 src/lib/charts/      echarts init + token-theme bridge
 src/lib/lunar/       Vietnamese lunar calendar (Hồ Ngọc Đức port) — has
                      golden test vectors; do not alter math without them
-src/routes/api/      Worker endpoints + _lib pipeline (cache/limit/breaker)
+src/routes/api/      Worker endpoints + _lib pipeline (edge cache/limit/breaker)
 docs/internal/       full documentation suite (source of truth)
 ```
 

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TpWeatherPayload } from '$lib/api-types';
-import { TpApiError } from '$lib/core/api';
-import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from '$lib/core/__fixtures__/weather';
-import { cacheKey, geohash, roundCoord } from '$lib/shared-constants';
+import type { TpWeatherPayload } from '#lib/api-types.js';
+import { TpApiError } from '#lib/core/api.js';
+import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from '#lib/core/__fixtures__/weather.js';
+import { cacheKey, geohash, roundCoord } from '#lib/shared-constants.js';
 import {
 	currentHourIndex,
 	fetchWeather,

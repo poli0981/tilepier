@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpApiMeta, TpFeed, TpFeedItem, TpFeedPayload } from '$lib/api-types';
-import type { TpSwrFetcher, TpSwrStatus } from '$lib/core/swr.svelte';
-import { RATE_LIMIT, ZONE_RATE_LIMIT, cacheKey } from '$lib/shared-constants';
+import type { TpApiMeta, TpFeed, TpFeedItem, TpFeedPayload } from '#lib/api-types.js';
+import type { TpSwrFetcher, TpSwrStatus } from '#lib/core/swr.svelte.js';
+import { RATE_LIMIT, ZONE_RATE_LIMIT, cacheKey } from '#lib/shared-constants.js';
 import manifest from './manifest';
 import {
 	RSS_CADENCE,
@@ -29,7 +29,7 @@ import {
  * `swr` is replaced by a recorder, so `feedSource` hands back the fetcher it
  * built and the pacing can be driven by hand. Everything else here is pure.
  */
-vi.mock('$lib/core/swr.svelte', () => ({
+vi.mock('#lib/core/swr.svelte.js', () => ({
 	swr: (key: string, fetcher: TpSwrFetcher<TpFeedReading>, options: { ttlMs: number }) => ({
 		key,
 		fetcher,

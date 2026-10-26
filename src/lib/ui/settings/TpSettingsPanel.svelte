@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
-	import { downloadText } from '$lib/core/download';
-	import { fetchHealth, type TpHealthResult } from '$lib/core/health';
-	import { logEntry, readLog } from '$lib/core/log-buffer';
-	import { scheduler } from '$lib/core/scheduler';
-	import { swrCache } from '$lib/core/swr.svelte';
-	import { db } from '$lib/core/storage/db';
+	import { downloadText } from '#lib/core/download.js';
+	import { fetchHealth, type TpHealthResult } from '#lib/core/health.js';
+	import { logEntry, readLog } from '#lib/core/log-buffer.js';
+	import { scheduler } from '#lib/core/scheduler.js';
+	import { swrCache } from '#lib/core/swr.svelte.js';
+	import { db } from '#lib/core/storage/db.js';
 	import {
 		applyImport,
 		backupFilename,
@@ -17,13 +17,13 @@
 		type TpBackupTable,
 		type TpImportMode,
 		type TpImportSummary
-	} from '$lib/core/storage/exporter';
-	import { LOCALES, switchLocale, type TpLocale } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
-	import { LOCAL_KEYS } from '$lib/shared-constants';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpBugDialog from '$lib/ui/TpBugDialog.svelte';
+	} from '#lib/core/storage/exporter.js';
+	import { LOCALES, switchLocale, type TpLocale } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { LOCAL_KEYS } from '#lib/shared-constants.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpBugDialog from '#lib/ui/TpBugDialog.svelte';
 	import { ACCENTS, ACCENT_NAMES } from './accents';
 
 	/**
@@ -455,9 +455,8 @@
 							class="tp-action tp-action--danger"
 							data-testid="backup-replace"
 							onclick={() => (confirmingReplace = true)}
+							>{m['settings.backup.replace_action']()}</button
 						>
-							{m['settings.backup.replace_action']()}
-						</button>
 					{/if}
 
 					<button
@@ -521,23 +520,19 @@
 						type="button"
 						class="tp-action tp-action--danger"
 						data-testid="erase-confirm"
-						onclick={eraseEverything}
+						onclick={eraseEverything}>{m['settings.storage.erase_confirm']()}</button
 					>
-						{m['settings.storage.erase_confirm']()}
-					</button>
-					<button type="button" class="tp-action" onclick={() => (eraseArmed = false)}>
-						{m['settings.storage.erase_cancel']()}
-					</button>
+					<button type="button" class="tp-action" onclick={() => (eraseArmed = false)}
+						>{m['settings.storage.erase_cancel']()}</button
+					>
 				</span>
 			{:else}
 				<button
 					type="button"
 					class="tp-action tp-action--danger"
 					data-testid="erase-data"
-					onclick={() => (eraseArmed = true)}
+					onclick={() => (eraseArmed = true)}>{m['settings.storage.erase_action']()}</button
 				>
-					{m['settings.storage.erase_action']()}
-				</button>
 			{/if}
 		</div>
 		<p class="tp-note">{m['settings.storage.erase_note']()}</p>
@@ -690,10 +685,8 @@
 				type="button"
 				class="tp-action"
 				data-testid="open-bug"
-				onclick={() => (bugOpen = true)}
+				onclick={() => (bugOpen = true)}>{m['settings.report.open']()}</button
 			>
-				{m['settings.report.open']()}
-			</button>
 		</div>
 		<p class="tp-note">{m['settings.report.note']()}</p>
 	</section>
@@ -706,10 +699,10 @@
 			{m['about.build']({ version: __TP_BUILD__.version, sha: __TP_BUILD__.sha })}
 		</p>
 		<p class="tp-links">
-			<a href={resolve('/about')}>{m['about.title']()}</a>
-			<a href={resolve('/legal/terms')}>{m['legal.terms.title']()}</a>
-			<a href={resolve('/legal/privacy')}>{m['legal.privacy.title']()}</a>
-			<a href={resolve('/legal/licenses')}>{m['legal.licenses.title']()}</a>
+			<a href={resolve('about')}>{m['about.title']()}</a>
+			<a href={resolve('legal/terms')}>{m['legal.terms.title']()}</a>
+			<a href={resolve('legal/privacy')}>{m['legal.privacy.title']()}</a>
+			<a href={resolve('legal/licenses')}>{m['legal.licenses.title']()}</a>
 		</p>
 	</section>
 </div>

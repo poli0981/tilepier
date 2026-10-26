@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { logEntry } from '$lib/core/log-buffer';
-	import type { TpNote } from '$lib/core/storage/db';
-	import { createDexieWriter, type TpDexieWriter } from '$lib/core/storage/dexie-writer';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { fmtRelative } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpMarkdown from '$lib/ui/TpMarkdown.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import type { TpNote } from '#lib/core/storage/db.js';
+	import { createDexieWriter, type TpDexieWriter } from '#lib/core/storage/dexie-writer.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { fmtRelative } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpMarkdown from '#lib/ui/TpMarkdown.svelte';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 	import { createNote, listNotes, resolveVisible, saveNote, saveNoteNow } from './service';
 
 	/**

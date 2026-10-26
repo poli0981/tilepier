@@ -1,6 +1,6 @@
-import { formatLog, readLog } from '$lib/core/log-buffer';
-import { byCodeUnit } from '$lib/order';
-import { LOCAL_KEYS } from '$lib/shared-constants';
+import { formatLog, readLog } from '#lib/core/log-buffer.js';
+import { byCodeUnit } from '#lib/order.js';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
 
 /**
  * The bug-report payload (doc 18 §2–§4).

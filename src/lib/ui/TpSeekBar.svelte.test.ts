@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpSeekBar from './TpSeekBar.svelte';
 
 /**

@@ -8,8 +8,8 @@
 	 * the terms the gate links to before agreeing to them (doc 16 §2).
 	 */
 	import '../app.css';
-	import TpUpdateToast from '$lib/ui/TpUpdateToast.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
+	import TpUpdateToast from '#lib/ui/TpUpdateToast.svelte';
+	import { settings } from '#lib/stores/settings.svelte.js';
 
 	let { children } = $props();
 

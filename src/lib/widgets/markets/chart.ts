@@ -1,5 +1,5 @@
-import type { TpCryptoCandle } from '$lib/api-types';
-import type { TpChartOption } from '$lib/charts/options';
+import type { TpCryptoCandle } from '#lib/api-types.js';
+import type { TpChartOption } from '#lib/charts/options.js';
 
 /**
  * doc 09 §1's candlestick and volume band.

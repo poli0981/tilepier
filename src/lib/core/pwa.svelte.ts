@@ -1,9 +1,9 @@
 /**
  * Service-worker registration and update state (doc 17 §2).
  *
- * Hand-rolled registration against `src/service-worker.ts`, which SvelteKit
- * compiles and serves at `/service-worker.js`. See that file for why the
- * vite-plugin-pwa route was abandoned (spike S5).
+ * Hand-rolled registration against `src/service-worker/index.ts`, which
+ * SvelteKit compiles and serves at `/service-worker.js`. See that file for why
+ * the vite-plugin-pwa route was abandoned (spike S5).
  *
  * The rule from doc 17 §2 is explicit: a waiting worker shows a quiet toast,
  * and `skipWaiting` fires **only** on user action. Never reload under the user.
@@ -56,7 +56,14 @@ class PwaState {
 
 		let registration: ServiceWorkerRegistration;
 		try {
-			registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+			// As a module, which is how SvelteKit 3 builds it. SvelteKit's own
+			// registration is off (vite.config.ts), so this is the only one: a
+			// second of another type installs a fresh worker every time either
+			// runs, and every load would offer the reader an update.
+			registration = await navigator.serviceWorker.register('/service-worker.js', {
+				scope: '/',
+				type: 'module'
+			});
 		} catch {
 			// A blocked or unsupported worker must never break the app — offline
 			// support is an enhancement, and the deck is local-first regardless.

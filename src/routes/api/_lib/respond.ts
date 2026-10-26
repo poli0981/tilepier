@@ -1,4 +1,4 @@
-import type { TpApiErrorCode, TpApiMeta, TpApiResponse, TpCacheStatus } from '$lib/api-types';
+import type { TpApiErrorCode, TpApiMeta, TpApiResponse, TpCacheStatus } from '#lib/api-types.js';
 
 /**
  * The response envelope, doc 11 §2. Every `/api/*` endpoint returns through
@@ -27,11 +27,11 @@ export function ok<T>(
 
 /**
  * An answer that must never be stored — not by the browser, not by the CDN,
- * and above all not by the adapter's own `caches.default`, which replays any
- * cacheable GET *before* `hooks.server.ts` or the handler runs
- * (`@sveltejs/adapter-cloudflare/files/worker.js`). For `/api/_health` that is
- * the whole security of the endpoint: a `public` answer to an authorised
- * request would be served, token and all, to the next caller without one.
+ * and above all not by the edge cache (`edge-cache.ts`), which answers any
+ * cacheable GET from `caches.default` *before* the gate or the handler runs.
+ * For `/api/_health` that is the whole security of the endpoint: a `public`
+ * answer to an authorised request would be served, token and all, to the next
+ * caller without one.
  */
 export function okNoStore<T>(data: T, meta: TpApiMeta): Response {
 	const body: TpApiResponse<T> = { ok: true, data, meta };

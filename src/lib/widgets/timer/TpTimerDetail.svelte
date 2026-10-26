@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { logEntry } from '$lib/core/log-buffer';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { fmtDate } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings as appSettings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { fmtDate } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings as appSettings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { notifyPermission, requestNotifyPermission } from './alert';
 	import {
 		HISTORY_DAYS,

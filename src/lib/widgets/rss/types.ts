@@ -1,4 +1,4 @@
-import { RSS_MAX_FEEDS } from '$lib/shared-constants';
+import { RSS_MAX_FEEDS } from '#lib/shared-constants.js';
 
 /**
  * The rss tile's settings, as they sit in `tp.layout.v1[].settings` (doc 05 §2)

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TURNSTILE_ACTION } from '$lib/shared-constants';
+import { TURNSTILE_ACTION } from '#lib/shared-constants.js';
 import { siteverify } from './turnstile';
 
 /**

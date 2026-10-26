@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { CRYPTO_RANGE_DEFAULT, CRYPTO_RANGES, STOCK_RANGES } from '$lib/api-types';
-	import TpChart from '$lib/charts/TpChart.svelte';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { online } from '$lib/stores/online.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { CRYPTO_RANGE_DEFAULT, CRYPTO_RANGES, STOCK_RANGES } from '#lib/api-types.js';
+	import TpChart from '#lib/charts/TpChart.svelte';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { online } from '#lib/stores/online.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { candleSummary, candlestickOption } from './chart';
 	import {
 		addToWatchlist,

@@ -1,4 +1,4 @@
-import { TURNSTILE_ACTION } from '$lib/shared-constants';
+import { TURNSTILE_ACTION } from '#lib/shared-constants.js';
 
 /**
  * Cloudflare Turnstile's server half (doc 15 §3): one POST to siteverify per

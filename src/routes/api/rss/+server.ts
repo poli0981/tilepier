@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
-import type { TpApiMeta, TpFeed, TpFeedPayload } from '$lib/api-types';
-import { cacheKey, feedUrlHash } from '$lib/shared-constants';
+import { env, waitUntil } from 'cloudflare:workers';
+import type { TpApiMeta, TpFeed, TpFeedPayload } from '#lib/api-types.js';
+import { cacheKey, feedUrlHash } from '#lib/shared-constants.js';
 import { fetchFeedDocument } from '../_lib/feed-fetch';
 import { parseFeed } from '../_lib/feed-parse';
 import { parseFeedQuery } from '../_lib/feed-query';
@@ -53,10 +54,10 @@ function payloadOf(feed: TpFeed | null): TpFeedPayload {
 	return feed === null ? { kind: 'unavailable', reason: 'not-feed' } : { kind: 'feed', feed };
 }
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseFeedQuery(url);
@@ -95,8 +96,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 
 	// doc 11 §8: persistence rides on waitUntil, so the reader does not wait on it.
 	const persist = writeCache(kv, FAMILY, key, answer, SOURCE, now).catch(() => undefined);
-	if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-	else void persist;
+	waitUntil(persist);
 
 	return ok(
 		answer,

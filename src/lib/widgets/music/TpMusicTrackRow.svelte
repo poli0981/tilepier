@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { TpPlaylist, TpTrack } from '$lib/core/storage/db';
-	import { fmtDuration } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import type { TpPlaylist, TpTrack } from '#lib/core/storage/db.js';
+	import { fmtDuration } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
 	 * One row of the library list (`TpMusicLibrary`): the track as a button that

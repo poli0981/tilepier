@@ -1,19 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { scheduler } from '$lib/core/scheduler';
-import { swrCache } from '$lib/core/swr.svelte';
-import { tileStatus, tileStatusChannel } from '$lib/core/tile-status';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import type { TpTileSize } from '$lib/core/types';
-import type { TpApiMeta } from '$lib/api-types';
-import { GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
-import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from '$lib/core/__fixtures__/weather';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { scheduler } from '#lib/core/scheduler.js';
+import { swrCache } from '#lib/core/swr.svelte.js';
+import { tileStatus, tileStatusChannel } from '#lib/core/tile-status.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import type { TpTileSize } from '#lib/core/types.js';
+import type { TpApiMeta } from '#lib/api-types.js';
+import { GEOCODE_OK } from '#lib/core/__fixtures__/geocode.js';
+import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from '#lib/core/__fixtures__/weather.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpWeatherWidget from './TpWeatherWidget.svelte';
 import { weatherKey } from './service';
-import type { TpGeoPermission, TpPositionSource } from '$lib/core/geolocate';
+import type { TpGeoPermission, TpPositionSource } from '#lib/core/geolocate.js';
 
 /**
  * doc 08 §1's tile and doc 06 §3's states for it — the first widget in the app

@@ -1,4 +1,4 @@
-import { CORRUPT_KEY_PREFIX, LOCAL_KEYS } from '$lib/shared-constants';
+import { CORRUPT_KEY_PREFIX, LOCAL_KEYS } from '#lib/shared-constants.js';
 
 /**
  * Versioned localStorage access with migrations (doc 05 §5).

@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
-import type { TpFeed, TpFeedItem } from '$lib/api-types';
+import type { TpFeed, TpFeedItem } from '#lib/api-types.js';
 import { declaredZone, parseFeedDate } from './feed-date';
 import {
 	clip,

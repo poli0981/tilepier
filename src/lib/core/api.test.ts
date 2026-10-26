@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { PASS_HEADER } from '$lib/shared-constants';
+import { PASS_HEADER } from '#lib/shared-constants.js';
 import { fetchEnvelope, isRetryable, TpApiError } from './api';
 import { passGate } from './pass';
 import { WEATHER_OK, WEATHER_PAYLOAD, WEATHER_STALE } from './__fixtures__/weather';

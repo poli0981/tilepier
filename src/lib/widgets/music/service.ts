@@ -1,4 +1,4 @@
-import type { TpPlaylist, TpTrack } from '$lib/core/storage/db';
+import type { TpPlaylist, TpTrack } from '#lib/core/storage/db.js';
 
 /**
  * The music widget's pure parts (doc 09 §2): the queue, what "next" and

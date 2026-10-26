@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { TpTileSize } from '$lib/core/types';
-	import { fmtDuration } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import type { TpTileSize } from '#lib/core/types.js';
+	import { fmtDuration } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 	import { collection } from './collection.svelte';
 	import { player } from './player.svelte';
 	import TpMusicLibraryActions from './TpMusicLibraryActions.svelte';

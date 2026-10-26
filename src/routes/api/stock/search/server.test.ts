@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TpStockSearchPayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpStockSearchPayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
+import { bind } from '../../_lib/__fixtures__/workers';
 
 /** `/api/stock/search` (doc 11 §3): the manager's search-add, cached a day. */
 
@@ -25,16 +26,10 @@ function fakeKv(): KVNamespace & { store: Map<string, string> } {
 
 async function call(kv: KVNamespace, search: string): Promise<Response> {
 	const url = new URL(`https://tilepier.win/api/stock/search${search}`);
-	return (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: { env: { TILEPIER_CACHE: KVNamespace; FINNHUB_KEY?: string } };
-		}) => Promise<Response>
-	)({
+	bind({ TILEPIER_CACHE: kv, FINNHUB_KEY: KEY });
+	return (GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>)({
 		request: new Request(url),
-		url,
-		platform: { env: { TILEPIER_CACHE: kv, FINNHUB_KEY: KEY } }
+		url
 	});
 }
 

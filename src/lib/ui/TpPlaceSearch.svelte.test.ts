@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { GEOCODE_EMPTY, GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
-import { SEARCH_DEBOUNCE_MS } from '$lib/core/geocode';
-import type { TpPositionSource } from '$lib/core/geolocate';
+import { GEOCODE_EMPTY, GEOCODE_OK } from '#lib/core/__fixtures__/geocode.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
+import { SEARCH_DEBOUNCE_MS } from '#lib/core/geocode.js';
+import type { TpPositionSource } from '#lib/core/geolocate.js';
 import TpPlaceSearch from './TpPlaceSearch.svelte';
 
 /**

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { copyText } from '$lib/core/clipboard';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { copyText } from '#lib/core/clipboard.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { CATEGORIES, convert, unitsFor, type TpUnitCategory } from './convert';
 	import { fromString, type TpDecimal } from './decimal';
 	import { formatValue, type TpCalcUnary } from './engine';

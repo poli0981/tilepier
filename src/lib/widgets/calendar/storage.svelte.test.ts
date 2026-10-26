@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { createDb, type TpDb } from '$lib/core/storage/db';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
 import { createEvent, deleteEvent, listEventsInRange, listEventsOn, updateEvent } from './service';
 import { EVENT_LIMITS } from './types';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FX_PAYLOAD, FX_PAYLOAD_DAY_ONE } from '$lib/core/__fixtures__/fx';
-import { cacheKey } from '$lib/shared-constants';
+import { FX_PAYLOAD, FX_PAYLOAD_DAY_ONE } from '#lib/core/__fixtures__/fx.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import {
 	change24h,
 	convert,

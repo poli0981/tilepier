@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GridStackWidget } from 'gridstack';
-import { MANIFESTS } from '$lib/core/registry';
+import { MANIFESTS } from '#lib/core/registry.js';
 import { isLayout, serialise, toGridStackWidget, type TpTile } from './layout';
 
 function tile(overrides: Partial<TpTile> = {}): TpTile {

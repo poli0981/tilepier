@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { useRefresh } from '$lib/core/refresh.svelte';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
-	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { fmtCurrency, fmtRate, fmtRelative } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { useRefresh } from '#lib/core/refresh.svelte.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
+	import { setTileStatus, type TpTileStatus } from '#lib/core/tile-status.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { fmtCurrency, fmtRate, fmtRelative } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import {
 		convert,
 		currencyCodes,

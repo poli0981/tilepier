@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import '../../app.css';
 import appCss from '../../app.css?raw';
-import { settings } from '$lib/stores/settings.svelte';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { ACCENTS } from './settings/accents';
 
 /**

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { copyText } from '$lib/core/clipboard';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
+	import { copyText } from '#lib/core/clipboard.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
 	import { parseHex, toHex } from './color';
 	import { entropyBits, generatePassword, PASSWORD_DEFAULTS } from './password';
 	import { drawQr, qrMatrix, QR_QUIET_ZONE, type TpQrMatrix } from './qr';

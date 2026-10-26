@@ -1,6 +1,6 @@
-import { dateKeyOf, dayKeysBack } from '$lib/core/date-key';
-import { newId } from '$lib/core/ids';
-import { db, type TpDb } from '$lib/core/storage/db';
+import { dateKeyOf, dayKeysBack } from '#lib/core/date-key.js';
+import { newId } from '#lib/core/ids.js';
+import { db, type TpDb } from '#lib/core/storage/db.js';
 import {
 	MAX_DURATION_MS,
 	MAX_PRESETS,

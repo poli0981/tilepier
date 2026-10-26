@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { TpHealthReport } from '$lib/api-types';
+import type { TpHealthReport } from '#lib/api-types.js';
 import { fetchHealth } from './health';
 
 /**

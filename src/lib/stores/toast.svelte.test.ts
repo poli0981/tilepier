@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BACKOFF } from '$lib/shared-constants';
+import { BACKOFF } from '#lib/shared-constants.js';
 import { TOAST_MS, toasts } from './toast.svelte';
 
 const RATE = { kind: 'rate-limited' } as const;

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
 
 	/**
 	 * doc 16 §4. Short, plain-language, and deliberately only four points — the

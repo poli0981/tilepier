@@ -1,7 +1,7 @@
 import { SvelteMap } from 'svelte/reactivity';
-import { BACKOFF, HARD_MAX_AGE_MS } from '$lib/shared-constants';
-import { online } from '$lib/stores/online.svelte';
-import { toasts } from '$lib/stores/toast.svelte';
+import { BACKOFF, HARD_MAX_AGE_MS } from '#lib/shared-constants.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { toasts } from '#lib/stores/toast.svelte.js';
 import { isRetryable, TpApiError, type TpApiErrorCode } from './api';
 import { logEntry } from './log-buffer';
 import { db, type TpDb } from './storage/db';

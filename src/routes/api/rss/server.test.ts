@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpFeedPayload } from '$lib/api-types';
-import { RATE_LIMIT, cacheKey, feedUrlHash } from '$lib/shared-constants';
+import type { TpFeedPayload } from '#lib/api-types.js';
+import { RATE_LIMIT, cacheKey, feedUrlHash } from '#lib/shared-constants.js';
 import { HTML_PAGE, RSS_NEWS } from '../_lib/__fixtures__/feeds';
 import { GET } from './+server';
+import { bind, settle } from '../_lib/__fixtures__/workers';
 
 /**
  * doc 11 §3's `/api/rss`, driven by calling the handler with stubs the way the
@@ -51,24 +52,13 @@ async function call(options: CallOptions = {}): Promise<CallResult> {
 		`https://${options.host ?? 'tilepier.win'}/api/rss${options.search ?? `?url=${encodeURIComponent(FEED_URL)}`}`
 	);
 	const request = new Request(url, { headers: options.headers ?? {} });
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv });
 
 	const response = await (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: { TILEPIER_CACHE: KVNamespace | undefined };
-				ctx: { waitUntil: (p: Promise<unknown>) => void };
-			};
-		}) => Promise<Response>
-	)({
-		request,
-		url,
-		platform: { env: { TILEPIER_CACHE: kv }, ctx: { waitUntil: (p) => void pending.push(p) } }
-	});
+		GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>
+	)({ request, url });
 
-	return { response, settled: Promise.all(pending) };
+	return { response, settled: settle() };
 }
 
 interface Envelope {

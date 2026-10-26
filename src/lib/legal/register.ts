@@ -1,4 +1,4 @@
-import type { m } from '$lib/paraglide/messages';
+import type { m } from '#lib/paraglide/messages.js';
 
 /**
  * doc 16 §5's curated obligation register, as data — the legally load-bearing

@@ -5,8 +5,8 @@
 	 * the one page that has to work when nothing else does.
 	 */
 	import { resolve } from '$app/paths';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
 </script>
 
 <svelte:head><title>{m['common.offline.page_title']()}</title></svelte:head>
@@ -17,7 +17,7 @@
 		<div data-locale={locale}>
 			<h1>{m['common.offline.title'](undefined, { locale })}</h1>
 			<p>{m['common.offline.body'](undefined, { locale })}</p>
-			<p><a href={resolve('/')}>{m['common.back_to_deck'](undefined, { locale })}</a></p>
+			<p><a href={resolve('/(app)')}>{m['common.back_to_deck'](undefined, { locale })}</a></p>
 		</div>
 	{/each}
 </main>

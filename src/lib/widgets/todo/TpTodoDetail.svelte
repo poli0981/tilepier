@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { logEntry } from '$lib/core/log-buffer';
-	import type { TpTodo, TpTodoList } from '$lib/core/storage/db';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import type { TpTodo, TpTodoList } from '#lib/core/storage/db.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import {
 		TODO_FILTERS,
 		clearDone,

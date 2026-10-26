@@ -8,11 +8,12 @@ import { CACHE_POLICY, STOCK_BUDGET } from '../src/lib/shared-constants';
  * **Every request here carries a unique `cb` parameter, and that is load
  * bearing.** doc 11 §2 sets `cache-control: public, max-age=<ttl/2>` on
  * purpose, so the CDN and the browser absorb repeat hits. The consequence is
- * that two identical URLs never reach the Worker twice: the second gets the
- * *first response replayed*, `x-tp-cache: MISS` header and all. Measuring the
- * KV hit rate that way reports 0 % while the cache is working perfectly — it
- * measures HTTP caching, not KV. The buster changes the CDN key and nothing
- * else; the Worker derives its KV key from lat/lon alone.
+ * that two identical URLs never reach the endpoint twice: the edge cache
+ * (`_lib/edge-cache.ts`) gives the second the *first response replayed*,
+ * `x-tp-cache: MISS` header and all. Measuring the KV hit rate that way
+ * reports 0 % while the cache is working perfectly — it measures HTTP caching,
+ * not KV. The buster changes the CDN key and nothing else; the Worker derives
+ * its KV key from lat/lon alone.
  *
  * **What this measures and what it cannot.** Open-Meteo needs no key, so
  * `/api/weather` is exercised against the real upstream through the real
@@ -116,7 +117,7 @@ test.describe('S3 · cache behaviour under load', () => {
 	});
 
 	/*
-	 * The four tests below check the local worker the e2e suite starts, through
+	 * The tests below check the local worker the e2e suite starts, through
 	 * the `request` fixture. A run pointed at a deployed Worker starts none
 	 * (`playwright.config.ts`), so they skip there. They did not, the first time
 	 * the whole file ran with `S3_BASE_URL` set (2026-09-25): `npm exec` had
@@ -158,6 +159,38 @@ test.describe('S3 · cache behaviour under load', () => {
 		expect(res.headers()['cache-control']).toBe(`public, max-age=${CACHE_POLICY.wx.ttlMs / 2000}`);
 	});
 
+	test('a repeated URL is answered by the edge cache, and nothing else is', async ({ request }) => {
+		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
+		// doc 11 §2: `_lib/edge-cache.ts` keeps a cacheable GET in
+		// `caches.default` and gives the next identical URL that answer again,
+		// before the gate or the endpoint runs. The adapter did this until
+		// adapter-cloudflare 8; this is the check that the hook does it in a real
+		// Workers runtime, where the Cache API marks what it returns
+		// (`CF-Cache-Status: HIT`) and nothing else here could. The write rides on
+		// waitUntil, so the replay is polled for.
+		const url = uncached({ lat: 21.03, lon: 105.8 });
+		const first = await request.get(url);
+		expect(first.status()).toBe(200);
+		expect(first.headers()['cf-cache-status']).toBeUndefined();
+
+		await expect
+			.poll(async () => (await request.get(url)).headers()['cf-cache-status'])
+			.toBe('HIT');
+		const replay = await request.get(url);
+		expect(replay.headers()['cf-cache-status']).toBe('HIT');
+		expect((await replay.json()).ok).toBe(true);
+
+		// Never for a request that asks for a fresh answer…
+		const fresh = await request.get(url, { headers: { 'cache-control': 'no-cache' } });
+		expect(fresh.headers()['cf-cache-status']).toBeUndefined();
+
+		// …and never for an answer that says no-store (doc 11 §9).
+		await request.get('/api/verify');
+		const verify = await request.get('/api/verify');
+		expect(verify.headers()['cache-control']).toBe('no-store');
+		expect(verify.headers()['cf-cache-status']).toBeUndefined();
+	});
+
 	test('bad input is rejected before any upstream call', async ({ request }) => {
 		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
 		for (const query of ['lat=91&lon=0', 'lat=0&lon=181', 'lat=abc&lon=0', '']) {
@@ -167,12 +200,23 @@ test.describe('S3 · cache behaviour under load', () => {
 		}
 	});
 
-	test('non-GET is refused', async ({ request }) => {
+	test('non-GET is refused', async ({ request, baseURL }) => {
 		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
-		const res = await request.post('/api/weather?lat=21.03&lon=105.8');
+		const path = '/api/weather?lat=21.03&lon=105.8';
+
 		// doc 11 §3: "Non-GET → 405". SvelteKit answers 405 for a route with no
-		// POST handler, which is the same contract.
-		expect(res.status()).toBe(405);
+		// POST handler, which is the same contract — for a request it lets reach
+		// the route at all.
+		const own = await request.post(path, {
+			headers: { origin: new URL(path, baseURL).origin },
+			data: {}
+		});
+		expect(own.status()).toBe(405);
+
+		// Since SvelteKit 3 its CSRF check turns away, before any route, a write
+		// with no body (or a form's) from another origin or from none: 403.
+		const bare = await request.post(path);
+		expect(bare.status()).toBe(403);
 	});
 });
 

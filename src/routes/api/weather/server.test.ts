@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CACHE_POLICY, cacheKey, geohash } from '$lib/shared-constants';
+import { CACHE_POLICY, cacheKey, geohash } from '#lib/shared-constants.js';
 import { GET } from './+server';
+import { bind } from '../_lib/__fixtures__/workers';
 
 /**
  * The only live endpoint (doc 11). Driven by calling the handler with stubs
@@ -45,13 +46,12 @@ function call(options: CallOptions = {}): Promise<Response> {
 	);
 	const request = new Request(url, { headers: options.headers ?? {} });
 
-	return (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: { env: { TILEPIER_CACHE: KVNamespace | undefined } };
-		}) => Promise<Response>
-	)({ request, url, platform: { env: { TILEPIER_CACHE: kv } } });
+	bind({ TILEPIER_CACHE: kv });
+
+	return (GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>)({
+		request,
+		url
+	});
 }
 
 /** The normalized shape the endpoint produces since 2026-08-28 (doc 10 §2). */

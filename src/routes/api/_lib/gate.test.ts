@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PASS_HEADER } from '$lib/shared-constants';
+import { PASS_HEADER } from '#lib/shared-constants.js';
 import { GATE_EXEMPT, gateState, guardApi } from './gate';
 import { issuePass } from './pass';
 

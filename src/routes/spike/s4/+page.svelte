@@ -1,7 +1,7 @@
 <script lang="ts">
 	// The app's trimmed MapLibre stylesheet, as the map widget uses it — the
 	// full one is 10.2 KB gz of icons for controls nothing here shows.
-	import '$lib/map/maplibre.css';
+	import '#lib/map/maplibre.css';
 	/**
 	 * Spike S4 harness — doc 22 §S4.
 	 *
@@ -21,9 +21,9 @@
 	async function loadCharts() {
 		busy = true;
 		try {
-			const { createChart } = await import('$lib/charts/echarts');
-			const { baseOption } = await import('$lib/charts/options');
-			const { chartTheme, readChartTokens } = await import('$lib/charts/theme');
+			const { createChart } = await import('#lib/charts/echarts.js');
+			const { baseOption } = await import('#lib/charts/options.js');
+			const { chartTheme, readChartTokens } = await import('#lib/charts/theme.js');
 			const el = document.getElementById('s4-chart');
 			if (!el) return;
 			const chart = createChart(el);
@@ -67,7 +67,7 @@
 	async function loadMap() {
 		busy = true;
 		try {
-			const { loadMapLibre, webgl2Available } = await import('$lib/map/maplibre');
+			const { loadMapLibre, webgl2Available } = await import('#lib/map/maplibre.js');
 			if (!webgl2Available()) {
 				note('maplibre: no webgl2');
 				return;

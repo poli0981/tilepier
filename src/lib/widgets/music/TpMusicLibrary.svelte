@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { TpTrack } from '$lib/core/storage/db';
-	import { windowOf } from '$lib/core/windowing';
-	import { foldForSearch } from '$lib/i18n/fold';
-	import { m } from '$lib/paraglide/messages';
+	import type { TpTrack } from '#lib/core/storage/db.js';
+	import { windowOf } from '#lib/core/windowing.js';
+	import { foldForSearch } from '#lib/i18n/fold.js';
+	import { m } from '#lib/paraglide/messages.js';
 	import { collection } from './collection.svelte';
 	import { player } from './player.svelte';
 	import { playlists } from './playlists.svelte';

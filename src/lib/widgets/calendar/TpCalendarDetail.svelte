@@ -1,26 +1,26 @@
 <script lang="ts">
-	import { dateKeyOf } from '$lib/core/date-key';
-	import { logEntry } from '$lib/core/log-buffer';
-	import type { TpEvent } from '$lib/core/storage/db';
-	import type { TpDetailProps } from '$lib/core/types';
+	import { dateKeyOf } from '#lib/core/date-key.js';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import type { TpEvent } from '#lib/core/storage/db.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
 	import {
 		isSupportedYear,
 		lunarOfDate,
 		solarOfLunar,
 		SUPPORTED_RANGE,
 		type TpSolarDate
-	} from '$lib/lunar/amlich';
+	} from '#lib/lunar/amlich.js';
 	import {
 		canChiDay,
 		canChiMonth,
 		canChiYear,
 		fmtLunarLong,
 		lunarMonthName
-	} from '$lib/lunar/format';
-	import { upcomingObservances, type TpObservanceId } from '$lib/lunar/observances';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	} from '#lib/lunar/format.js';
+	import { upcomingObservances, type TpObservanceId } from '#lib/lunar/observances.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import {
 		countByDateKey,
 		createEvent,

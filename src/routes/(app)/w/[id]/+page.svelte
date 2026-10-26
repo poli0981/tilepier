@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Component } from 'svelte';
-	import { loadDetailComponent } from '$lib/core/detail';
-	import { getManifest } from '$lib/core/registry';
-	import { isWidgetId, type TpDetailProps } from '$lib/core/types';
-	import { widgetLabels } from '$lib/i18n/widget-labels';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { legalGate } from '$lib/stores/legal.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { loadDetailComponent } from '#lib/core/detail.js';
+	import { getManifest } from '#lib/core/registry.js';
+	import { isWidgetId, type TpDetailProps } from '#lib/core/types.js';
+	import { widgetLabels } from '#lib/i18n/widget-labels.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 
 	/**
 	 * Direct navigation to a detail (doc 13 §5.4): full-screen, no animation,
@@ -18,7 +18,7 @@
 	 * an offer to pin it, because the alternative is a page that can show
 	 * nothing and explain nothing.
 	 *
-	 * There is no overlay here and no `pushState`. The overlay is the deck's
+	 * There is no overlay here and no shallow `goto`. The overlay is the deck's
 	 * affordance; this route is the same detail component standing on its own,
 	 * which is the whole point of doc 06 §6 having two entry points.
 	 */
@@ -88,7 +88,7 @@
 
 <main class="tp-w">
 	<header>
-		<a class="tp-w__back" href={resolve('/')}>{m['common.back_to_deck']()}</a>
+		<a class="tp-w__back" href={resolve('/(app)')}>{m['common.back_to_deck']()}</a>
 		{#if title !== null}
 			<h1>{title}</h1>
 		{/if}

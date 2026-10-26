@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 
 	/**
 	 * doc 13 §9's one-time coach: three callouts, dismiss forever. Not a tour —

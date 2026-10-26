@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
 
 	/**
 	 * Shell for the prerendered prose pages — /legal/* and /about (doc 13 §11).
@@ -21,7 +21,7 @@
 	<p class="tp-back">
 		{#each LOCALES as locale (locale)}
 			<span data-locale={locale}>
-				<a href={resolve('/')}>{m['common.back_to_deck'](undefined, { locale })}</a>
+				<a href={resolve('/(app)')}>{m['common.back_to_deck'](undefined, { locale })}</a>
 			</span>
 		{/each}
 	</p>

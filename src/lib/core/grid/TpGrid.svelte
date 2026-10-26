@@ -2,7 +2,7 @@
 	import { GridStack, type GridStackNode, type GridItemHTMLElement } from 'gridstack';
 	import 'gridstack/dist/gridstack.css';
 	import { mount, unmount, untrack, type Component } from 'svelte';
-	import type { TpWidgetProps } from '$lib/core/types';
+	import type { TpWidgetProps } from '#lib/core/types.js';
 	import TpWidgetHost from './TpWidgetHost.svelte';
 	import { serialise, toGridStackWidget, type TpLayout, type TpTile } from './layout';
 

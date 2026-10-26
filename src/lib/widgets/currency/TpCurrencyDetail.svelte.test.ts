@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { FX_HISTORY_DAYS, type TpApiResponse, type TpFxHistoryPayload } from '$lib/api-types';
-import { FX_OK, FX_PAYLOAD } from '$lib/core/__fixtures__/fx';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { swrCache } from '$lib/core/swr.svelte';
-import { fmtPercentChange } from '$lib/i18n/fmt';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { FX_HISTORY_DAYS, type TpApiResponse, type TpFxHistoryPayload } from '#lib/api-types.js';
+import { FX_OK, FX_PAYLOAD } from '#lib/core/__fixtures__/fx.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { swrCache } from '#lib/core/swr.svelte.js';
+import { fmtPercentChange } from '#lib/i18n/fmt.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { change24h } from './service';
 import TpCurrencyDetail from './TpCurrencyDetail.svelte';
 
@@ -281,7 +281,7 @@ describe('the panel’s own states', () => {
 	});
 
 	it('registers no scheduler task, because a 12 h cadence cannot fire in a panel', async () => {
-		const { scheduler } = await import('$lib/core/scheduler');
+		const { scheduler } = await import('#lib/core/scheduler.js');
 		scheduler.reset();
 		serve(FX_OK);
 		const screen = await render(TpCurrencyDetail, props());

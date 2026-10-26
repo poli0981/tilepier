@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { listByCategory, type TpWidgetManifest } from '$lib/core/registry';
-	import type { TpWidgetId } from '$lib/core/types';
-	import { foldForSearch } from '$lib/i18n/fold';
-	import { widgetLabels } from '$lib/i18n/widget-labels';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { listByCategory, type TpWidgetManifest } from '#lib/core/registry.js';
+	import type { TpWidgetId } from '#lib/core/types.js';
+	import { foldForSearch } from '#lib/i18n/fold.js';
+	import { widgetLabels } from '#lib/i18n/widget-labels.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
 	 * doc 13 §4. Right-side sheet, bottom sheet under 768 px. Cards grouped by

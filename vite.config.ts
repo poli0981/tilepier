@@ -1,3 +1,4 @@
+import adapter from '@sveltejs/adapter-cloudflare';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
@@ -5,15 +6,18 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { maplibreVendor } from './scripts/vite-maplibre.ts';
 import { shippedPackages } from './scripts/vite-shipped.ts';
+import { CSP } from './src/lib/server/csp.ts';
 
-// Adapter, CSP, and compilerOptions live in svelte.config.js (doc 03 §Repo
-// structure) so there is one place to look for framework configuration.
+// Adapter, CSP and compilerOptions are sveltekit()'s options below, since
+// SvelteKit 3 dropped svelte.config.js (doc 03 §Repo structure); the CSP
+// itself is src/lib/server/csp.ts.
 //
-// No PWA plugin: the service worker is `src/service-worker.ts`, which SvelteKit
-// compiles directly. Spike S5 explains why the plugin route was abandoned —
-// see the header of that file and doc 22 §S5.
+// No PWA plugin: the service worker is `src/service-worker/index.ts`, which
+// SvelteKit compiles directly. Spike S5 explains why the plugin route was
+// abandoned — see the header of that file and doc 22 §S5.
 
 /**
  * `TP_BUILD` from doc 03 §Environment: version + short SHA, injected at build
@@ -71,7 +75,26 @@ export default defineConfig({
 		// (scripts/vite-shipped.ts) — here for the page and the server, and in
 		// `worker.plugins` for the music tag worker, which Vite builds apart.
 		shippedPackages('app'),
-		sveltekit()
+
+		sveltekit({
+			compilerOptions: {
+				// Force runes mode project-wide except for libraries (CLAUDE.md rule 6).
+				runes: ({ filename }) =>
+					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+			},
+			adapter: adapter(),
+			// doc 15 §2, in a module of its own: security-headers.test.ts reads it too.
+			csp: CSP,
+			// core/pwa.svelte.ts registers the service worker, because it follows
+			// the registration's updates (doc 17 §2). SvelteKit registering it too
+			// would be a second registration to keep in step with the first.
+			serviceWorker: { register: false },
+			// SvelteKit 2's default. SvelteKit 3 also polls /_app/version.json
+			// hourly to set `updated`, which nothing here reads: the service
+			// worker's waiting state is this app's update signal (doc 17 §2). Its
+			// checks on focus and after a failed navigation stay.
+			version: { pollInterval: 0 }
+		})
 	],
 	worker: {
 		plugins: () => [shippedPackages('worker')]
@@ -161,6 +184,15 @@ export default defineConfig({
 
 			{
 				extends: './vite.config.ts',
+				// The Workers runtime's own module, which Node has no copy of; the
+				// stub's header says how a test drives it.
+				resolve: {
+					alias: {
+						'cloudflare:workers': fileURLToPath(
+							new URL('./src/routes/api/_lib/__fixtures__/workers.ts', import.meta.url)
+						)
+					}
+				},
 				test: {
 					name: 'server',
 					environment: 'node',

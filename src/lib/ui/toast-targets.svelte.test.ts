@@ -1,9 +1,9 @@
 import '../../app.css';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { pwa } from '$lib/core/pwa.svelte';
-import { m } from '$lib/paraglide/messages';
-import { toasts } from '$lib/stores/toast.svelte';
+import { pwa } from '#lib/core/pwa.svelte.js';
+import { m } from '#lib/paraglide/messages.js';
+import { toasts } from '#lib/stores/toast.svelte.js';
 import TpToast from './TpToast.svelte';
 import TpUpdateToast from './TpUpdateToast.svelte';
 

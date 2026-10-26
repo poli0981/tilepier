@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { copyText } from '$lib/core/clipboard';
-	import { dateKeyOf } from '$lib/core/date-key';
-	import { logEntry } from '$lib/core/log-buffer';
-	import { useRefresh } from '$lib/core/refresh.svelte';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { lunarOf } from '$lib/lunar/amlich';
-	import { fmtLunarShort } from '$lib/lunar/format';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { copyText } from '#lib/core/clipboard.js';
+	import { dateKeyOf } from '#lib/core/date-key.js';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import { useRefresh } from '#lib/core/refresh.svelte.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { lunarOf } from '#lib/lunar/amlich.js';
+	import { fmtLunarShort } from '#lib/lunar/format.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import {
 		attributionOf,
 		bilingualPool,

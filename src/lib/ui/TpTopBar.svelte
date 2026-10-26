@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { m } from '$lib/paraglide/messages';
-	import { online } from '$lib/stores/online.svelte';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import { online } from '#lib/stores/online.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 
 	/**
 	 * doc 13 §1. 48 px, logo-mark and wordmark on the left, centre deliberately
@@ -84,7 +84,7 @@
 	onfocusout={onFocusOut}
 >
 	<div class="tp-bar__inner">
-		<a class="tp-bar__brand" href={resolve('/')}>
+		<a class="tp-bar__brand" href={resolve('/(app)')}>
 			<TpTideGauge level={0.55} animated size={22} />
 			<span class="tp-bar__wordmark">TilePier</span>
 		</a>
@@ -119,13 +119,13 @@
 				<TpIcon name="edit" size={18} />
 			</button>
 
-			<a class="tp-bar__button" href={resolve('/settings')} aria-label={m['settings.title']()}>
-				<TpIcon name="settings" size={18} />
-			</a>
+			<a class="tp-bar__button" href={resolve('settings')} aria-label={m['settings.title']()}
+				><TpIcon name="settings" size={18} /></a
+			>
 
-			<a class="tp-bar__button" href={resolve('/about')} aria-label={m['about.title']()}>
-				<TpIcon name="quote" size={18} />
-			</a>
+			<a class="tp-bar__button" href={resolve('about')} aria-label={m['about.title']()}
+				><TpIcon name="quote" size={18} /></a
+			>
 		</nav>
 	</div>
 </header>

@@ -1,6 +1,6 @@
-import { foldForSearch } from '$lib/i18n/fold';
-import { isValidZone, zoneOffsetMinutes } from '$lib/i18n/fmt';
-import { byCodeUnit } from '$lib/order';
+import { foldForSearch } from '#lib/i18n/fold.js';
+import { isValidZone, zoneOffsetMinutes } from '#lib/i18n/fmt.js';
+import { byCodeUnit } from '#lib/order.js';
 
 /**
  * World-clock logic for doc 07 §1's detail view.

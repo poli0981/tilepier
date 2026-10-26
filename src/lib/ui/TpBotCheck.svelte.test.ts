@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { passGate } from '$lib/core/pass';
-import { m } from '$lib/paraglide/messages';
-import { PASS_HEADER, TURNSTILE_ACTION } from '$lib/shared-constants';
+import { passGate } from '#lib/core/pass.js';
+import { m } from '#lib/paraglide/messages.js';
+import { PASS_HEADER, TURNSTILE_ACTION } from '#lib/shared-constants.js';
 import TpBotCheck from './TpBotCheck.svelte';
 import type { TpTurnstileApi } from './turnstile';
 

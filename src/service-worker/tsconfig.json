@@ -1,0 +1,14 @@
+{
+	// The service worker's own project (SvelteKit 3): the worker's globals
+	// (`WebWorker`) instead of the page's `DOM`, which the root tsconfig.json
+	// gives everything else and excludes this folder from. `pnpm typecheck` runs
+	// both projects.
+	"extends": "$app/tsconfig/service-worker",
+	"compilerOptions": {
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"target": "es2025",
+		"lib": ["es2025", "WebWorker"]
+	}
+}

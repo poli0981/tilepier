@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import type { TpApiMeta } from '$lib/api-types';
-import { FX_OK, FX_PAYLOAD, FX_STALE } from '$lib/core/__fixtures__/fx';
-import { scheduler } from '$lib/core/scheduler';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { swrCache } from '$lib/core/swr.svelte';
-import { tileStatus, tileStatusChannel } from '$lib/core/tile-status';
-import type { TpTileSize } from '$lib/core/types';
-import { fmtCurrency } from '$lib/i18n/fmt';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import type { TpApiMeta } from '#lib/api-types.js';
+import { FX_OK, FX_PAYLOAD, FX_STALE } from '#lib/core/__fixtures__/fx.js';
+import { scheduler } from '#lib/core/scheduler.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { swrCache } from '#lib/core/swr.svelte.js';
+import { tileStatus, tileStatusChannel } from '#lib/core/tile-status.js';
+import type { TpTileSize } from '#lib/core/types.js';
+import { fmtCurrency } from '#lib/i18n/fmt.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { fxKey } from './service';
 import TpCurrencyWidget from './TpCurrencyWidget.svelte';
 

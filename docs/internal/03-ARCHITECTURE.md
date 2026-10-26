@@ -99,7 +99,7 @@ tilepier/
 │  │  ├─ lunar/                  # Hồ Ngọc Đức algorithm (ported from QuoteAtlas)
 │  │  ├─ i18n/                   # paraglide output + helpers
 │  │  ├─ legal/                  # the licences register + generated appendix (doc 16 §5)
-│  │  ├─ server/                 # server-only: the security header list (doc 15 §2)
+│  │  ├─ server/                 # server-only: the security headers and the CSP (doc 15 §2)
 │  │  └─ stores/                 # app-level runes stores (settings, theme, online)
 │  ├─ routes/
 │  │  ├─ +layout.svelte / +layout.ts
@@ -119,9 +119,9 @@ tilepier/
 │  │     ├─ stock/{quote,series}/+server.ts
 │  │     ├─ rss/+server.ts
 │  │     ├─ geocode/+server.ts
-│  │     └─ _lib/ (kv-cache.ts, ratelimit.ts, upstream.ts, respond.ts)
-│  ├─ hooks.server.ts            # security headers, error shaping
-│  └─ service-worker.ts          # hand-rolled, as S5 decided (doc 17 §2)
+│  │     └─ _lib/ (edge-cache.ts, kv-cache.ts, ratelimit.ts, upstream.ts, respond.ts)
+│  ├─ hooks.server.ts            # edge cache, gate, security headers, error shaping
+│  └─ service-worker/            # hand-rolled, as S5 decided (doc 17 §2); own tsconfig
 ├─ e2e/                          # Playwright
 ├─ static/                       # fonts (self-hosted), icons, manifest
 ├─ docs/internal/                # this suite (committed)
@@ -131,8 +131,13 @@ tilepier/
 ├─ wrangler.jsonc                # Worker name, KV binding; the domain is bound in the dashboard (doc 21 §4)
 ├─ README.md · README.vi.md · CONTRIBUTING.md · SECURITY.md · LICENSE
 ├─ eslint.config.js · knip.jsonc · prettier.config.js
-└─ package.json · pnpm-lock.yaml · svelte.config.js · vite.config.ts
+└─ package.json · pnpm-lock.yaml · vite.config.ts
 ```
+
+There is no `svelte.config.js`. SvelteKit 3 takes its configuration — the
+adapter, the CSP (`src/lib/server/csp.ts`), `compilerOptions`, the service
+worker's registration — as the options of `sveltekit()` in `vite.config.ts`,
+and `$lib` is the `#lib/*` subpath import that `package.json` declares.
 
 ## Module boundaries (enforced by convention + knip)
 
@@ -162,3 +167,8 @@ tilepier/
 Local dev: `wrangler dev`-compatible via `pnpm dev` with `platform-proxy`
 (adapter-cloudflare's `getPlatformProxy`) so KV works locally against a
 preview namespace. `.dev.vars` holds dev keys (gitignored).
+
+Server code reads every binding — KV, secrets, variables — and `waitUntil`
+from `cloudflare:workers`, inside a handler. adapter-cloudflare 8 passes no
+`platform` to SvelteKit; in `pnpm dev` the adapter stands in for the module
+with the proxy above, and a page being prerendered has no bindings at all.
