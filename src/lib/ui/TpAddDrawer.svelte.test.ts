@@ -33,13 +33,13 @@ afterEach(() => {
 
 describe('visibility', () => {
 	it('renders nothing while closed', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 
 		await expect.element(screen.getByTestId('add-drawer')).not.toBeInTheDocument();
 	});
 
 	it('opens when the store says so', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 
 		ui.openDrawer();
 
@@ -47,7 +47,7 @@ describe('visibility', () => {
 	});
 
 	it('closes on the scrim', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		// Clicked near a corner, not at the centre. The scrim covers the viewport
@@ -63,7 +63,7 @@ describe('visibility', () => {
 
 describe('cards', () => {
 	it('lists a registered widget with its title and blurb', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		await expect.element(screen.getByText(m['widget.clock.title']())).toBeVisible();
@@ -71,7 +71,7 @@ describe('cards', () => {
 	});
 
 	it('groups under the category heading', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		await expect
@@ -81,7 +81,7 @@ describe('cards', () => {
 
 	it('reports the add through the callback', async () => {
 		const onAdd = vi.fn();
-		const screen = render(TpAddDrawer, { onAdd });
+		const screen = await render(TpAddDrawer, { onAdd });
 		ui.openDrawer();
 
 		await screen.getByTestId('add-clock').click();
@@ -90,7 +90,7 @@ describe('cards', () => {
 	});
 
 	it('keeps a multiInstance widget addable when it is already on the deck', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		// clock is multiInstance, so "on deck" must not apply — a disabled button
@@ -101,7 +101,7 @@ describe('cards', () => {
 
 describe('search', () => {
 	it('keeps a matching widget and its heading', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		await screen.getByRole('searchbox').fill(m['widget.clock.title']().slice(0, 3));
@@ -110,7 +110,7 @@ describe('search', () => {
 	});
 
 	it('ignores case and surrounding whitespace', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		await screen.getByRole('searchbox').fill(`  ${m['widget.clock.title']().toUpperCase()}  `);
@@ -119,7 +119,7 @@ describe('search', () => {
 	});
 
 	it('says so when nothing matches', async () => {
-		const screen = render(TpAddDrawer, { onAdd: () => {} });
+		const screen = await render(TpAddDrawer, { onAdd: () => {} });
 		ui.openDrawer();
 
 		await screen.getByRole('searchbox').fill('zzzz');

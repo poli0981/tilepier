@@ -30,7 +30,7 @@ afterEach(() => {
 
 describe('the calculator detail (doc 07 §3)', () => {
 	it('empty: a tape with nothing on it says so, and offers no clear', async () => {
-		const screen = render(TpCalcDetail, props());
+		const screen = await render(TpCalcDetail, props());
 
 		await expect
 			.element(screen.getByTestId('calc-tape-empty'))
@@ -43,7 +43,7 @@ describe('the calculator detail (doc 07 §3)', () => {
 	it('keeps each result on the tape, recalls one, and clears them all', async () => {
 		calc.append('12+30');
 		calc.submit();
-		const screen = render(TpCalcDetail, props());
+		const screen = await render(TpCalcDetail, props());
 
 		const row = screen.getByRole('button', {
 			name: m['widget.calc.tape_recall']({ result: '42' })
@@ -60,7 +60,7 @@ describe('the calculator detail (doc 07 §3)', () => {
 
 	it('applies the scientific row to the value on the tile', async () => {
 		calc.append('9');
-		const screen = render(TpCalcDetail, props());
+		const screen = await render(TpCalcDetail, props());
 
 		await screen.getByTestId('calc-sci-sqrt').click();
 

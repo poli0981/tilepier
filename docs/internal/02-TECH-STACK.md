@@ -52,12 +52,12 @@ bundle budgets (doc 20 §6).
 | Prettier | 3.x | + `prettier-plugin-svelte`, `prettier-plugin-tailwindcss` |
 | svelte-check | latest | Type-checks templates in CI, through the TypeScript 6.0 API (note 9); `tsc` 7 checks the `.ts` files beside it |
 | knip | latest | Dead code / unused deps / unused exports — CI-blocking (doc 20 §4) |
-| Vitest | **4.x** | Unit + component (browser mode). Corrected from 3.x on 2026-08-10. |
+| Vitest | **5.x** | Unit + component (browser mode). Corrected from 3.x on 2026-08-10; 5.x since 2026-10-26 (note 9). |
 | @vitest/browser-playwright + vitest-browser-svelte | latest | Component tests in browser mode. Replaces `@testing-library/svelte`, which is not the Vitest 4 idiom — corrected 2026-08-10 (doc 19 §1 follows). |
 | @vitest/coverage-v8 | latest | Coverage provider for the doc 19 §2 thresholds. Added 2026-08-19 — the thresholds were specified from the start but unenforceable without it. |
 | Playwright | latest | E2E smoke suite (doc 19 §4) |
 | @axe-core/playwright | 4.14 | Accessibility sweep in the E2E suite (doc 19 §4, Week 8); dev only, never shipped |
-| msw | 2.x | API mocking in unit/component tests |
+| msw | 3.x | API mocking in unit/component tests. 3.x since 2026-10-26: `onUnhandledFrame` replaced `onUnhandledRequest`, and it has no postinstall. |
 
 ## Version & CVE policy
 
@@ -157,3 +157,11 @@ bundle budgets (doc 20 §6).
      Playwright 1.64, axe 4.14, Paraglide 2.29, wrangler 4.152 (compatibility
      date 2026-10-19), dexie 4.4.7, marked 18.1, fast-xml-parser 5.11,
      @types/node 26. knip 6.42 rather than 6.43, which was two days old.
+   - **The test stack's majors, together** (they pin each other): Vitest 5,
+     @vitest/browser-playwright and coverage-v8 5, vitest-browser-svelte 3,
+     msw 3. `render` and `unmount` are async now, so every call is awaited
+     (475 of them, by a codemod), and `toHaveTextContent` and the text
+     locators match the whole text: an assertion that meant a part says so
+     with `toMatchTextContent` or `exact: false`. **music-metadata 12**
+     (12.2.3; 12.3 was under three days old) changed nothing the tag worker
+     calls.

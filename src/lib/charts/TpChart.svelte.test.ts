@@ -41,7 +41,7 @@ afterEach(() => {
 
 describe('the chart', () => {
 	it('draws onto a canvas once the lazy chunk arrives', async () => {
-		const screen = render(TpChart, props());
+		const screen = await render(TpChart, props());
 		const host = screen.getByTestId('chart-canvas');
 
 		await expect.element(host).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('the chart', () => {
 	});
 
 	it('pairs the canvas with the summary line doc 13 §8 asks for', async () => {
-		const screen = render(TpChart, props());
+		const screen = await render(TpChart, props());
 		await expect
 			.element(screen.getByTestId('chart-summary'))
 			.toHaveTextContent('a line from 1 to 4');
@@ -60,7 +60,7 @@ describe('the chart', () => {
 	it('takes an explicit pixel height, so zrender never measures zero', async () => {
 		// `.tp-detail__body` scrolls, so a percentage height resolves to nothing
 		// and echarts initialises a chart it then warns about and draws wrong.
-		const screen = render(TpChart, props({ height: 180 }));
+		const screen = await render(TpChart, props({ height: 180 }));
 		const host = screen.getByTestId('chart-canvas');
 
 		await vi.waitFor(() => {
@@ -69,7 +69,7 @@ describe('the chart', () => {
 	});
 
 	it('disposes the instance on unmount', async () => {
-		const screen = render(TpChart, props());
+		const screen = await render(TpChart, props());
 		const host = screen.getByTestId('chart-canvas');
 		await vi.waitFor(() => {
 			expect(host.element().querySelector('canvas')).not.toBeNull();
@@ -94,7 +94,7 @@ describe('the chart', () => {
 		// merges into the chart's *defaults*, so a colour left in the option would
 		// outrank it — and the switch would run, log nothing, and change nothing.
 		settings.patch({ theme: 'dark' });
-		const screen = render(TpChart, props());
+		const screen = await render(TpChart, props());
 		const host = screen.getByTestId('chart-canvas');
 
 		await vi.waitFor(() => {

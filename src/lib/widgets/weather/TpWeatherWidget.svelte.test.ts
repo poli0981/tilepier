@@ -112,7 +112,7 @@ afterEach(async () => {
 describe('the reading', () => {
 	it('shows the temperature for the hour it is at the place', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-temp')).toHaveTextContent('31°');
 		await expect.element(screen.getByTestId('weather-place')).toHaveTextContent('Hà Nội');
@@ -120,7 +120,7 @@ describe('the reading', () => {
 
 	it('names the condition on the glyph, so the icon is not the only channel', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		// Hour 0 of the fixture is WMO 2 — partly cloudy.
 		await expect
@@ -132,7 +132,7 @@ describe('the reading', () => {
 		// The fourth fixture hour is the `null` a `NaN` becomes on the wire.
 		vi.setSystemTime(new Date(NOW.getTime() + 3 * 3_600_000));
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		const temp = screen.getByTestId('weather-temp');
 		await expect.element(temp).toHaveTextContent('—');
@@ -146,7 +146,7 @@ describe('the credit (doc 10 §8)', () => {
 		// 1.0.1 only the detail and the licences page carried the link — a P1 by
 		// doc 19 §7, found after the release had shipped it.
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		const credit = screen.getByRole('link', { name: m['widget.weather.credit']() });
 		await expect.element(credit).toHaveAttribute('href', 'https://open-meteo.com/');
@@ -160,7 +160,7 @@ describe('the credit (doc 10 §8)', () => {
 describe('density (doc 08 §1)', () => {
 	it('has no sparkline at h=2', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props({ size: M }));
+		const screen = await render(TpWeatherWidget, props({ size: M }));
 
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('weather-spark-summary')).not.toBeInTheDocument();
@@ -168,7 +168,7 @@ describe('density (doc 08 §1)', () => {
 
 	it('draws one at h=3, which is still tier M', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props({ size: TALL }));
+		const screen = await render(TpWeatherWidget, props({ size: TALL }));
 
 		await expect.element(screen.getByTestId('weather-spark-summary')).toBeInTheDocument();
 	});
@@ -177,7 +177,7 @@ describe('density (doc 08 §1)', () => {
 describe('states (doc 06 §3)', () => {
 	it('empty: no place is the first-run state, not a failure', async () => {
 		const spy = serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props({ settings: {} }));
+		const screen = await render(TpWeatherWidget, props({ settings: {} }));
 
 		await expect.element(screen.getByTestId('weather-empty')).toBeInTheDocument();
 		// And it must not fetch. The seeded deck ships this tile empty (doc 13
@@ -185,9 +185,9 @@ describe('states (doc 06 §3)', () => {
 		expect(spy).not.toHaveBeenCalled();
 	});
 
-	it('empty: no place registers neither a scheduler task nor a cache entry', () => {
+	it('empty: no place registers neither a scheduler task nor a cache entry', async () => {
 		serve(WEATHER_OK);
-		render(TpWeatherWidget, props({ settings: {} }));
+		await render(TpWeatherWidget, props({ settings: {} }));
 
 		expect(scheduler.size).toBe(0);
 		expect(swrCache.size).toBe(0);
@@ -199,14 +199,14 @@ describe('states (doc 06 §3)', () => {
 			'fetch',
 			vi.fn(() => new Promise<Response>(() => {}))
 		);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByLabelText(m['widget.weather.loading']())).toBeInTheDocument();
 	});
 
 	it('offline: an offline card when there is nothing cached, not a badge on an empty box', async () => {
 		serveNetworkFailure();
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-offline')).toBeInTheDocument();
 		expect(tileStatus('wgt_wx')).toBeUndefined();
@@ -214,7 +214,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('error: one sentence and a retry, and the tile never blanks', async () => {
 		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		const error = screen.getByTestId('weather-error');
 		await expect.element(error).toBeInTheDocument();
@@ -223,7 +223,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('rate-limited: says so rather than showing the generic failure', async () => {
 		serve({ ok: false, error: { code: 'RATE_LIMITED', retryAfterS: 30 } }, { status: 429 });
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByText(m['widget.weather.rate_limited']())).toBeInTheDocument();
 	});
@@ -233,7 +233,7 @@ describe('states (doc 06 §3)', () => {
 		// `fresh` — it was cached a moment ago — but the Worker served it past
 		// its KV TTL because upstream was down (doc 11 §4).
 		serve(WEATHER_STALE);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale'));
@@ -241,7 +241,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('ready: a fresh serve carries no badge', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		expect(tileStatus('wgt_wx')).toBeUndefined();
@@ -254,7 +254,7 @@ describe('states (doc 06 §3)', () => {
 		// discipline `swr`’s `release()` and the scheduler’s `unregister()` keep,
 		// and the same one spike S1 exists to check.
 		serve(WEATHER_STALE);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatusChannel.size).toBe(1));
 
@@ -266,7 +266,7 @@ describe('states (doc 06 §3)', () => {
 	it('permission-needed: only when the reader asked and the browser refused', async () => {
 		serve(WEATHER_OK);
 		const denied = (): Promise<TpGeoPermission> => Promise.resolve('denied');
-		const screen = render(
+		const screen = await render(
 			TpWeatherWidget,
 			props({ settings: { useMyLocation: true }, permissionSource: denied })
 		);
@@ -279,7 +279,7 @@ describe('states (doc 06 §3)', () => {
 		// refusal — search still works, so the tile stays on the empty path.
 		serve(WEATHER_OK);
 		const unsupported = (): Promise<TpGeoPermission> => Promise.resolve('unsupported');
-		const screen = render(
+		const screen = await render(
 			TpWeatherWidget,
 			props({ settings: { useMyLocation: true }, permissionSource: unsupported })
 		);
@@ -300,7 +300,7 @@ describe('picking a place (doc 06 §2)', () => {
 		const at: TpPositionSource = () =>
 			Promise.resolve({ coords: { latitude: 21.028511, longitude: 105.804817 } });
 
-		const screen = render(
+		const screen = await render(
 			TpWeatherWidget,
 			props({ settings: {}, onUpdateSettings, positionSource: at })
 		);
@@ -331,7 +331,7 @@ describe('picking a place (doc 06 §2)', () => {
 					})
 			)
 		);
-		const screen = render(TpWeatherWidget, props({ settings: {}, onUpdateSettings }));
+		const screen = await render(TpWeatherWidget, props({ settings: {}, onUpdateSettings }));
 
 		await screen.getByTestId('place-search').fill('hà n');
 		await screen.getByText('Hà Nam').click();
@@ -349,7 +349,7 @@ describe('picking a place (doc 06 §2)', () => {
 		// reader at a dead end the tile can perfectly well get out of.
 		serve(WEATHER_OK);
 		const denied = (): Promise<TpGeoPermission> => Promise.resolve('denied');
-		const screen = render(
+		const screen = await render(
 			TpWeatherWidget,
 			props({ settings: { useMyLocation: true }, permissionSource: denied })
 		);
@@ -363,7 +363,7 @@ describe('picking a place (doc 06 §2)', () => {
 		// endpoint, and a translated string frozen into the layout would be wrong
 		// the moment the reader switched locale.
 		serve(WEATHER_OK);
-		const screen = render(
+		const screen = await render(
 			TpWeatherWidget,
 			props({ settings: { place: { name: '', lat: 21.02, lon: 105.85 } } })
 		);
@@ -377,7 +377,7 @@ describe('picking a place (doc 06 §2)', () => {
 describe('the scheduler and cache wiring (doc 04 §3)', () => {
 	it('registers one interval task under the DATA KEY, not the instanceId', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 
 		const tasks = scheduler.inspect();
@@ -389,8 +389,8 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 
 	it('two tiles on one place share a task, a cache entry and a request', async () => {
 		const spy = serve(WEATHER_OK);
-		render(TpWeatherWidget, props({ instanceId: 'wgt_a' }));
-		render(
+		await render(TpWeatherWidget, props({ instanceId: 'wgt_a' }));
+		await render(
 			TpWeatherWidget,
 			// A different coordinate inside the same ~5 km geohash cell: the same
 			// place as far as the cache is concerned, which is the whole point.
@@ -414,8 +414,8 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 		// that to null. So B was never refreshed again, and the scheduler recorded
 		// every empty run as a success.
 		const spy = serve(WEATHER_OK);
-		const a = render(TpWeatherWidget, props({ instanceId: 'wgt_a' }));
-		render(
+		const a = await render(TpWeatherWidget, props({ instanceId: 'wgt_a' }));
+		await render(
 			TpWeatherWidget,
 			props({ instanceId: 'wgt_b', settings: { place: { ...HANOI, lat: 21.01, lon: 105.86 } } })
 		);
@@ -424,7 +424,7 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 		});
 		expect(spy).toHaveBeenCalledTimes(1);
 
-		a.unmount();
+		await a.unmount();
 		expect(scheduler.size).toBe(1);
 
 		// The headless browser can report itself hidden, which stops the ticker
@@ -443,7 +443,7 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 
 	it('leaves nothing behind on unmount', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 
 		cleanup();
@@ -458,7 +458,7 @@ describe('the scheduler and cache wiring (doc 04 §3)', () => {
 		// wired the obvious way keeps refreshing a place the reader has left —
 		// and never refreshes the one on screen. Nothing about it fails loudly.
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		expect(scheduler.inspect()[0]?.id).toBe(weatherKey(HANOI.lat, HANOI.lon));
 
@@ -489,7 +489,7 @@ describe('the cache (doc 04 §2)', () => {
 			vi.fn(() => new Promise<Response>(() => {}))
 		);
 
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toHaveTextContent('31°');
 	});
 
@@ -504,7 +504,7 @@ describe('the cache (doc 04 §2)', () => {
 		});
 		serveNetworkFailure();
 
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('offline'));
 	});
@@ -519,7 +519,7 @@ describe('the cache (doc 04 §2)', () => {
 		});
 		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
 
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale-error'));
 		expect(tileStatus('wgt_wx')?.retry).not.toBeNull();
@@ -533,7 +533,7 @@ describe('the cache (doc 04 §2)', () => {
 		});
 		serve({ ok: false, error: { code: 'RATE_LIMITED', retryAfterS: 30 } }, { status: 429 });
 
-		const screen = render(TpWeatherWidget, props());
+		const screen = await render(TpWeatherWidget, props());
 		await expect.element(screen.getByTestId('weather-temp')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_wx')?.kind).toBe('stale-error'));
 	});
@@ -545,7 +545,7 @@ describe('at tier L', () => {
 	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
 	it('shows the reading and the sparkline', async () => {
 		serve(WEATHER_OK);
-		const screen = render(
+		const screen = await render(
 			TpWeatherWidget,
 			props({ size: { w: 6, h: 4, pxW: 660, pxH: 320, tier: 'L' } })
 		);

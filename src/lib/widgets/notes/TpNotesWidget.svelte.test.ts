@@ -41,13 +41,13 @@ describe('the notes tile (doc 07 §4)', () => {
 		vi.spyOn(db.notes, 'orderBy').mockReturnValue({
 			reverse: () => ({ toArray: () => new Promise(() => undefined) })
 		} as never);
-		const screen = render(TpNotesWidget, props());
+		const screen = await render(TpNotesWidget, props());
 
 		await expect.element(screen.getByTestId('notes-loading')).toBeInTheDocument();
 	});
 
 	it('empty: says there are none, and offers exactly one way to start', async () => {
-		const screen = render(TpNotesWidget, props());
+		const screen = await render(TpNotesWidget, props());
 
 		await expect.element(screen.getByText(m['widget.notes.empty']())).toBeInTheDocument();
 		await expect
@@ -57,7 +57,7 @@ describe('the notes tile (doc 07 §4)', () => {
 
 	it('ready: the latest note, rendered as markdown', async () => {
 		await createNote('# Shopping\nmilk', db);
-		const screen = render(TpNotesWidget, props());
+		const screen = await render(TpNotesWidget, props());
 
 		await expect.element(screen.getByRole('heading', { name: 'Shopping' })).toBeInTheDocument();
 	});
@@ -66,7 +66,7 @@ describe('the notes tile (doc 07 §4)', () => {
 		vi.spyOn(db.notes, 'orderBy').mockImplementation(() => {
 			throw new Error('idb unavailable');
 		});
-		const screen = render(TpNotesWidget, props());
+		const screen = await render(TpNotesWidget, props());
 
 		await expect.element(screen.getByText(m['widget.notes.read_failed']())).toBeInTheDocument();
 		await expect.element(screen.getByTestId('notes-empty')).not.toBeInTheDocument();
@@ -84,7 +84,7 @@ describe('at tier L', () => {
 	// The tests above render tier M; doc 19 §6 asks for every tier allowed.
 	it('renders the note as at tier M', async () => {
 		await createNote('# Shopping\nmilk', db);
-		const screen = render(TpNotesWidget, {
+		const screen = await render(TpNotesWidget, {
 			...props(),
 			size: { w: 4, h: 6, pxW: 440, pxH: 480, tier: 'L' }
 		});

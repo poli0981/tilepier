@@ -35,12 +35,12 @@ afterEach(() => {
 
 describe('entry', () => {
 	it('starts at zero, not blank', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 		await expect.element(screen.getByTestId('calc-result')).toHaveTextContent('0');
 	});
 
 	it('builds an expression from the keypad', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		await screen.getByTestId('calc-key-1').click();
 		await screen.getByTestId('calc-key-2').click();
@@ -53,7 +53,7 @@ describe('entry', () => {
 	});
 
 	it('commits on equals and clears the entry line', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		await screen.getByTestId('calc-key-7').click();
 		await screen.getByTestId('calc-key-×').click();
@@ -66,7 +66,7 @@ describe('entry', () => {
 	});
 
 	it('backspaces one character and clears the lot', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		await screen.getByTestId('calc-key-1').click();
 		await screen.getByTestId('calc-key-2').click();
@@ -82,7 +82,7 @@ describe('keyboard', () => {
 	it('takes digits and operators from the keyboard while focus is inside', async () => {
 		// doc 07 §3: "keyboard input when focused". Focus lands on a key, and the
 		// keystroke bubbles to the group's handler.
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 		const key = screen.getByTestId('calc-key-1').element();
 		(key as HTMLElement).focus();
 
@@ -98,7 +98,7 @@ describe('keyboard', () => {
 	it('leaves Escape alone for the layer above', async () => {
 		// doc 13 §8: Escape closes the topmost layer. Swallowing it here would
 		// trap someone inside an open detail panel.
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 		const key = screen.getByTestId('calc-key-1').element();
 		(key as HTMLElement).focus();
 
@@ -113,7 +113,7 @@ describe('keyboard', () => {
 
 describe('errors', () => {
 	it('says so inline when asked to divide by zero', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		await screen.getByTestId('calc-key-1').click();
 		await screen.getByTestId('calc-key-÷').click();
@@ -128,7 +128,7 @@ describe('errors', () => {
 	});
 
 	it('says so when the expression is unfinished', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		await screen.getByTestId('calc-key-1').click();
 		await screen.getByTestId('calc-key-+').click();
@@ -140,7 +140,7 @@ describe('errors', () => {
 	});
 
 	it('clears the error on the next keystroke', async () => {
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		await screen.getByTestId('calc-key-1').click();
 		await screen.getByTestId('calc-key-+').click();
@@ -157,7 +157,7 @@ describe('locale', () => {
 		// doc 07 §3's result line. The catalogue's base locale is vi, which groups
 		// with a full stop.
 		settings.patch({ locale: 'vi' });
-		const screen = render(TpCalcWidget, props());
+		const screen = await render(TpCalcWidget, props());
 
 		for (const key of ['1', '2', '3', '4', '5', '6', '7']) {
 			await screen.getByTestId(`calc-key-${key}`).click();
@@ -170,7 +170,7 @@ describe('locale', () => {
 describe('the keypad and the tile’s height (doc 07 §3, WCAG 2.5.8)', () => {
 	it('shows no keypad in a tile too short for 24 px keys, and opens the detail instead', async () => {
 		const onOpenDetail = vi.fn();
-		const screen = render(TpCalcWidget, {
+		const screen = await render(TpCalcWidget, {
 			...props(),
 			size: { w: 3, h: 3, pxW: 322, pxH: 192, tier: 'M' as const },
 			onOpenDetail
@@ -184,7 +184,7 @@ describe('the keypad and the tile’s height (doc 07 §3, WCAG 2.5.8)', () => {
 	});
 
 	it('still takes typed input in that compact tile', async () => {
-		const screen = render(TpCalcWidget, {
+		const screen = await render(TpCalcWidget, {
 			...props(),
 			size: { w: 2, h: 2, pxW: 206, pxH: 120, tier: 'M' as const }
 		});
@@ -204,7 +204,7 @@ describe('the keypad and the tile’s height (doc 07 §3, WCAG 2.5.8)', () => {
 		const host = document.createElement('div');
 		host.style.cssText = 'height: 224px; width: 300px; display: flex; flex-direction: column;';
 		document.body.appendChild(host);
-		const screen = render(TpCalcWidget, {
+		const screen = await render(TpCalcWidget, {
 			target: host,
 			props: { ...props(), size: { w: 3, h: 4, pxW: 322, pxH: 264, tier: 'L' as const } }
 		});

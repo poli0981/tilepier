@@ -60,7 +60,7 @@ afterEach(async () => {
 	await db.delete();
 });
 
-function show(over: Record<string, unknown> = {}) {
+async function show(over: Record<string, unknown> = {}) {
 	const box = document.createElement('div');
 	box.style.cssText = 'width: 1000px; height: 640px;';
 	document.body.appendChild(box);
@@ -70,7 +70,7 @@ function show(over: Record<string, unknown> = {}) {
 	});
 }
 
-async function find(screen: ReturnType<typeof render>, name: string): Promise<void> {
+async function find(screen: Awaited<ReturnType<typeof render>>, name: string): Promise<void> {
 	await screen.getByTestId('place-search').fill('hà n');
 	await screen.getByText(name).click();
 	await expect.element(screen.getByTestId('mapd-found')).toBeInTheDocument();
@@ -78,7 +78,7 @@ async function find(screen: ReturnType<typeof render>, name: string): Promise<vo
 
 describe('search → save (doc 08 §5)', () => {
 	it('saves what was found, under the name the reader gave it', async () => {
-		const screen = show();
+		const screen = await show();
 
 		await find(screen, 'Hà Nam');
 		await screen.getByLabelText(m['widget.map.name_label']()).fill('Quê ngoại');
@@ -88,7 +88,7 @@ describe('search → save (doc 08 §5)', () => {
 			const rows = await db.savedPlaces.toArray();
 			expect(rows).toMatchObject([{ name: 'Quê ngoại', lat: 20.5417, lon: 105.9229 }]);
 		});
-		await expect.element(screen.getByTestId('mapd-saved')).toHaveTextContent('Quê ngoại');
+		await expect.element(screen.getByTestId('mapd-saved')).toMatchTextContent('Quê ngoại');
 	});
 
 	it('says how far each saved place is from home, nearest first', async () => {
@@ -96,10 +96,10 @@ describe('search → save (doc 08 §5)', () => {
 			{ id: 'far', name: 'Hạ Long', lat: 20.9101, lon: 107.1839 },
 			{ id: 'near', name: 'Văn Miếu', lat: 21.0277, lon: 105.8355 }
 		]);
-		const screen = show();
+		const screen = await show();
 
 		const list = screen.getByTestId('mapd-saved');
-		await expect.element(list).toHaveTextContent('Văn Miếu');
+		await expect.element(list).toMatchTextContent('Văn Miếu');
 		const names = [...document.querySelectorAll('.tp-mapd__place-name')].map(
 			(node) => node.textContent
 		);
@@ -109,12 +109,12 @@ describe('search → save (doc 08 §5)', () => {
 		expect(fmtDistance(km, 'vi')).toBe('1,8 km');
 		await expect
 			.element(list)
-			.toHaveTextContent(m['widget.map.distance']({ distance: fmtDistance(km, 'vi') }));
+			.toMatchTextContent(m['widget.map.distance']({ distance: fmtDistance(km, 'vi') }));
 	});
 
 	it('makes a found place home, at the precision it was found', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = show({ onUpdateSettings });
+		const screen = await show({ onUpdateSettings });
 
 		await find(screen, 'Hà Nam');
 		await screen.getByRole('button', { name: m['widget.map.make_home']() }).click();
@@ -132,7 +132,7 @@ describe('a saved place', () => {
 	});
 
 	it('renames in place', async () => {
-		const screen = show();
+		const screen = await show();
 
 		await screen
 			.getByRole('button', { name: m['widget.map.rename']({ place: 'Văn Miếu' }) })
@@ -150,7 +150,7 @@ describe('a saved place', () => {
 	});
 
 	it('is removed', async () => {
-		const screen = show();
+		const screen = await show();
 
 		await screen
 			.getByRole('button', { name: m['widget.map.remove']({ place: 'Văn Miếu' }) })
@@ -163,7 +163,7 @@ describe('a saved place', () => {
 	it('copies its coordinates as other apps read them, and says so', async () => {
 		const writeText = vi.fn(() => Promise.resolve());
 		vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
-		const screen = show();
+		const screen = await show();
 
 		await screen
 			.getByRole('button', { name: /Văn Miếu/ })
@@ -178,7 +178,7 @@ describe('a saved place', () => {
 	});
 
 	it('links out to OpenStreetMap and Google Maps with no way back', async () => {
-		const screen = show();
+		const screen = await show();
 
 		await screen
 			.getByRole('button', { name: /Văn Miếu/ })
@@ -202,7 +202,7 @@ describe('closing it', () => {
 	it('removes the map, which gives the WebGL context back (doc 08 §5)', async () => {
 		const maplibre = await loadMapLibre();
 		const remove = vi.spyOn(maplibre.Map.prototype, 'remove');
-		show();
+		await show();
 		await vi.waitFor(
 			() =>
 				expect(document.querySelector('[data-testid="map"]')?.getAttribute('data-status')).toBe(

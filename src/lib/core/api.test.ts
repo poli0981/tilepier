@@ -22,7 +22,7 @@ const URL_WEATHER = `${BASE}/api/weather?lat=21.02&lon=105.85`;
 const server = setupServer();
 
 beforeAll(() => {
-	server.listen({ onUnhandledRequest: 'error' });
+	server.listen({ onUnhandledFrame: 'error' });
 });
 
 afterEach(() => {

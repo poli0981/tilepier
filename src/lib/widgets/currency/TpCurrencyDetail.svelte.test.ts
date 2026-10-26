@@ -98,7 +98,7 @@ afterEach(async () => {
 describe('the rate table (doc 08 §2)', () => {
 	it('renders a row per target, against one base amount', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-row-VND')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-row-EUR')).toBeInTheDocument();
@@ -108,19 +108,22 @@ describe('the rate table (doc 08 §2)', () => {
 		// doc 08 §2's edge case, seen from the detail: the row stays so the reader
 		// can find and remove it, rather than vanishing with their setting.
 		serve(FX_OK);
-		const screen = render(
+		const screen = await render(
 			TpCurrencyDetail,
 			props({ settings: { base: 'USD', targets: ['VND', 'ZWL'] } })
 		);
 
 		await expect
 			.element(screen.getByTestId('currency-row-ZWL'))
-			.toHaveTextContent(m['widget.currency.unavailable']({ code: 'ZWL' }));
+			.toMatchTextContent(m['widget.currency.unavailable']({ code: 'ZWL' }));
 	});
 
 	it('offers an empty table rather than pretending there is nothing to do', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyDetail, props({ settings: { base: 'USD', targets: [] } }));
+		const screen = await render(
+			TpCurrencyDetail,
+			props({ settings: { base: 'USD', targets: [] } })
+		);
 
 		await expect.element(screen.getByTestId('currency-detail-empty')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-add')).toBeInTheDocument();
@@ -130,7 +133,7 @@ describe('the rate table (doc 08 §2)', () => {
 describe('the 24 h change', () => {
 	it('is a signed percentage against the day it is comparing with', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect
 			.element(screen.getByTestId('currency-change-header'))
@@ -146,7 +149,7 @@ describe('the 24 h change', () => {
 		// doc 12 §4.2: never colour alone. Intl already puts the sign in the text,
 		// so the tint is reinforcement — but the attribute is what a test can see.
 		serve(FX_OK);
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-change-VND')).toBeInTheDocument();
 		const cell = screen.container.querySelector(
@@ -161,7 +164,7 @@ describe('the 24 h change', () => {
 		// Not a column of zeros. A 0.00 % is a claim about the market; an absent
 		// column is the truth about what has been recorded so far.
 		serve(dayOne());
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-row-VND')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-change-header')).not.toBeInTheDocument();
@@ -170,7 +173,7 @@ describe('the 24 h change', () => {
 
 	it('says why the column is missing rather than leaving a hole', async () => {
 		serve(dayOne());
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-no-change-yet')).toBeInTheDocument();
 	});
@@ -180,7 +183,7 @@ describe('editing the table (doc 06 §2)', () => {
 	it('adds a currency the reader picked', async () => {
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyDetail, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyDetail, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-add-code')).toBeInTheDocument();
 		await screen.getByTestId('currency-add-code').selectOptions('JPY');
@@ -194,7 +197,7 @@ describe('editing the table (doc 06 §2)', () => {
 	it('removes one', async () => {
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyDetail, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyDetail, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-remove-VND')).toBeInTheDocument();
 		await screen.getByTestId('currency-remove-VND').click();
@@ -205,7 +208,7 @@ describe('editing the table (doc 06 §2)', () => {
 	it('reorders by swapping with the neighbour', async () => {
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyDetail, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyDetail, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-down-VND')).toBeInTheDocument();
 		await screen.getByTestId('currency-down-VND').click();
@@ -220,7 +223,7 @@ describe('editing the table (doc 06 §2)', () => {
 		// front of the array, which is what an unguarded swap with index -1 does.
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyDetail, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyDetail, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-up-VND')).toBeInTheDocument();
 		await screen.getByTestId('currency-up-VND').click();
@@ -232,7 +235,7 @@ describe('editing the table (doc 06 §2)', () => {
 	it('persists the base amount, and writes nothing while the field is empty', async () => {
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyDetail, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyDetail, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-detail-amount')).toBeInTheDocument();
 		await screen.getByTestId('currency-detail-amount').fill('');
@@ -252,14 +255,14 @@ describe('the panel’s own states', () => {
 				throw new TypeError('Failed to fetch');
 			})
 		);
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-detail-offline')).toBeInTheDocument();
 	});
 
 	it('shows one sentence and a retry when the rates could not be read', async () => {
 		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-detail-error')).toBeInTheDocument();
 		await expect.element(screen.getByText(m['common.retry']())).toBeInTheDocument();
@@ -267,7 +270,7 @@ describe('the panel’s own states', () => {
 
 	it('credits ExchangeRate-API with a real link (doc 16 §5)', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-detail-credit')).toBeInTheDocument();
 		const credit = screen.container.querySelector(
@@ -281,7 +284,7 @@ describe('the panel’s own states', () => {
 		const { scheduler } = await import('$lib/core/scheduler');
 		scheduler.reset();
 		serve(FX_OK);
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-row-VND')).toBeInTheDocument();
 		expect(scheduler.size).toBe(0);
@@ -294,7 +297,7 @@ describe('the history chart (doc 08 §2)', () => {
 		// eighty-seven were flat, which is a claim about the market rather than
 		// about what has been recorded.
 		serve(FX_OK, {}, historyWith(3));
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect
 			.element(screen.getByTestId('currency-history-building'))
@@ -304,7 +307,7 @@ describe('the history chart (doc 08 §2)', () => {
 
 	it('draws once enough days have been recorded', async () => {
 		serve(FX_OK, {}, historyWith(20));
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-history-building')).not.toBeInTheDocument();
@@ -312,7 +315,7 @@ describe('the history chart (doc 08 §2)', () => {
 
 	it('pairs the chart with doc 13 §8’s summary line', async () => {
 		serve(FX_OK, {}, historyWith(20));
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('chart-summary')).toBeInTheDocument();
 		const caption = screen.container.querySelector('[data-testid="chart-summary"]') as HTMLElement;
@@ -328,7 +331,7 @@ describe('the history chart (doc 08 §2)', () => {
 		// Worker cannot drift: a button asking for a range the endpoint refuses
 		// would be a 400 the reader has no way to understand.
 		serve(FX_OK, {}, historyWith(20));
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-history')).toBeInTheDocument();
 		for (const range of FX_HISTORY_DAYS) {
@@ -338,7 +341,7 @@ describe('the history chart (doc 08 §2)', () => {
 
 	it('opens on ninety days, and re-fetches when the range changes', async () => {
 		serve(FX_OK, {}, historyWith(20));
-		const screen = render(TpCurrencyDetail, props());
+		const screen = await render(TpCurrencyDetail, props());
 
 		await expect.element(screen.getByTestId('currency-range-90')).toBeInTheDocument();
 		const opened = screen.container.querySelector(

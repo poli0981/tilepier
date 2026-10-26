@@ -15,6 +15,8 @@ follow [Semantic Versioning](https://semver.org/).
 - The rest of the toolchain at its newest releases: Svelte 5.57, ESLint 10.13,
   Playwright 1.64, Paraglide 2.29, and wrangler 4.152 with the Workers runtime
   of 2026-10-19.
+- The tests run on Vitest 5 and MSW 3, and music files are read with
+  music-metadata 12.
 
 ### Fixed
 

@@ -94,7 +94,7 @@ afterEach(async () => {
 describe('the watchlist rows', () => {
 	it('renders one row per entry, in the reader order and under the reader labels', async () => {
 		serve(CRYPTO_OK);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		await expect.element(screen.getByText('BTC')).toBeInTheDocument();
 		// Never renamed, so the row is labelled by its symbol.
@@ -103,7 +103,7 @@ describe('the watchlist rows', () => {
 
 	it('gives a sub-dollar coin more decimals than a five-figure one (doc 09 §1)', async () => {
 		serve(CRYPTO_OK);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		// 62,910.53 at two places; 0.2143 at four. A single precision would either
 		// drop the cents off bitcoin or round dogecoin to 0.21.
@@ -113,7 +113,7 @@ describe('the watchlist rows', () => {
 
 	it('signs the change before it colours it (doc 12 §4.2)', async () => {
 		serve(CRYPTO_OK);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		// Colour is never the only channel: `Intl` places the sign, and the class
 		// is reinforcement. A reader with deuteranopia reads the glyph.
@@ -124,7 +124,7 @@ describe('the watchlist rows', () => {
 
 	it('marks a symbol upstream had nothing for, and keeps the row', async () => {
 		serve(CRYPTO_OK);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		// doc 09 §1's delisted case. The row stays so the reader can find and
 		// remove it; dropping it would make a coin disappear with no explanation.
@@ -134,7 +134,7 @@ describe('the watchlist rows', () => {
 
 	it('shows the age line only where there is room for it', async () => {
 		serve(CRYPTO_OK);
-		const large = render(TpMarketsWidget, props({ size: L }));
+		const large = await render(TpMarketsWidget, props({ size: L }));
 
 		await expect
 			.element(large.getByText(m['widget.markets.as_of']({ age: 'now' }), { exact: false }))
@@ -149,14 +149,14 @@ describe('states (doc 06 §3)', () => {
 			'fetch',
 			vi.fn(() => new Promise<Response>(() => {}))
 		);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		await expect.element(screen.getByLabelText(m['widget.markets.loading']())).toBeInTheDocument();
 	});
 
 	it('renders the empty state, with one action, when the watchlist is empty', async () => {
 		serve(CRYPTO_OK);
-		const screen = render(
+		const screen = await render(
 			TpMarketsWidget,
 			props({ settings: { watchlist: [] }, onOpenDetail: () => undefined })
 		);
@@ -171,7 +171,7 @@ describe('states (doc 06 §3)', () => {
 		// The `/w/[id]` direct load has no host to hand down `onOpenDetail`, and a
 		// button that cannot do anything is worse than a sentence.
 		serve(CRYPTO_OK);
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: [] } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: [] } }));
 
 		await expect.element(screen.getByText(m['widget.markets.no_rows_hint']())).toBeInTheDocument();
 		expect(screen.container.querySelector('button')).toBeNull();
@@ -179,7 +179,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('asks for nothing at all when there is nothing to ask about', async () => {
 		const spy = serve(CRYPTO_OK);
-		render(TpMarketsWidget, props({ settings: { watchlist: [] } }));
+		await render(TpMarketsWidget, props({ settings: { watchlist: [] } }));
 
 		// `?symbols=` would be a `BAD_REQUEST` once a minute, forever, for an
 		// answer nobody asked for.
@@ -188,7 +188,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('renders an inline error with a retry, never a blank tile', async () => {
 		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		await expect.element(screen.getByText(m['widget.markets.error']())).toBeInTheDocument();
 		await expect.element(screen.getByRole('button', { name: m['common.retry']() })).toBeVisible();
@@ -196,7 +196,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('says so plainly when there is no network and nothing saved', async () => {
 		serveNetworkFailure();
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		await expect.element(screen.getByText(m['widget.markets.offline']())).toBeInTheDocument();
 	});
@@ -208,7 +208,7 @@ describe('the host badge (doc 13 §7)', () => {
 		// arrives looking fresh — `meta.stale` is the only thing that says
 		// otherwise (doc 04 §2).
 		serve(CRYPTO_STALE);
-		render(TpMarketsWidget, props());
+		await render(TpMarketsWidget, props());
 
 		await vi.waitFor(() => expect(tileStatus('wgt_mk')?.kind).toBe('stale'));
 	});
@@ -234,7 +234,7 @@ describe('the host badge (doc 13 §7)', () => {
 		});
 		serve({ ok: false, error: { code: 'RATE_LIMITED' } }, { status: 429 });
 
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		// The prices are still on screen — that is the whole point of the state.
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
@@ -248,10 +248,10 @@ describe('the host badge (doc 13 §7)', () => {
 
 	it('clears its badge when the tile goes away', async () => {
 		serve(CRYPTO_STALE);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 		await vi.waitFor(() => expect(tileStatus('wgt_mk')?.kind).toBe('stale'));
 
-		screen.unmount();
+		await screen.unmount();
 		// A channel that grew with every tile ever mounted would be a leak nothing
 		// else can see (`core/tile-status.ts`).
 		expect(tileStatus('wgt_mk')).toBeUndefined();
@@ -273,7 +273,7 @@ describe('the manifest contract', () => {
 
 	it('registers one scheduler entry per source, under the instance', async () => {
 		serve(CRYPTO_OK);
-		render(TpMarketsWidget, props());
+		await render(TpMarketsWidget, props());
 
 		// The ids come from the instanceId rather than the data keys, which is
 		// what lets the cadence outlive a watchlist edit — the keys move with the
@@ -315,7 +315,7 @@ describe('the sparkline (doc 09 §1)', () => {
 		serve(CRYPTO_OK);
 		await cacheCandles('BTCUSDT');
 
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		await vi.waitFor(() => expect(screen.container.querySelectorAll('polyline')).toHaveLength(1));
 	});
@@ -324,7 +324,7 @@ describe('the sparkline (doc 09 §1)', () => {
 		const spy = serve(CRYPTO_OK);
 		await cacheCandles('BTCUSDT');
 
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 		await vi.waitFor(() => expect(screen.container.querySelector('polyline')).not.toBeNull());
 
 		// The whole quota model rests on this: the tile reads the series cache and
@@ -336,7 +336,7 @@ describe('the sparkline (doc 09 §1)', () => {
 
 	it('renders the row without one when nothing is cached', async () => {
 		serve(CRYPTO_OK);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		// Absent is an ordinary state, not a fault: a reader who has never opened
 		// this symbol's detail has no candles on the device.
@@ -348,7 +348,7 @@ describe('the sparkline (doc 09 §1)', () => {
 		serve(CRYPTO_OK);
 		await cacheCandles('BTCUSDT', SPARK_MAX_AGE_MS + 60_000);
 
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		// `swr`'s own ceiling is seven days, which is right for a payload that
 		// *is* the reading and wrong for one sitting under a live price.
@@ -360,7 +360,7 @@ describe('the sparkline (doc 09 §1)', () => {
 		serve(CRYPTO_OK);
 		await cacheCandles('BTCUSDT');
 
-		const screen = render(TpMarketsWidget, props({ size: NARROW }));
+		const screen = await render(TpMarketsWidget, props({ size: NARROW }));
 
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
 		expect(screen.container.querySelector('polyline')).toBeNull();
@@ -410,7 +410,7 @@ describe('the stock half (doc 09 §1)', () => {
 		// Before 5b the tile's status was the crypto handle's, and a watchlist
 		// with no coins has no crypto handle: `loading`, for as long as it was open.
 		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
 
 		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
 		await expect.element(screen.getByText('Microsoft')).toBeInTheDocument();
@@ -421,7 +421,7 @@ describe('the stock half (doc 09 §1)', () => {
 			'/api/crypto/ticker': json(CRYPTO_OK),
 			'/api/stock/quote': json(STOCK_OK)
 		});
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
 
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
 		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
@@ -438,12 +438,12 @@ describe('the stock half (doc 09 §1)', () => {
 			'/api/crypto/ticker': json(CRYPTO_OK),
 			'/api/stock/quote': json(STOCK_OK)
 		});
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
 		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
 		expect(scheduler.size).toBe(2);
 		expect(swrCache.size).toBeGreaterThan(0);
 
-		screen.unmount();
+		await screen.unmount();
 
 		expect(scheduler.size).toBe(0);
 		expect(swrCache.size).toBe(0);
@@ -451,7 +451,7 @@ describe('the stock half (doc 09 §1)', () => {
 
 	it('calls a stock move the day’s rather than 24 hours’', async () => {
 		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
 
 		await expect
 			.element(screen.getByLabelText(m['widget.markets.change_label_day']({ change: '+0.41%' })))
@@ -460,7 +460,7 @@ describe('the stock half (doc 09 §1)', () => {
 
 	it('says a stock is quoted from the close once it has stopped trading', async () => {
 		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
 
 		// The suite's clock is four hours past Monday's close.
 		await expect
@@ -470,7 +470,7 @@ describe('the stock half (doc 09 §1)', () => {
 
 	it('keeps the coins on screen while the stocks are still on their way', async () => {
 		serveRoutes({ '/api/crypto/ticker': json(CRYPTO_OK), '/api/stock/quote': pending });
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
 
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
 		await expect
@@ -483,7 +483,7 @@ describe('the stock half (doc 09 §1)', () => {
 			'/api/crypto/ticker': json(CRYPTO_OK),
 			'/api/stock/quote': json({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, 503)
 		});
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: MIXED } }));
 
 		await expect.element(screen.getByText(m['widget.markets.row_unread']())).toBeInTheDocument();
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
@@ -498,7 +498,10 @@ describe('the stock half (doc 09 §1)', () => {
 			{ kind: 'stock', symbol: 'AAPL', display: '' },
 			{ kind: 'stock', symbol: 'GONE', display: '' }
 		];
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist }, onUpdateSettings }));
+		const screen = await render(
+			TpMarketsWidget,
+			props({ settings: { watchlist }, onUpdateSettings })
+		);
 
 		await screen
 			.getByRole('button', { name: m['widget.markets.remove_row']({ symbol: 'GONE' }) })
@@ -510,7 +513,7 @@ describe('the stock half (doc 09 §1)', () => {
 	it('offers no shortcut where there is nowhere to write the edit', async () => {
 		serveRoutes({ '/api/stock/quote': json(STOCK_OK) });
 		const watchlist = [{ kind: 'stock', symbol: 'GONE', display: '' }];
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist } }));
 
 		await expect.element(screen.getByText(m['widget.markets.unavailable']())).toBeInTheDocument();
 		expect(screen.container.querySelector('button')).toBeNull();
@@ -532,7 +535,7 @@ describe('the stock half (doc 09 §1)', () => {
 			}
 		});
 
-		const screen = render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
+		const screen = await render(TpMarketsWidget, props({ settings: { watchlist: STOCKS_ONLY } }));
 
 		await vi.waitFor(() => expect(screen.container.querySelectorAll('polyline')).toHaveLength(1));
 		// doc 11 §5: series only from a detail view. A tile that asked would spend
@@ -550,7 +553,7 @@ describe('the change chip’s colour (doc 12 §4.2)', () => {
 		const btc = flat.ok ? flat.data.quotes['BTCUSDT'] : null;
 		if (btc) btc.change24h = -0.000_04;
 		serve(flat);
-		const screen = render(TpMarketsWidget, props());
+		const screen = await render(TpMarketsWidget, props());
 
 		const chip = screen.getByLabelText(m['widget.markets.change_label']({ change: '0%' }));
 		await expect.element(chip).toBeInTheDocument();

@@ -115,7 +115,7 @@ async function kept(file: TpMediaFile): Promise<number | undefined> {
  * the video never plays. On CI that race failed a test three times, twice on
  * the file's first test and once on a later one (#35, #37; 2026-09-29).
  */
-async function playing(screen: ReturnType<typeof render>): Promise<HTMLVideoElement> {
+async function playing(screen: Awaited<ReturnType<typeof render>>): Promise<HTMLVideoElement> {
 	await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 	const refused = () =>
 		screen.container.textContent?.includes(m['widget.media.press_play']()) === true;
@@ -128,7 +128,7 @@ async function playing(screen: ReturnType<typeof render>): Promise<HTMLVideoElem
 describe('TpMediaPlayer', () => {
 	it('plays the file it is given, and tells the tile how far it is', async () => {
 		const file = await fixture(clipUrl, 'Phim thử.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 
 		await playing(screen);
 
@@ -146,7 +146,7 @@ describe('TpMediaPlayer', () => {
 		const started = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
 		const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause');
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false);
 		const toggle = screen.getByTestId('media-toggle');
@@ -160,7 +160,7 @@ describe('TpMediaPlayer', () => {
 
 	it('says plainly when this browser cannot play the file — never a black box', async () => {
 		const file = await fixture(junkUrl, 'không phải video.mp4', 'video/mp4');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 
 		await expect.element(screen.getByTestId('media-unsupported'), SLOW).toBeVisible();
 		await expect
@@ -173,7 +173,7 @@ describe('TpMediaPlayer', () => {
 
 	it('plays sound with no picture, and says so', async () => {
 		const file = await fixture(soundUrl, 'chỉ có tiếng.webm', 'audio/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 
 		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
 		expect(phase(screen.container)).toBe('ready');
@@ -183,7 +183,7 @@ describe('TpMediaPlayer', () => {
 		const musicYielded = vi.fn();
 		claimPlayback('music', musicYielded);
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await playing(screen);
 
 		expect(playbackOwner()).toBe('media');
@@ -200,7 +200,7 @@ describe('TpMediaPlayer', () => {
 
 	it('takes focus when it loads, and answers the keys where the reader is', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 		expect(document.activeElement).toBe(video);
@@ -238,7 +238,7 @@ describe('TpMediaPlayer', () => {
 			.mockResolvedValue({} as PictureInPictureWindow);
 		const exited = vi.spyOn(Document.prototype, 'exitPictureInPicture').mockResolvedValue();
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 
 		await screen.getByTestId('media-pip').click();
@@ -252,7 +252,7 @@ describe('TpMediaPlayer', () => {
 
 	it('offers no picture-in-picture for sound alone', async () => {
 		const file = await fixture(soundUrl, 'sound.webm', 'audio/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 
 		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
 		expect(screen.container.querySelector('[data-testid="media-pip"]')).toBeNull();
@@ -261,7 +261,7 @@ describe('TpMediaPlayer', () => {
 	it('goes full screen with the player, controls and all, from the button or F', async () => {
 		const requested = vi.spyOn(Element.prototype, 'requestFullscreen').mockResolvedValue();
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const box = screen.getByTestId('media-player').element();
 
@@ -278,7 +278,7 @@ describe('TpMediaPlayer', () => {
 
 	it('pauses when the music player takes the sound back', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await playing(screen);
 		expect(playbackOwner()).toBe('media');
 		const toggle = screen.getByTestId('media-toggle');
@@ -290,7 +290,7 @@ describe('TpMediaPlayer', () => {
 	});
 	it('keeps its place when it goes mid-play, read before the element lets go of the file', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		const video = await playing(screen);
 		video.currentTime = 8;
 		// The seek is kept as well; playing on past it is what only the
@@ -305,7 +305,7 @@ describe('TpMediaPlayer', () => {
 
 	it('keeps its place when the page closes, committed before the page can go', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		const video = await playing(screen);
 		video.currentTime = 8;
 		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(8.3), SLOW);
@@ -329,7 +329,7 @@ describe('TpMediaPlayer', () => {
 			positionMs: 9_000,
 			durationMs: 14_008
 		});
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 
@@ -347,7 +347,7 @@ describe('TpMediaPlayer', () => {
 
 	it('puts a video watched to the end back to its start', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		const video = await playing(screen);
 		video.currentTime = 13.4;
 		await vi.waitFor(() => expect(video.ended).toBe(true), { timeout: 5_000 });
@@ -357,7 +357,7 @@ describe('TpMediaPlayer', () => {
 
 	it('keeps the reader’s volume from one video to the next, and not the speed', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const first = render(TpMediaPlayer, { file });
+		const first = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(first.container)).toBe('ready'), SLOW);
 		const video = first.getByTestId('media-video').element() as HTMLVideoElement;
 		for (const key of ['ArrowDown', 'ArrowDown']) {
@@ -371,7 +371,7 @@ describe('TpMediaPlayer', () => {
 			SLOW
 		);
 
-		const next = render(TpMediaPlayer, { file });
+		const next = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(next.container)).toBe('ready'), SLOW);
 		const again = next.getByTestId('media-video').element() as HTMLVideoElement;
 
@@ -405,7 +405,7 @@ describe('subtitles', () => {
 
 	it('shows the subtitles the reader adds, and C hides and shows them', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 		offer(new File([SRT], 'clip.vi.srt'));
@@ -437,7 +437,7 @@ describe('subtitles', () => {
 
 	it('says so when a file holds no subtitles, and adds no track', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		offer(new File(['không phải phụ đề'], 'ghi chú.srt'));
 
@@ -452,7 +452,7 @@ describe('subtitles', () => {
 	it('lets go of the track and its URL when the player goes', async () => {
 		const revoke = vi.spyOn(URL, 'revokeObjectURL');
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 		offer(new File([SRT], 'clip.vi.srt'));
@@ -468,7 +468,7 @@ describe('subtitles', () => {
 
 	it('takes WebVTT as it is', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		const video = screen.getByTestId('media-video').element() as HTMLVideoElement;
 		const vtt = await (await fetch(vttUrl)).text();
@@ -482,7 +482,7 @@ describe('subtitles', () => {
 
 	it('says so when the browser finds no cue in a WebVTT file, and takes the track away', async () => {
 		const file = await fixture(clipUrl, 'clip.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		await vi.waitFor(() => expect(phase(screen.container)).toBe('ready'), SLOW);
 		// It says WEBVTT and has an arrow, so it goes to the browser, which
 		// finds no timing it can read.
@@ -501,7 +501,7 @@ describe('subtitles', () => {
 
 	it('offers none for sound alone', async () => {
 		const file = await fixture(soundUrl, 'sound.webm', 'audio/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 
 		await expect.element(screen.getByTestId('media-audio-only'), SLOW).toBeVisible();
 		expect(screen.container.querySelector('[data-testid="media-captions"]')).toBeNull();
@@ -519,7 +519,7 @@ describe('the shelf', () => {
 	// teardown, and could land under the next test's key if they shared one.
 	it('keeps a small JPEG still of where it paused', async () => {
 		const file = await fixture(clipUrl, 'dừng.webm', 'video/webm');
-		const screen = render(TpMediaPlayer, { file });
+		const screen = await render(TpMediaPlayer, { file });
 		const video = await playing(screen);
 		await vi.waitFor(() => expect(video.currentTime).toBeGreaterThan(0.5), SLOW);
 
@@ -534,7 +534,7 @@ describe('the shelf', () => {
 
 	it('keeps a still when it goes, and none of the end', async () => {
 		const file = await fixture(clipUrl, 'hết.webm', 'video/webm');
-		const first = render(TpMediaPlayer, { file });
+		const first = await render(TpMediaPlayer, { file });
 		const video = await playing(first);
 		video.currentTime = 13.4;
 		await vi.waitFor(() => expect(video.ended).toBe(true), SLOW);
@@ -543,7 +543,7 @@ describe('the shelf', () => {
 		expect(await loadPoster(key)).toBeNull();
 
 		cleanup();
-		const again = render(TpMediaPlayer, { file });
+		const again = await render(TpMediaPlayer, { file });
 		const replay = await playing(again);
 		await vi.waitFor(() => expect(replay.currentTime).toBeGreaterThan(0.5), SLOW);
 		cleanup();
@@ -570,10 +570,10 @@ describe('the shelf', () => {
 			};
 			const fromInput = await fixture(clipUrl, 'từ input.webm', 'video/webm');
 
-			const one = render(TpMediaPlayer, { file: fromPicker });
+			const one = await render(TpMediaPlayer, { file: fromPicker });
 			await vi.waitFor(() => expect(phase(one.container)).toBe('ready'), SLOW);
 			cleanup();
-			const two = render(TpMediaPlayer, { file: fromInput });
+			const two = await render(TpMediaPlayer, { file: fromInput });
 			await vi.waitFor(() => expect(phase(two.container)).toBe('ready'), SLOW);
 
 			const pickedKey = await keyOf(fromPicker);

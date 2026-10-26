@@ -54,7 +54,7 @@ afterEach(() => {
 
 describe('dialog semantics', () => {
 	it('is a modal dialog named for its widget', async () => {
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
 
 		const panel = screen.getByTestId('detail-panel');
 		await expect.element(panel).toBeVisible();
@@ -67,7 +67,7 @@ describe('dialog semantics', () => {
 	});
 
 	it('takes focus on open', async () => {
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
 
 		const panel = screen.getByTestId('detail-panel');
 		await expect.element(panel).toBeVisible();
@@ -84,10 +84,10 @@ describe('dialog semantics', () => {
 		opener.focus();
 		expect(document.activeElement).toBe(opener);
 
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
 		await expect.element(screen.getByTestId('detail-panel')).toBeVisible();
 
-		screen.unmount();
+		await screen.unmount();
 
 		await vi.waitFor(() => {
 			expect(document.activeElement).toBe(opener);
@@ -113,7 +113,7 @@ describe('the keyboard (doc 13 §8)', () => {
 	}
 
 	it('keeps Tab inside the panel, round from the last control to the first', async () => {
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
 		const panel = screen.getByTestId('detail-panel').element();
 		// The clock's detail, loaded: more than the close button to walk through.
 		await vi.waitFor(() => expect(focusables(panel).length).toBeGreaterThan(1));
@@ -132,7 +132,7 @@ describe('the keyboard (doc 13 §8)', () => {
 
 	it('leaves Escape to the browser while something is full screen', async () => {
 		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 		const panel = screen.getByTestId('detail-panel');
 		await expect.element(panel).toBeVisible();
 		const fullscreen = vi
@@ -148,7 +148,7 @@ describe('the keyboard (doc 13 §8)', () => {
 
 	it('and for a moment after it leaves full screen, then closes again', async () => {
 		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 		const panel = screen.getByTestId('detail-panel');
 		await expect.element(panel).toBeVisible();
 
@@ -169,7 +169,7 @@ describe('the keyboard (doc 13 §8)', () => {
 describe('closing', () => {
 	it('closes on the × button', async () => {
 		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 
 		await screen.getByTestId('detail-close').click();
 
@@ -179,7 +179,7 @@ describe('closing', () => {
 
 	it('closes on the scrim', async () => {
 		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 
 		// A corner, not the centre. The scrim covers the viewport and the panel
 		// is centred on top of it, so the midpoint a bare `.click()` aims for is
@@ -194,7 +194,7 @@ describe('closing', () => {
 
 	it('closes on Escape', async () => {
 		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 		const panel = screen.getByTestId('detail-panel');
 		await expect.element(panel).toBeVisible();
 
@@ -213,7 +213,7 @@ describe('closing', () => {
 		window.addEventListener('keydown', underneath);
 		try {
 			const onClose = vi.fn();
-			const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+			const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 			const panel = screen.getByTestId('detail-panel');
 			await expect.element(panel).toBeVisible();
 
@@ -231,7 +231,7 @@ describe('closing', () => {
 		window.addEventListener('keydown', underneath);
 		try {
 			const onClose = vi.fn();
-			const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+			const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 			const panel = screen.getByTestId('detail-panel');
 			await expect.element(panel).toBeVisible();
 
@@ -255,7 +255,7 @@ describe('closing', () => {
 		// unactionable. That is the behaviour, not an obstacle to testing it —
 		// the guard has to hold for the paths that stay clickable.
 		const onClose = vi.fn();
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose });
 		const panel = screen.getByTestId('detail-panel');
 		await expect.element(panel).toBeVisible();
 
@@ -269,7 +269,7 @@ describe('closing', () => {
 
 	it('stops the scrim responding once it is on its way out', async () => {
 		// The fade is what makes the double-close above impossible by that route.
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
 		const scrim = screen.getByTestId('detail-scrim');
 		await expect.element(scrim).toBeVisible();
 
@@ -283,7 +283,7 @@ describe('closing', () => {
 
 describe('content', () => {
 	it('renders the widget detail once its chunk arrives', async () => {
-		const screen = render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
+		const screen = await render(TpDetailOverlay, { detail: openFor(), onClose: () => {} });
 
 		// The clock detail's own hero label — proof the real chunk mounted, not
 		// just that the frame did.
@@ -292,7 +292,7 @@ describe('content', () => {
 
 	it('says so when the tile is no longer on the deck', async () => {
 		// Removed in another tab, or the deck was reset while the panel was open.
-		const screen = render(TpDetailOverlay, {
+		const screen = await render(TpDetailOverlay, {
 			detail: { instanceId: 'wgt_missing', widgetId: 'clock' },
 			onClose: () => {}
 		});

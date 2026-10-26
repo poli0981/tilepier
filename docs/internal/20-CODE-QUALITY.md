@@ -150,6 +150,11 @@ parsers is inlined into that one file; `'es'` would split them (≈28 KB entry,
 service worker to cache, and a scan is rare enough that one file wins. Whether
 music-metadata stays off the main thread is not a budget question —
 `eslint.config.js` refuses the import anywhere but `widgets/music/tags.ts`.
+**Re-measured 2026-10-26 with music-metadata 12.2.3: 77.7 KB gz, 97 % of 80.**
+The major brought file-type 22 and grew the file by 11.6 KB; it passes, with
+2.3 KB to spare. The next growth meets the budget, and the answer then is the
+`'es'` split above, or dropping parsers for formats the widget never accepts,
+before it is a larger number.
 
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit

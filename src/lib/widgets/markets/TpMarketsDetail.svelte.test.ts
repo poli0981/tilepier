@@ -107,14 +107,14 @@ afterEach(async () => {
 describe('the header', () => {
 	it('opens on the first watchlist symbol, under its reader label', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		await expect.element(screen.getByRole('heading', { name: 'BTC' })).toBeInTheDocument();
 	});
 
 	it('carries the price, the signed change and the day band', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		await expect.element(screen.getByText('62,910.53')).toBeInTheDocument();
 		await expect.element(screen.getByText('+2.13%')).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('the header', () => {
 
 	it('says so plainly when the watchlist has nothing to show', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props({ settings: { watchlist: [] } }));
+		const screen = await render(TpMarketsDetail, props({ settings: { watchlist: [] } }));
 
 		await expect
 			.element(screen.getByText(m['widget.markets.nothing_selected']()))
@@ -138,7 +138,7 @@ describe('the header', () => {
 describe('the chart', () => {
 	it('draws a canvas once the lazy chunk has landed', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		// The canvas, not the panel: the chart module is a separate request, so
 		// asserting the panel would pass with the picture never drawn.
@@ -147,7 +147,7 @@ describe('the chart', () => {
 
 	it('pairs it with doc 13 §8’s summary line', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		await expect.element(screen.getByTestId('chart-summary')).toBeInTheDocument();
 		const caption = screen.container.querySelector('[data-testid="chart-summary"]') as HTMLElement;
@@ -162,7 +162,7 @@ describe('the chart', () => {
 			data: { symbol: 'BTCUSDT', interval: '5m', candles: [], attribution: '' },
 			meta: { cachedAt: 1, source: 'binance-us', stale: false }
 		});
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		await expect.element(screen.getByText(m['widget.markets.chart_empty']())).toBeInTheDocument();
 		await expect.element(screen.getByTestId('chart-canvas')).not.toBeInTheDocument();
@@ -172,7 +172,7 @@ describe('the chart', () => {
 describe('the ranges', () => {
 	it('offers the four the endpoint will answer for, and no MAX', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		for (const label of ['range_1d', 'range_1w', 'range_1m', 'range_1y'] as const) {
 			await expect
@@ -185,7 +185,7 @@ describe('the ranges', () => {
 
 	it('asks for the interval and depth the chosen range names', async () => {
 		const spy = serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 		await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
 
 		await screen.getByRole('button', { name: m['widget.markets.range_1y']() }).click();
@@ -246,7 +246,10 @@ describe('the ranges', () => {
 			return `${String(100 + i)}.00`;
 		}
 
-		async function caption(screen: ReturnType<typeof render>, range: string): Promise<string> {
+		async function caption(
+			screen: Awaited<ReturnType<typeof render>>,
+			range: string
+		): Promise<string> {
 			await vi.waitFor(() => {
 				const node = screen.container.querySelector('[data-testid="chart-summary"]');
 				expect(node?.textContent).toContain(` ${range}:`);
@@ -257,7 +260,7 @@ describe('the ranges', () => {
 
 		it('draws a month under 1M after a year was drawn under 1Y', async () => {
 			serveWindows();
-			const screen = render(TpMarketsDetail, props());
+			const screen = await render(TpMarketsDetail, props());
 			await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
 
 			await screen.getByRole('button', { name: m['widget.markets.range_1y']() }).click();
@@ -269,7 +272,7 @@ describe('the ranges', () => {
 
 		it('draws a year under 1Y after a month was drawn under 1M', async () => {
 			serveWindows();
-			const screen = render(TpMarketsDetail, props());
+			const screen = await render(TpMarketsDetail, props());
 			await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
 
 			await screen.getByRole('button', { name: m['widget.markets.range_1m']() }).click();
@@ -282,7 +285,7 @@ describe('the ranges', () => {
 
 	it('marks the chosen range as pressed, not merely as coloured', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		// doc 12 §4.2's rule generalised: state is never carried by colour alone.
 		const oneDay = screen.getByRole('button', { name: m['widget.markets.range_1d']() });
@@ -296,14 +299,14 @@ describe('the ranges', () => {
 describe('the footer', () => {
 	it('carries doc 16 §4’s disclaimer, permanently rather than on a condition', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		await expect.element(screen.getByText(m['widget.markets.disclaimer']())).toBeInTheDocument();
 	});
 
 	it('renders the credit line the payload carries (doc 16 §5)', async () => {
 		serveBoth(klinesEnvelope(40));
-		const screen = render(TpMarketsDetail, props());
+		const screen = await render(TpMarketsDetail, props());
 
 		// In the payload rather than in the component, so a surface cannot render
 		// a price without also having been handed the credit for it.
@@ -312,15 +315,15 @@ describe('the footer', () => {
 });
 
 describe('the watchlist manager (doc 09 §1)', () => {
-	function withSpy() {
+	async function withSpy() {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpMarketsDetail, props({ onUpdateSettings }));
+		const screen = await render(TpMarketsDetail, props({ onUpdateSettings }));
 		return { screen, onUpdateSettings };
 	}
 
 	it('adds a symbol the reader types, uppercased', async () => {
 		serveBoth(klinesEnvelope(40));
-		const { screen, onUpdateSettings } = withSpy();
+		const { screen, onUpdateSettings } = await withSpy();
 
 		await screen.getByLabelText(m['widget.markets.add_label']()).fill('solusdt');
 		await screen.getByRole('button', { name: m['widget.markets.add_row']() }).click();
@@ -333,7 +336,7 @@ describe('the watchlist manager (doc 09 §1)', () => {
 
 	it('says which refusal it was, and writes nothing', async () => {
 		serveBoth(klinesEnvelope(40));
-		const { screen, onUpdateSettings } = withSpy();
+		const { screen, onUpdateSettings } = await withSpy();
 
 		await screen.getByLabelText(m['widget.markets.add_label']()).fill('BTC/USDT');
 		await screen.getByRole('button', { name: m['widget.markets.add_row']() }).click();
@@ -346,7 +349,7 @@ describe('the watchlist manager (doc 09 §1)', () => {
 
 	it('names the duplicate rather than refusing in general', async () => {
 		serveBoth(klinesEnvelope(40));
-		const { screen } = withSpy();
+		const { screen } = await withSpy();
 
 		await screen.getByLabelText(m['widget.markets.add_label']()).fill('BTCUSDT');
 		await screen.getByRole('button', { name: m['widget.markets.add_row']() }).click();
@@ -358,7 +361,7 @@ describe('the watchlist manager (doc 09 §1)', () => {
 
 	it('removes a row by its own name', async () => {
 		serveBoth(klinesEnvelope(40));
-		const { screen, onUpdateSettings } = withSpy();
+		const { screen, onUpdateSettings } = await withSpy();
 
 		await screen
 			.getByRole('button', { name: m['widget.markets.remove_row']({ symbol: 'DOGEUSDT' }) })
@@ -370,7 +373,7 @@ describe('the watchlist manager (doc 09 §1)', () => {
 
 	it('reorders, and disables the control that would do nothing', async () => {
 		serveBoth(klinesEnvelope(40));
-		const { screen, onUpdateSettings } = withSpy();
+		const { screen, onUpdateSettings } = await withSpy();
 
 		// "Up" on the first row has nothing above it, so the control is disabled
 		// rather than silently doing nothing when pressed.
@@ -392,7 +395,7 @@ describe('the watchlist manager (doc 09 §1)', () => {
 
 	it('offers the static top-list minus what is already held (doc 09 §1)', async () => {
 		serveBoth(klinesEnvelope(40));
-		const { screen } = withSpy();
+		const { screen } = await withSpy();
 
 		const options = [...screen.container.querySelectorAll('datalist option')].map(
 			(node) => (node as HTMLOptionElement).value
@@ -478,7 +481,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('heads a stock with its price, its day move and its day band', async () => {
 		serveRoutes({});
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		await expect.element(screen.getByRole('heading', { name: 'AAPL' })).toBeInTheDocument();
 		await expect.element(screen.getByText('227.52')).toBeInTheDocument();
@@ -490,7 +493,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('picks by kind and symbol, not by symbol alone', async () => {
 		serveRoutes({});
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		const values = [...screen.container.querySelectorAll('select option')].map(
 			(node) => (node as HTMLOptionElement).value
@@ -506,7 +509,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('asks for the deep daily series whichever daily range is picked', async () => {
 		const spy = serveRoutes({});
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 		await expect.element(screen.getByTestId('chart-canvas')).toBeInTheDocument();
 
 		// 1D is the only fifteen-minute range, so it is its own deepest window.
@@ -529,7 +532,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 			'/api/stock/series': (url) =>
 				url.searchParams.get('interval') === '15min' ? reply(QUOTA, 503) : series(url, 252)
 		});
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		await expect
 			.element(screen.getByText(m['widget.markets.intraday_paused']()))
@@ -547,7 +550,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('says the allowance is spent when the week is refused too', async () => {
 		serveRoutes({ '/api/stock/series': () => reply(QUOTA, 503) });
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		await expect.element(screen.getByText(m['widget.markets.quota_note']())).toBeInTheDocument();
 		// The price still stands: this is the quote-only rung, not an error.
@@ -556,7 +559,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('draws the quote-only view for a symbol Twelve Data does not cover', async () => {
 		serveRoutes({ '/api/stock/series': (url) => series(url, 0) });
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		await expect
 			.element(screen.getByText(m['widget.markets.quote_only']({ symbol: 'AAPL' })))
@@ -566,7 +569,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('carries the stock footnote and credits both upstreams (doc 16 §5)', async () => {
 		serveRoutes({});
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		await expect.element(screen.getByText(m['widget.markets.stock_note']())).toBeInTheDocument();
 		await expect.element(screen.getByText('Stock quotes by Finnhub')).toBeInTheDocument();
@@ -575,7 +578,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 	it('says when a stock is quoted from the close', async () => {
 		serveRoutes({});
-		const screen = render(TpMarketsDetail, stockProps());
+		const screen = await render(TpMarketsDetail, stockProps());
 
 		await expect
 			.element(screen.getByText(m['widget.markets.at_close_hint']({ age: '4 hours ago' })))
@@ -588,7 +591,10 @@ describe('stocks in the detail (doc 09 §1)', () => {
 			{ symbol: 'APLE', name: 'APPLE HOSPITALITY REIT INC' }
 		];
 
-		async function searchFor(screen: ReturnType<typeof render>, text: string): Promise<void> {
+		async function searchFor(
+			screen: Awaited<ReturnType<typeof render>>,
+			text: string
+		): Promise<void> {
 			await screen.getByLabelText(m['widget.markets.kind_label']()).selectOptions('stock');
 			await screen.getByLabelText(m['widget.markets.add_label_stock']()).fill(text);
 		}
@@ -596,7 +602,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 		it('searches after a pause, in lower case, and adds the pick', async () => {
 			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
 			const onUpdateSettings = vi.fn();
-			const screen = render(TpMarketsDetail, props({ onUpdateSettings }));
+			const screen = await render(TpMarketsDetail, props({ onUpdateSettings }));
 
 			await searchFor(screen, 'Apple');
 			await screen
@@ -613,7 +619,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 		it('will not add a result the watchlist already holds', async () => {
 			serveRoutes({ '/api/stock/search': search(APPLE) });
-			const screen = render(TpMarketsDetail, stockProps());
+			const screen = await render(TpMarketsDetail, stockProps());
 
 			await searchFor(screen, 'apple');
 
@@ -628,17 +634,17 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 		it('says so when there is no match, and when search cannot answer', async () => {
 			serveRoutes({ '/api/stock/search': search([]) });
-			const empty = render(TpMarketsDetail, props());
+			const empty = await render(TpMarketsDetail, props());
 			await searchFor(empty, 'zzzz');
 			await expect
 				.element(empty.getByText(m['widget.markets.search_empty']({ query: 'zzzz' })))
 				.toBeInTheDocument();
-			empty.unmount();
+			await empty.unmount();
 
 			serveRoutes({
 				'/api/stock/search': () => reply({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, 503)
 			});
-			const down = render(TpMarketsDetail, props());
+			const down = await render(TpMarketsDetail, props());
 			await searchFor(down, 'apple');
 			await expect.element(down.getByText(m['widget.markets.search_failed']())).toBeInTheDocument();
 		});
@@ -649,7 +655,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
 			online.noteFetchResult('network-error');
 			online.noteFetchResult('network-error');
-			const screen = render(TpMarketsDetail, props());
+			const screen = await render(TpMarketsDetail, props());
 
 			await searchFor(screen, 'apple');
 
@@ -661,7 +667,7 @@ describe('stocks in the detail (doc 09 §1)', () => {
 
 		it('never searches while a coin is being added', async () => {
 			const spy = serveRoutes({ '/api/stock/search': search(APPLE) });
-			const screen = render(TpMarketsDetail, props());
+			const screen = await render(TpMarketsDetail, props());
 
 			await screen.getByLabelText(m['widget.markets.add_label']()).fill('apple');
 			await new Promise((resolve) => setTimeout(resolve, 700));

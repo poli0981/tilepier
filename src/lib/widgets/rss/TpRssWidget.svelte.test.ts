@@ -132,7 +132,7 @@ describe('the merged list (doc 08 §4)', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByText('Story b-mid')).toBeInTheDocument();
 		const titles = [...document.querySelectorAll('.tp-rss-item__title')].map(
@@ -147,7 +147,7 @@ describe('the merged list (doc 08 §4)', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		// Both feeds: the second arrives half a second after the first (the pacer).
 		await expect.element(screen.getByText('Story v-old')).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe('the merged list (doc 08 §4)', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		const link = screen.getByRole('link', { name: 'Story v-new' });
 		await expect.element(link).toHaveAttribute('href', 'https://example.com/v-new');
@@ -179,7 +179,7 @@ describe('the merged list (doc 08 §4)', () => {
 	it('never turns a script URL into a link', async () => {
 		const hostile = feed('X', [item('x', NOW - MINUTE, { link: 'javascript:alert(1)' })]);
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: hostile }) });
-		const screen = render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
+		const screen = await render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
 
 		await expect.element(screen.getByText('Story x')).toBeInTheDocument();
 		expect(document.querySelector('a[href^="javascript"]')).toBeNull();
@@ -187,7 +187,7 @@ describe('the merged list (doc 08 §4)', () => {
 
 	it('names each line’s feed at tier L, and leaves it to the letter below that', async () => {
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
-		const screen = render(TpRssWidget, props({ settings: { feeds: [VNE] }, size: L }));
+		const screen = await render(TpRssWidget, props({ settings: { feeds: [VNE] }, size: L }));
 
 		await expect.element(screen.getByText('Story v-new')).toBeInTheDocument();
 		expect(document.querySelectorAll('.tp-rss-item__source')).toHaveLength(3);
@@ -196,7 +196,7 @@ describe('the merged list (doc 08 §4)', () => {
 
 	it('says there is nothing to read when every feed is empty', async () => {
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: feed('VnExpress', []) }) });
-		const screen = render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
+		const screen = await render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
 
 		await expect.element(screen.getByText(m['widget.rss.nothing_yet']())).toBeInTheDocument();
 	});
@@ -208,7 +208,7 @@ describe('a feed with a problem (doc 08 §4)', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'unavailable', reason: 'not-feed' })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByText('Story v-new')).toBeInTheDocument();
 		await expect
@@ -231,7 +231,7 @@ describe('a feed with a problem (doc 08 §4)', () => {
 			[BBC]: ok({ kind: 'unavailable', reason: 'gone' })
 		});
 		const onOpenDetail = vi.fn();
-		const screen = render(TpRssWidget, props({ onOpenDetail }));
+		const screen = await render(TpRssWidget, props({ onOpenDetail }));
 
 		await screen.getByTestId('rss-chips').getByRole('button').click();
 
@@ -243,7 +243,7 @@ describe('a feed with a problem (doc 08 §4)', () => {
 			[VNE]: ok({ kind: 'unavailable', reason: 'not-feed' }),
 			[BBC]: ok({ kind: 'unavailable', reason: 'too-large' })
 		});
-		const screen = render(TpRssWidget, props({ onOpenDetail: vi.fn() }));
+		const screen = await render(TpRssWidget, props({ onOpenDetail: vi.fn() }));
 
 		await expect.element(screen.getByText(m['widget.rss.nothing_readable']())).toBeInTheDocument();
 		await expect
@@ -256,7 +256,7 @@ describe('a feed with a problem (doc 08 §4)', () => {
 describe('states (doc 06 §3)', () => {
 	it('holds a skeleton, never a spinner, while nothing has answered', async () => {
 		serveFeeds({ [VNE]: 'hang', [BBC]: 'hang' });
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByLabelText(m['widget.rss.loading']())).toBeInTheDocument();
 	});
@@ -264,7 +264,7 @@ describe('states (doc 06 §3)', () => {
 	it('fails inline with a retry when no feed could be read', async () => {
 		const error = { ok: false as const, error: { code: 'UPSTREAM_DOWN' } };
 		const spy = serveFeeds({ [VNE]: error, [BBC]: error });
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByText(m['widget.rss.error']())).toBeInTheDocument();
 		const calls = spy.mock.calls.length;
@@ -274,7 +274,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('says offline when the network is gone and nothing was saved', async () => {
 		serveFeeds({ [VNE]: 'network', [BBC]: 'network' });
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByText(m['widget.rss.offline']())).toBeInTheDocument();
 	});
@@ -284,7 +284,7 @@ describe('states (doc 06 §3)', () => {
 		await seed(BBC, { kind: 'feed', feed: BBC_FEED }, NOW - 30 * MINUTE);
 		const error = { ok: false as const, error: { code: 'UPSTREAM_DOWN' } };
 		serveFeeds({ [VNE]: error, [BBC]: error });
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByText('Story v-new')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_rss')?.kind).toBe('stale-error'));
@@ -298,7 +298,7 @@ describe('states (doc 06 §3)', () => {
 			[VNE]: { ok: false, error: { code: 'UPSTREAM_DOWN' } },
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 
 		await expect.element(screen.getByTestId('rss-chips')).toBeInTheDocument();
 		expect(tileStatus('wgt_rss')).toBeUndefined();
@@ -307,7 +307,7 @@ describe('states (doc 06 §3)', () => {
 	it('clears its header status on unmount', async () => {
 		await seed(VNE, { kind: 'feed', feed: VNE_FEED }, NOW - 30 * MINUTE);
 		serveFeeds({ [VNE]: { ok: false, error: { code: 'UPSTREAM_DOWN' } } });
-		render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
+		await render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
 		await vi.waitFor(() => expect(tileStatus('wgt_rss')?.kind).toBe('stale-error'));
 
 		cleanup();
@@ -319,7 +319,7 @@ describe('states (doc 06 §3)', () => {
 describe('the first feed (the empty state)', () => {
 	it('asks for a feed address, and nothing else', async () => {
 		const spy = serveFeeds({});
-		const screen = render(TpRssWidget, props({ settings: {} }));
+		const screen = await render(TpRssWidget, props({ settings: {} }));
 
 		await expect.element(screen.getByText(m['widget.rss.no_feeds']())).toBeInTheDocument();
 		expect(spy).not.toHaveBeenCalled();
@@ -328,7 +328,7 @@ describe('the first feed (the empty state)', () => {
 	it('adds what was pasted, in the spelling the Worker insists on', async () => {
 		serveFeeds({});
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpRssWidget, props({ settings: {}, onUpdateSettings }));
+		const screen = await render(TpRssWidget, props({ settings: {}, onUpdateSettings }));
 
 		await screen.getByTestId('rss-add-input').fill('http://vnexpress.net/rss/tin-moi-nhat.rss');
 		await screen.getByTestId('rss-add').click();
@@ -346,7 +346,7 @@ describe('the first feed (the empty state)', () => {
 	it('says which rule an address broke, and adds nothing', async () => {
 		serveFeeds({});
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpRssWidget, props({ settings: {}, onUpdateSettings }));
+		const screen = await render(TpRssWidget, props({ settings: {}, onUpdateSettings }));
 
 		await screen.getByTestId('rss-add-input').fill('https://192.168.1.1/feed');
 		await screen.getByTestId('rss-add').click();
@@ -364,7 +364,7 @@ describe('refresh and lifetime', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 		await expect.element(screen.getByText('Story b-mid')).toBeInTheDocument();
 
 		const ids = scheduler.inspect().map((task) => task.id);
@@ -378,7 +378,7 @@ describe('refresh and lifetime', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssWidget, props());
+		const screen = await render(TpRssWidget, props());
 		await expect.element(screen.getByText('Story b-mid')).toBeInTheDocument();
 
 		await screen.rerender(props({ settings: { feeds: [VNE], lastOpenedAt: NOW - 30 * MINUTE } }));
@@ -393,12 +393,12 @@ describe('refresh and lifetime', () => {
 		// Plan S12, and the bug #21 fixed for weather: nothing about one tile's
 		// refresh may depend on another tile's registration.
 		const spy = serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
-		const a = render(TpRssWidget, props({ instanceId: 'wgt_a', settings: { feeds: [VNE] } }));
-		render(TpRssWidget, props({ instanceId: 'wgt_b', settings: { feeds: [VNE] } }));
+		const a = await render(TpRssWidget, props({ instanceId: 'wgt_a', settings: { feeds: [VNE] } }));
+		await render(TpRssWidget, props({ instanceId: 'wgt_b', settings: { feeds: [VNE] } }));
 		await vi.waitFor(() => expect(document.querySelectorAll('.tp-rss-list')).toHaveLength(2));
 		expect(spy).toHaveBeenCalledTimes(1);
 
-		a.unmount();
+		await a.unmount();
 		expect(scheduler.size).toBe(1);
 
 		vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
@@ -413,7 +413,7 @@ describe('refresh and lifetime', () => {
 
 	it('leaves nothing behind on unmount', async () => {
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
-		const screen = render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
+		const screen = await render(TpRssWidget, props({ settings: { feeds: [VNE] } }));
 		await expect.element(screen.getByText('Story v-new')).toBeInTheDocument();
 
 		cleanup();
@@ -425,7 +425,7 @@ describe('refresh and lifetime', () => {
 	it('never writes a feed URL to the log, which rides along with a bug report', async () => {
 		// BAD_REQUEST is the one failure `swr` logs loudly (doc 17 §4).
 		serveFeeds({ [PRIVATE]: { ok: false, error: { code: 'BAD_REQUEST' } } });
-		const screen = render(TpRssWidget, props({ settings: { feeds: [PRIVATE] } }));
+		const screen = await render(TpRssWidget, props({ settings: { feeds: [PRIVATE] } }));
 
 		await expect.element(screen.getByText(m['widget.rss.error']())).toBeInTheDocument();
 		const log = JSON.stringify(readLog());

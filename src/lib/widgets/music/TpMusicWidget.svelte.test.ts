@@ -68,7 +68,7 @@ async function seed(titles: string[]): Promise<void> {
 	}
 }
 
-function show(size: TpTileSize, over: Record<string, unknown> = {}) {
+async function show(size: TpTileSize, over: Record<string, unknown> = {}) {
 	const box = document.createElement('div');
 	box.style.cssText = `width: ${String(size.pxW)}px; height: ${String(size.pxH)}px;`;
 	document.body.appendChild(box);
@@ -80,7 +80,7 @@ function show(size: TpTileSize, over: Record<string, unknown> = {}) {
 
 describe('states (doc 06 §3)', () => {
 	it('shows how to add music to an empty library, and that it stays on the device', async () => {
-		const screen = show({ ...WIDE, h: 3, pxH: 216 });
+		const screen = await show({ ...WIDE, h: 3, pxH: 216 });
 
 		await expect.element(screen.getByTestId('music-empty')).toBeVisible();
 		await expect.element(screen.getByText(m['widget.music.empty']())).toBeVisible();
@@ -94,7 +94,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('offers one way in on a one-row tile: the detail', async () => {
 		const onOpenDetail = vi.fn();
-		const screen = show(ROW, { onOpenDetail });
+		const screen = await show(ROW, { onOpenDetail });
 
 		const add = screen.getByRole('button', { name: m['widget.music.add_files']() });
 		await expect.element(add).toBeVisible();
@@ -110,7 +110,7 @@ describe('states (doc 06 §3)', () => {
 		collection.scanning = { done: 12, total: 40 };
 
 		for (const size of [WIDE, ROW]) {
-			const screen = show(size);
+			const screen = await show(size);
 			await expect.element(screen.getByTestId('music-scanning')).toBeVisible();
 			await expect.element(screen.getByTestId('music-tile')).not.toBeInTheDocument();
 			cleanup();
@@ -137,7 +137,7 @@ describe('states (doc 06 §3)', () => {
 			.mockResolvedValue('granted');
 
 		try {
-			const screen = show(WIDE);
+			const screen = await show(WIDE);
 			await expect.element(screen.getByTestId('music-permission')).toBeVisible();
 
 			await screen.getByTestId('music-relink').click();
@@ -152,7 +152,7 @@ describe('states (doc 06 §3)', () => {
 	it('loading: a gauge while the library is read, never a player with nothing in it', async () => {
 		// The tile's `loading` branch, untested until Week 8.
 		vi.spyOn(target.tracks, 'toArray').mockReturnValue(new Promise(() => undefined) as never);
-		const screen = show(WIDE);
+		const screen = await show(WIDE);
 
 		await expect
 			.element(screen.getByRole('status', { name: m['widget.music.loading']() }))
@@ -160,14 +160,14 @@ describe('states (doc 06 §3)', () => {
 	});
 
 	it('at tier M, which no test had rendered: how to add music, as at the others', async () => {
-		const screen = show({ w: 3, h: 2, pxW: 320, pxH: 140, tier: 'M' });
+		const screen = await show({ w: 3, h: 2, pxW: 320, pxH: 140, tier: 'M' });
 
 		await expect.element(screen.getByTestId('music-empty')).toBeVisible();
 	});
 
 	it('says so when the library cannot be read, and tries again', async () => {
 		vi.spyOn(target.tracks, 'toArray').mockRejectedValueOnce(new Error('blocked'));
-		const screen = show(WIDE);
+		const screen = await show(WIDE);
 
 		await expect.element(screen.getByText(m['widget.music.error']())).toBeVisible();
 		await screen.getByRole('button', { name: m['common.retry']() }).click();
@@ -181,7 +181,7 @@ describe('the player on the tile', () => {
 		// Seeded out of order: "the top" is the library's own order (artist,
 		// album, track, title), not the order the rows were written in.
 		await seed(['Bình', 'Anh']);
-		const screen = show(WIDE);
+		const screen = await show(WIDE);
 		await expect
 			.element(screen.getByText(m['widget.music.track_count']({ count: 2 })))
 			.toBeVisible();
@@ -199,7 +199,7 @@ describe('the player on the tile', () => {
 
 	it('keeps previous and next off a 2×1 tile, where only play fits', async () => {
 		await seed(['Một']);
-		const screen = show(TINY);
+		const screen = await show(TINY);
 
 		await expect.element(screen.getByTestId('music-toggle')).toBeVisible();
 		expect(screen.container.querySelector('[data-testid="music-prev"]')).toBeNull();
@@ -208,7 +208,7 @@ describe('the player on the tile', () => {
 
 	it('marks a title too long for its box, so it can slide — or end in an ellipsis', async () => {
 		await seed(['Một bài hát có cái tên dài đến mức một dòng của tile không chứa nổi']);
-		const screen = show(TINY);
+		const screen = await show(TINY);
 		await screen.getByTestId('music-toggle').click();
 
 		const title = screen.container.querySelector<HTMLElement>('.tp-music__title');

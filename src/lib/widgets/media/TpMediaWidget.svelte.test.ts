@@ -80,10 +80,10 @@ afterEach(async () => {
 	Reflect.deleteProperty(window, 'showOpenFilePicker');
 });
 
-function tile(size: TpTileSize, onOpenDetail = vi.fn()) {
+async function tile(size: TpTileSize, onOpenDetail = vi.fn()) {
 	return {
 		onOpenDetail,
-		screen: render(TpMediaWidget, {
+		screen: await render(TpMediaWidget, {
 			props: { instanceId: 'wgt_media', settings: {}, size, onOpenDetail }
 		})
 	};
@@ -91,14 +91,14 @@ function tile(size: TpTileSize, onOpenDetail = vi.fn()) {
 
 describe('TpMediaWidget', () => {
 	it('offers to open a video, and says it stays on the device where there is room', async () => {
-		const { screen } = tile(DEFAULT);
+		const { screen } = await tile(DEFAULT);
 
 		await expect.element(screen.getByTestId('media-empty')).toBeVisible();
 		await expect.element(screen.getByText(m['widget.media.local_note']())).toBeVisible();
 	});
 
 	it('keeps to one button on the smallest tile', async () => {
-		const { screen } = tile(SMALL);
+		const { screen } = await tile(SMALL);
 
 		await expect.element(screen.getByTestId('media-tile-open')).toBeVisible();
 		expect(screen.container.textContent).not.toContain(m['widget.media.local_note']());
@@ -108,7 +108,7 @@ describe('TpMediaWidget', () => {
 		window.showOpenFilePicker = async () => [
 			{ kind: 'file', name: FILE.name, getFile: async () => FILE } as FileSystemFileHandle
 		];
-		const { screen, onOpenDetail } = tile(DEFAULT);
+		const { screen, onOpenDetail } = await tile(DEFAULT);
 
 		await screen.getByTestId('media-tile-open').click();
 
@@ -120,7 +120,7 @@ describe('TpMediaWidget', () => {
 		window.showOpenFilePicker = async () => {
 			throw new DOMException('closed', 'AbortError');
 		};
-		const { screen, onOpenDetail } = tile(DEFAULT);
+		const { screen, onOpenDetail } = await tile(DEFAULT);
 
 		await screen.getByTestId('media-tile-open').click();
 		await new Promise((resolve) => setTimeout(resolve, 50));
@@ -141,7 +141,7 @@ describe('TpMediaWidget', () => {
 		window.showOpenFilePicker = async () => [
 			{ kind: 'file', name: FILE.name, getFile: async () => FILE } as FileSystemFileHandle
 		];
-		const { screen, onOpenDetail } = tile(DEFAULT);
+		const { screen, onOpenDetail } = await tile(DEFAULT);
 
 		await expect.element(screen.getByText('Phim thử.mp4')).toBeVisible();
 		await expect.element(screen.getByText('1:05 / 3:07')).toBeVisible();
@@ -155,7 +155,7 @@ describe('TpMediaWidget', () => {
 	it('shows the tide, never a blank, while it reads where the reader was', async () => {
 		// The shelf is read in one transaction: one that never settles.
 		vi.spyOn(db, 'transaction').mockReturnValue(new Promise(() => {}) as never);
-		const { screen } = tile(DEFAULT);
+		const { screen } = await tile(DEFAULT);
 
 		await expect
 			.element(screen.getByLabelText(m['widget.media.loading']()))
@@ -166,7 +166,7 @@ describe('TpMediaWidget', () => {
 		const where = vi.spyOn(db, 'transaction').mockImplementation(() => {
 			throw new DOMException('closed', 'InvalidStateError');
 		});
-		const { screen } = tile(DEFAULT);
+		const { screen } = await tile(DEFAULT);
 
 		await expect.element(screen.getByTestId('media-error')).toBeVisible();
 		await expect.element(screen.getByTestId('media-tile-open')).toBeVisible();
@@ -181,7 +181,7 @@ describe('TpMediaWidget', () => {
 		await shelve(await opfsVideo('Phim từ picker.webm'));
 		const picker = vi.fn();
 		window.showOpenFilePicker = picker;
-		const { screen, onOpenDetail } = tile(DEFAULT);
+		const { screen, onOpenDetail } = await tile(DEFAULT);
 
 		await expect.element(screen.getByText('Phim từ picker.webm')).toBeVisible();
 		await expect.element(screen.getByTestId('media-still')).toBeVisible();
@@ -200,7 +200,7 @@ describe('TpMediaWidget', () => {
 		await shelve(handle);
 		vi.spyOn(FileSystemHandle.prototype, 'requestPermission').mockResolvedValue('denied');
 		window.showOpenFilePicker = async () => [handle];
-		const { screen, onOpenDetail } = tile(DEFAULT);
+		const { screen, onOpenDetail } = await tile(DEFAULT);
 		await expect.element(screen.getByText('Bị từ chối.webm')).toBeVisible();
 
 		await screen.getByTestId('media-continue').click();
@@ -214,7 +214,7 @@ describe('TpMediaWidget', () => {
 	it('shows the open video, how far in it is, and the way back to it', async () => {
 		media.open({ name: FILE.name, size: FILE.size, file: FILE });
 		media.report(65_000, 187_000, true);
-		const { screen, onOpenDetail } = tile(DEFAULT);
+		const { screen, onOpenDetail } = await tile(DEFAULT);
 
 		await expect.element(screen.getByText('Phim thử.mp4')).toBeVisible();
 		await expect.element(screen.getByText('1:05 / 3:07')).toBeVisible();
@@ -225,7 +225,7 @@ describe('TpMediaWidget', () => {
 });
 
 describe('TpMediaDetail', () => {
-	function detail() {
+	async function detail() {
 		return render(TpMediaDetail, {
 			props: { instanceId: 'wgt_media', settings: {}, close: () => {} }
 		});
@@ -244,9 +244,9 @@ describe('TpMediaDetail', () => {
 		window.showOpenFilePicker = async () => [
 			{ kind: 'file', name: FILE.name, getFile: async () => FILE } as FileSystemFileHandle
 		];
-		const screen = detail();
+		const screen = await detail();
 
-		await expect.element(screen.getByTestId('media-last')).toHaveTextContent('Phim thử.mp4');
+		await expect.element(screen.getByTestId('media-last')).toMatchTextContent('Phim thử.mp4');
 		await expect.element(screen.getByText('1:05 / 3:07')).toBeVisible();
 		await expect.element(screen.getByText(m['widget.media.pick_again']())).toBeVisible();
 		await screen.getByTestId('media-last-continue').click();
@@ -257,7 +257,7 @@ describe('TpMediaDetail', () => {
 	it('lists the videos opened lately, forgets one, then all of them', async () => {
 		await shelve(await opfsVideo('Một.webm'));
 		await shelve(await opfsVideo('Hai.webm'), 0);
-		const screen = detail();
+		const screen = await detail();
 
 		await expect.element(screen.getByTestId('media-recents')).toBeVisible();
 		await expect.poll(() => screen.getByTestId('media-recent').all().length).toBe(2);
@@ -278,7 +278,7 @@ describe('TpMediaDetail', () => {
 		const gone = await opfsVideo('Mất.webm');
 		await shelve(gone);
 		await (await shelfFolder()).removeEntry('Mất.webm');
-		const screen = detail();
+		const screen = await detail();
 		await expect.poll(() => screen.getByTestId('media-recent').all().length).toBe(2);
 
 		await screen
@@ -295,7 +295,7 @@ describe('TpMediaDetail', () => {
 	});
 
 	it('with nothing open, offers the one way in', async () => {
-		const screen = detail();
+		const screen = await detail();
 
 		await expect.element(screen.getByTestId('media-nothing')).toBeVisible();
 		await expect.element(screen.getByTestId('media-open')).toBeVisible();
@@ -303,7 +303,7 @@ describe('TpMediaDetail', () => {
 
 	it('plays the open video, under its name, with a way to open another', async () => {
 		media.open({ name: FILE.name, size: FILE.size, file: FILE });
-		const screen = detail();
+		const screen = await detail();
 
 		await expect.element(screen.getByTestId('media-player')).toBeInTheDocument();
 		await expect.element(screen.getByText('Phim thử.mp4')).toBeVisible();

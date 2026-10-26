@@ -90,7 +90,10 @@ afterEach(async () => {
 describe('the conversion', () => {
 	it('renders the pair the reader is set to, rounded the way that money is written', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ settings: { base: 'USD', quote: 'VND' } }));
+		const screen = await render(
+			TpCurrencyWidget,
+			props({ settings: { base: 'USD', quote: 'VND' } })
+		);
 
 		// doc 08 §2: display rounding per currency minor units, and VND has none.
 		await expect
@@ -100,7 +103,7 @@ describe('the conversion', () => {
 
 	it('multiplies by the amount in the settings bag', async () => {
 		serve(FX_OK);
-		const screen = render(
+		const screen = await render(
 			TpCurrencyWidget,
 			props({ settings: { base: 'USD', quote: 'VND', amount: 3 } })
 		);
@@ -114,7 +117,7 @@ describe('the conversion', () => {
 
 	it('shows the rate it used, so the number is checkable', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-rate')).toBeInTheDocument();
 	});
@@ -123,14 +126,14 @@ describe('the conversion', () => {
 describe('states (doc 06 §3)', () => {
 	it('loading: a skeleton, never a spinner inside a tile', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByLabelText(m['widget.currency.loading']())).toBeInTheDocument();
 	});
 
 	it('offline: an offline card when there is nothing cached, not a badge on an empty box', async () => {
 		serveNetworkFailure();
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-offline')).toBeInTheDocument();
 		expect(tileStatus('wgt_fx')).toBeUndefined();
@@ -138,7 +141,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('error: one sentence and a retry, and the tile never blanks', async () => {
 		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-error')).toBeInTheDocument();
 		await expect.element(screen.getByText(m['common.retry']())).toBeInTheDocument();
@@ -156,7 +159,7 @@ describe('states (doc 06 §3)', () => {
 		window.addEventListener('unhandledrejection', listen);
 
 		try {
-			const screen = render(TpCurrencyWidget, props());
+			const screen = await render(TpCurrencyWidget, props());
 			await screen.getByText(m['common.retry']()).click();
 			await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -169,7 +172,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('rate-limited: says so rather than showing the generic failure', async () => {
 		serve({ ok: false, error: { code: 'RATE_LIMITED', retryAfterS: 30 } }, { status: 429 });
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByText(m['widget.currency.rate_limited']())).toBeInTheDocument();
 	});
@@ -179,7 +182,10 @@ describe('states (doc 06 §3)', () => {
 		// fixture's yesterday and not in its today, which is exactly what an
 		// upstream dropping a currency looks like from a saved settings bag.
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ settings: { base: 'USD', quote: 'ZWL' } }));
+		const screen = await render(
+			TpCurrencyWidget,
+			props({ settings: { base: 'USD', quote: 'ZWL' } })
+		);
 
 		await expect
 			.element(screen.getByTestId('currency-unquoted'))
@@ -191,7 +197,7 @@ describe('states (doc 06 §3)', () => {
 		// `fresh` — it was cached a moment ago — but the Worker served it past its
 		// KV TTL because ER-API was down (doc 11 §4).
 		serve(FX_STALE);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_fx')?.kind).toBe('stale'));
@@ -199,7 +205,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('ready: a fresh serve carries no badge at all', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 		expect(tileStatus('wgt_fx')).toBeUndefined();
@@ -216,7 +222,7 @@ describe('states (doc 06 §3)', () => {
 		});
 		serveNetworkFailure();
 
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatus('wgt_fx')?.kind).toBe('offline'));
@@ -232,7 +238,7 @@ describe('states (doc 06 §3)', () => {
 
 	it('takes its badge with it when the tile is removed', async () => {
 		serve(FX_STALE);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 		await vi.waitFor(() => expect(tileStatusChannel.size).toBe(1));
 
@@ -248,9 +254,9 @@ describe('density (doc 13 §3, doc 08 §3)', () => {
 		// attached to it, so the line carries the pair instead — and the pickers,
 		// the input and the attribution link are all gone.
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ size: S }));
+		const screen = await render(TpCurrencyWidget, props({ size: S }));
 
-		await expect.element(screen.getByTestId('currency-hero')).toHaveTextContent('USD');
+		await expect.element(screen.getByTestId('currency-hero')).toMatchTextContent('USD');
 		await expect.element(screen.getByTestId('currency-amount')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-swap')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-credit')).not.toBeInTheDocument();
@@ -261,7 +267,7 @@ describe('density (doc 13 §3, doc 08 §3)', () => {
 		// no room for one here. Recorded as a deviation in doc 08 §2; this is the
 		// mitigation, and it has to actually be there.
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ size: S }));
+		const screen = await render(TpCurrencyWidget, props({ size: S }));
 
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 		const hero = screen.container.querySelector('[data-testid="currency-hero"]') as HTMLElement;
@@ -270,7 +276,7 @@ describe('density (doc 13 §3, doc 08 §3)', () => {
 
 	it('at h≥2 offers the pair, the amount and a real attribution link', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ size: M }));
+		const screen = await render(TpCurrencyWidget, props({ size: M }));
 
 		await expect.element(screen.getByTestId('currency-amount')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-base')).toBeInTheDocument();
@@ -285,7 +291,7 @@ describe('density (doc 13 §3, doc 08 §3)', () => {
 
 	it('at tier L renders the same controls, because nothing is gated on width', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ size: L }));
+		const screen = await render(TpCurrencyWidget, props({ size: L }));
 
 		await expect.element(screen.getByTestId('currency-amount')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('currency-credit')).toBeInTheDocument();
@@ -296,7 +302,7 @@ describe('editing the pair (doc 06 §2)', () => {
 	it('swaps base and quote in one write', async () => {
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpCurrencyWidget,
 			props({ settings: { base: 'USD', quote: 'VND' }, onUpdateSettings })
 		);
@@ -312,7 +318,7 @@ describe('editing the pair (doc 06 §2)', () => {
 	it('persists an amount the reader typed', async () => {
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyWidget, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyWidget, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-amount')).toBeInTheDocument();
 		await screen.getByTestId('currency-amount').fill('250');
@@ -326,7 +332,7 @@ describe('editing the pair (doc 06 §2)', () => {
 		// next mount and silently reset the pair as well as the amount.
 		serve(FX_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCurrencyWidget, props({ onUpdateSettings }));
+		const screen = await render(TpCurrencyWidget, props({ onUpdateSettings }));
 
 		await expect.element(screen.getByTestId('currency-amount')).toBeInTheDocument();
 		await screen.getByTestId('currency-amount').fill('');
@@ -336,7 +342,10 @@ describe('editing the pair (doc 06 §2)', () => {
 
 	it('offers a code upstream dropped, so the reader can leave it', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props({ settings: { base: 'USD', quote: 'VND' } }));
+		const screen = await render(
+			TpCurrencyWidget,
+			props({ settings: { base: 'USD', quote: 'VND' } })
+		);
 
 		await expect.element(screen.getByTestId('currency-quote')).toBeInTheDocument();
 		const quote = screen.container.querySelector(
@@ -352,7 +361,7 @@ describe('editing the pair (doc 06 §2)', () => {
 describe('the scheduler wiring (doc 04 §3)', () => {
 	it('registers under the data key, not the instance', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 		expect(scheduler.inspect().map((task) => task.id)).toContain(fxKey());
@@ -360,7 +369,7 @@ describe('the scheduler wiring (doc 04 §3)', () => {
 
 	it('leaves nothing behind when the tile is removed', async () => {
 		serve(FX_OK);
-		const screen = render(TpCurrencyWidget, props());
+		const screen = await render(TpCurrencyWidget, props());
 		await expect.element(screen.getByTestId('currency-hero')).toBeInTheDocument();
 
 		cleanup();

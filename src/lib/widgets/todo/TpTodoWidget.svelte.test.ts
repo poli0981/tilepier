@@ -43,13 +43,13 @@ describe('the todo tile (doc 07 §5)', () => {
 		vi.spyOn(db.todoLists, 'orderBy').mockReturnValue({
 			toArray: () => new Promise(() => undefined)
 		} as never);
-		const screen = render(TpTodoWidget, props());
+		const screen = await render(TpTodoWidget, props());
 
 		await expect.element(screen.getByTestId('todo-loading')).toBeInTheDocument();
 	});
 
 	it('empty: no lists at all offers to make the first', async () => {
-		const screen = render(TpTodoWidget, props());
+		const screen = await render(TpTodoWidget, props());
 
 		await expect.element(screen.getByTestId('todo-no-lists')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('todo-first-list')).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('the todo tile (doc 07 §5)', () => {
 
 	it('empty: a list with nothing on it says so', async () => {
 		const list = await createList('Chợ', db);
-		const screen = render(TpTodoWidget, props({ listId: list.id }));
+		const screen = await render(TpTodoWidget, props({ listId: list.id }));
 
 		await expect.element(screen.getByTestId('todo-empty')).toBeInTheDocument();
 	});
@@ -65,7 +65,7 @@ describe('the todo tile (doc 07 §5)', () => {
 	it('ready: the open items of the list', async () => {
 		const list = await createList('Chợ', db);
 		await createTodo(list.id, 'mua rau');
-		const screen = render(TpTodoWidget, props({ listId: list.id }));
+		const screen = await render(TpTodoWidget, props({ listId: list.id }));
 
 		await expect.element(screen.getByText('mua rau')).toBeInTheDocument();
 	});
@@ -74,7 +74,7 @@ describe('the todo tile (doc 07 §5)', () => {
 		vi.spyOn(db.todoLists, 'orderBy').mockImplementation(() => {
 			throw new Error('idb unavailable');
 		});
-		const screen = render(TpTodoWidget, props());
+		const screen = await render(TpTodoWidget, props());
 
 		await expect.element(screen.getByText(m['widget.todo.read_failed']())).toBeInTheDocument();
 		await expect.element(screen.getByTestId('todo-no-lists')).not.toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('the todo tile (doc 07 §5)', () => {
 		vi.spyOn(db.todos, 'where').mockImplementation(() => {
 			throw new Error('idb unavailable');
 		});
-		const screen = render(TpTodoWidget, props({ listId: list.id }));
+		const screen = await render(TpTodoWidget, props({ listId: list.id }));
 
 		await expect.element(screen.getByText(m['widget.todo.read_failed']())).toBeInTheDocument();
 		await expect.element(screen.getByTestId('todo-empty')).not.toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('at tier M', () => {
 	it('renders the open items as at tier L', async () => {
 		const list = await createList('Chợ', db);
 		await createTodo(list.id, 'mua rau');
-		const screen = render(TpTodoWidget, {
+		const screen = await render(TpTodoWidget, {
 			...props({ listId: list.id }),
 			size: { w: 2, h: 2, pxW: 200, pxH: 200, tier: 'M' }
 		});

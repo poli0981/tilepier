@@ -16,11 +16,6 @@ allowBuilds:
   # a direct dependency of vite@8.2.1 itself (and of wrangler). Rolldown owns
   # the production bundle, not the whole toolchain.
   esbuild: true
-  # Denied for now. msw's postinstall writes mockServiceWorker.js into the
-  # project. Nothing imports msw until component tests land (Week 2); generate
-  # it deliberately then with `pnpm exec msw init static/` rather than letting
-  # install write files as a side effect.
-  msw: false
 
 # pnpm 11 gates packages published more recently than its minimum-release-age
 # threshold (one day by default) — the caution doc 15 §6 also asks of

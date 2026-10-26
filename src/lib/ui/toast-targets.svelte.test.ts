@@ -40,7 +40,7 @@ afterEach(() => {
 
 describe('toast targets', () => {
 	it('gives the notice its dismiss button at 40 × 40', async () => {
-		const screen = render(TpToast);
+		const screen = await render(TpToast);
 		toasts.show({ kind: 'rate-limited' });
 		await expect.element(screen.getByTestId('toast')).toBeVisible();
 
@@ -52,7 +52,7 @@ describe('toast targets', () => {
 	it.each(['update-toast', 'offline-ready'] as const)(
 		'gives the %s toast its buttons at 40 × 40',
 		async (testId) => {
-			const screen = render(TpUpdateToast);
+			const screen = await render(TpUpdateToast);
 			if (testId === 'update-toast') pwa.updateReady = true;
 			else pwa.offlineReady = true;
 			await expect.element(screen.getByTestId(testId)).toBeVisible();

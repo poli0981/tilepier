@@ -72,7 +72,7 @@ afterEach(async () => {
 
 describe('the readout in the smallest tile', () => {
 	it('keeps the credit whole: inside the frame, and not cut short', async () => {
-		const screen = render(TpWeatherReadout, {
+		const screen = await render(TpWeatherReadout, {
 			target: frame,
 			props: {
 				instanceId: 'wgt_wx',

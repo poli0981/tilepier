@@ -73,7 +73,7 @@ afterEach(() => {
 
 describe('the quote of the day', () => {
 	it('shows the entry the date picks, in Vietnamese', async () => {
-		const screen = render(TpQuoteWidget, props());
+		const screen = await render(TpQuoteWidget, props());
 		await expect
 			.element(screen.getByTestId('quote-text'))
 			.toHaveTextContent(quoteText(expected!, 'vi'));
@@ -83,25 +83,25 @@ describe('the quote of the day', () => {
 		// The locale switches the translation, not the quote — which is the
 		// whole reason the pick runs over the bilingual pool.
 		settings.patch({ locale: 'en' });
-		const screen = render(TpQuoteWidget, props());
+		const screen = await render(TpQuoteWidget, props());
 		await expect
 			.element(screen.getByTestId('quote-text'))
 			.toHaveTextContent(quoteText(expected!, 'en'));
 	});
 
 	it('credits whoever said it', async () => {
-		const screen = render(TpQuoteWidget, props());
+		const screen = await render(TpQuoteWidget, props());
 		await expect.element(screen.getByTestId('quote-cite')).toBeInTheDocument();
 	});
 
 	it('carries the lunar footer in Vietnamese and not in English', async () => {
 		// doc 08 §3's QuoteAtlas tie-in. 28 August 2026 is lunar 16/07.
-		const screen = render(TpQuoteWidget, props());
+		const screen = await render(TpQuoteWidget, props());
 		await expect.element(screen.getByTestId('quote-lunar')).toHaveTextContent('16/07 Bính Ngọ');
 
 		cleanup();
 		settings.patch({ locale: 'en' });
-		const english = render(TpQuoteWidget, props());
+		const english = await render(TpQuoteWidget, props());
 		await expect.element(english.getByTestId('quote-text')).toBeInTheDocument();
 		await expect.element(english.getByTestId('quote-lunar')).not.toBeInTheDocument();
 	});
@@ -112,7 +112,10 @@ describe('the one-row tile (doc 13 §3)', () => {
 		// The footer is 21 pixels of the 34 a one-row tile has, and what it left
 		// for the line was a 7-pixel slot cut through the middle of the glyphs.
 		// doc 13 §3 gives that size a single hero value; here it is the line.
-		const screen = render(TpQuoteWidget, props({ favourites: [expected?.id] }, vi.fn(), SHORT));
+		const screen = await render(
+			TpQuoteWidget,
+			props({ favourites: [expected?.id] }, vi.fn(), SHORT)
+		);
 		await expect
 			.element(screen.getByTestId('quote-text'))
 			.toHaveTextContent(quoteText(expected!, 'vi'));
@@ -125,7 +128,7 @@ describe('the one-row tile (doc 13 §3)', () => {
 	it('drops the Vietnamese lunar footer at that height too', async () => {
 		// The one thing doc 08 §3 names that the short tile does not keep, and
 		// the reason the deviation is written back into that section.
-		const screen = render(TpQuoteWidget, props({}, vi.fn(), SHORT));
+		const screen = await render(TpQuoteWidget, props({}, vi.fn(), SHORT));
 		await expect.element(screen.getByTestId('quote-text')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('quote-lunar')).not.toBeInTheDocument();
 	});
@@ -134,7 +137,7 @@ describe('the one-row tile (doc 13 §3)', () => {
 		// `SHORT` is 3x1 and tier M, so a `size.tier === 'S'` test would have
 		// passed while the tile it describes stayed broken. The pair is the
 		// assertion: same tier, one more row, the whole footer back.
-		const screen = render(TpQuoteWidget, props({}, vi.fn(), { ...SHORT, h: 2, pxH: 80 }));
+		const screen = await render(TpQuoteWidget, props({}, vi.fn(), { ...SHORT, h: 2, pxH: 80 }));
 		await expect.element(screen.getByTestId('quote-cite')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('quote-lunar')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('quote-copy')).toBeInTheDocument();
@@ -144,7 +147,7 @@ describe('the one-row tile (doc 13 §3)', () => {
 describe('states (doc 06 §3)', () => {
 	it('shows a skeleton rather than a blank while the catalogue loads', async () => {
 		// A real frame, not a theoretical one: 23 KB gz behind a dynamic import.
-		const screen = render(TpQuoteWidget, props());
+		const screen = await render(TpQuoteWidget, props());
 		await expect.element(screen.getByTestId('quote-text')).toBeInTheDocument();
 		// The label is what an assistive technology hears during that frame.
 		expect(m['widget.quote.loading']()).not.toBe('');
@@ -153,7 +156,7 @@ describe('states (doc 06 §3)', () => {
 	it('says so inline if the catalogue cannot be read, and does not blank', async () => {
 		control.fail = true;
 		try {
-			const screen = render(TpQuoteWidget, props());
+			const screen = await render(TpQuoteWidget, props());
 			await expect.element(screen.getByText(m['widget.quote.failed']())).toBeInTheDocument();
 			// doc 13 §7: an error is a sentence, not an empty tile.
 			await expect.element(screen.getByTestId('quote-text')).not.toBeInTheDocument();
@@ -165,13 +168,13 @@ describe('states (doc 06 §3)', () => {
 
 describe('favourites', () => {
 	it('marks the kept state from settings', async () => {
-		const screen = render(TpQuoteWidget, props({ favourites: [expected?.id] }));
+		const screen = await render(TpQuoteWidget, props({ favourites: [expected?.id] }));
 		await expect.element(screen.getByTestId('quote-keep')).toHaveAttribute('aria-pressed', 'true');
 	});
 
 	it('writes the id back on a press, newest first', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpQuoteWidget, props({ favourites: ['other'] }, onUpdateSettings));
+		const screen = await render(TpQuoteWidget, props({ favourites: ['other'] }, onUpdateSettings));
 
 		await screen.getByTestId('quote-keep').click();
 		await vi.waitFor(() => {
@@ -183,7 +186,7 @@ describe('favourites', () => {
 
 	it('removes it on a second press', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpQuoteWidget,
 			props({ favourites: [expected?.id, 'other'] }, onUpdateSettings)
 		);
@@ -197,7 +200,7 @@ describe('favourites', () => {
 
 describe('the scheduler wiring (doc 04 §3)', () => {
 	it('registers one midnight task and lets it go on unmount', async () => {
-		render(TpQuoteWidget, props());
+		await render(TpQuoteWidget, props());
 		expect(scheduler.inspect()).toHaveLength(1);
 		expect(scheduler.inspect()[0]?.cadence).toEqual({ kind: 'midnight' });
 
@@ -211,7 +214,7 @@ describe('at tier S', () => {
 	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
 	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
 	it('is the line alone at 2×1, as at every one-row width', async () => {
-		const screen = render(
+		const screen = await render(
 			TpQuoteWidget,
 			props({}, vi.fn(), { w: 2, h: 1, pxW: 200, pxH: 34, tier: 'S' })
 		);

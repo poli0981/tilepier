@@ -67,7 +67,7 @@ describe('search', () => {
 	it('does not spend a request on one letter', async () => {
 		const spy = serve(GEOCODE_OK);
 		const onPick = vi.fn();
-		const screen = render(TpPlaceSearch, { onPick });
+		const screen = await render(TpPlaceSearch, { onPick });
 
 		await screen.getByTestId('place-search').fill('h');
 		// Long enough that a missing gate would have fired: the debounce is 400.
@@ -78,7 +78,7 @@ describe('search', () => {
 
 	it('lists what came back, with the context line trimmed', async () => {
 		serve(GEOCODE_OK);
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('hà n');
 		await expect.element(screen.getByTestId('place-results')).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('search', () => {
 		// ceremony: `geocode.ts` explains at length why search does not go through
 		// `swr()`, and this is the only test standing behind that decision.
 		const spy = serve(GEOCODE_OK);
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 		const box = screen.getByTestId('place-search');
 
 		vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
@@ -157,7 +157,7 @@ describe('search', () => {
 		// map place keeps the geocoder's precision (Week 6 plan S6).
 		serve(GEOCODE_OK);
 		const onPick = vi.fn();
-		const screen = render(TpPlaceSearch, { onPick });
+		const screen = await render(TpPlaceSearch, { onPick });
 
 		await screen.getByTestId('place-search').fill('hà n');
 		await expect.element(screen.getByTestId('place-results')).toBeInTheDocument();
@@ -178,7 +178,7 @@ describe('search', () => {
 		// Expressway (Hanoi)" rows, differing only in coordinates the list does
 		// not show. Offering a choice between them is not a choice.
 		serve(GEOCODE_OK);
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('hà n');
 		await expect.element(screen.getByTestId('place-results')).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe('search', () => {
 
 	it('says nothing was found rather than showing an error', async () => {
 		serve(GEOCODE_EMPTY);
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('zzzz');
 
@@ -205,7 +205,7 @@ describe('search', () => {
 		// reader whose wifi is off.
 		const spy = serve(GEOCODE_OK);
 		goOffline();
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('hà n');
 
@@ -215,7 +215,7 @@ describe('search', () => {
 
 	it('error: one line, and no half-rendered list', async () => {
 		serve({ ok: false, error: { code: 'UPSTREAM_DOWN' } }, { status: 503 });
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('hà n');
 
@@ -227,7 +227,7 @@ describe('search', () => {
 		// doc 08 §5's "geocode rate-limit 429 → inline retry-after message". It
 		// read as the generic failure until Week 6.
 		serve({ ok: false, error: { code: 'RATE_LIMITED', retryAfterS: 7 } }, { status: 429 });
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('hà n');
 
@@ -239,7 +239,7 @@ describe('search', () => {
 
 	it('a 429 that names no wait still says to wait', async () => {
 		serve({ ok: false, error: { code: 'RATE_LIMITED' } }, { status: 429 });
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 
 		await screen.getByTestId('place-search').fill('hà n');
 
@@ -250,7 +250,7 @@ describe('search', () => {
 
 	it('clearing the box puts the list away', async () => {
 		serve(GEOCODE_OK);
-		const screen = render(TpPlaceSearch, { onPick: vi.fn() });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn() });
 		const box = screen.getByTestId('place-search');
 
 		await box.fill('hà n');
@@ -272,7 +272,7 @@ describe('use my location', () => {
 		const precise: TpPositionSource = () =>
 			Promise.resolve({ coords: { latitude: 21.028511, longitude: 105.804817 } });
 
-		const screen = render(TpPlaceSearch, { onPick, positionSource: precise });
+		const screen = await render(TpPlaceSearch, { onPick, positionSource: precise });
 		await screen.getByTestId('place-locate').click();
 
 		await vi.waitFor(() => {
@@ -285,7 +285,7 @@ describe('use my location', () => {
 		const onPick = vi.fn();
 		const denied: TpPositionSource = () => Promise.reject(new Error('User denied Geolocation'));
 
-		const screen = render(TpPlaceSearch, { onPick, positionSource: denied });
+		const screen = await render(TpPlaceSearch, { onPick, positionSource: denied });
 		await screen.getByTestId('place-locate').click();
 
 		await expect.element(screen.getByTestId('place-locate-failed')).toBeInTheDocument();
@@ -307,7 +307,7 @@ describe('use my location', () => {
 				};
 			});
 
-		const screen = render(TpPlaceSearch, { onPick: vi.fn(), positionSource: slow });
+		const screen = await render(TpPlaceSearch, { onPick: vi.fn(), positionSource: slow });
 		await screen.getByTestId('place-locate').click();
 
 		await expect.element(screen.getByTestId('place-locate')).toBeDisabled();

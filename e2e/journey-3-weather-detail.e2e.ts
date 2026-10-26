@@ -12,7 +12,7 @@ import { acceptGate } from './_lib/gate';
  * **This is the first spec in the suite that fakes a response.** Everything
  * before it either needed no network or drove `context.setOffline`. MSW is
  * wired for the node project only — there is no `mockServiceWorker.js` in
- * `static/`, and doc 15 §6 keeps msw's postinstall denied — so the mechanism
+ * `static/`, and none is generated (msw 3 has no postinstall) — so the mechanism
  * here is Playwright's own `page.route`, which the service worker leaves alone
  * because it passes `/api/*` straight through (`src/service-worker.ts`).
  */

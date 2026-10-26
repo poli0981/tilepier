@@ -53,7 +53,7 @@
 			"kind": "static-glob",
 			"glob": "_app/immutable/workers/tag-worker-*.js",
 			"maxGzipBytes": 81920,
-			"note": "Week 7 spike S7 (doc 22 §S7): Vite builds workers on their own, outside the client manifest, so the worker is measured as a file. 66.0 KB gz with music-metadata 11.16.1, every parser inlined into one file (worker.format iife)."
+			"note": "Week 7 spike S7 (doc 22 §S7): Vite builds workers on their own, outside the client manifest, so the worker is measured as a file. 66.0 KB gz with music-metadata 11.16.1, every parser inlined into one file (worker.format iife); 77.7 KB gz with 12.2.3 (2026-10-26, doc 20 §6)."
 		},
 		{
 			"id": "widget-tile",

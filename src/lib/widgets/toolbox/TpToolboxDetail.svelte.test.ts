@@ -29,13 +29,13 @@ afterEach(() => {
 
 describe('tabs', () => {
 	it('opens on the tab the tile was showing', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'color' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'color' }));
 		await expect.element(screen.getByTestId('dtab-color')).toHaveAttribute('aria-selected', 'true');
 	});
 
 	it('writes a tab change back, so closing leaves the tile where the detail was', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpToolboxDetail, props({ tab: 'qr' }, onUpdateSettings));
+		const screen = await render(TpToolboxDetail, props({ tab: 'qr' }, onUpdateSettings));
 
 		await screen.getByTestId('dtab-password').click();
 		await vi.waitFor(() => {
@@ -46,7 +46,7 @@ describe('tabs', () => {
 
 describe('the QR panel', () => {
 	it('offers the four correction levels', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'qr' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'qr' }));
 		const select = (await screen.getByTestId('dqr-ecc').element()) as unknown as HTMLSelectElement;
 		expect([...select.options].map((option) => option.value)).toEqual(['L', 'M', 'Q', 'H']);
 	});
@@ -55,7 +55,7 @@ describe('the QR panel', () => {
 		// Error correction costs capacity, so the same text at H is at least as
 		// big as at L. Read off the canvas, since that is the only place the
 		// version is visible from outside.
-		const screen = render(TpToolboxDetail, props({ tab: 'qr' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'qr' }));
 		await screen.getByTestId('dqr-text').fill('https://tilepier.win/w/toolbox?i=wgt_abcdefgh');
 
 		// Through `expect.element` first: `.element()` does not retry, and the
@@ -76,7 +76,7 @@ describe('the QR panel', () => {
 	});
 
 	it('offers a download only once there is something to download', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'qr' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'qr' }));
 		await expect
 			.element(screen.getByRole('button', { name: m['widget.toolbox.qr.download']() }))
 			.not.toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('the QR panel', () => {
 
 describe('the password panel', () => {
 	it('recomputes the entropy when a class is switched off', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'password' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'password' }));
 		// 20 characters of the full 89-character set.
 		await expect
 			.element(screen.getByTestId('dpw-entropy'))
@@ -104,7 +104,7 @@ describe('the password panel', () => {
 	});
 
 	it('refuses to generate with every class off, and says why', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'password' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'password' }));
 		for (const label of ['lower', 'upper', 'digits', 'symbols'] as const) {
 			// `exact`, because an accessible-name match is case-insensitive and
 			// `a–z` would otherwise also find `A–Z`.
@@ -120,7 +120,7 @@ describe('the password panel', () => {
 	});
 
 	it('generates at the length the slider says', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'password' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'password' }));
 		await screen.getByTestId('dpw-length').fill('32');
 		await screen.getByTestId('dpw-generate').click();
 
@@ -130,7 +130,7 @@ describe('the password panel', () => {
 
 	it('says on the panel that nothing is stored', async () => {
 		// doc 07 §7's rule, said where the value is rather than in a privacy page.
-		const screen = render(TpToolboxDetail, props({ tab: 'password' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'password' }));
 		await expect
 			.element(screen.getByText(m['widget.toolbox.password.not_stored']()))
 			.toBeInTheDocument();
@@ -141,25 +141,25 @@ describe('the colour panel', () => {
 	it('opens on the beacon against ink-900, and grades the pair', async () => {
 		// Which is 10.63:1 — a real pair worth checking, and the reason those
 		// two seeds carry a `tokens-audit-ignore`.
-		const screen = render(TpToolboxDetail, props({ tab: 'color' }));
-		await expect.element(screen.getByTestId('dcolor-ratio')).toHaveTextContent('10.63');
+		const screen = await render(TpToolboxDetail, props({ tab: 'color' }));
+		await expect.element(screen.getByTestId('dcolor-ratio')).toMatchTextContent('10.63');
 		await expect
 			.element(screen.getByTestId('dcolor-ratio'))
-			.toHaveTextContent(m['widget.toolbox.color.verdict_aaa']());
+			.toMatchTextContent(m['widget.toolbox.color.verdict_aaa']());
 	});
 
 	it('regrades when the comparison colour changes', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'color' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'color' }));
 		// The beacon on white is 1.98:1 — below AA, and the panel has to say so
 		// rather than keeping the previous verdict.
 		await screen.getByTestId('dcolor-against').fill('#ffffff');
 		await expect
 			.element(screen.getByTestId('dcolor-ratio'))
-			.toHaveTextContent(m['widget.toolbox.color.verdict_fail']());
+			.toMatchTextContent(m['widget.toolbox.color.verdict_fail']());
 	});
 
 	it('says a half-typed hex is not a colour yet, rather than showing zeros', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'color' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'color' }));
 		await screen.getByTestId('dcolor-hex').fill('#12');
 
 		await expect.element(screen.getByText(m['widget.toolbox.color.invalid']())).toBeInTheDocument();
@@ -167,7 +167,7 @@ describe('the colour panel', () => {
 	});
 
 	it('shows all three formats of the same colour', async () => {
-		const screen = render(TpToolboxDetail, props({ tab: 'color' }));
+		const screen = await render(TpToolboxDetail, props({ tab: 'color' }));
 		// Scoped to the format list: the hex also appears under the ramp's
 		// middle swatch, which is the same colour by construction.
 		const formats = screen.container.querySelector('.tp-tbd__formats');
@@ -178,7 +178,7 @@ describe('the colour panel', () => {
 
 	it('draws a five-step ramp, and picking from it records the colour', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpToolboxDetail, props({ tab: 'color' }, onUpdateSettings));
+		const screen = await render(TpToolboxDetail, props({ tab: 'color' }, onUpdateSettings));
 
 		const swatches = screen.container.querySelectorAll('.tp-tbd__ramp .tp-tbd__swatch');
 		expect(swatches).toHaveLength(5);

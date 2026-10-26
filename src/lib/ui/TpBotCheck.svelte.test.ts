@@ -66,7 +66,7 @@ afterEach(() => {
 describe('TpBotCheck', () => {
 	it('checks on mount and, for most readers, says nothing at all', async () => {
 		fakeTurnstile((options) => call(options, 'callback', 'token'));
-		const screen = render(TpBotCheck);
+		const screen = await render(TpBotCheck);
 
 		await vi.waitFor(() => expect(passGate.status).toBe('ready'));
 		expect((await passGate.header())[PASS_HEADER]).toBe('pass-1');
@@ -76,7 +76,7 @@ describe('TpBotCheck', () => {
 
 	it("renders with the app's action, silently unless asked, and never re-challenging", async () => {
 		const fake = fakeTurnstile((options) => call(options, 'callback', 'token'));
-		render(TpBotCheck);
+		await render(TpBotCheck);
 
 		await vi.waitFor(() => expect(fake.rendered).toHaveLength(1));
 		expect(fake.rendered[0]).toMatchObject({
@@ -95,7 +95,7 @@ describe('TpBotCheck', () => {
 			options = o;
 			call(o, 'before-interactive-callback');
 		});
-		const screen = render(TpBotCheck);
+		const screen = await render(TpBotCheck);
 
 		const dialog = screen.getByRole('dialog', { name: m['common.botcheck.title']() });
 		await expect.element(dialog).toBeVisible();
@@ -111,7 +111,7 @@ describe('TpBotCheck', () => {
 			if (fail) call(options, 'error-callback', '110200');
 			else call(options, 'callback', 'token');
 		});
-		const screen = render(TpBotCheck);
+		const screen = await render(TpBotCheck);
 
 		const notice = screen.getByTestId('bot-check-failed');
 		await expect.element(notice).toBeVisible();
@@ -130,7 +130,7 @@ describe('TpBotCheck', () => {
 			vi.fn(async () => Response.json({ ok: true, data: { sitekey: null }, meta: {} }))
 		);
 		const fake = fakeTurnstile(() => undefined);
-		render(TpBotCheck);
+		await render(TpBotCheck);
 
 		await vi.waitFor(() => expect(passGate.status).toBe('ready'));
 		expect(fake.rendered).toHaveLength(0);

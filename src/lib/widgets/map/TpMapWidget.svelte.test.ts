@@ -66,7 +66,7 @@ function props(over: Record<string, unknown> = {}) {
 }
 
 /** A tile's content box: the map fills its parent, so the parent needs a size. */
-function show(over: Record<string, unknown> = {}) {
+async function show(over: Record<string, unknown> = {}) {
 	const box = document.createElement('div');
 	box.style.cssText = `width: ${String(M.pxW)}px; height: ${String(M.pxH)}px;`;
 	document.body.appendChild(box);
@@ -75,7 +75,7 @@ function show(over: Record<string, unknown> = {}) {
 
 describe('empty (doc 06 §3)', () => {
 	it('says who draws the map before anything is asked of them', async () => {
-		const screen = show({ settings: {} });
+		const screen = await show({ settings: {} });
 
 		await expect
 			.element(screen.getByTestId('map-notice'))
@@ -87,7 +87,7 @@ describe('empty (doc 06 §3)', () => {
 
 	it('sets home from a search, at the geocoder’s precision', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = show({ settings: {}, onUpdateSettings });
+		const screen = await show({ settings: {}, onUpdateSettings });
 
 		await screen.getByTestId('place-search').fill('hà n');
 		await screen.getByText('Hà Nam').click();
@@ -104,7 +104,7 @@ describe('empty (doc 06 §3)', () => {
 describe('ready', () => {
 	it('draws the map around home, and opens the detail on a click', async () => {
 		const onOpenDetail = vi.fn();
-		const screen = show({ onOpenDetail });
+		const screen = await show({ onOpenDetail });
 
 		const open = screen.getByRole('button', { name: m['widget.map.open_map']() });
 		await expect.element(open, { timeout: 10_000 }).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe('ready', () => {
 			{ id: 'a', name: 'Văn Miếu', lat: 21.0277, lon: 105.8355 },
 			{ id: 'b', name: 'Hồ Tây', lat: 21.0583, lon: 105.8194 }
 		]);
-		const screen = show();
+		const screen = await show();
 
 		await expect
 			.element(screen.getByTestId('map-saved-count'))
@@ -144,18 +144,18 @@ describe('without a map', () => {
 			>;
 		} as HTMLCanvasElement['getContext']);
 
-		const screen = show();
+		const screen = await show();
 
 		const card = screen.getByTestId('map-fallback');
 		await expect.element(card).toHaveAttribute('data-reason', 'no-webgl');
-		await expect.element(card).toHaveTextContent('21.02851, 105.85240');
+		await expect.element(card).toMatchTextContent('21.02851, 105.85240');
 		await expect
 			.element(screen.getByRole('link', { name: m['widget.map.open_osm']() }))
 			.toHaveAttribute('rel', 'noopener noreferrer');
 	});
 
 	it('permission-needed: a located home the browser now refuses offers search instead', async () => {
-		const screen = show({
+		const screen = await show({
 			settings: { home: { name: '', lat: 21.03, lon: 105.85 }, useMyLocation: true },
 			permissionSource: () => Promise.resolve('denied' as const)
 		});
@@ -189,7 +189,7 @@ describe('a map that does not draw (doc 06 §3)', () => {
 
 	it('loading: a skeleton over the space the map will fill, never a blank', async () => {
 		await holdLoad();
-		const screen = show();
+		const screen = await show();
 
 		await expect
 			.element(screen.getByRole('status', { name: m['widget.map.loading']() }))
@@ -198,22 +198,22 @@ describe('a map that does not draw (doc 06 §3)', () => {
 
 	it('error: says so, with the coordinates and a way out, not a blank square', async () => {
 		await holdLoad(new Error('style refused'));
-		const screen = show();
+		const screen = await show();
 
 		const card = screen.getByTestId('map-fallback');
 		await expect.element(card).toHaveAttribute('data-reason', 'error');
-		await expect.element(card).toHaveTextContent(m['widget.map.error']());
-		await expect.element(card).toHaveTextContent('21.02851, 105.85240');
+		await expect.element(card).toMatchTextContent(m['widget.map.error']());
+		await expect.element(card).toMatchTextContent('21.02851, 105.85240');
 	});
 
 	it('offline: says the network is gone rather than that the map broke', async () => {
 		online.noteFetchResult('network-error');
 		online.noteFetchResult('network-error');
 		await holdLoad(new Error('fetch failed'));
-		const screen = show();
+		const screen = await show();
 
 		const card = screen.getByTestId('map-fallback');
 		await expect.element(card).toHaveAttribute('data-reason', 'offline');
-		await expect.element(card).toHaveTextContent(m['widget.map.offline']());
+		await expect.element(card).toMatchTextContent(m['widget.map.offline']());
 	});
 });

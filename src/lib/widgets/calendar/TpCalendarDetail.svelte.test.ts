@@ -41,7 +41,7 @@ afterEach(async () => {
 
 describe('opening', () => {
 	it('starts on the current month with today selected', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		await expect.element(screen.getByText('tháng 8 năm 2026')).toBeInTheDocument();
 		await expect
@@ -50,7 +50,7 @@ describe('opening', () => {
 	});
 
 	it('shows the selected day spelled out, with its lunar date under it', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		// 28 August 2026 is lunar 16/07 of Bính Ngọ.
 		await expect.element(screen.getByText('ngày 16 tháng Bảy, Bính Ngọ')).toBeInTheDocument();
 	});
@@ -58,7 +58,7 @@ describe('opening', () => {
 
 describe('navigation', () => {
 	it('steps to the next month and back', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		await screen.getByRole('button', { name: m['widget.calendar.next_month']() }).click();
 		await expect.element(screen.getByText('tháng 9 năm 2026')).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('navigation', () => {
 	});
 
 	it('carries the year backwards across January', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		const back = screen.getByRole('button', { name: m['widget.calendar.prev_month']() });
 		for (let i = 0; i < 8; i++) await back.click();
 
@@ -76,7 +76,7 @@ describe('navigation', () => {
 	});
 
 	it('comes back to today from wherever it has wandered', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await screen.getByRole('button', { name: m['widget.calendar.next_month']() }).click();
 		await screen.getByRole('button', { name: m['widget.calendar.go_today']() }).click();
 
@@ -87,7 +87,7 @@ describe('navigation', () => {
 	});
 
 	it('moves the selection when a day is picked', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await screen.getByTestId('day-2026-08-20').click();
 
 		await expect
@@ -101,13 +101,13 @@ describe('navigation', () => {
 
 describe('the agenda (doc 06 §3 `empty`)', () => {
 	it('explains an empty day rather than showing a blank list', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await expect.element(screen.getByText(m['widget.calendar.agenda_empty']())).toBeInTheDocument();
 	});
 
 	it('offers exactly one action out of that state', async () => {
 		// doc 12 §8: an empty state explains and offers one action.
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await expect
 			.element(screen.getByRole('button', { name: m['widget.calendar.add_event']() }))
 			.toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('the agenda (doc 06 §3 `empty`)', () => {
 	it('lists what is on the selected day and nothing from another one', async () => {
 		await createEvent({ dateKey: '2026-08-28', title: 'Họp nhóm' });
 		await createEvent({ dateKey: '2026-08-20', title: 'Bác sĩ' });
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		await expect.element(screen.getByText('Họp nhóm')).toBeInTheDocument();
 		await expect.element(screen.getByText('Bác sĩ')).not.toBeInTheDocument();
@@ -125,7 +125,7 @@ describe('the agenda (doc 06 §3 `empty`)', () => {
 
 describe('event CRUD', () => {
 	it('adds an event to the selected day', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		await screen.getByTestId('event-title').fill('Giỗ ông');
 		await screen.getByRole('button', { name: m['widget.calendar.add_event']() }).click();
@@ -135,7 +135,7 @@ describe('event CRUD', () => {
 	});
 
 	it('adds it to the day that is selected, not to today', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await screen.getByTestId('day-2026-08-20').click();
 		await screen.getByTestId('event-title').fill('Bác sĩ');
 		await screen.getByRole('button', { name: m['widget.calendar.add_event']() }).click();
@@ -146,7 +146,7 @@ describe('event CRUD', () => {
 	});
 
 	it('refuses to add a blank title', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await expect
 			.element(screen.getByRole('button', { name: m['widget.calendar.add_event']() }))
 			.toBeDisabled();
@@ -154,7 +154,7 @@ describe('event CRUD', () => {
 
 	it('renames an event in place', async () => {
 		await createEvent({ dateKey: '2026-08-28', title: 'Cũ' });
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		await screen.getByRole('button', { name: m['widget.calendar.edit_event']() }).click();
 		await screen.getByTestId('event-title').fill('Mới');
@@ -166,7 +166,7 @@ describe('event CRUD', () => {
 
 	it('deletes only after a confirm, which is a second click', async () => {
 		await createEvent({ dateKey: '2026-08-28', title: 'Họp nhóm' });
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		await screen.getByRole('button', { name: m['widget.calendar.delete_event']() }).click();
 		// Still there — the first click only arms the confirm.
@@ -180,7 +180,7 @@ describe('event CRUD', () => {
 
 describe('the lunar panel (doc 07 §6)', () => {
 	it('shows can-chi for the year, month and day', async () => {
-		const screen = render(TpCalendarDetail, props({ canChi: true }));
+		const screen = await render(TpCalendarDetail, props({ canChi: true }));
 
 		// 28 August 2026: lunar 16/07 of Bính Ngọ, tháng Bính Thân, ngày Giáp
 		// Tuất. The day's can-chi counts in Julian days and is checked against
@@ -192,7 +192,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 	});
 
 	it('hides can-chi when the setting is off, which is the English default', async () => {
-		const screen = render(TpCalendarDetail, props({ canChi: false }));
+		const screen = await render(TpCalendarDetail, props({ canChi: false }));
 		expect(screen.container.querySelector('[data-testid="canchi"]')).toBeNull();
 		// The agenda's lunar line stays — it is the date, not the can-chi.
 		await expect.element(screen.getByText('ngày 16 tháng Bảy, Bính Ngọ')).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 
 	it('writes the toggle back through onUpdateSettings (doc 06 §2)', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpCalendarDetail, props({ canChi: true }, onUpdateSettings));
+		const screen = await render(TpCalendarDetail, props({ canChi: true }, onUpdateSettings));
 
 		await screen.getByRole('checkbox', { name: m['widget.calendar.canchi_show']() }).click();
 		// Through `waitFor` rather than straight after the click — doc 19 §4.
@@ -210,7 +210,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 	});
 
 	it('converts a lunar date back to a solar one', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		// Lunar 1/1/2026 is Tết, on 17 February 2026.
 		await screen.getByLabelText(m['widget.calendar.canchi_year']()).fill('2026');
@@ -218,7 +218,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 	});
 
 	it('says so rather than guessing when the leap month does not exist', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		// 2026 has no leap month at all, so a leap 1/1 of 2026 is not a date —
 		// the case `convertLunar2Solar` silently answered before `solarOfLunar`
@@ -233,7 +233,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 	it('says something different for a year the tables do not cover', async () => {
 		// "outside 1900–2100" about 2026 would send a reader looking for the
 		// wrong mistake, so the two refusals are not the same sentence.
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await screen.getByLabelText(m['widget.calendar.canchi_year']()).fill('2200');
 		await expect
 			.element(screen.getByTestId('convert-result'))
@@ -241,7 +241,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 	});
 
 	it('lists the observances ahead of the selected day', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 
 		// 28 August 2026: Trung thu (25 September) is the next one on the table.
 		await expect
@@ -251,7 +251,7 @@ describe('the lunar panel (doc 07 §6)', () => {
 	});
 
 	it('carries doc 07 §6 note about the pinned zone', async () => {
-		const screen = render(TpCalendarDetail, props());
+		const screen = await render(TpCalendarDetail, props());
 		await expect.element(screen.getByText(m['widget.calendar.tz_note']())).toBeInTheDocument();
 	});
 });

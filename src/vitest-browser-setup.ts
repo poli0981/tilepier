@@ -3,7 +3,7 @@ import { beforeEach } from 'vitest';
 /**
  * Setup for the `client` (browser mode) Vitest project.
  *
- * Component cleanup is deliberately *not* here: vitest-browser-svelte 2.2.1
+ * Component cleanup is deliberately *not* here: vitest-browser-svelte (3.1)
  * registers its own `beforeEach(cleanup)` from its main entry (see
  * `dist/index.mjs`), so any test file that imports `render` already has it.
  * Adding a second one would just run cleanup twice.
