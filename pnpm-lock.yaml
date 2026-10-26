@@ -14,8 +14,8 @@ importers:
   .:
     dependencies:
       dexie:
-        specifier: ^4.4.4
-        version: 4.4.4
+        specifier: ^4.4.7
+        version: 4.4.7
       dompurify:
         specifier: ^3.4.17
         version: 3.4.17
@@ -1612,8 +1612,8 @@ packages:
   devalue@5.9.4:
     resolution: {integrity: sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg==}
 
-  dexie@4.4.4:
-    resolution: {integrity: sha512-jIwsYI8Os2hgnqc6O49YwFDKGc5v5QjGx0wPVp543ip1F53VFAKMLthV2pQosQcVTv3eAskTWYspOx195PM0FQ==}
+  dexie@4.4.7:
+    resolution: {integrity: sha512-wemFiCl3DTCnfzyqepUTX1ugbYbkTrw3aEZOG7YjAOUoEQB5g5PrEywPzk5JpbX/SxqQ9IvjUpxCDIEjoOWEfA==}
 
   dompurify@3.4.17:
     resolution: {integrity: sha512-B/pSlYVHQ58kqISD/yDjuJ1yfzI34m1gF4lAod2bwSRhiN4K5Cl3H8Af7hqB2PmTL911tdEudnnXn5FnhRoz0w==}
@@ -4071,7 +4071,7 @@ snapshots:
 
   devalue@5.9.4: {}
 
-  dexie@4.4.4: {}
+  dexie@4.4.7: {}
 
   dompurify@3.4.17:
     optionalDependencies:
