@@ -4,6 +4,32 @@ Every release of TilePier, newest first. The format follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-10-27
+
+### Changed
+
+- **The Worker's rate limit runs on Cloudflare's Rate Limiting binding.** It
+  is the same 30 requests per 10 seconds per reader on `/api/*`, counted
+  inside Cloudflare instead of in the app's storage, so a request no longer
+  costs a storage write. It is checked once, before the cache and the bot
+  check, so every API route and every repeated answer counts toward it.
+- **Pages the Worker renders are limited too**, such as a page that does not
+  exist: 30 per 10 seconds per reader, on an allowance of their own, answered
+  with `429` and `retry-after`. Pages and files served as they were built are
+  not affected.
+- **An IPv6 reader counts as its /64**, so moving between addresses in one
+  household's range no longer buys a fresh limit.
+- **The zone's rate-limiting rule is now one a free zone can set**: `/api/*`,
+  60 requests per 10 seconds per IP, blocked for 10 seconds.
+  `docs/self-hosting.md` has the steps.
+
+### Fixed
+
+- **A block by the zone's rule reads as "too many requests".** Cloudflare
+  answers it with its own page rather than the app's JSON, and the app took
+  that for a broken answer: tiles kept their own retry schedule, the feed
+  reader's queue did not pause, and the one notice did not appear.
+
 ## [1.1.0] - 2026-10-26
 
 ### Changed
@@ -157,6 +183,7 @@ than tags. No 0.x version was ever cut.
 - **Two tabs at once.** The last write wins, and the contents of the database
   refresh on reload.
 
+[1.2.0]: https://github.com/poli0981/tilepier/releases/tag/v1.2.0
 [1.1.0]: https://github.com/poli0981/tilepier/releases/tag/v1.1.0
 [1.0.1]: https://github.com/poli0981/tilepier/releases/tag/v1.0.1
 [1.0.0]: https://github.com/poli0981/tilepier/releases/tag/v1.0.0
