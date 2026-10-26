@@ -117,7 +117,7 @@ test.describe('S3 · cache behaviour under load', () => {
 	});
 
 	/*
-	 * The four tests below check the local worker the e2e suite starts, through
+	 * The tests below check the local worker the e2e suite starts, through
 	 * the `request` fixture. A run pointed at a deployed Worker starts none
 	 * (`playwright.config.ts`), so they skip there. They did not, the first time
 	 * the whole file ran with `S3_BASE_URL` set (2026-09-25): `npm exec` had
@@ -157,6 +157,38 @@ test.describe('S3 · cache behaviour under load', () => {
 		expect(['HIT', 'MISS', 'STALE']).toContain(res.headers()['x-tp-cache']);
 		// doc 11 §2: half the TTL, so the CDN and browser absorb repeats.
 		expect(res.headers()['cache-control']).toBe(`public, max-age=${CACHE_POLICY.wx.ttlMs / 2000}`);
+	});
+
+	test('a repeated URL is answered by the edge cache, and nothing else is', async ({ request }) => {
+		test.skip(Boolean(DEPLOYED), LOCAL_ONLY);
+		// doc 11 §2: `_lib/edge-cache.ts` keeps a cacheable GET in
+		// `caches.default` and gives the next identical URL that answer again,
+		// before the gate or the endpoint runs. The adapter did this until
+		// adapter-cloudflare 8; this is the check that the hook does it in a real
+		// Workers runtime, where the Cache API marks what it returns
+		// (`CF-Cache-Status: HIT`) and nothing else here could. The write rides on
+		// waitUntil, so the replay is polled for.
+		const url = uncached({ lat: 21.03, lon: 105.8 });
+		const first = await request.get(url);
+		expect(first.status()).toBe(200);
+		expect(first.headers()['cf-cache-status']).toBeUndefined();
+
+		await expect
+			.poll(async () => (await request.get(url)).headers()['cf-cache-status'])
+			.toBe('HIT');
+		const replay = await request.get(url);
+		expect(replay.headers()['cf-cache-status']).toBe('HIT');
+		expect((await replay.json()).ok).toBe(true);
+
+		// Never for a request that asks for a fresh answer…
+		const fresh = await request.get(url, { headers: { 'cache-control': 'no-cache' } });
+		expect(fresh.headers()['cf-cache-status']).toBeUndefined();
+
+		// …and never for an answer that says no-store (doc 11 §9).
+		await request.get('/api/verify');
+		const verify = await request.get('/api/verify');
+		expect(verify.headers()['cache-control']).toBe('no-store');
+		expect(verify.headers()['cf-cache-status']).toBeUndefined();
 	});
 
 	test('bad input is rejected before any upstream call', async ({ request }) => {

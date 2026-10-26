@@ -7,13 +7,13 @@ const BASE_URL = `https://localhost:${PORT}`;
 /**
  * A run pointed at a deployed Worker — `e2e/s3-quota.e2e.ts`, doc 22 §S3 —
  * builds nothing and starts no `wrangler dev`: its load test and its keyed
- * test talk to that origin through `playwright.request`, and its four checks
- * of the local worker skip. Until 2026-09-25 the run did both: the keyed run
+ * test talk to that origin through `playwright.request`, and its checks of
+ * the local worker skip. Until 2026-09-25 the run did both: the keyed run
  * took a cold build first, and failed outright in a shell without `pnpm` on
  * its PATH, because the web server command calls it.
  *
  * (The first version of this said the file never touched the local server.
- * Four of its tests do, and they failed on a refused connection the first time
+ * Four of its tests did, and they failed on a refused connection the first time
  * the whole file ran with `S3_BASE_URL` set — which is why they now skip.)
  *
  * `e2e/prod-headers.e2e.ts` (Week 8) reads production's headers the same way.
