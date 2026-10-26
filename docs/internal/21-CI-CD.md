@@ -80,7 +80,7 @@ jobs:
   ci:
     uses: poli0981/.github/.github/workflows/wf-node-ci.yml@main
     with:
-      node-version: "24"
+      node-version-file: .node-version
       pnpm-version: "11"
       run-budgets: true
 ```
@@ -117,9 +117,9 @@ Set it in Workers → tilepier → Settings → Builds:
 | Variables | `NODE_VERSION` = `26`, `PNPM_VERSION` = `11` (set 2026-10-26) |
 
 The two variables are the dashboard's half of the toolchain the repository
-pins in `package.json` (`engines`, `packageManager`; doc 02). Move them
-together: the build image's own defaults trail the repository's (Node 24.21.0
-and pnpm 10.11.1 on 2026-10-26).
+pins in `.node-version` and `package.json`'s `packageManager` (doc 02).
+Move them together: the build image's own defaults trail the repository's
+(Node 24.21.0 and pnpm 10.11.1 on 2026-10-26).
 
 This cannot be committed to the repo: the installed Wrangler has no `build`
 key in its config schema, so there is no `wrangler.jsonc` hook to put it in —
@@ -202,9 +202,14 @@ intent where Dependabot has the means:
   one-day release-age gate (doc 15 §6). Commit messages come out as
   `chore(deps)`, `chore(deps-dev)` and `ci(deps)` (CLAUDE.md rule 14). GitHub
   Actions monthly.
-- **`@types/node` majors are ignored.** Node 24 LTS is the stack (doc 02), and a
-  new major is a decision, not a bump — what pinning `engines` was meant to
-  guard against.
+- **`@types/node` majors are ignored.** Node 26 is the stack (doc 02,
+  `.node-version`), and a new major is a decision, not a bump.
+- **`typescript` and `@typescript/native` are ignored** (2026-10-26). They are
+  an npm-alias pair — the 6.0 API package and TypeScript 7's `tsc` (doc 02
+  note 9) — which Dependabot cannot read, and they move together, by hand,
+  when svelte-check and typescript-eslint take 7.1's API.
+- **`maplibre-gl` minors and majors are ignored**: held at 6.12 by the bundle
+  budget (doc 02 note 9, doc 20 §6). Patches still come.
 - **No lockfile maintenance**, which Dependabot does not have. A transitive
   entry moves when an advisory names it, and the `pnpm audit` gate at the end
   of `ci.yml` is what finds it — as it found five stale ones the day it was

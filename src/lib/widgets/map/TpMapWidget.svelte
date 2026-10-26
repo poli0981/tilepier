@@ -9,7 +9,8 @@
 	} from '$lib/core/geolocate';
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpWidgetProps } from '$lib/core/types';
-	import TpMap, { type TpMapPin, type TpMapStatus } from '$lib/map/TpMap.svelte';
+	import TpMap from '$lib/map/TpMap.svelte';
+	import type { TpMapPin, TpMapStatus } from '$lib/map/types';
 	import { osmUrl } from '$lib/map/styles';
 	import { m } from '$lib/paraglide/messages';
 	import TpIcon from '$lib/ui/icons/TpIcon.svelte';

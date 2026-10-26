@@ -5,14 +5,10 @@
 	//
 	// JSONC rather than JSON so these notes can live next to the config: knip's
 	// schema rejects a "$comment" key.
+	// The hooks and the service worker are not listed: knip's SvelteKit plugin
+	// knows them, and from 6.42 it reports a listing of them as redundant.
 	"entry": [
 		"src/routes/**/+*.{js,ts,svelte}",
-		"src/hooks.server.ts",
-
-		// Not present yet. Kept so the gate is already correct when they land,
-		// rather than someone having to remember. knip reports these as
-		// unmatched hints, not errors.
-		"src/service-worker.ts",
 
 		// Widget manifests are entry points because registry.ts is the only
 		// thing importing them and it does so statically, while the components
@@ -47,7 +43,8 @@
 	// nothing calls any more is dead code like any other.
 	"project": ["src/**/*.{js,ts,svelte,css}", "scripts/**/*.mjs", "e2e/**/*.ts"],
 
-	"ignore": ["worker-configuration.d.ts", ".svelte-kit/**"],
+	// worker-configuration.d.ts and .svelte-kit/ need no ignore: knip reports
+	// neither since 6.42, and calls an ignore of them redundant.
 
 	// Everything here is installed deliberately (doc 02 is the locked set, and
 	// Block 1 proved the whole set resolves together) but not yet imported.
@@ -68,5 +65,5 @@
 	// `ffmpeg` is a system tool, not a package: scripts/gen-music-fixtures.mjs
 	// shells out to it to regenerate committed fixtures, and nothing in CI runs
 	// that script (doc 19 §3).
-	"ignoreBinaries": ["wrangler", "ffmpeg"]
+	"ignoreBinaries": ["ffmpeg"]
 }

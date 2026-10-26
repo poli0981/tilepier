@@ -4,7 +4,8 @@ import type { StyleSpecification } from 'maplibre-gl';
 import { settings } from '$lib/stores/settings.svelte';
 import { loadMapLibre } from './maplibre';
 import { mapStyleOverride } from './styles';
-import TpMap, { type TpMapStatus } from './TpMap.svelte';
+import TpMap from './TpMap.svelte';
+import type { TpMapStatus } from './types';
 
 /**
  * The map component against the real MapLibre, loaded from its vendored copy

@@ -1,25 +1,6 @@
-<script lang="ts" module>
-	/** What the map is doing, for the widget to render around it. */
-	export type TpMapStatus = 'loading' | 'ready' | 'offline' | 'error' | 'no-webgl';
-
-	/** A point to mark. The label is text — a geocoder's name is a stranger's
-	 *  string, and it goes into an attribute, never into HTML (rule 7). */
-	export interface TpMapPin {
-		id: string;
-		lat: number;
-		lon: number;
-		kind: 'home' | 'saved' | 'found';
-		label: string;
-	}
-
-	/** What a detail can ask of the map it is showing. */
-	export interface TpMapCamera {
-		flyTo(lat: number, lon: number, zoom?: number): void;
-	}
-</script>
-
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import type { TpMapCamera, TpMapPin, TpMapStatus } from './types';
 	import type { Map as MapLibreMap, Marker } from 'maplibre-gl';
 	import { logEntry } from '$lib/core/log-buffer';
 	import { online } from '$lib/stores/online.svelte';

@@ -1,8 +1,8 @@
 # 02 · Tech Stack (locked 2026-07-19)
 
 Versions verified against npm/official release channels on 2026-07-19;
-re-checked against the live registry **2026-08-10** (see §Version & CVE policy
-note 7 for what moved).
+re-checked against the live registry **2026-08-10** and **2026-10-26** (see
+§Version & CVE policy notes 7 and 9 for what moved).
 Rule: pin minors in `package.json` (`^` within major), let Dependabot raise PRs
 (doc 21 §6).
 
@@ -10,9 +10,9 @@ Rule: pin minors in `package.json` (`^` within major), let Dependabot raise PRs
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| Node.js | **24.x (Active LTS)** | `"engines": { "node": ">=24" }`; EOL 2028-04. Node 26 is Current, not LTS until 2026-10 — do not target it. |
-| pnpm | **11.x** | Raised from 10.x on 2026-08-10 (11.15.1 is the installed toolchain; no v1 feature depends on 10.x behaviour). Workspace not needed (single package). `packageManager` field pinned. |
-| TypeScript | **6.0.x** | Supported by SvelteKit ≥ 2.56. `strict: true`. TS **7.0.2** is out (2026-08) — deliberately not taken yet, see §Version & CVE policy note 7. |
+| Node.js | **26.x** | `.node-version` (`26`) is the one source: CI's setup-node reads it, and Workers Builds' `NODE_VERSION` variable matches it (doc 21 §4). `"engines": { "node": ">=26" }`. Raised from 24 on 2026-10-26, at the owner's call, two days before 26 became LTS (2026-10-28). Node 26 ships without corepack: install it with `npm install --global corepack@latest`. |
+| pnpm | **11.x** | 11.28.8 since 2026-10-26 (raised from 10.x on 2026-08-10). Workspace not needed (single package). `packageManager` field pinned; Workers Builds' `PNPM_VERSION` is `11`. pnpm 12, a rewrite in Rust, is held: see note 9. |
+| TypeScript | **7.0.x** for `tsc`, **6.0.x** for the tools | Taken 2026-10-26 as the TypeScript team recommends while 7.0 has no API: `typescript` is `npm:@typescript/typescript6` (the 6.0 API svelte-check, typescript-eslint, SvelteKit's sync and Paraglide's declarations load) and `@typescript/native` is `npm:typescript@7`, whose `tsc` is the `pnpm typecheck` gate. `strict: true`, `target`/`lib` ES2025. See note 9. |
 | Vite | **8.x** | Rolldown bundler (stable since 8.0, 2026-03). `build.rolldownOptions` (renamed from `rollupOptions`). |
 
 ## Framework & core libs
@@ -28,7 +28,7 @@ Rule: pin minors in `package.json` (`^` within major), let Dependabot raise PRs
 | dexie | **4.x** | IndexedDB wrapper: notes, todos, events, playlists, blobs, handles (doc 05). |
 | @inlang/paraglide-js | **2.x** | Compile-time i18n, EN/VI (doc 14). |
 | @inlang/plugin-message-format + @inlang/plugin-m-function-matcher | latest | inlang project plugins, devDeps. Referenced from `project.inlang/settings.json` by `node_modules` path rather than the usual jsdelivr URL, so the build never fetches at compile time — added 2026-08-19, see doc 14 §1. |
-| maplibre-gl | **6.x** (5.x until 2026-09-23, rule 7) | BSD-3. Map widget only; lazy chunk. Tiles: OpenFreeMap (doc 10 §6). |
+| maplibre-gl | **6.12.x** (5.x until 2026-09-23, rule 7) | BSD-3. Map widget only; lazy chunk. Tiles: OpenFreeMap (doc 10 §6). Held at `~6.12` by the bundle budget, note 9. |
 | music-metadata | latest | Browser build; ID3/FLAC/Vorbis tags + cover art for the music widget. |
 | marked + dompurify | latest | Notes markdown preview. DOMPurify mandatory before any `{@html}`. |
 | fast-xml-parser | **5.x** | Server-side RSS/Atom/RDF parsing in the Worker (doc 10 §7). Added 2026-08-10 — it was required by docs 10 and 16 but missing from this table. |
@@ -50,13 +50,13 @@ bundle budgets (doc 20 §6).
 |------|---------|---------|
 | ESLint | **10.x** flat | + `typescript-eslint`, `eslint-plugin-svelte`. Corrected from 9.x on 2026-08-10 — 10.x is what the current SvelteKit scaffold generates a flat config for. |
 | Prettier | 3.x | + `prettier-plugin-svelte`, `prettier-plugin-tailwindcss` |
-| svelte-check | latest | Type-checks templates in CI |
+| svelte-check | latest | Type-checks templates in CI, through the TypeScript 6.0 API (note 9); `tsc` 7 checks the `.ts` files beside it |
 | knip | latest | Dead code / unused deps / unused exports — CI-blocking (doc 20 §4) |
 | Vitest | **4.x** | Unit + component (browser mode). Corrected from 3.x on 2026-08-10. |
 | @vitest/browser-playwright + vitest-browser-svelte | latest | Component tests in browser mode. Replaces `@testing-library/svelte`, which is not the Vitest 4 idiom — corrected 2026-08-10 (doc 19 §1 follows). |
 | @vitest/coverage-v8 | latest | Coverage provider for the doc 19 §2 thresholds. Added 2026-08-19 — the thresholds were specified from the start but unenforceable without it. |
 | Playwright | latest | E2E smoke suite (doc 19 §4) |
-| @axe-core/playwright | 4.13 | Accessibility sweep in the E2E suite (doc 19 §4, Week 8); dev only, never shipped |
+| @axe-core/playwright | 4.14 | Accessibility sweep in the E2E suite (doc 19 §4, Week 8); dev only, never shipped |
 | msw | 2.x | API mocking in unit/component tests |
 
 ## Version & CVE policy
@@ -85,6 +85,7 @@ bundle budgets (doc 20 §6).
    - **TypeScript 7.0.2** — a major line change. `svelte-check` and
      `typescript-eslint` support must be verified before adopting, and Week 0
      should not be blocked on that. Stay on `^6.0.0` (resolves 6.0.3).
+     **Taken 2026-10-26**, as `tsc` with the 6.0 API alongside it (note 9).
    - **gridstack 13.0.2** — held until **Spike S1 is green on 12.6**. Doc 06 §5
      specifies 12.6's exact API surface (`columnOpts`, `batchUpdate`,
      `enableMove`/`enableResize`, `destroy(false)`); running S1 on 13 would
@@ -119,4 +120,40 @@ bundle budgets (doc 20 §6).
 8. Browser support target: last 2 Chrome/Edge/Firefox/Safari + iOS 17+.
    Baseline features used: ES2023, `Intl.DateTimeFormat`, IndexedDB,
    Service Worker. Progressive: File System Access API (Chromium-only,
-   feature-detected, doc 09 §2).
+   feature-detected, doc 09 §2). **ES2025 in `tsconfig.json` (2026-10-26)
+   is what code may name, not what the bundle is lowered to:** Vite's own
+   browser target is unchanged, and ES2025 APIs iOS 17 lacks — iterator
+   helpers, `Promise.try`, `RegExp.escape` — need feature detection like any
+   progressive API. The lib was `esnext`, inherited from SvelteKit, until then.
+9. **Registry re-check 2026-10-26** (Node 26, TypeScript 7, every dependency
+   to its newest release at least three days old, doc 15 §6):
+   - **TypeScript 7.0.2** taken, as the pair of aliases in the table above.
+     7.0 has no programmatic API; svelte-check, typescript-eslint and
+     SvelteKit accept only 6.x, and the TS team's own guidance is this pair.
+     `pnpm typecheck` runs the native `tsc` over the app's tsconfig (every
+     `.ts` and `.js` file it includes; svelte-check still covers `.svelte`)
+     in under a second. Its first run found two named exports from `.svelte`
+     modules, which plain `tsc` cannot see (it knows a Svelte file only as a
+     default export): the map's types moved to `map/types.ts`, the throwing
+     fixture's flag to `crash.ts`. **When svelte-check and typescript-eslint
+     support 7.1's API, drop the alias and take `typescript@7` alone**;
+     Dependabot ignores both names until then (doc 21 §6).
+   - **maplibre-gl held at 6.12.** From 6.13 the worker bundles everything
+     itself: the three vendored modules grow from about 300 KB to 438 KB
+     gzipped, past the 300 KB budget (doc 20 §6), and `e2e/s4-budgets`
+     expects the shared module. Raising the budget is the owner's decision,
+     not a version bump's.
+   - **pnpm 12 held.** It is a rewrite in Rust, shipped as native binaries.
+     Neither Workers Builds nor the JSON `pnpm licenses list` gives
+     `licenses:gen` was checked against it; 11.28.8 is the newest 11.
+   - **`engineStrict` stays off.** `.npmrc`'s `engine-strict=true` had done
+     nothing since pnpm 11, which reads only auth and registry settings from
+     that file, and the file is gone. Turning the setting on where pnpm 11
+     reads it (`pnpm-workspace.yaml`) would fail every install:
+     svelte-eslint-parser, under eslint-plugin-svelte, declares
+     `engines.pnpm` 10.34. `.node-version` and the dashboard's
+     `NODE_VERSION` are what hold the Node version.
+   - Taken: Svelte 5.57, Vite 8.3, ESLint 10.13, typescript-eslint 8.72,
+     Playwright 1.64, axe 4.14, Paraglide 2.29, wrangler 4.152 (compatibility
+     date 2026-10-19), dexie 4.4.7, marked 18.1, fast-xml-parser 5.11,
+     @types/node 26. knip 6.42 rather than 6.43, which was two days old.

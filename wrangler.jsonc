@@ -6,7 +6,11 @@
 	// the newest date supported by this server binary is 2026-08-08". `sv create`
 	// stamps today's date, which outruns the shipped runtime. Raise this
 	// together with a wrangler bump, not on its own.
-	"compatibility_date": "2026-08-08",
+	//
+	// 2026-10-19 with wrangler 4.152.0 (workerd 1.20261019.1). Of the flags that
+	// came on since 2026-08-08, none touches this Worker: no Durable Objects, no
+	// Python, and no `dispatchEvent`, whose listener exceptions now stop nothing.
+	"compatibility_date": "2026-10-19",
 	"compatibility_flags": ["nodejs_als"],
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"assets": {

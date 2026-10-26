@@ -6,7 +6,8 @@
 	import type { TpDb } from '$lib/core/storage/db';
 	import type { TpDetailProps } from '$lib/core/types';
 	import { fmtDistance } from '$lib/i18n/fmt';
-	import TpMap, { type TpMapCamera, type TpMapPin, type TpMapStatus } from '$lib/map/TpMap.svelte';
+	import TpMap from '$lib/map/TpMap.svelte';
+	import type { TpMapCamera, TpMapPin, TpMapStatus } from '$lib/map/types';
 	import { googleMapsUrl, osmUrl } from '$lib/map/styles';
 	import { m } from '$lib/paraglide/messages';
 	import { settings } from '$lib/stores/settings.svelte';

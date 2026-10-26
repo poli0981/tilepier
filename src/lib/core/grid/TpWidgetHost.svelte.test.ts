@@ -5,7 +5,8 @@ import { setTileStatus, tileStatusChannel } from '$lib/core/tile-status';
 import type { TpTile } from './layout';
 import TpWidgetHost from './TpWidgetHost.svelte';
 import TpStubWidget from './__fixtures__/TpStubWidget.svelte';
-import TpThrowingWidget, { crash } from './__fixtures__/TpThrowingWidget.svelte';
+import TpThrowingWidget from './__fixtures__/TpThrowingWidget.svelte';
+import { crash } from './__fixtures__/crash';
 import { clearLog, readLog } from '$lib/core/log-buffer';
 
 /**
