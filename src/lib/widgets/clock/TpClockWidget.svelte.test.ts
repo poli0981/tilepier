@@ -50,14 +50,14 @@ afterEach(() => {
 describe('the date line (doc 07 §1)', () => {
 	it('carries the lunar date in Vietnamese', async () => {
 		settings.patch({ locale: 'vi' });
-		const screen = render(TpClockWidget, props());
+		const screen = await render(TpClockWidget, props());
 		// 2026-08-28 is lunar 16/07 in the year Bính Ngọ.
 		await expect.element(screen.getByText('16/07 Bính Ngọ')).toBeInTheDocument();
 	});
 
 	it('leaves it off in English rather than transliterating the can-chi', async () => {
 		settings.patch({ locale: 'en' });
-		const screen = render(TpClockWidget, props());
+		const screen = await render(TpClockWidget, props());
 		await expect.element(screen.getByText(/Bính/)).not.toBeInTheDocument();
 		await expect.element(screen.getByText(/lunar month/)).not.toBeInTheDocument();
 	});
@@ -69,7 +69,7 @@ describe('the date line (doc 07 §1)', () => {
 		// solar date for part of every day west of Vietnam.
 		vi.setSystemTime(new Date(2026, 7, 27, 23, 0));
 		settings.patch({ locale: 'vi' });
-		const screen = render(TpClockWidget, props());
+		const screen = await render(TpClockWidget, props());
 		// The 27th, not the 28th — 15/07, not 16/07.
 		await expect.element(screen.getByText('15/07 Bính Ngọ')).toBeInTheDocument();
 	});
@@ -79,7 +79,7 @@ describe('the date line (doc 07 §1)', () => {
 		// exactly the 34 px a 2 × 1 tile has. Keyed on the tier, the date line
 		// rendered into that row and clipped the hero digits by 4 px.
 		settings.patch({ locale: 'vi' });
-		const screen = render(TpClockWidget, props({ w: 3, h: 1, pxW: 322, pxH: 72, tier: 'M' }));
+		const screen = await render(TpClockWidget, props({ w: 3, h: 1, pxW: 322, pxH: 72, tier: 'M' }));
 		await expect.element(screen.getByText('16/07 Bính Ngọ')).not.toBeInTheDocument();
 		expect(screen.container.querySelector('.tp-clock__date')).toBeNull();
 	});
@@ -87,7 +87,7 @@ describe('the date line (doc 07 §1)', () => {
 	it('disappears with the whole date line at the smallest tier', async () => {
 		// doc 13 §3: at h = 1 the tile is a single hero value and nothing else.
 		settings.patch({ locale: 'vi' });
-		const screen = render(TpClockWidget, props(SMALL));
+		const screen = await render(TpClockWidget, props(SMALL));
 		await expect.element(screen.getByText(/Bính Ngọ/)).not.toBeInTheDocument();
 	});
 });
@@ -98,21 +98,24 @@ describe('at tier L', () => {
 	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
 	it('keeps the date line, as at every height of two rows or more', async () => {
 		settings.patch({ locale: 'vi' });
-		const screen = render(TpClockWidget, props({ w: 6, h: 3, pxW: 660, pxH: 240, tier: 'L' }));
+		const screen = await render(
+			TpClockWidget,
+			props({ w: 6, h: 3, pxW: 660, pxH: 240, tier: 'L' })
+		);
 
 		await expect.element(screen.getByText('16/07 Bính Ngọ')).toBeInTheDocument();
 	});
 });
 
 describe('teardown (doc 19 §6)', () => {
-	it('stops its second hand when the tile goes, leaving no timer behind', () => {
+	it('stops its second hand when the tile goes, leaving no timer behind', async () => {
 		// The clock ticks on its own interval rather than the scheduler, so the
 		// scheduler's leak checks never saw it. Untested until Week 8.
 		const before = vi.getTimerCount();
-		const screen = render(TpClockWidget, props());
+		const screen = await render(TpClockWidget, props());
 		expect(vi.getTimerCount()).toBeGreaterThan(before);
 
-		screen.unmount();
+		await screen.unmount();
 
 		expect(vi.getTimerCount()).toBe(before);
 	});

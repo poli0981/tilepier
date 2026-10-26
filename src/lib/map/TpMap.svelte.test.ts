@@ -32,12 +32,12 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-function mount(overrides: Record<string, unknown> = {}) {
+async function mount(overrides: Record<string, unknown> = {}) {
 	const statuses: TpMapStatus[] = [];
 	const box = document.createElement('div');
 	box.style.cssText = 'width: 400px; height: 300px;';
 	document.body.appendChild(box);
-	const screen = render(TpMap, {
+	const screen = await render(TpMap, {
 		target: box,
 		props: {
 			lat: 21.0285,
@@ -54,7 +54,7 @@ function mount(overrides: Record<string, unknown> = {}) {
 
 describe('TpMap', () => {
 	it('draws, and says so', async () => {
-		const { statuses } = mount();
+		const { statuses } = await mount();
 
 		await vi.waitFor(() => expect(statuses.at(-1)).toBe('ready'), { timeout: 10_000 });
 		expect(document.querySelector('[data-testid="map"] canvas')).not.toBeNull();
@@ -94,7 +94,7 @@ describe('TpMap', () => {
 				{ id: 'wood', type: 'fill', source: 'wood', paint: { 'fill-pattern': 'wood-pattern' } }
 			]
 		});
-		const { statuses } = mount();
+		const { statuses } = await mount();
 
 		await vi.waitFor(() => expect(statuses.at(-1)).toBe('ready'), { timeout: 10_000 });
 		await vi.waitFor(
@@ -105,7 +105,7 @@ describe('TpMap', () => {
 	});
 
 	it('names the map region for a screen reader', async () => {
-		const { screen } = mount();
+		const { screen } = await mount();
 
 		await expect
 			.element(screen.getByRole('group', { name: 'map around Hà Nội' }))
@@ -113,7 +113,7 @@ describe('TpMap', () => {
 	});
 
 	it('keeps the attribution out of compact mode, where it would fold away (doc 10 §8)', async () => {
-		const { statuses } = mount();
+		const { statuses } = await mount();
 		await vi.waitFor(() => expect(statuses.at(-1)).toBe('ready'), { timeout: 10_000 });
 
 		const attribution = document.querySelector('.maplibregl-ctrl-attrib');
@@ -122,7 +122,7 @@ describe('TpMap', () => {
 	});
 
 	it('puts pins on as elements whose names are text, never markup (rule 7)', async () => {
-		const { statuses } = mount({
+		const { statuses } = await mount({
 			pins: [
 				{
 					id: 'home',
@@ -142,7 +142,7 @@ describe('TpMap', () => {
 
 	it('makes pins buttons only on a map that is meant to be used', async () => {
 		const onPin = vi.fn();
-		const { statuses } = mount({
+		const { statuses } = await mount({
 			interactive: true,
 			onPin,
 			pins: [{ id: 'p1', lat: 21.03, lon: 105.85, kind: 'saved', label: 'Văn Miếu' }]
@@ -157,7 +157,7 @@ describe('TpMap', () => {
 	it('gives the WebGL context back when it goes (doc 08 §5)', async () => {
 		const maplibre = await loadMapLibre();
 		const remove = vi.spyOn(maplibre.Map.prototype, 'remove');
-		const { statuses } = mount();
+		const { statuses } = await mount();
 		await vi.waitFor(() => expect(statuses.at(-1)).toBe('ready'), { timeout: 10_000 });
 
 		cleanup();
@@ -168,7 +168,7 @@ describe('TpMap', () => {
 	it('swaps the style when the theme changes, without a remount', async () => {
 		const maplibre = await loadMapLibre();
 		const setStyle = vi.spyOn(maplibre.Map.prototype, 'setStyle');
-		const { statuses } = mount();
+		const { statuses } = await mount();
 		await vi.waitFor(() => expect(statuses.at(-1)).toBe('ready'), { timeout: 10_000 });
 
 		settings.patch({ theme: settings.resolvedTheme === 'dark' ? 'light' : 'dark' });
@@ -189,7 +189,7 @@ describe('TpMap', () => {
 			>;
 		} as HTMLCanvasElement['getContext']);
 
-		const { statuses } = mount();
+		const { statuses } = await mount();
 
 		await vi.waitFor(() => expect(statuses.at(-1)).toBe('no-webgl'));
 		expect(document.querySelector('[data-testid="map"] canvas')).toBeNull();

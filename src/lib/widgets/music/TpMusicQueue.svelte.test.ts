@@ -72,11 +72,11 @@ describe('TpMusicQueue', () => {
 	it('lists what comes after the current song, and jumps without losing the queue', async () => {
 		player.playTracks(['t0', 't1', 't2', 't3'], 't0', { kind: 'library' });
 		await vi.waitFor(() => expect(player.status).toBe('playing'));
-		const screen = render(TpMusicQueue);
+		const screen = await render(TpMusicQueue);
 
 		await vi.waitFor(() => expect(titles(screen.container)).toEqual(['Bình', 'Cúc', 'Dung']));
 
-		await screen.getByRole('button', { name: 'Cúc' }).click();
+		await screen.getByRole('button', { name: 'Cúc', exact: false }).click();
 
 		await vi.waitFor(() => expect(player.current?.title).toBe('Cúc'));
 		expect(player.queue.trackIds).toEqual(['t0', 't1', 't2', 't3']);
@@ -86,7 +86,7 @@ describe('TpMusicQueue', () => {
 	it('greys a song gone from the library, and shows nothing at the end of the queue', async () => {
 		player.playTracks(['t2', 'gone', 't3'], 't2', { kind: 'library' });
 		await vi.waitFor(() => expect(player.status).toBe('playing'));
-		const screen = render(TpMusicQueue);
+		const screen = await render(TpMusicQueue);
 
 		await expect
 			.element(screen.getByRole('button', { name: m['widget.music.gone_from_library']() }))

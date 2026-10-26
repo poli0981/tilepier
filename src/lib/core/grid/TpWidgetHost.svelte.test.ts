@@ -34,7 +34,7 @@ afterEach(() => {
 
 describe('the stale badge (doc 13 §7)', () => {
 	it('shows nothing at all for a tile with nothing to report', async () => {
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
 
 		await expect.element(screen.getByTestId('stub-body')).toBeInTheDocument();
 		await expect.element(screen.getByTestId('tile-badge')).not.toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('the stale badge (doc 13 §7)', () => {
 	it('appears when a widget publishes, with no prop having crossed', async () => {
 		// The assumption under test: a module-level `SvelteMap` read through
 		// `$derived` inside a component is reactive, from a file with no rune.
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
 		await expect.element(screen.getByTestId('stub-body')).toBeInTheDocument();
 
 		setTileStatus('wgt_a', { kind: 'stale', age: '12 phút trước', retry: null });
@@ -54,7 +54,7 @@ describe('the stale badge (doc 13 §7)', () => {
 	});
 
 	it('clears again when the widget takes it back', async () => {
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
 		setTileStatus('wgt_a', { kind: 'stale', age: '12 phút trước', retry: null });
 		await expect.element(screen.getByTestId('tile-badge')).toBeInTheDocument();
 
@@ -64,7 +64,7 @@ describe('the stale badge (doc 13 §7)', () => {
 	});
 
 	it('listens only to its own tile', async () => {
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
 
 		setTileStatus('wgt_b', { kind: 'stale', age: 'a while ago', retry: null });
 
@@ -76,7 +76,7 @@ describe('the stale badge (doc 13 §7)', () => {
 		// doc 13 §7 has two amber signals: the bar chip is the app's connection,
 		// this badge is one tile's data. They read as one thing while they shared
 		// a string — and six e2e tests located the chip by that string.
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
 
 		setTileStatus('wgt_a', { kind: 'offline', age: '', retry: null });
 
@@ -87,7 +87,7 @@ describe('the stale badge (doc 13 §7)', () => {
 	});
 
 	it('offers a retry only when there is something to retry', async () => {
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
 
 		setTileStatus('wgt_a', { kind: 'stale', age: 'a while ago', retry: null });
 		await expect.element(screen.getByTestId('tile-badge')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('the h=1 strip (doc 13 §3)', () => {
 		// The measured bug this rule exists for: at h=1 the header floats over the
 		// body, so anything in it eats the body's last characters. A badge widens
 		// that cluster, and the reserve has to widen with it.
-		const screen = render(TpWidgetHost, { tile: tile({ w: 2, h: 1 }), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile({ w: 2, h: 1 }), widget: TpStubWidget });
 		const host = screen.container.querySelector('.tp-host') as HTMLElement;
 		const body = screen.container.querySelector('.tp-host__body') as HTMLElement;
 
@@ -122,7 +122,7 @@ describe('the h=1 strip (doc 13 §3)', () => {
 	});
 
 	it('drops the words and keeps the lamp when the header has no room', async () => {
-		const screen = render(TpWidgetHost, { tile: tile({ w: 2, h: 1 }), widget: TpStubWidget });
+		const screen = await render(TpWidgetHost, { tile: tile({ w: 2, h: 1 }), widget: TpStubWidget });
 		setTileStatus('wgt_a', { kind: 'stale', age: 'a while ago', retry: null });
 		await expect.element(screen.getByTestId('tile-badge')).toBeInTheDocument();
 
@@ -142,7 +142,7 @@ describe('removal (doc 06 §4)', () => {
 		// A music library is the data readers are most afraid to lose, and
 		// "remove" over it reads as "delete" unless something says otherwise.
 		const onRemove = vi.fn();
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpStubWidget, onRemove });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget, onRemove });
 
 		const remove = screen.getByRole('button', {
 			name: m['common.remove_tile'](),
@@ -162,9 +162,11 @@ describe('a widget that throws (doc 17 §6)', () => {
 
 	it('crashes into its own tile: a card, a line in the log, and a Retry that works', async () => {
 		clearLog();
-		const screen = render(TpWidgetHost, { tile: tile(), widget: TpThrowingWidget });
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpThrowingWidget });
 
-		await expect.element(screen.getByRole('alert')).toHaveTextContent(m['common.widget_crashed']());
+		await expect
+			.element(screen.getByRole('alert'))
+			.toMatchTextContent(m['common.widget_crashed']());
 		// A boundary catches the error itself, so SvelteKit's handleError never
 		// sees it; the log line is the only trace a bug report could carry.
 		expect(readLog().some((entry) => entry.level === 'error' && entry.src === 'boundary')).toBe(

@@ -67,7 +67,7 @@ afterEach(async () => {
 describe('the panel', () => {
 	it('shows the place, the reading and the chart’s summary line', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherDetail, props());
+		const screen = await render(TpWeatherDetail, props());
 
 		await expect.element(screen.getByText('Hà Nội')).toBeInTheDocument();
 		// doc 13 §8: the chart is always paired with a line somebody can read.
@@ -80,7 +80,7 @@ describe('the panel', () => {
 		// CC BY 4.0 for a link to the licence; until Week 8 this was a line of
 		// plain text, and the test passed for printing a name.
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherDetail, props());
+		const screen = await render(TpWeatherDetail, props());
 		const credit = screen.getByTestId('weather-attribution');
 
 		await expect
@@ -93,7 +93,7 @@ describe('the panel', () => {
 
 	it('says, beside the forecast, that a forecast can be wrong (doc 16 §4)', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherDetail, props());
+		const screen = await render(TpWeatherDetail, props());
 
 		await expect.element(screen.getByText(m['widget.weather.disclaimer']())).toBeVisible();
 	});
@@ -113,7 +113,7 @@ describe('the panel', () => {
 				});
 			})
 		);
-		const screen = render(TpWeatherDetail, props({ onUpdateSettings }));
+		const screen = await render(TpWeatherDetail, props({ onUpdateSettings }));
 
 		await screen.getByTestId('weather-change-place').click();
 		await screen.getByTestId('place-search').fill('hà n');
@@ -131,7 +131,7 @@ describe('the panel', () => {
 	it('can be left as it was', async () => {
 		serve(WEATHER_OK);
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpWeatherDetail, props({ onUpdateSettings }));
+		const screen = await render(TpWeatherDetail, props({ onUpdateSettings }));
 
 		await screen.getByTestId('weather-change-place').click();
 		await screen.getByRole('button', { name: m['widget.weather.keep_place']() }).click();
@@ -142,7 +142,7 @@ describe('the panel', () => {
 
 	it('draws a row per day in the week strip', async () => {
 		serve(WEATHER_OK);
-		render(TpWeatherDetail, props());
+		await render(TpWeatherDetail, props());
 
 		// Counted off the document: a testid locator is for one element, and the
 		// count is the assertion here.
@@ -155,7 +155,7 @@ describe('the panel', () => {
 
 	it('says to pick a place first when the tile has none', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherDetail, props({ settings: {} }));
+		const screen = await render(TpWeatherDetail, props({ settings: {} }));
 
 		await expect.element(screen.getByTestId('weather-detail-empty')).toBeInTheDocument();
 	});
@@ -171,7 +171,7 @@ describe('the panel', () => {
 			cachedAt: NOW.getTime()
 		});
 
-		const screen = render(TpWeatherDetail, props());
+		const screen = await render(TpWeatherDetail, props());
 		await expect.element(screen.getByTestId('chart-summary')).toBeVisible();
 
 		expect(swrCache.size).toBe(1);
@@ -181,7 +181,7 @@ describe('the panel', () => {
 
 	it('leaves no cache entry behind when it closes', async () => {
 		serve(WEATHER_OK);
-		const screen = render(TpWeatherDetail, props());
+		const screen = await render(TpWeatherDetail, props());
 		await expect.element(screen.getByTestId('chart-summary')).toBeVisible();
 
 		cleanup();
@@ -196,14 +196,14 @@ describe('the panel', () => {
 				throw new TypeError('Failed to fetch');
 			})
 		);
-		const screen = render(TpWeatherDetail, props());
+		const screen = await render(TpWeatherDetail, props());
 
 		await expect.element(screen.getByTestId('weather-detail-offline')).toBeInTheDocument();
 	});
 
 	it('names a located place from the live catalogue, not from storage', async () => {
 		serve(WEATHER_OK);
-		const screen = render(
+		const screen = await render(
 			TpWeatherDetail,
 			props({ settings: { place: { name: '', lat: 21.02, lon: 105.85 } } })
 		);

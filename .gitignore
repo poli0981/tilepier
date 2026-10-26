@@ -18,6 +18,7 @@ dist/
 
 # test artifacts
 coverage/
+.vitest/
 playwright-report/
 playwright/.cache/
 test-results/

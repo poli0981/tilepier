@@ -41,7 +41,10 @@ afterEach(() => {
 
 describe('countdown', () => {
 	it('sits at its full duration before it is started', async () => {
-		const screen = render(TpTimerWidget, props({ mode: 'countdown', durationMs: 5 * MINUTE }));
+		const screen = await render(
+			TpTimerWidget,
+			props({ mode: 'countdown', durationMs: 5 * MINUTE })
+		);
 
 		await expect.element(screen.getByTestId('timer-readout')).toHaveTextContent('5:00');
 		await expect
@@ -50,21 +53,21 @@ describe('countdown', () => {
 	});
 
 	it('counts down from an absolute deadline', async () => {
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props({ mode: 'countdown', durationMs: 5 * MINUTE, endsAt: Date.now() + 90_000 })
 		);
 
 		// A shape assertion, not an exact one: real time passes between the
 		// render and the read, and pinning the second would make this flake.
-		await expect.element(screen.getByTestId('timer-readout')).toHaveTextContent(/^1:(29|30)$/);
+		await expect.element(screen.getByTestId('timer-readout')).toMatchTextContent(/^1:(29|30)$/);
 		await expect
 			.element(screen.getByTestId('timer-primary'))
 			.toHaveTextContent(m['widget.timer.pause']());
 	});
 
 	it('offers to resume when paused', async () => {
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props({ mode: 'countdown', durationMs: 5 * MINUTE, pausedMs: 90_000 })
 		);
@@ -77,7 +80,7 @@ describe('countdown', () => {
 
 	it('starts from a deadline the caller can persist', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props({ mode: 'countdown', durationMs: 5 * MINUTE }, onUpdateSettings)
 		);
@@ -97,7 +100,7 @@ describe('countdown', () => {
 
 	it('pauses to a remainder rather than to a deadline', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props(
 				{ mode: 'countdown', durationMs: 5 * MINUTE, endsAt: Date.now() + 90_000 },
@@ -116,7 +119,7 @@ describe('countdown', () => {
 describe('finishing', () => {
 	it('says it finished, and clears the deadline', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props(
 				// Muted so the test does not reach for an AudioContext it cannot
@@ -141,7 +144,7 @@ describe('finishing', () => {
 	it('says it finished while away when the deadline is long past', async () => {
 		// doc 07 §2's own wording. Ten minutes late is a shut laptop, not a
 		// throttled tab, and the tile says which.
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props({
 				mode: 'countdown',
@@ -159,7 +162,7 @@ describe('finishing', () => {
 	it('announces one deadline once', async () => {
 		// The readout ticks twice a second; the completion must not.
 		const onUpdateSettings = vi.fn();
-		render(
+		await render(
 			TpTimerWidget,
 			props(
 				{ mode: 'countdown', durationMs: 5 * MINUTE, endsAt: Date.now() - 1000, muted: true },
@@ -174,7 +177,7 @@ describe('finishing', () => {
 
 describe('pomodoro', () => {
 	it('shows the phase and the streak dots', async () => {
-		const screen = render(
+		const screen = await render(
 			TpTimerWidget,
 			props({ mode: 'pomodoro', phase: 'focus', completed: 2, cycleLength: 4 })
 		);
@@ -188,7 +191,7 @@ describe('pomodoro', () => {
 	});
 
 	it('labels a break as a break', async () => {
-		const screen = render(TpTimerWidget, props({ mode: 'pomodoro', phase: 'long-break' }));
+		const screen = await render(TpTimerWidget, props({ mode: 'pomodoro', phase: 'long-break' }));
 
 		await expect
 			.element(screen.getByTestId('timer-phase'))
@@ -198,7 +201,7 @@ describe('pomodoro', () => {
 	it('returns a finished break to focus without starting it', async () => {
 		// doc 07 §2: never auto-start the next phase.
 		const onUpdateSettings = vi.fn();
-		render(
+		await render(
 			TpTimerWidget,
 			props(
 				{ mode: 'pomodoro', phase: 'break', endsAt: Date.now() - 1000, muted: true },
@@ -216,7 +219,7 @@ describe('pomodoro', () => {
 	});
 
 	it('shows no phase chip in countdown mode', async () => {
-		const screen = render(TpTimerWidget, props({ mode: 'countdown' }));
+		const screen = await render(TpTimerWidget, props({ mode: 'countdown' }));
 		await expect.element(screen.getByTestId('timer-phase')).not.toBeInTheDocument();
 	});
 });
@@ -227,7 +230,7 @@ describe('permission-needed', () => {
 		// `permissions: ['notifications']` is what makes required at all.
 		vi.stubGlobal('Notification', { permission: 'denied' });
 
-		const screen = render(TpTimerWidget, props({ mode: 'countdown', notify: true }));
+		const screen = await render(TpTimerWidget, props({ mode: 'countdown', notify: true }));
 
 		await expect
 			.element(screen.getByTestId('timer-permission'))
@@ -237,7 +240,7 @@ describe('permission-needed', () => {
 	it('stays quiet when the user never asked for notifications', async () => {
 		vi.stubGlobal('Notification', { permission: 'denied' });
 
-		const screen = render(TpTimerWidget, props({ mode: 'countdown', notify: false }));
+		const screen = await render(TpTimerWidget, props({ mode: 'countdown', notify: false }));
 
 		await expect.element(screen.getByTestId('timer-permission')).not.toBeInTheDocument();
 	});
@@ -248,7 +251,7 @@ describe('at tier L', () => {
 	// allows — had this tier untested until Week 8 (doc 13 §3's tiers: S is
 	// w ≤ 2 and h ≤ 1, L is w ≥ 4 or h ≥ 4).
 	it('shows the countdown and its control', async () => {
-		const screen = render(TpTimerWidget, {
+		const screen = await render(TpTimerWidget, {
 			...props({ mode: 'countdown', durationMs: 5 * MINUTE }),
 			size: { w: 4, h: 3, pxW: 440, pxH: 240, tier: 'L' }
 		});

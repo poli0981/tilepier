@@ -30,7 +30,7 @@ afterEach(() => {
 
 describe('when the chart module will not load', () => {
 	it('renders a sentence rather than an empty frame', async () => {
-		const screen = render(TpChart, {
+		const screen = await render(TpChart, {
 			option: { ...baseOption(), series: [] },
 			summary: 'nothing to show',
 			loadingLabel: 'drawing',

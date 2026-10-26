@@ -289,9 +289,8 @@ feed (VnExpress) arriving through the Worker's own egress.
   "esbuild not needed under Vite 8/Rolldown". Verified at install — that is
   wrong: esbuild is a direct dependency of `vite@8.2.1` itself (and of
   wrangler), used for TS transform and dependency pre-bundling. Rolldown owns
-  the production bundle, not the whole toolchain. `msw` is denied; its worker
-  script is generated deliberately with `pnpm exec msw init static/` when
-  component tests land, rather than as an install side effect.
+  the production bundle, not the whole toolchain. `msw` was denied until
+  2026-10-26, when msw 3 dropped its postinstall and the entry went with it.
 - pnpm 11 additionally gates packages published inside its minimum-release-age
   window; conscious exceptions are listed in `minimumReleaseAgeExclude`. This
   is the same caution as the cooldown above, enforced at install time; its

@@ -26,7 +26,7 @@ function drag(range: HTMLInputElement, value: number, release: boolean): void {
 
 describe('TpSeekBar', () => {
 	it('shows where it is and how long it runs, and names the range', async () => {
-		const screen = render(TpSeekBar, {
+		const screen = await render(TpSeekBar, {
 			positionMs: 65_000,
 			durationMs: 187_000,
 			label: 'position',
@@ -40,7 +40,7 @@ describe('TpSeekBar', () => {
 
 	it('holds the thumb where the reader drags it, and seeks once, on release', async () => {
 		const onSeek = vi.fn();
-		const screen = render(TpSeekBar, {
+		const screen = await render(TpSeekBar, {
 			positionMs: 10_000,
 			durationMs: 100_000,
 			label: 'position',
@@ -61,7 +61,7 @@ describe('TpSeekBar', () => {
 	});
 
 	it('can be switched off, as it is with nothing loaded', async () => {
-		const screen = render(TpSeekBar, {
+		const screen = await render(TpSeekBar, {
 			positionMs: 0,
 			durationMs: 0,
 			label: 'position',

@@ -4,10 +4,10 @@
 
 | Layer | Tool | Scope |
 |-------|------|-------|
-| Unit | Vitest 4 (node env) | pure logic: lunar engine, calc engine, swr, scheduler, migrations, formatters, QR/password/color utils, RSS normalizer, symbol validators |
-| Component | Vitest 4 browser mode (`@vitest/browser-playwright` + `vitest-browser-svelte`) | widget states (loading/empty/stale/error), settings round-trips, a11y roles |
+| Unit | Vitest 5 (node env) | pure logic: lunar engine, calc engine, swr, scheduler, migrations, formatters, QR/password/color utils, RSS normalizer, symbol validators |
+| Component | Vitest 5 browser mode (`@vitest/browser-playwright` + `vitest-browser-svelte` 3) | widget states (loading/empty/stale/error), settings round-trips, a11y roles. `render` is awaited, and text matches whole: `toMatchTextContent` or `exact: false` when a test means a part (since 2026-10-26) |
 | API (Worker) | Vitest + adapter platform-proxy (miniflare-backed) | endpoint validation, KV cache hit/miss/stale, breaker transitions, envelope shapes |
-| Mocked network | MSW 2 | upstream fixtures per API (recorded, trimmed) |
+| Mocked network | MSW 3 | upstream fixtures per API (recorded, trimmed); an unhandled request fails the test (`onUnhandledFrame: 'error'`) |
 | A11y | axe-core through `@axe-core/playwright`, WCAG 2.2 A + AA (`e2e/a11y`, Week 8) | every surface; targets ≥ 40 px outside tiles |
 | E2E | Playwright — **Chromium only** (corrected 2026-09-29: `playwright.config.ts` has never defined `projects`, although `e2e.yml` installs all three; Firefox and Safari are §5's manual matrix) | smoke journeys (§4) |
 

@@ -56,7 +56,7 @@ describe('TpMusicLibrary', () => {
 			track('a', { title: 'Chúng ta của hiện tại', artist: 'Sơn Tùng M-TP' }),
 			track('b', { title: 'Một bài khác', artist: 'Người khác' })
 		]);
-		const screen = render(TpMusicLibrary);
+		const screen = await render(TpMusicLibrary);
 
 		await screen.getByTestId('music-search').fill('son tung');
 
@@ -65,7 +65,7 @@ describe('TpMusicLibrary', () => {
 
 	it('says so when nothing matches', async () => {
 		await load([track('a', { title: 'Một' })]);
-		const screen = render(TpMusicLibrary);
+		const screen = await render(TpMusicLibrary);
 
 		await screen.getByTestId('music-search').fill('zzz');
 
@@ -80,7 +80,7 @@ describe('TpMusicLibrary', () => {
 			track('y', { title: 'Alpha', artist: 'B', addedAt: 3 }),
 			track('z', { title: 'Charlie', artist: 'C', addedAt: 2 })
 		]);
-		const screen = render(TpMusicLibrary);
+		const screen = await render(TpMusicLibrary);
 		await vi.waitFor(() => expect(titles(screen.container)).toEqual(['Bravo', 'Alpha', 'Charlie']));
 
 		await screen.getByTestId('music-sort').selectOptions('title');
@@ -96,7 +96,7 @@ describe('TpMusicLibrary', () => {
 				track(`t${String(index).padStart(4, '0')}`, { artist: 'A', trackNo: index + 1 })
 			)
 		);
-		const screen = render(TpMusicLibrary);
+		const screen = await render(TpMusicLibrary);
 
 		await vi.waitFor(() => expect(titles(screen.container).length).toBeGreaterThan(0));
 		const rendered = screen.container.querySelectorAll('li');
@@ -117,7 +117,7 @@ describe('TpMusicLibrary', () => {
 			track('c', { title: 'Ba', artist: 'X' })
 		]);
 		const playTracks = vi.spyOn(player, 'playTracks').mockImplementation(() => {});
-		const screen = render(TpMusicLibrary);
+		const screen = await render(TpMusicLibrary);
 		await screen.getByTestId('music-search').fill('x');
 
 		await screen.getByRole('button', { name: /Ba/ }).click();
@@ -130,7 +130,7 @@ describe('TpMusicLibrary', () => {
 		const outer = vi.fn();
 		document.addEventListener('keydown', outer);
 		try {
-			const screen = render(TpMusicLibrary);
+			const screen = await render(TpMusicLibrary);
 			const search = screen.getByTestId('music-search');
 			await search.fill('abc');
 
@@ -151,7 +151,7 @@ describe('TpMusicLibrary', () => {
 			track('b', { title: 'Odd', error: 'unsupported' }),
 			track('c', { title: 'Fine' })
 		]);
-		const screen = render(TpMusicLibrary);
+		const screen = await render(TpMusicLibrary);
 
 		await expect
 			.element(screen.getByText(m['widget.music.mark_missing'](), { exact: true }))

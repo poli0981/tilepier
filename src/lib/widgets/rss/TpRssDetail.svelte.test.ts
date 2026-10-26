@@ -110,7 +110,7 @@ afterEach(async () => {
 	await db.delete();
 });
 
-async function ready(screen: ReturnType<typeof render>) {
+async function ready(screen: Awaited<ReturnType<typeof render>>) {
 	await expect.element(screen.getByText('Story v-new')).toBeInTheDocument();
 	await expect.element(screen.getByText('Story b-mid')).toBeInTheDocument();
 }
@@ -122,7 +122,7 @@ describe('opening it (doc 08 §4)', () => {
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpRssDetail, props({ onUpdateSettings }));
+		const screen = await render(TpRssDetail, props({ onUpdateSettings }));
 
 		expect(onUpdateSettings).toHaveBeenCalledOnce();
 		const written = onUpdateSettings.mock.calls[0]?.[0] as { lastOpenedAt: number };
@@ -135,10 +135,10 @@ describe('opening it (doc 08 §4)', () => {
 		expect(dotted).toEqual(['Story v-new', 'Story b-mid']);
 	});
 
-	it('writes nothing for a tile with no feeds', () => {
+	it('writes nothing for a tile with no feeds', async () => {
 		serveFeeds({});
 		const onUpdateSettings = vi.fn();
-		render(TpRssDetail, props({ settings: {}, onUpdateSettings }));
+		await render(TpRssDetail, props({ settings: {}, onUpdateSettings }));
 
 		expect(onUpdateSettings).not.toHaveBeenCalled();
 	});
@@ -150,7 +150,7 @@ describe('the list and the filter', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssDetail, props());
+		const screen = await render(TpRssDetail, props());
 		await ready(screen);
 
 		await screen.getByRole('button', { name: 'BBC News', exact: true }).click();
@@ -169,7 +169,7 @@ describe('the reader', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssDetail, props());
+		const screen = await render(TpRssDetail, props());
 		await ready(screen);
 
 		await screen.getByRole('button', { name: /Story v-new/ }).click();
@@ -189,13 +189,13 @@ describe('the reader', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssDetail, props());
+		const screen = await render(TpRssDetail, props());
 		await ready(screen);
 
 		await screen.getByRole('button', { name: /Story b-mid/ }).click();
 
 		const summary = screen.getByTestId('feed-html');
-		await expect.element(summary).toHaveTextContent('Before');
+		await expect.element(summary).toMatchTextContent('Before');
 		const html = summary.element().innerHTML;
 		expect(html).not.toMatch(/<img|<script|onerror|tracker\.example|\/relative/);
 		expect(html).toContain('href="https://bbc.co.uk/x"');
@@ -209,7 +209,7 @@ describe('the reader', () => {
 			[VNE]: ok({ kind: 'feed', feed: VNE_FEED }),
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
-		const screen = render(TpRssDetail, props());
+		const screen = await render(TpRssDetail, props());
 		await ready(screen);
 
 		await screen.getByRole('button', { name: /Story v-old/ }).click();
@@ -225,7 +225,7 @@ describe('the feed manager', () => {
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpRssDetail, props({ onUpdateSettings }));
+		const screen = await render(TpRssDetail, props({ onUpdateSettings }));
 		await ready(screen);
 
 		await screen
@@ -241,7 +241,7 @@ describe('the feed manager', () => {
 			[BBC]: ok({ kind: 'feed', feed: BBC_FEED })
 		});
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpRssDetail, props({ onUpdateSettings }));
+		const screen = await render(TpRssDetail, props({ onUpdateSettings }));
 		await ready(screen);
 
 		await expect
@@ -257,7 +257,7 @@ describe('the feed manager', () => {
 	it('adds a feed through the same box as the tile', async () => {
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpRssDetail,
 			props({ settings: { feeds: [VNE], lastOpenedAt: NOW - MINUTE }, onUpdateSettings })
 		);
@@ -276,7 +276,7 @@ describe('the feed manager', () => {
 			[VNE]: { ok: false, error: { code: 'UPSTREAM_DOWN' } },
 			[BBC]: ok({ kind: 'unavailable', reason: 'not-feed' })
 		});
-		const screen = render(TpRssDetail, props());
+		const screen = await render(TpRssDetail, props());
 
 		await expect.element(screen.getByText(m['widget.rss.trouble_not_feed']())).toBeInTheDocument();
 		await expect.element(screen.getByText(m['widget.rss.trouble_failed']())).toBeInTheDocument();
@@ -308,7 +308,7 @@ describe('OPML (doc 08 §4)', () => {
 	it('imports what it can and says what it skipped, and why', async () => {
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpRssDetail,
 			props({ settings: { feeds: [VNE], lastOpenedAt: NOW - MINUTE }, onUpdateSettings })
 		);
@@ -327,14 +327,14 @@ describe('OPML (doc 08 §4)', () => {
 			lastOpenedAt: NOW - MINUTE
 		});
 		const note = screen.getByTestId('rssd-opml-note');
-		await expect.element(note).toHaveTextContent(m['widget.rss.refused_duplicate']());
-		await expect.element(note).toHaveTextContent(m['widget.rss.refused_address']());
+		await expect.element(note).toMatchTextContent(m['widget.rss.refused_duplicate']());
+		await expect.element(note).toMatchTextContent(m['widget.rss.refused_address']());
 	});
 
 	it('refuses a file that is not a feed list, and changes nothing', async () => {
 		serveFeeds({ [VNE]: ok({ kind: 'feed', feed: VNE_FEED }) });
 		const onUpdateSettings = vi.fn();
-		const screen = render(
+		const screen = await render(
 			TpRssDetail,
 			props({ settings: { feeds: [VNE], lastOpenedAt: NOW - MINUTE }, onUpdateSettings })
 		);
@@ -358,7 +358,7 @@ describe('OPML (doc 08 §4)', () => {
 		) {
 			names.push(this.download);
 		});
-		const screen = render(TpRssDetail, props());
+		const screen = await render(TpRssDetail, props());
 		await ready(screen);
 
 		await screen.getByTestId('rssd-opml-export').click();

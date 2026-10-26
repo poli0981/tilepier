@@ -50,7 +50,7 @@ afterEach(async () => {
 describe('TpMusicOrphans', () => {
 	it('says how many, and how much, and deletes them only once asked twice', async () => {
 		const size = fmtBytes(4 * 1024 * 1024, settings.locale);
-		const screen = render(TpMusicOrphans);
+		const screen = await render(TpMusicOrphans);
 
 		await expect
 			.element(screen.getByText(m['widget.music.orphans']({ count: 2, size })))
@@ -58,7 +58,9 @@ describe('TpMusicOrphans', () => {
 
 		await screen.getByRole('button', { name: m['widget.music.orphans_delete']() }).click();
 		await expect
-			.element(screen.getByText(m['widget.music.orphans_confirm']({ count: 2, size })))
+			.element(
+				screen.getByText(m['widget.music.orphans_confirm']({ count: 2, size }), { exact: false })
+			)
 			.toBeVisible();
 		await screen.getByRole('button', { name: m['widget.music.keep']() }).click();
 		expect(await target.trackBlobs.count()).toBe(3);
@@ -73,7 +75,7 @@ describe('TpMusicOrphans', () => {
 
 	it('shows nothing when there is nothing to show', async () => {
 		await collection.deleteOrphans();
-		const screen = render(TpMusicOrphans);
+		const screen = await render(TpMusicOrphans);
 
 		await expect.element(screen.getByTestId('music-orphans')).not.toBeInTheDocument();
 	});

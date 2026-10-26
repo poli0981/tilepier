@@ -35,7 +35,7 @@ afterEach(() => {
 
 describe('round-trips', () => {
 	it('writes the theme on click, with no save step', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('theme-light').click();
 
@@ -44,7 +44,7 @@ describe('round-trips', () => {
 	});
 
 	it('writes the accent from a preset swatch', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('accent-7b8ff2').click();
 
@@ -53,7 +53,7 @@ describe('round-trips', () => {
 	});
 
 	it('writes reduced motion, and motionOK follows', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('motion-on').click();
 
@@ -62,7 +62,7 @@ describe('round-trips', () => {
 	});
 
 	it('hides scrollbars, and names the control by its own row', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('scrollbars-hidden').click();
 
@@ -74,7 +74,7 @@ describe('round-trips', () => {
 	});
 
 	it('toggles the 24-hour clock', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('clock24h').click();
 
@@ -84,7 +84,7 @@ describe('round-trips', () => {
 
 	it('reflects the stored value rather than a default', async () => {
 		settings.patch({ theme: 'light' });
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await expect.element(screen.getByTestId('theme-light')).toHaveAttribute('aria-pressed', 'true');
 		await expect.element(screen.getByTestId('theme-dark')).toHaveAttribute('aria-pressed', 'false');
@@ -96,7 +96,7 @@ describe('names for assistive technology', () => {
 		// Until 2026-10-06 the theme and motion groups were both labelled by the
 		// Appearance heading, so a screen reader announced two groups called
 		// "Appearance" and neither said what it chose.
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		for (const label of [
 			m['settings.language.label'](),
@@ -109,7 +109,7 @@ describe('names for assistive technology', () => {
 	});
 
 	it('names the accent swatches by colour rather than by hex', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await expect
 			.element(screen.getByRole('button', { name: m['settings.appearance.accent_teal']() }))
@@ -122,7 +122,7 @@ describe('names for assistive technology', () => {
 
 describe('deck', () => {
 	it('restores the seeded layout', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 		const seeded = deck.tiles.length;
 
 		deck.add('clock');
@@ -139,7 +139,7 @@ describe('deck', () => {
 
 describe('erase', () => {
 	it('takes two presses, so one stray click cannot wipe a device', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await expect.element(screen.getByTestId('erase-confirm')).not.toBeInTheDocument();
 		await screen.getByTestId('erase-data').click();
@@ -149,14 +149,14 @@ describe('erase', () => {
 
 describe('diagnostics', () => {
 	it('is hidden until the flag is set (doc 18 §5)', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await expect.element(screen.getByTestId('diagnostics')).not.toBeInTheDocument();
 	});
 
 	it('appears with the settings flag, no fourth localStorage key involved', async () => {
 		settings.patch({ debug: true });
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await expect.element(screen.getByTestId('diagnostics')).toBeVisible();
 		await expect.element(screen.getByText(m['settings.diagnostics.no_tasks']())).toBeVisible();
@@ -192,14 +192,14 @@ describe('diagnostics', () => {
 		};
 		const fetcher = vi.fn(async () => Response.json({ ok: true, data: report, meta: {} }));
 		vi.stubGlobal('fetch', fetcher);
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('health-token').fill('the-operator-token');
 		await screen.getByTestId('health-read').click();
 
 		await expect.element(screen.getByTestId('health-breakers')).toBeVisible();
 		await expect.element(screen.getByText('upstream 451: restricted location')).toBeVisible();
-		await expect.element(screen.getByTestId('health-where')).toHaveTextContent('SIN');
+		await expect.element(screen.getByTestId('health-where')).toMatchTextContent('SIN');
 
 		const stored = Object.keys(localStorage)
 			.map((key) => localStorage.getItem(key) ?? '')
@@ -215,7 +215,7 @@ describe('diagnostics', () => {
 			'fetch',
 			vi.fn(async () => new Response('Not Found', { status: 404 }))
 		);
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await screen.getByTestId('health-token').fill('wrong');
 		await screen.getByTestId('health-read').click();
@@ -227,7 +227,7 @@ describe('diagnostics', () => {
 
 describe('about', () => {
 	it('shows the build stamped in at compile time', async () => {
-		const screen = render(TpSettingsPanel);
+		const screen = await render(TpSettingsPanel);
 
 		await expect.element(screen.getByTestId('build-info')).toBeVisible();
 	});

@@ -44,7 +44,7 @@ afterEach(() => {
 
 describe('hide on scroll', () => {
 	it('starts shown, hides going down, and comes back going up', async () => {
-		render(TpTopBar);
+		await render(TpTopBar);
 		expect(bar().dataset['hidden']).toBe('false');
 
 		await scrollTo(600);
@@ -55,7 +55,7 @@ describe('hide on scroll', () => {
 	});
 
 	it('ignores a nudge smaller than the slop', async () => {
-		render(TpTopBar);
+		await render(TpTopBar);
 		await scrollTo(600);
 		await scrollTo(596);
 
@@ -63,7 +63,7 @@ describe('hide on scroll', () => {
 	});
 
 	it('is always shown near the top of the page', async () => {
-		render(TpTopBar);
+		await render(TpTopBar);
 		await scrollTo(600);
 		await scrollTo(10);
 
@@ -72,7 +72,7 @@ describe('hide on scroll', () => {
 
 	// WCAG 2.4.11: a keyboard user must never tab into a bar they cannot see.
 	it('comes back the moment focus enters it', async () => {
-		const screen = render(TpTopBar);
+		const screen = await render(TpTopBar);
 		await scrollTo(600);
 		expect(bar().dataset['hidden']).toBe('true');
 
@@ -81,7 +81,7 @@ describe('hide on scroll', () => {
 	});
 
 	it('never hides in edit mode, whose strip hangs off the bar', async () => {
-		render(TpTopBar);
+		await render(TpTopBar);
 		ui.toggleEdit();
 		await scrollTo(600);
 
@@ -89,7 +89,7 @@ describe('hide on scroll', () => {
 	});
 
 	it('never hides with the drawer open', async () => {
-		render(TpTopBar);
+		await render(TpTopBar);
 		ui.openDrawer();
 		await scrollTo(600);
 
@@ -97,7 +97,7 @@ describe('hide on scroll', () => {
 	});
 
 	it('hides by transform only, so nothing below it moves', async () => {
-		render(TpTopBar);
+		await render(TpTopBar);
 		const before = bar().getBoundingClientRect().height;
 		await scrollTo(600);
 
@@ -110,7 +110,7 @@ describe('edit mode, for a screen reader (doc 13 §8)', () => {
 	it('announces entering edit mode, however it was entered', async () => {
 		// The bar's toggle carries aria-pressed, but `e` leaves focus where it
 		// was, and nothing said the deck had changed mode.
-		const screen = render(TpTopBar);
+		const screen = await render(TpTopBar);
 		const status = screen.getByTestId('edit-announce');
 		await expect.element(status).toHaveAttribute('role', 'status');
 		await expect.element(status).toHaveTextContent('');

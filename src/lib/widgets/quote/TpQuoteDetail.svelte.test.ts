@@ -40,7 +40,7 @@ afterEach(() => {
 
 describe('browsing', () => {
 	it('opens showing the whole collection', async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(
 			m['widget.quote.results']({
 				count: catalogue.quotes.length,
@@ -50,12 +50,12 @@ describe('browsing', () => {
 	});
 
 	it("shows today's quote above the browse", async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('today-text')).toBeInTheDocument();
 	});
 
 	it('narrows on a search, and the count follows', async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(ALL);
 
 		await screen.getByTestId('quote-search').fill('perseverance');
@@ -63,7 +63,7 @@ describe('browsing', () => {
 	});
 
 	it('folds diacritics, so a search without marks still finds Vietnamese', async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await screen.getByTestId('quote-search').fill('kien tri');
 		await expect.element(screen.getByTestId('quote-empty')).not.toBeInTheDocument();
 	});
@@ -71,13 +71,13 @@ describe('browsing', () => {
 	it('says nothing matches rather than showing an empty list', async () => {
 		// doc 06 §3's `empty`. The two shapes it has here are different
 		// sentences, because they lead to different actions.
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await screen.getByTestId('quote-search').fill('zzzzqqqq');
 		await expect.element(screen.getByText(m['widget.quote.no_matches']())).toBeInTheDocument();
 	});
 
 	it('offers every theme the dataset carries', async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(ALL);
 
 		const select = (await screen
@@ -89,7 +89,7 @@ describe('browsing', () => {
 	});
 
 	it('filters by theme', async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(ALL);
 
 		await screen.getByTestId('quote-tag').selectOptions('perseverance');
@@ -101,7 +101,7 @@ describe('favourites', () => {
 	it('says the list is empty in its own words, not the no-matches ones', async () => {
 		// "nothing kept yet" leads to a different action than "nothing matches",
 		// so doc 12 §8's one-action rule needs two sentences here.
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(ALL);
 		await screen.getByTestId('quote-kept-only').click();
 		await expect.element(screen.getByText(m['widget.quote.no_favourites']())).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('favourites', () => {
 
 	it('narrows to the kept ones when there are some', async () => {
 		const first = catalogue.quotes[0];
-		const screen = render(TpQuoteDetail, props({ favourites: [first?.id] }));
+		const screen = await render(TpQuoteDetail, props({ favourites: [first?.id] }));
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(ALL);
 		await screen.getByTestId('quote-kept-only').click();
 
@@ -120,7 +120,7 @@ describe('favourites', () => {
 
 	it('writes a keep back through onUpdateSettings', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpQuoteDetail, props({}, onUpdateSettings));
+		const screen = await render(TpQuoteDetail, props({}, onUpdateSettings));
 		await expect.element(screen.getByTestId('quote-count')).toHaveTextContent(ALL);
 
 		// The unfiltered list, deliberately. Searching for a theme name would
@@ -142,7 +142,7 @@ describe('provenance', () => {
 	it('says on the panel where the collection comes from', async () => {
 		// doc 16 §1's obligation, said where a reader of the quotes is rather
 		// than only on the licences page.
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByText(m['widget.quote.source_note']())).toBeInTheDocument();
 	});
 });
@@ -158,7 +158,7 @@ describe("today's quote (doc 08 §3)", () => {
 	it('copies the line with its attribution, as the tile does', async () => {
 		const writeText = vi.fn(() => Promise.resolve());
 		vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 
 		await screen.getByTestId('today-copy').click();
 
@@ -178,7 +178,7 @@ describe("today's quote (doc 08 §3)", () => {
 
 	it('keeps it from where it is, without finding it in the list', async () => {
 		const onUpdateSettings = vi.fn();
-		const screen = render(TpQuoteDetail, props({}, onUpdateSettings));
+		const screen = await render(TpQuoteDetail, props({}, onUpdateSettings));
 
 		await screen.getByTestId('today-keep').click();
 
@@ -186,12 +186,12 @@ describe("today's quote (doc 08 §3)", () => {
 	});
 
 	it('shows the lunar date in Vietnamese, and only there', async () => {
-		const screen = render(TpQuoteDetail, props());
+		const screen = await render(TpQuoteDetail, props());
 		await expect.element(screen.getByTestId('today-lunar')).toBeInTheDocument();
 
 		cleanup();
 		settings.patch({ locale: 'en' });
-		const english = render(TpQuoteDetail, props());
+		const english = await render(TpQuoteDetail, props());
 		await expect.element(english.getByTestId('today-text')).toBeInTheDocument();
 		await expect.element(english.getByTestId('today-lunar')).not.toBeInTheDocument();
 	});

@@ -49,8 +49,8 @@ async function stored(): Promise<string[] | undefined> {
 
 describe('TpMusicPlaylists', () => {
 	it('creates a playlist, chosen at once, and the library’s + fills it', async () => {
-		const screen = render(TpMusicPlaylists);
-		const list = render(TpMusicLibrary);
+		const screen = await render(TpMusicPlaylists);
+		const list = await render(TpMusicLibrary);
 
 		await screen.getByTestId('music-playlist-name').fill('Chạy bộ');
 		await screen.getByRole('button', { name: m['widget.music.playlist_create']() }).click();
@@ -83,7 +83,7 @@ describe('TpMusicPlaylists', () => {
 		await playlists.add(playlists.activeId ?? '', 'a');
 		await playlists.add(playlists.activeId ?? '', 'b');
 		await playlists.add(playlists.activeId ?? '', 'c');
-		const screen = render(TpMusicPlaylists);
+		const screen = await render(TpMusicPlaylists);
 
 		await screen.getByRole('button', { name: m['widget.music.move_up']({ title: 'Cúc' }) }).click();
 		await vi.waitFor(async () => expect(await stored()).toEqual(['a', 'c', 'b']));
@@ -102,7 +102,7 @@ describe('TpMusicPlaylists', () => {
 		const id = playlists.activeId ?? '';
 		for (const track of ['c', 'gone', 'a']) await playlists.add(id, track);
 		const playTracks = vi.spyOn(player, 'playTracks').mockImplementation(() => {});
-		const screen = render(TpMusicPlaylists);
+		const screen = await render(TpMusicPlaylists);
 
 		await expect.element(screen.getByText(m['widget.music.gone_from_library']())).toBeVisible();
 		await screen.getByRole('button', { name: m['widget.music.playlist_play']() }).click();
@@ -113,11 +113,15 @@ describe('TpMusicPlaylists', () => {
 	it('asks before deleting, and deletes the list, never the songs', async () => {
 		await playlists.create('Buồn');
 		await playlists.add(playlists.activeId ?? '', 'a');
-		const screen = render(TpMusicPlaylists);
+		const screen = await render(TpMusicPlaylists);
 
 		await screen.getByRole('button', { name: m['widget.music.playlist_delete']() }).click();
 		await expect
-			.element(screen.getByText(m['widget.music.playlist_delete_confirm']({ name: 'Buồn' })))
+			.element(
+				screen.getByText(m['widget.music.playlist_delete_confirm']({ name: 'Buồn' }), {
+					exact: false
+				})
+			)
 			.toBeVisible();
 		await screen.getByRole('button', { name: m['widget.music.keep']() }).click();
 		expect(await target.playlists.count()).toBe(1);
@@ -145,7 +149,7 @@ describe('TpMusicPlaylists', () => {
 
 	it('keeps a rename on Enter, and ignores a blank one', async () => {
 		await playlists.create('Cũ');
-		const screen = render(TpMusicPlaylists);
+		const screen = await render(TpMusicPlaylists);
 		const name = screen.getByRole('textbox', { name: m['widget.music.playlist_name']() });
 
 		await name.fill('Mới');

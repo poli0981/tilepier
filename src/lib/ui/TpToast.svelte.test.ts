@@ -21,7 +21,7 @@ afterEach(() => {
 
 describe('TpToast', () => {
 	it('says a 429 in its own words', async () => {
-		const screen = render(TpToast);
+		const screen = await render(TpToast);
 
 		toasts.show({ kind: 'rate-limited' });
 
@@ -31,7 +31,7 @@ describe('TpToast', () => {
 
 	it('says a notice in whatever words it carries, resolved when it renders', async () => {
 		let resolved = 0;
-		const screen = render(TpToast);
+		const screen = await render(TpToast);
 
 		toasts.show({
 			kind: 'notice',
@@ -46,7 +46,7 @@ describe('TpToast', () => {
 	});
 
 	it('goes when dismissed', async () => {
-		const screen = render(TpToast);
+		const screen = await render(TpToast);
 		toasts.show({ kind: 'notice', message: () => 'x' });
 		await expect.element(screen.getByTestId('toast')).toBeVisible();
 
