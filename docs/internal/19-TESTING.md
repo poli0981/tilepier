@@ -49,6 +49,12 @@ just a lower number:
 Coverage runs via `pnpm test:cov` (`@vitest/coverage-v8`); plain `pnpm test`
 stays fast and uncovered for the inner loop. CI runs the covered form.
 
+**The same report feeds SonarQube Cloud** since 2026-10-26 (doc 21 §8), whose
+quality gate asks 80 % of the lines a pull request adds or changes to be
+covered. `sonar-project.properties` restates this section's scope — the
+includes and every exemption above — in Sonar's wildcards; an exemption added
+here and not there counts its file as uncovered on the next change to it.
+
 ## 3. Non-negotiable unit suites
 
 1. **Lunar engine:** QuoteAtlas vectors carried over + leap-month years
