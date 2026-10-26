@@ -86,9 +86,10 @@ test('a drag survives a reload', async ({ page }) => {
 	expect(box).not.toBeNull();
 
 	// Right by roughly two columns, and deliberately **not** downward. The seed
-	// puts notes directly below the clock (doc 13 §9), and with `float: false`
-	// (doc 06 §5.4) a drag into an occupied row is compacted straight back to
-	// where it started — which looks exactly like a drag that never worked.
+	// puts notes directly below the clock (doc 13 §9), and with gridstack's
+	// default `mode: 'top'` (doc 06 §5.4) a drag into an occupied row is
+	// compacted straight back to where it started — which looks exactly like a
+	// drag that never worked.
 	// Sideways there is nothing to collide with, and the assertion still says
 	// what it means to say.
 	await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
@@ -355,4 +356,36 @@ test('Escape unwinds the drawer first, then edit mode', async ({ page }) => {
 
 	await page.keyboard.press('Escape');
 	await expect(main).toHaveAttribute('data-edit', 'off');
+});
+
+test('the grid keeps its resize handles in a stacking context of its own', async ({ page }) => {
+	await acceptGate(page);
+	await expect(page.locator('.grid-stack-item')).toHaveCount(SEEDED_TILES);
+	await page.keyboard.press('e');
+	await expect(page.getByRole('main')).toHaveAttribute('data-edit', 'on');
+
+	// gridstack 14 gives its resize handles z-index 100 and 101. In the page's
+	// stacking context that paints a hovered tile's handle over the top bar (50),
+	// the drawer (60, 61) and the detail (90, 91). So the grid must be the
+	// stacking context its handles rise inside. A hit test cannot show this: an
+	// open overlay makes the deck inert, and inert content is skipped by
+	// elementFromPoint while it is still painted.
+	const tile = page.locator('.grid-stack-item').first();
+	await tile.hover();
+	const handle = tile.locator('> .ui-resizable-handle');
+	await expect(handle).toBeVisible();
+
+	const context = await handle.evaluate((element) => {
+		for (let node = element.parentElement; node !== null; node = node.parentElement) {
+			const style = getComputedStyle(node);
+			const stacking =
+				style.isolation === 'isolate' ||
+				(style.position !== 'static' && style.zIndex !== 'auto') ||
+				style.transform !== 'none' ||
+				style.contain.includes('paint');
+			if (stacking) return node.classList.contains('grid-stack') ? 'the grid' : node.tagName;
+		}
+		return 'the page';
+	});
+	expect(context).toBe('the grid');
 });

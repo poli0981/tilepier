@@ -153,7 +153,7 @@ The single most dangerous integration point. Fixed rules:
      `load()`-equivalent rebuild → remount hosts.
    Never both at once; a `suppressChange` flag guards rebuilds.
 4. Grid config: 12 columns, `cellHeight: 72`, `margin: 12`,
-   `float: false`, `columnOpts` responsive breakpoints
+   `mode: 'top'` (gridstack 14's default; `float: false` until 2026-10-26), `columnOpts` responsive breakpoints
    `{1280→12, 768→6, 480→3, else→1}` with `layout: 'compact'` on collapse.
    `draggable.handle: '.tp-drag'` (whole header in edit mode),
    `resizable.handles: 'se'`.
@@ -174,7 +174,7 @@ The single most dangerous integration point. Fixed rules:
    tears down and rebuilds the entire grid in a loop. Depend on the container
    element and nothing else. (Added 2026-08-10 from spike S1, where the
    untracked version locked the page solid.)
-8. **Teardown must happen outside `batchUpdate()`.** gridstack 12.6 defers DOM
+8. **Teardown must happen outside `batchUpdate()`.** gridstack 12.6 (and 14) defers DOM
    work while batching, so a batched `removeAll(true, …)` leaves every
    `.grid-stack-item` in the document while removing it from the grid model —
    measured growth 7 → 15 → 25 → 37 wrappers across three rebuilds, silently.

@@ -1,7 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * Spike S1 — gridstack 12.6 × Svelte 5 DOM ownership (doc 22 §S1).
+ * Spike S1 — gridstack × Svelte 5 DOM ownership (doc 22 §S1), on gridstack 14
+ * since 2026-10-26: the harness is the acceptance test for a gridstack major
+ * (doc 02 §7), and it ran green on 12.6 and then on 14.
  *
  * Doc 22's pass criterion is "50 scripted cycles of add/drag/resize/remove/
  * rebuild → DevTools Memory shows no detached-node growth". A DevTools panel
@@ -117,7 +119,7 @@ async function resizeTo(page: Page, item: Locator, x: number, y: number): Promis
 	await page.mouse.up();
 }
 
-test.describe('S1 · gridstack 12.6 × Svelte 5', () => {
+test.describe('S1 · gridstack 14 × Svelte 5', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/spike/s1');
 		await expect(page.getByTestId('tp-grid')).toBeVisible();

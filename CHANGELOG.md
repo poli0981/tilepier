@@ -17,6 +17,8 @@ follow [Semantic Versioning](https://semver.org/).
   of 2026-10-19.
 - The tests run on Vitest 5 and MSW 3, and music files are read with
   music-metadata 12.
+- **The grid is gridstack 14.** Arranging and resizing the deck work as
+  before.
 
 ### Fixed
 

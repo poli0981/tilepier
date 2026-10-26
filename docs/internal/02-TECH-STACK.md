@@ -23,7 +23,7 @@ Rule: pin minors in `package.json` (`^` within major), let Dependabot raise PRs
 | SvelteKit | **≥ 2.69.3** | App framework + server endpoints (`/api/*`) running in the Worker. **Floor is a security floor:** 2.57.1 patched a remote-functions auth bypass; never pin below it. We do not use remote functions in v1, but keep the floor anyway. |
 | @sveltejs/adapter-cloudflare | latest 7.x | Emits a single Worker with static assets; KV bindings via `platform.env`. |
 | Tailwind CSS | **4.3** | Same as SoftHarbor / poli0981.dev. CSS-first config (`@theme`), no `tailwind.config.js`. |
-| gridstack | **12.6.x** | MIT, zero-dep, TS, touch + RTL. Drives the dashboard grid imperatively (doc 06 §5). gridstack **13.0.2** is out (2026-08) — held until Spike S1 is green, see §Version & CVE policy note 7. |
+| gridstack | **14.x** | MIT, zero-dep, TS, touch + RTL. Drives the dashboard grid imperatively (doc 06 §5). 12.6 until 2026-10-26, when Spike S1 ran green on 14.0 (note 9, doc 22 §S1). |
 | echarts | **6.1.x** | Apache-2.0. Design-token themes + dynamic theme switching (no dispose on dark/light toggle). Always lazy-imported per detail view; tree-shaken imports only (`echarts/core` + used charts/components). |
 | dexie | **4.x** | IndexedDB wrapper: notes, todos, events, playlists, blobs, handles (doc 05). |
 | @inlang/paraglide-js | **2.x** | Compile-time i18n, EN/VI (doc 14). |
@@ -165,3 +165,12 @@ bundle budgets (doc 20 §6).
      with `toMatchTextContent` or `exact: false`. **music-metadata 12**
      (12.2.3; 12.3 was under three days old) changed nothing the tag worker
      calls.
+   - **gridstack 14.0.0**, after S1 ran green on it (note 7's rule). What it
+     changed here: `float` gave way to `mode`, whose default `'top'` is what
+     `float: false` meant; `init()` and `addWidget()` are typed nullable, and
+     `TpGrid` names a null as a bug instead of mounting nothing; and the
+     resize handles carry z-index 100 and 101, which the grid now keeps inside
+     a stacking context of its own (`isolation: isolate`) so they cannot
+     paint over the top bar, the drawer or the detail. Since 13.1 the
+     wrappers are reordered to match the layout after every change; the hosts
+     are held by reference, so doc 06 §5's ownership is unchanged.
