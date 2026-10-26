@@ -1,4 +1,5 @@
 import { foldForSearch } from '$lib/i18n/fold';
+import { byCodeUnit } from '$lib/order';
 
 /**
  * doc 08 §3's data layer.
@@ -113,7 +114,7 @@ export function attributionOf(quote: TpQuote): string {
 export function tagsOf(catalogue: TpQuoteCatalogue): string[] {
 	const tags = new Set<string>();
 	for (const quote of catalogue.quotes) for (const tag of quote.tags ?? []) tags.add(tag);
-	return [...tags].sort();
+	return [...tags].sort(byCodeUnit);
 }
 
 export function authorsOf(catalogue: TpQuoteCatalogue): string[] {

@@ -38,7 +38,7 @@
 	},
 	"dependencies": {
 		"dexie": "^4.4.4",
-		"dompurify": "^3.4.16",
+		"dompurify": "^3.4.17",
 		"echarts": "^6.1.0",
 		"fast-xml-parser": "^5.10.1",
 		"gridstack": "^12.6.0",
@@ -61,8 +61,8 @@
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/node": "^24",
-		"@vitest/browser-playwright": "^4.1.11",
-		"@vitest/coverage-v8": "^4.1.11",
+		"@vitest/browser-playwright": "^4.1.12",
+		"@vitest/coverage-v8": "^4.1.12",
 		"eslint": "^10.4.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
@@ -78,8 +78,8 @@
 		"tailwindcss": "^4.3.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1",
-		"vite": "^8.0.16",
-		"vitest": "^4.1.11",
+		"vite": "^8.3.5",
+		"vitest": "^4.1.12",
 		"vitest-browser-svelte": "^2.1.1",
 		"wrangler": "^4.136.1"
 	}

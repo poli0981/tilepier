@@ -314,6 +314,12 @@ feed (VnExpress) arriving through the Worker's own egress.
   high), under miniflare's exact pin of `0.35.4` for its Images binding: **the
   audit gate's first catch**, an advisory that reached npm's data between two
   CI runs of the pull request that added the gate.
+  **2026-10-26:** undici's floor rose to `^7.30.1` for GHSA-xjj6-f33q-929c
+  (high) and two moderate advisories; miniflare now pins 7.29.1, still below
+  them all. The same day the gate was red on `main` itself, with nothing
+  merged: DOMPurify's critical and high advisories (published 2026-10-22, fixed
+  in 3.4.17), vite's high, and zod's under knip, the last a lock refresh — the
+  gate working as the paragraph above says, on a commit nobody had touched.
 - **An override is for a parent that will not move. A stale lock is the
   commoner case** (2026-10-06): five packages carried high or moderate
   advisories whose fixes sat inside their parents' own ranges — `devalue`

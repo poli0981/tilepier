@@ -1,9 +1,19 @@
 # Static analysis. The one workflow that genuinely is a caller stub today —
 # poli0981/.github has a usable reusable CodeQL workflow (doc 21 §1).
+#
+# Two languages: the app's JavaScript and TypeScript, and since 2026-10-26 the
+# workflows themselves (`actions`: script injection, unpinned or over-trusted
+# actions, untrusted checkouts). The reusable workflow analyses `actions` with
+# build-mode none, the only mode it has.
 name: codeql
 
 on:
   push:
+    branches: [main]
+  # On pull requests too since 2026-10-26, so an alert is seen on the change
+  # that brings it rather than after the merge. Still not a required check
+  # (doc 21 §7): SonarQube Cloud's quality gate is the blocking analysis.
+  pull_request:
     branches: [main]
   schedule:
     # Weekly, Monday 03:17 UTC. Off the hour to avoid the scheduler stampede.
@@ -25,4 +35,4 @@ jobs:
   codeql:
     uses: poli0981/.github/.github/workflows/reusable-codeql.yml@main
     with:
-      languages: '["javascript-typescript"]'
+      languages: '["javascript-typescript", "actions"]'

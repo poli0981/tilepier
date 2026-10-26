@@ -1,4 +1,5 @@
 import { formatLog, readLog } from '$lib/core/log-buffer';
+import { byCodeUnit } from '$lib/order';
 import { LOCAL_KEYS } from '$lib/shared-constants';
 
 /**
@@ -47,7 +48,7 @@ function widgetSummary(widgetIds: readonly string[]): string {
 	for (const id of widgetIds) counts.set(id, (counts.get(id) ?? 0) + 1);
 	return [...counts]
 		.map(([id, n]) => (n > 1 ? `${id}×${n}` : id))
-		.sort()
+		.sort(byCodeUnit)
 		.join(', ');
 }
 

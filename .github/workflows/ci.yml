@@ -1,4 +1,5 @@
-# CI — lint, dead code, tests, build, bundle budgets, secret gate.
+# CI — lint, dead code, tests, build, bundle budgets, secret gate, and the
+# SonarQube Cloud analysis of the result.
 #
 # Authored locally rather than as a caller stub into poli0981/.github: the
 # seven wf-*.yml reusable workflows doc 21 §1 names do not exist there
@@ -26,15 +27,32 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      sonar: ${{ steps.sonar.outputs.configured }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v6
+      # Third-party actions are pinned to a commit (SonarQube S7637); Dependabot
+      # moves the pin and the version beside it together.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: pnpm
+
+      # Whether the `sonar` job below can run. A Dependabot or fork pull request
+      # gets no repository secrets, so it skips the analysis rather than failing
+      # it, as notify.yml does without its webhook. The token stays in this one
+      # step's environment.
+      - id: sonar
+        name: SonarQube Cloud configured?
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then echo "configured=true"; else echo "configured=false"; fi >> "$GITHUB_OUTPUT"
 
       - name: Install
         run: pnpm install --frozen-lockfile
@@ -72,6 +90,15 @@ jobs:
 
       - name: Test
         run: pnpm test:cov
+
+      # What the `sonar` job reads for coverage. A day outlives the run.
+      - name: Keep the coverage report for the analysis
+        if: steps.sonar.outputs.configured == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          retention-days: 1
 
       - name: Build
         run: pnpm build
@@ -111,3 +138,52 @@ jobs:
       # pnpm-workspace.yaml.
       - name: Dependency audit
         run: pnpm audit --audit-level high
+
+  # SonarQube Cloud (doc 21 §8), analysed here rather than by the service's
+  # automatic analysis, which cannot read coverage. After `ci`, whose test run
+  # wrote the report it reads, and only where `ci` found the token. A red
+  # quality gate fails this job, and `sonar` is a required check on main.
+  sonar:
+    needs: ci
+    if: needs.ci.outputs.sonar == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Every commit: blame is how new code is told from old.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      # For the TypeScript rules' type information: `prepare` writes the
+      # .svelte-kit/tsconfig.json that tsconfig.json extends, and Paraglide's
+      # declarations resolve `$lib/paraglide`. Neither is analysed itself.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile messages
+        run: pnpm i18n:compile
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: coverage
+          path: coverage
+
+      - id: version
+        name: Version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectVersion=${{ steps.version.outputs.version }}
+            -Dsonar.qualitygate.wait=true

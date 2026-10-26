@@ -30,7 +30,7 @@
 		if (element === null || region === null) return;
 		// Built untracked: the controller writes its own state as it starts, and
 		// none of that may become a reason to build it again.
-		const current = untrack(() => new TpVideoController(element, region, source));
+		const current = untrack(() => TpVideoController.open(element, region, source));
 		player = current;
 		return () => {
 			current.dispose();

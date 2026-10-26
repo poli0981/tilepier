@@ -169,8 +169,21 @@ function firstHtml(fallback: 'html' | 'text', ...values: unknown[]): string {
 /** RSS `<author>` is an address, often `name@host (Real Name)`: the name when
  *  there is one. */
 function rssAuthor(raw: string): string {
-	const named = /\(([^)]+)\)\s*$/.exec(raw);
-	return plainText(named?.[1] ?? raw, AUTHOR_MAX_CHARS);
+	return plainText(closingParenthesis(raw) ?? raw, AUTHOR_MAX_CHARS);
+}
+
+/**
+ * The text inside a `(…)` that ends the string, from the earliest `(` with no
+ * `)` after it — what `/\(([^)]+)\)\s*$/` returned, found by two index scans.
+ * The pattern started over at every `(` of an author line full of them, and a
+ * feed's author line is whatever its publisher wrote.
+ */
+function closingParenthesis(raw: string): string | null {
+	const text = raw.trimEnd();
+	const close = text.length - 1;
+	if (!text.endsWith(')')) return null;
+	const open = text.indexOf('(', text.lastIndexOf(')', close - 1) + 1);
+	return open !== -1 && open < close - 1 ? text.slice(open + 1, close) : null;
 }
 
 function itemId(declared: string, link: string | null, title: string, at: number | null): string {

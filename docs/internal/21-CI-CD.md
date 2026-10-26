@@ -19,9 +19,9 @@ workflows do not reliably inherit them. Every stub below includes them.
 
 | Stub | Trigger | Reusable target | Purpose |
 |------|---------|-----------------|---------|
-| `ci.yml` | PR + push main | `wf-node-ci.yml` | pnpm install → lint → svelte-check → knip → i18n and token audits → vitest (coverage gates) → build → budgets → secret/CDN grep → licence appendix check (doc 16 §5) → dependency audit (doc 15 §6) |
+| `ci.yml` | PR + push main | `wf-node-ci.yml` | job `ci`: pnpm install → lint → svelte-check → knip → i18n and token audits → vitest (coverage gates) → build → budgets → secret/CDN grep → licence appendix check (doc 16 §5) → dependency audit (doc 15 §6); then job `sonar`: SonarQube Cloud on that coverage, quality gate (§8) |
 | `e2e.yml` | PR + push main + nightly | `wf-playwright.yml` | Playwright smoke suite, Chromium only (doc 19 §4) |
-| `codeql.yml` | push main + weekly | `wf-codeql.yml` (js-ts) | static analysis |
+| `codeql.yml` | PR + push main + weekly | `wf-codeql.yml` (js-ts, actions) | static analysis of the code and, since 2026-10-26, of the workflows |
 | ~~`deploy.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
 | ~~`preview.yml`~~ | — | — | **Removed 2026-08-10** — see §4 |
 | `release.yml` | tag `v*`; dispatch, a dry run by default | — (authored here) | a **draft** GitHub Release from `CHANGELOG.md`, once the tag is checked to name `package.json`'s version on `main`; the owner publishes it |
@@ -112,7 +112,14 @@ Set it in Workers → tilepier → Settings → Builds:
 |---|---|
 | Build command | `pnpm run build` |
 | Deploy command | `npx wrangler deploy` |
+| Version command | `npx wrangler versions upload` (non-production branches, §7) |
 | Root directory | *(repo root)* |
+| Variables | `NODE_VERSION` = `26`, `PNPM_VERSION` = `11` (set 2026-10-26) |
+
+The two variables are the dashboard's half of the toolchain the repository
+pins in `package.json` (`engines`, `packageManager`; doc 02). Move them
+together: the build image's own defaults trail the repository's (Node 24.21.0
+and pnpm 10.11.1 on 2026-10-26).
 
 This cannot be committed to the repo: the installed Wrangler has no `build`
 key in its config schema, so there is no `wrangler.jsonc` hook to put it in —
@@ -202,6 +209,10 @@ intent where Dependabot has the means:
   entry moves when an advisory names it, and the `pnpm audit` gate at the end
   of `ci.yml` is what finds it — as it found five stale ones the day it was
   added (doc 15 §6).
+- **Third-party actions are pinned to a commit**, with the version as a
+  comment beside it (`pnpm/action-setup`, `SonarSource/sonarqube-scan-action`;
+  SonarQube S7637). Dependabot's monthly Actions update moves the pin and the
+  comment together. GitHub's own `actions/*` stay on major tags.
 
 ## 7. Branch protection (repo settings checklist)
 
@@ -213,12 +224,17 @@ Implemented as a repository **ruleset** (`gh api -X POST repos/<owner>/<repo>/ru
 specified 2026-08-19 — the checklist above named no status checks and did not
 say whether a PR is required, so it could not be applied without guessing:
 
-- **Required status check contexts: `ci` and `e2e`.** Those are the job ids in
-  `ci.yml` and `e2e.yml`; neither job declares a `name:`, so GitHub reports the
-  check run under the job id.
-- **`codeql` is deliberately not required.** It triggers on `push: [main]` and
-  `schedule` only, never on `pull_request`, so requiring it would leave every PR
-  waiting forever on a check that cannot report.
+- **Required status check contexts: `ci`, `e2e` and `sonar`.** Those are the
+  job ids in `ci.yml` and `e2e.yml`; no job declares a `name:`, so GitHub
+  reports the check run under the job id. `sonar` joined on 2026-10-26 (§8),
+  read off its first run before it was written in. A pull request without the
+  token — Dependabot's, a fork's — skips that job, and GitHub counts a job
+  skipped by its `if:` as passing, so those still merge on `ci` and `e2e`.
+- **`codeql` is deliberately not required.** It has run on pull requests too
+  since 2026-10-26, so an alert shows on the change that brings it, but the
+  blocking analysis is SonarQube Cloud's quality gate; until then it triggered
+  on `push: [main]` and `schedule` only, and requiring it would have left every
+  PR waiting on a check that could not report.
 - Rules: `deletion`, `non_fast_forward`, `required_linear_history`,
   `required_status_checks`, `pull_request` with
   `required_approving_review_count: 0` and `allowed_merge_methods: ["squash"]`.
@@ -239,11 +255,58 @@ A second ruleset targets `refs/tags/v*` with `deletion` + `non_fast_forward`.
 (`release-tags`), both `enforcement: active`. The check-run names were read off
 the repository before writing them in, not assumed — GitHub reports the job ids
 verbatim as `ci` and `e2e`. Cloudflare's own `Workers Builds: tilepier` check is
-deliberately **not** required, for the same reason as `codeql`: it runs on push
-to `main`, not on pull requests, so requiring it would block every PR on a check
-that never reports. The admin bypass was verified by pushing directly to `main`
-immediately after applying the rules, rather than trusted from the API
-response.
+deliberately **not** required. **Corrected 2026-10-26:** this said it ran only on
+push to `main`. It builds every branch too — a pull request's commits get the
+check, from the dashboard's version command (§4), with a preview URL in its
+summary — so it is the place to see a toolchain change build on Cloudflare
+before it merges; it stays advisory because a preview upload failing on the
+platform's side should not hold a merge that `ci` and `e2e` have passed. The
+admin bypass was verified by pushing directly to `main` immediately after
+applying the rules, rather than trusted from the API response.
 
 The fork-PR secrets guard previously named here belonged to `preview.yml`, which
 §1 removed on 2026-08-10; dropped.
+
+## 8. SonarQube Cloud
+
+**Analysed in CI since 2026-10-26**, replacing the service's automatic
+analysis, which ran on its own schedule and could not read coverage. The
+project is `poli0981_tilepier` in the `poli0981` organisation. The owner
+turned automatic analysis off and put `SONAR_TOKEN` in the repository secrets
+first: the scanner refuses to run while automatic analysis is on.
+
+- **Where it runs.** `ci.yml`'s `sonar` job, after `ci`. It downloads the
+  `coverage/lcov.info` that `pnpm test:cov` wrote (an artifact kept for a day),
+  installs — for the TypeScript rules' type information, since `prepare`
+  writes the `.svelte-kit/tsconfig.json` that `tsconfig.json` extends —
+  compiles the messages, and runs `SonarSource/sonarqube-scan-action` (v8.3.0,
+  pinned to its commit) with `sonar.qualitygate.wait=true`. A red gate fails
+  the job, and the job is required on `main` (§7).
+- **Who gets it.** A step in `ci` that sees `SONAR_TOKEN` writes an output, and
+  `sonar` runs on that output: a pull request without the secret, Dependabot's
+  or a fork's, skips the job rather than failing it. The token is in two steps'
+  environments and nowhere else.
+- **What it reads.** `sonar-project.properties`. Product code and test code are
+  told apart by file name, since tests live beside the code (doc 19 §1), and
+  generated or vendored files are left out. Svelte components are not analysed
+  (SonarQube has no Svelte analyser); `.ts`, `.mjs`, CSS, `app.html`, the
+  message catalogues and the workflows are.
+- **Coverage is Vitest's.** `sonar.coverage.exclusions` restates
+  `vite.config.ts`'s `test.coverage` scope in Sonar's wildcards: everything
+  outside `src/lib` and `src/routes/api`, then that block's own exclusions
+  (doc 19 §2's table says what covers each instead). Change the two together,
+  or a file the tests never measured counts here as uncovered.
+- **The gate is "Sonar way", on new code:** coverage at least 80 %,
+  duplication at most 3 %, A for reliability, security and maintainability,
+  every hotspot reviewed. A pull request's new code is its diff.
+  `sonar.projectVersion` is `package.json`'s version, so on `main` new code
+  runs from the last version bump.
+- **A rule that cannot apply is ignored by rule and file**, with its reason, in
+  `sonar.issue.ignore.multicriteria` — never with `NOSONAR`, which silences
+  every rule on its line. The move to CI took the 32 issues automatic analysis
+  had left open (its last run, 2026-10-16): 24 fixed in the code, among them
+  five patterns the Worker ran over feed text in quadratic or cubic time, and
+  eight ignored there — tooling that finds `git` and `ffmpeg` on `PATH`, the
+  dedicated worker's message origin, the hand-run quote import's path
+  argument, the backoff jitter's `Math.random`, and the page template's
+  missing `<title>`.

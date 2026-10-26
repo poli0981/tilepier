@@ -3,6 +3,7 @@ import { fetchEnvelope } from '$lib/core/api';
 import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
 import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
 import { logEntry } from '$lib/core/log-buffer';
+import { byCodeUnit } from '$lib/order';
 import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
 import { CURRENCY_DEFAULTS, MAX_AMOUNT, MAX_TARGETS, type TpCurrencySettings } from './types';
 
@@ -203,7 +204,7 @@ export function currencyCodes(payload: TpFxPayload | undefined, ...stored: strin
 	const codes = new Set<string>(payload === undefined ? [] : Object.keys(payload.rates));
 	for (const code of stored) if (CURRENCY_CODE.test(code)) codes.add(code);
 
-	return [...codes].sort();
+	return [...codes].sort(byCodeUnit);
 }
 
 /* ────────────────────────────────────────────────────────── the history */

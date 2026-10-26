@@ -100,14 +100,22 @@ function licenseId(pkg) {
 	return 'see text';
 }
 
+/** `Name <mail> (url)` as `Name`: cut at the first bracket. A pattern that
+ *  matched the spaces before it backtracked over every run of them. */
 function author(pkg) {
-	if (typeof pkg.author === 'string') return pkg.author.replace(/\s*[<(].*$/, '');
+	if (typeof pkg.author === 'string') {
+		const bracket = pkg.author.search(/[<(]/);
+		return bracket === -1 ? pkg.author : pkg.author.slice(0, bracket).trimEnd();
+	}
 	return typeof pkg.author?.name === 'string' ? pkg.author.name : 'its authors';
 }
 
 /** Where a package lives: its homepage, else its repository as a web URL. */
 function homepage(pkg) {
-	if (typeof pkg.homepage === 'string') return pkg.homepage.replace(/#.*$/, '');
+	if (typeof pkg.homepage === 'string') {
+		const fragment = pkg.homepage.indexOf('#');
+		return fragment === -1 ? pkg.homepage : pkg.homepage.slice(0, fragment);
+	}
 	const repository = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url;
 	if (typeof repository !== 'string') return `https://www.npmjs.com/package/${pkg.name}`;
 	const url = repository
@@ -154,7 +162,7 @@ function headerNotice(source) {
 function licenceOf(dir, pkg) {
 	const files = readdirSync(dir)
 		.filter((file) => /^(licen[cs]e|copying|notice)([.-]|$)/i.test(file))
-		.sort();
+		.sort((a, b) => Number(a > b) - Number(a < b));
 	if (files.length > 0) {
 		return { text: files.map((file) => tidy(readFileSync(join(dir, file), 'utf8'))).join('\n\n') };
 	}

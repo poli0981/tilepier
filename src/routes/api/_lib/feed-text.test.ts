@@ -67,6 +67,24 @@ describe('raw element content', () => {
 		expect(stripTags('a<br>b<!-- note -->c')).toBe('a b c');
 	});
 
+	it('takes out what the pattern it replaced took out, and leaves what that left', () => {
+		expect(stripTags('<!-->')).toBe(' ');
+		expect(stripTags('<!-- a > b')).toBe('  b');
+		expect(stripTags('<!-- a > b -->c')).toBe(' c');
+		expect(stripTags('<a<b>c')).toBe(' c');
+		expect(stripTags('a < b')).toBe('a < b');
+		expect(stripTags('<!-- never closed')).toBe('<!-- never closed');
+	});
+
+	it('reads markup that never closes in linear time (SonarQube S8786)', () => {
+		// The pattern this replaced re-read the rest of the text from every `<`:
+		// about two seconds here. A feed body is whatever its publisher sent.
+		const stuffed = '<'.repeat(100_000);
+		const start = performance.now();
+		expect(stripTags(stuffed)).toBe(stuffed);
+		expect(performance.now() - start).toBeLessThan(250);
+	});
+
 	it('escapes text meant to be read as text', () => {
 		expect(escapeHtml('a < b & "c" > d')).toBe('a &lt; b &amp; &quot;c&quot; &gt; d');
 	});

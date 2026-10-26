@@ -69,7 +69,9 @@
 		font-weight: 600;
 		cursor: pointer;
 		padding: 0.25rem 0.4rem;
-		min-height: 32px;
+		/* doc 13 §8's 40 × 40, as TpToast's dismiss button. */
+		min-width: var(--tp-target);
+		min-height: var(--tp-target);
 	}
 
 	.tp-toast__dismiss {

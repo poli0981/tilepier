@@ -67,7 +67,10 @@ bundle budgets (doc 20 §6).
 2. `pnpm audit --audit-level high` runs in CI over **every** dependency —
    not `--prod`, which misses what ships from devDependencies (doc 15 §6);
    high/critical findings fail the build.
-3. **CodeQL** `javascript-typescript` via the shared reusable workflow (doc 21).
+3. **CodeQL** `javascript-typescript` and `actions` via the shared reusable
+   workflow, on pull requests too (doc 21). **SonarQube Cloud** analyses every
+   pull request and `main` in CI, with coverage, and its quality gate is a
+   required check (doc 21 §8, since 2026-10-26).
 4. Known-issue register (keep updated):
    - SvelteKit < 2.57.1 — remote-functions auth bypass → floor set above.
    - Vite dev-server file-read CVEs (2025, `CVE-2025-30208` family) were

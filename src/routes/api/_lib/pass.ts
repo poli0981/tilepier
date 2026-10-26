@@ -87,7 +87,12 @@ function base64url(bytes: ArrayBuffer | Uint8Array): string {
 	const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
 	let binary = '';
 	for (const byte of view) binary += String.fromCharCode(byte);
-	return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+	const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_');
+	// The padding off the end, counted rather than matched: `/=+$/` is tried from
+	// every `=`, which base64 only ever ends with, but a pattern cannot know that.
+	let end = encoded.length;
+	while (encoded.endsWith('=', end)) end -= 1;
+	return encoded.slice(0, end);
 }
 
 function fromBase64url(text: string): Uint8Array<ArrayBuffer> {

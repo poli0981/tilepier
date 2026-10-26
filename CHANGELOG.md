@@ -4,6 +4,25 @@ Every release of TilePier, newest first. The format follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+
+- **DOMPurify 3.4.17.** It fixes a critical and a high advisory
+  (GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr) in modes TilePier does not use,
+  `SAFE_FOR_TEMPLATES` and `IN_PLACE`. Taken anyway.
+- **Feeds are read in linear time.** Five patterns the Worker ran over what a
+  feed's publisher wrote — dates, markup, the author line — took seconds on a
+  stuffed input, and the `M/D/YYYY` date took 45 seconds at 8,000 spaces. They
+  now read the text once, with the same results.
+- Development tooling: Vite 8.3.5, Vitest 4.1.12, and undici 7.30.1 and zod
+  4.6.7 underneath wrangler and knip.
+
+### Fixed
+
+- **The toasts' buttons are 40 × 40**, the size every control outside a tile
+  keeps. The dismiss button was 21 × 32.
+
 ## [1.0.1] - 2026-10-07
 
 ### Fixed
@@ -111,5 +130,6 @@ than tags. No 0.x version was ever cut.
 - **Two tabs at once.** The last write wins, and the contents of the database
   refresh on reload.
 
+[Unreleased]: https://github.com/poli0981/tilepier/compare/v1.0.1...HEAD
 [1.0.1]: https://github.com/poli0981/tilepier/releases/tag/v1.0.1
 [1.0.0]: https://github.com/poli0981/tilepier/releases/tag/v1.0.0

@@ -41,9 +41,15 @@ function load(locale) {
 	}
 }
 
-/** `{name}` placeholders, as a sorted set so order differences are not drift. */
+/**
+ * `{name}` placeholders, as a sorted set so order differences are not drift.
+ * A placeholder never holds a brace, and saying so keeps the match linear: with
+ * `[^}]+`, every `{` that never closes re-read the rest of the message.
+ */
 function placeholders(value) {
-	return [...String(value).matchAll(/\{([^}]+)\}/g)].map((m) => m[1].trim()).sort();
+	return [...String(value).matchAll(/\{([^{}]+)\}/g)]
+		.map((m) => m[1].trim())
+		.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 const catalogues = new Map(LOCALES.map((locale) => [locale, load(locale)]));

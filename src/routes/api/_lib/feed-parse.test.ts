@@ -250,3 +250,27 @@ describe('what real feeds showed (2026-09-24)', () => {
 		);
 	});
 });
+
+describe('the author of an RSS item', () => {
+	const authorOf = (raw: string) =>
+		parseFeed(
+			`<rss version="2.0"><channel><title>t</title><item><title>i</title><link>https://e.example/1</link><author>${raw}</author></item></channel></rss>`,
+			'https://e.example/'
+		)?.items[0]?.author;
+
+	it('is the name in the parentheses that end the line, else the whole line', () => {
+		expect(authorOf('desk@example.vn (Real Name)  ')).toBe('Real Name');
+		expect(authorOf('a@b (One) (Two)')).toBe('Two');
+		expect(authorOf('a@b (One (Two)')).toBe('One (Two');
+		expect(authorOf('a@b ()')).toBe('a@b ()');
+		expect(authorOf('a@b (One) Two')).toBe('a@b (One) Two');
+	});
+
+	it('reads a line of parentheses that never close in linear time (SonarQube S8786)', () => {
+		// About two seconds for the pattern this replaced, which started over at
+		// every `(`; the line is whatever the publisher wrote.
+		const start = performance.now();
+		expect(authorOf(`${'('.repeat(100_000)}a)b`)?.startsWith('(')).toBe(true);
+		expect(performance.now() - start).toBeLessThan(250);
+	});
+});
