@@ -27,9 +27,20 @@ updates:
         dependency-type: production
         update-types: [patch]
     ignore:
-      # Node 24 LTS is the stack (doc 02); a new major is a decision, not a bump.
+      # Node 26 is the stack (doc 02, `.node-version`); a new major is a
+      # decision, not a bump.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # TypeScript is an npm-alias pair (doc 02): `typescript` is the 6.0 API
+      # package svelte-check and typescript-eslint load, `@typescript/native` is
+      # TypeScript 7's `tsc`. Dependabot reads neither alias correctly, and the
+      # pair moves together, by hand, when those tools take 7.1's API.
+      - dependency-name: 'typescript'
+      - dependency-name: '@typescript/native'
+      # Held at 6.12 by the bundle budget (doc 20 §6): from 6.13 the vendored
+      # modules grow from about 300 to 438 KB gzipped. Patches still come.
+      - dependency-name: 'maplibre-gl'
+        update-types: ['version-update:semver-minor', 'version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /

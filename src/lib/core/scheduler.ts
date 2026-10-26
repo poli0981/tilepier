@@ -14,7 +14,7 @@ import type { TpRefresh } from './registry';
  * remove" true by construction rather than by discipline.
  */
 
-export type TpRunReason = 'register' | 'tick' | 'visible' | 'online' | 'manual';
+type TpRunReason = 'register' | 'tick' | 'visible' | 'online' | 'manual';
 
 export type TpTaskState = 'idle' | 'running' | 'backoff' | 'paused' | 'offline';
 

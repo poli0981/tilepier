@@ -1,10 +1,6 @@
-<script module lang="ts">
-	/** Whether the widget throws on its next render; the test flips it. */
-	export const crash = { on: true };
-</script>
-
 <script lang="ts">
 	import type { TpWidgetProps } from '$lib/core/types';
+	import { crash } from './crash';
 
 	/**
 	 * A widget that throws while it renders, for as long as `crash.on` is true —

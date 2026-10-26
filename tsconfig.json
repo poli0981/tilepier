@@ -13,6 +13,8 @@
 		"noUncheckedIndexedAccess": true,
 		"exactOptionalPropertyTypes": true,
 		"moduleResolution": "bundler",
+		"target": "es2025",
+		"lib": ["es2025", "DOM", "DOM.Iterable"],
 		"types": ["./worker-configuration.d.ts"]
 	},
 	// Restates the excludes from .svelte-kit/tsconfig.json, because a child
