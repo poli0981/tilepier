@@ -135,6 +135,9 @@ describe('a date stuffed by its publisher', () => {
 
 	it.each([
 		['RFC 822', `1 Jan 2026 10:00${' '.repeat(100_000)}x\ny`],
+		// Found by SonarQube's first analysis in CI: the fraction's digits and
+		// the zone could share characters as the spaces had.
+		['RFC 822 fraction', `1 Jan 2026 10:00:00.${'1'.repeat(50_000)}x\ny`],
 		['M/D/YYYY', `9/24/2026 9:41${' '.repeat(4_000)}x\ny`]
 	])('refuses a stuffed %s date in linear time', (_shape, raw) => {
 		const start = performance.now();

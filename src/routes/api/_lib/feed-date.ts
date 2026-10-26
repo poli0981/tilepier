@@ -68,13 +68,19 @@ const ZONES: Readonly<Record<string, number>> = {
 const EARLIEST_YEAR = 1990;
 
 /**
- * The zone is whatever follows the time, after any space. Written as
- * `\s*(\S.*)?$` rather than `\s*(.*)$`: there both halves could take the same
- * spaces, so a feed whose date ran on past a line break was retried once for
- * every way of sharing them out — the Worker parses dates it does not control.
+ * The zone is whatever follows the time, after any space. Written so that no
+ * two parts can take the same characters, because the Worker parses dates it
+ * does not control, and a pattern that could share them out was retried once
+ * for every way of doing so:
+ *
+ * - `\s*` then the zone, where `\s*(.*)` let both take the same spaces;
+ * - a zone that cannot start with a digit or a point, which the fraction of a
+ *   second already reads. `zoneOffset` refuses such a zone anyway, so the
+ *   dates read are the same; a long fraction with a line break after it was
+ *   quadratic until 2026-10-26, as the spaces were before it.
  */
 const RFC822 =
-	/^(?:[a-z]+,?\s*)?(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4}|\d{2})(?:\s+|,\s*)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*(\S.*)?$/i;
+	/^(?:[a-z]+,?\s*)?(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4}|\d{2})(?:\s+|,\s*)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*([^\s\d.].*)?$/i;
 
 const ISO =
 	/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:[.,]\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?)?$/i;

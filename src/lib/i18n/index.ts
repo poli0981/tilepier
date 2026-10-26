@@ -66,5 +66,8 @@ export function switchLocale(next: TpLocale): void {
 	// This path is a click handler, not a render, so writing here is safe — and
 	// it makes the strategy's setLocale a no-op via its equality guard.
 	settings.patch({ locale: next });
-	setLocale(next);
+	// Paraglide types setLocale `void | Promise<void>`: a promise only when a
+	// custom strategy's own setLocale is async. Ours writes the store and
+	// returns, and the reload that follows leaves nothing to wait for.
+	void setLocale(next);
 }
