@@ -25,7 +25,7 @@
 			<p>{m['about.what_is'](undefined, { locale })}</p>
 			<p>
 				{m['about.privacy_line'](undefined, { locale })}
-				<a href={resolve('/legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
+				<a href={resolve('legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
 			</p>
 
 			<h2>{m['about.limitations.title'](undefined, { locale })}</h2>
@@ -39,7 +39,7 @@
 				·
 				<a href={REPO}>{m['about.links.repo'](undefined, { locale })}</a>
 				·
-				<a href={resolve('/legal/licenses')}>{m['about.links.licence'](undefined, { locale })}</a>
+				<a href={resolve('legal/licenses')}>{m['about.links.licence'](undefined, { locale })}</a>
 			</p>
 		</div>
 	{/each}

@@ -119,13 +119,13 @@
 				<TpIcon name="edit" size={18} />
 			</button>
 
-			<a class="tp-bar__button" href={resolve('/settings')} aria-label={m['settings.title']()}>
-				<TpIcon name="settings" size={18} />
-			</a>
+			<a class="tp-bar__button" href={resolve('settings')} aria-label={m['settings.title']()}
+				><TpIcon name="settings" size={18} /></a
+			>
 
-			<a class="tp-bar__button" href={resolve('/about')} aria-label={m['about.title']()}>
-				<TpIcon name="quote" size={18} />
-			</a>
+			<a class="tp-bar__button" href={resolve('about')} aria-label={m['about.title']()}
+				><TpIcon name="quote" size={18} /></a
+			>
 		</nav>
 	</div>
 </header>

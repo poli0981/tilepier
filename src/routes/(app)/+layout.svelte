@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
 	import { previousLegalVersion } from '$lib/core/legal';
 	import { LOCALES } from '$lib/i18n';
@@ -92,11 +92,10 @@
 				</p>
 				<p>{m['legal.gate.summary'](undefined, { locale })}</p>
 				<p class="tp-gate__links">
-					<a href={resolve('/legal/terms')}>{m['legal.terms.title'](undefined, { locale })}</a>
-					<a href={resolve('/legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
-					<a href={resolve('/legal/licenses')}>{m['legal.licenses.title'](undefined, { locale })}</a
-					>
-					<a href={resolve('/about')}>{m['about.title'](undefined, { locale })}</a>
+					<a href={resolve('legal/terms')}>{m['legal.terms.title'](undefined, { locale })}</a>
+					<a href={resolve('legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
+					<a href={resolve('legal/licenses')}>{m['legal.licenses.title'](undefined, { locale })}</a>
+					<a href={resolve('about')}>{m['about.title'](undefined, { locale })}</a>
 				</p>
 				<!--
 					The gate is in the prerendered HTML so it appears pre-JS (doc 16 §2),

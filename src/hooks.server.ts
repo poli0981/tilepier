@@ -1,4 +1,4 @@
-import type { Handle, HandleServerError } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
 import { SECURITY_HEADERS } from '$lib/server/security-headers';
 import { guardApi } from './routes/api/_lib/gate';
 

@@ -1,4 +1,4 @@
-import type { ClientInit, HandleClientError } from '@sveltejs/kit';
+import type { ClientInit, HandleClientError } from '@sveltejs/kit/hooks';
 import { installLogBuffer, logEntry } from '$lib/core/log-buffer';
 import { installLocaleStrategy } from '$lib/i18n';
 import { online } from '$lib/stores/online.svelte';
@@ -17,7 +17,9 @@ import { settings } from '$lib/stores/settings.svelte';
 function uaBrand(): string {
 	const data = (navigator as Navigator & { userAgentData?: { brands?: { brand: string }[] } })
 		.userAgentData;
+
 	const brand = data?.brands?.find((b) => !/not.a.brand/i.test(b.brand))?.brand;
+
 	return brand ?? navigator.userAgent.slice(0, 80);
 }
 

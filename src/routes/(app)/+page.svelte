@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack, type Component } from 'svelte';
-	import { pushState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { isDetailState, type TpDetailState } from '$lib/core/detail';
@@ -192,7 +192,9 @@
 			// which a DOMRect does not reliably do.
 			...(rect === null
 				? {}
-				: { rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } })
+				: {
+						rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+					})
 		};
 
 		// `/(app)/w/[id]` rather than `/w/[id]`: SvelteKit's generated RouteId
@@ -206,7 +208,7 @@
 		// shape, and same reason, as the gate's `?lang=` links in +layout.svelte.
 		const url = `${resolve('/(app)/w/[id]', { id: tile.widgetId })}?i=${encodeURIComponent(instanceId)}`;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		pushState(url, { detail });
+		goto(url, { shallow: true, state: { detail } });
 	}
 
 	/** Narrowed rather than trusted: `page.state` is restored verbatim from a
