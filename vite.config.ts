@@ -1,3 +1,4 @@
+import adapter from '@sveltejs/adapter-cloudflare';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
@@ -71,7 +72,51 @@ export default defineConfig({
 		// (scripts/vite-shipped.ts) — here for the page and the server, and in
 		// `worker.plugins` for the music tag worker, which Vite builds apart.
 		shippedPackages('app'),
-		sveltekit()
+
+		sveltekit({
+			compilerOptions: {
+				// Force runes mode project-wide except for libraries (CLAUDE.md rule 6).
+				runes: ({ filename }) =>
+					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+			},
+			adapter: adapter(),
+			csp: {
+				mode: 'hash',
+				directives: {
+					'default-src': ['self'],
+					// The two third-party scripts, and nothing else (doc 15 §2): Cloudflare
+					// Turnstile's api.js, which refuses to run from a proxied or bundled
+					// copy (doc 15 §3), and the Web Analytics beacon (doc 16 §3).
+					'script-src': [
+						'self',
+						'https://challenges.cloudflare.com',
+						'https://static.cloudflareinsights.com'
+					],
+					// Turnstile draws its challenge in an iframe from the same host.
+					// Without this, default-src 'self' would refuse the frame.
+					'frame-src': ['https://challenges.cloudflare.com'],
+					// Svelte writes inline styles for transitions — the pragmatic cost
+					// doc 15 §2 already accepts.
+					'style-src': ['self', 'unsafe-inline'],
+					'img-src': ['self', 'data:', 'blob:', 'https://tiles.openfreemap.org'],
+					'media-src': ['self', 'blob:'],
+					// Map tiles (doc 10 §6), and where the analytics beacon reports
+					// (doc 16 §3). Every data request goes through /api instead.
+					'connect-src': [
+						'self',
+						'https://tiles.openfreemap.org',
+						'https://cloudflareinsights.com'
+					],
+					'font-src': ['self'],
+					'worker-src': ['self'],
+					'frame-ancestors': ['none'],
+					'base-uri': ['self'],
+					'form-action': ['self'],
+					'object-src': ['none'],
+					'upgrade-insecure-requests': true
+				}
+			}
+		})
 	],
 	worker: {
 		plugins: () => [shippedPackages('worker')]
