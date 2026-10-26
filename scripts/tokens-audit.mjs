@@ -69,13 +69,17 @@ const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?!
  */
 const IGNORE_COMMENT = 'tokens-audit-ignore';
 
-/** `--name:` — a custom-property definition, which is what a token is. */
-const DEFINES_TOKEN = /--[\w-]+\s*:/;
+/**
+ * `--name:` — a custom-property definition, which is what a token is. A name
+ * starts only where a run of name characters starts (the look-behind): without
+ * it, a long run of dashes with no colon after it was re-read from every dash.
+ */
+const DEFINES_TOKEN = /(?<![\w-])--[\w-]+\s*:/;
 
 /** Every way a file can give a custom property a value: a declaration, a
  *  Svelte `style:--name` directive, or `setProperty('--name', …)`. */
 const DEFINITIONS = [
-	/(--[\w-]+)\s*:/g,
+	/(?<![\w-])(--[\w-]+)\s*:/g,
 	/style:(--[\w-]+)/g,
 	/setProperty\(\s*['"`](--[\w-]+)['"`]/g
 ];
@@ -115,7 +119,7 @@ function stripComments(source) {
 const files = globSync(INCLUDE)
 	.map((file) => file.split(sep).join('/'))
 	.filter((file) => !EXCLUDE.some((rx) => rx.test(file)))
-	.sort();
+	.sort((a, b) => Number(a > b) - Number(a < b));
 
 /** What `app.css` defines, which every file may use. Read through
  *  `stripComments` so a commented-out token is not a token. */

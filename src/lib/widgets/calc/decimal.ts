@@ -180,7 +180,10 @@ export function squareRoot(a: TpDecimal): TpDecimal | null {
  *  plain decimal — exponents and separators are display forms, not input. */
 export function fromString(text: string): TpDecimal | null {
 	const trimmed = text.trim();
-	if (!/^-?\d*\.?\d*$/.test(trimmed) || /^-?\.?$/.test(trimmed)) return null;
+	// At least one digit, at most one point. Spelled so the digits before the
+	// point and after it can never claim the same characters: `\d*\.?\d*` could,
+	// and a long run of digits ending in a letter took quadratic time to refuse.
+	if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(trimmed)) return null;
 
 	const negative = trimmed.startsWith('-');
 	const body = negative ? trimmed.slice(1) : trimmed;

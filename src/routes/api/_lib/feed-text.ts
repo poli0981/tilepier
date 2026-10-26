@@ -118,9 +118,36 @@ export function rawToHtml(raw: string): string {
 	return out + decodeXmlEntities(raw.slice(last));
 }
 
-/** Tags and comments out; a space in their place, so `a<br>b` stays two words. */
+/**
+ * Tags and comments out; a space in their place, so `a<br>b` stays two words.
+ *
+ * What `html.replace(/<!--[\s\S]*?-->|<[^>]*>/g, ' ')` did, as one forward
+ * scan. That pattern read to the end of the text again from every `<` it could
+ * not close, and from every `<!--` it could not end — quadratic in the
+ * length of a feed body, which is whatever the publisher sent.
+ */
 export function stripTags(html: string): string {
-	return html.replace(/<!--[\s\S]*?-->|<[^>]*>/g, ' ');
+	let out = '';
+	let copied = 0;
+	// Where the next `-->` starts, found once and reused until the scan passes it;
+	// -1 once there is none left, -2 before the first look.
+	let commentEnd = -2;
+	for (let at = html.indexOf('<'); at !== -1; at = html.indexOf('<', copied)) {
+		let end = -1;
+		if (html.startsWith('<!--', at)) {
+			if (commentEnd !== -1 && commentEnd < at + 4) commentEnd = html.indexOf('-->', at + 4);
+			if (commentEnd !== -1) end = commentEnd + 3;
+		}
+		if (end === -1) {
+			const close = html.indexOf('>', at + 1);
+			// No `>` from here on, so nothing after this point is markup.
+			if (close === -1) break;
+			end = close + 1;
+		}
+		out += `${html.slice(copied, at)} `;
+		copied = end;
+	}
+	return out + html.slice(copied);
 }
 
 export function escapeHtml(text: string): string {

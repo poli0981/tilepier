@@ -67,8 +67,14 @@ const ZONES: Readonly<Record<string, number>> = {
 /** Earlier than this is a feed's placeholder, not a publication date. */
 const EARLIEST_YEAR = 1990;
 
+/**
+ * The zone is whatever follows the time, after any space. Written as
+ * `\s*(\S.*)?$` rather than `\s*(.*)$`: there both halves could take the same
+ * spaces, so a feed whose date ran on past a line break was retried once for
+ * every way of sharing them out — the Worker parses dates it does not control.
+ */
 const RFC822 =
-	/^(?:[a-z]+,?\s*)?(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4}|\d{2})(?:\s+|,\s*)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*(.*)$/i;
+	/^(?:[a-z]+,?\s*)?(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4}|\d{2})(?:\s+|,\s*)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*(\S.*)?$/i;
 
 const ISO =
 	/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::(\d{2})(?:[.,]\d+)?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?)?$/i;
@@ -122,7 +128,7 @@ function utc(
  * `9/10` is September in one country and October in the next.
  */
 const SLASHED =
-	/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?\s*(.*)$/i;
+	/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?\s*(\S.*)?$/i;
 
 interface Parts {
 	year: number;

@@ -120,3 +120,25 @@ describe('the zone a date names, and the one assumed when it names none', () => 
 		expect(parseFeedDate('Tue, 22 Sep 2026 10:00:00 GMT', 420)).toBe(at(2026, 9, 22, 10));
 	});
 });
+
+describe('a date stuffed by its publisher', () => {
+	// Feeds are untrusted (doc 15 §1): the Worker parses whatever a feed's
+	// author typed. Until 2026-10-26 the patterns took seconds over inputs like
+	// these — the slashed one cubically, 45 s at 8 000 spaces — where they now
+	// take microseconds (SonarQube S8786).
+	it('still reads a zone after a line break, and refuses text after one', () => {
+		expect(parseFeedDate('Tue, 22 Sep 2026 10:00:00\n+0700')).toBe(at(2026, 9, 22, 3));
+		expect(parseFeedDate('Tue, 22 Sep 2026 10:00:00 GMT\nextra')).toBeNull();
+		expect(parseFeedDate('9/24/2026 9:41PM')).toBe(at(2026, 9, 24, 21, 41));
+		expect(parseFeedDate('9/24/2026 9:41 PM GMT+7')).toBe(at(2026, 9, 24, 14, 41));
+	});
+
+	it.each([
+		['RFC 822', `1 Jan 2026 10:00${' '.repeat(100_000)}x\ny`],
+		['M/D/YYYY', `9/24/2026 9:41${' '.repeat(4_000)}x\ny`]
+	])('refuses a stuffed %s date in linear time', (_shape, raw) => {
+		const start = performance.now();
+		expect(parseFeedDate(raw)).toBeNull();
+		expect(performance.now() - start).toBeLessThan(250);
+	});
+});
