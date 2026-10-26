@@ -174,13 +174,17 @@ HTML, fonts, `service-worker.js`) beside a **4 KB `_worker.js` shim**, and the
 shim is the whole reason the parent is the right target rather than a too-wide
 one: it imports `../output/server/index.js`, so the server code — the only code
 that may legitimately name a key — lives *outside* the tree being grepped and
-`wrangler deploy` follows the relative import at deploy time.
+`wrangler deploy` follows the relative import at deploy time. (Since
+adapter-cloudflare 8 the shim reaches it through `../cloudflare-tmp/server.js`,
+which is outside the tree too: re-verified 2026-10-26, `FINNHUB_KEY` under
+`.svelte-kit/output/server` only.)
 
 That distinction is worth stating because it looks fragile and is not. Verified
 2026-09-01 by building and grepping both trees: `TILEPIER_CACHE` appears in four
 files under `.svelte-kit/output/server/entries/endpoints/api/**` and in **zero**
 files under `.svelte-kit/cloudflare`. So `/api/stock/*` reading
-`platform?.env.FINNHUB_KEY` in Week 5 cannot trip this gate, and a gate that
+`platform?.env.FINNHUB_KEY` in Week 5 (`env.FINNHUB_KEY`, from
+`cloudflare:workers`, since adapter 8) cannot trip this gate, and a gate that
 would have to be relaxed for correct code is not a gate.
 
 `DEV_DASH_TOKEN` joined the pattern on 2026-09-01 with its type declaration:

@@ -31,6 +31,18 @@ retries once with a fresh pass (doc 17 §4).
 Headers: `x-tp-cache: HIT|MISS|STALE`, `cache-control: public, max-age=<ttl/2>`
 (lets the CF CDN + browser absorb repeat hits too), `retry-after` on 429/503.
 
+**The edge cache** (`_lib/edge-cache.ts`). That `cache-control` also lets the
+Worker keep an answer in `caches.default`, in the Cloudflare location that
+served it, and give it to the next identical URL from there: before the gate,
+so without a pass (doc 15 §3), and without reaching the endpoint or KV.
+adapter-cloudflare did this in the worker it generated until version 8, which
+dropped it; since 2026-10-26 `hooks.server.ts` does it, to the adapter's rules
+(worktop's). A request that says `cache-control: no-cache` is never answered
+from it, a HEAD is answered from its GET, and only a GET is kept, when its
+answer states a `cache-control` that is not private, no-cache or no-store, a
+status of 200, 203, 204, 300 or 301, and no `Vary: *`. One rule is stricter
+than the adapter's: an answer that sets a cookie is never kept.
+
 **Some failures are answers** (2026-09-24, `/api/rss`). An envelope error means
 "try again later" to the client: `swr` keeps what it has and the scheduler
 backs off. That is wrong for a URL that *was* fetched and simply is not a feed
@@ -61,7 +73,10 @@ after it (doc 04 §2's rule 3, applied at the edge).
 | `GET /api/rss` | url (https, canonical — `parseFeedUrl`) | arbitrary feed (guarded, doc 15 §5) |
 
 All GET, all side-effect-free from the client's perspective (fx snapshot is
-an idempotent internal write). Non-GET → 405.
+an idempotent internal write). Non-GET → 405. Since SvelteKit 3 its CSRF check
+answers first, with 403, for a POST, PUT, PATCH or DELETE that carries no body
+or a form's and comes from another origin or names none — what a forged form
+sends; only `POST /api/verify` (JSON, same origin) means to write.
 
 **`url` must arrive in its canonical spelling** (2026-09-24), for the reason
 `days` is an allowlist: the response is cacheable by URL at the edge, and two
@@ -353,9 +368,10 @@ The rules that make it safe on a public origin, each with a test in
   because `.dev.vars.example` ships the name empty and an empty secret must
   never match an empty bearer.
 - **The comparison is constant-time** (`_lib/dev-token.ts`).
-- **Every answer is `no-store`**, the refusal included. The adapter's worker
-  replays any cacheable GET from `caches.default` *before* hooks or handlers
-  run, so a `public` report would reach the next caller whatever they sent.
+- **Every answer is `no-store`**, the refusal included. The edge cache (§2)
+  answers any cacheable GET from `caches.default` *before* the gate or the
+  handler runs, so a `public` report would reach the next caller whatever they
+  sent.
 
 What it reports:
 
@@ -417,7 +433,8 @@ values and an extra local-only name: `--check` stayed green and a regenerate
 produced no diff. `src/worker-env.d.ts` is gone. Adding a secret is now "name
 it in `.dev.vars.example`, then `pnpm gen`".
 
-Each is typed `string`. The optional chain on `platform?` already makes a read
-`string | undefined` at the call site, so the "deployed without `wrangler
-secret put`" branch stays reachable and is guarded the way a missing KV binding
-is.
+Each is typed `string`, though a deploy without `wrangler secret put` has none,
+so every read keeps its fallback (`env.FINNHUB_KEY ?? ''`) and that branch is
+guarded the way a missing KV binding is. Until adapter-cloudflare 8 the
+optional chain on `platform?` made the read `string | undefined` at the call
+site; the bindings come from `cloudflare:workers` now, typed as declared.

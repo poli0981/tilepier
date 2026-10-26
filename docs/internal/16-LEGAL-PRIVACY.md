@@ -212,24 +212,35 @@ unambiguous insertion point.
 - **The appendix is `pnpm licenses:gen`**, which writes
   `src/lib/legal/licenses.generated.json` after a build. "Reads
   `package.json` + this list" was not enough: `pnpm licenses list --prod`
-  misses svelte and SvelteKit, and devalue, cookie and set-cookie-parser under
-  them — devDependencies whose code ships in the Worker and the page. So it
-  takes the union of the build's own module graph (the page, the server, the
-  music tag worker; recorded by `scripts/vite-shipped.ts`), the modules the
-  adapter's `_worker.js` names (worktop), `pnpm licenses list --prod` (what
-  wrangler bundles at deploy, and MapLibre's dependencies inside its vendored
-  files), and a short list with reasons: Paraglide's compiled runtime,
+  misses svelte and SvelteKit, and devalue and cookie under them —
+  devDependencies whose code ships in the Worker and the page. So it takes the
+  union of the build's own module graph (the page, the server, the music tag
+  worker; recorded by `scripts/vite-shipped.ts`), the modules wrangler inlines
+  when it bundles the Worker (esm-env, under SvelteKit's server runtime),
+  `pnpm licenses list --prod` (the runtime dependencies, and MapLibre's inside
+  its vendored files), and a short list with reasons: Paraglide's compiled runtime,
   Tailwind's preflight, the adapter's worker entry, the two font packages, and
   Lucide's licence for the hand-adapted icon geometry
   (`src/lib/ui/icons/LICENSE-lucide.txt`). The union errs wide on purpose:
   a package listed that does not ship costs a paragraph, one missing is the
   breach. NOTICE files are kept (Apache-2.0 §4(d)).
+- **What wrangler inlines is read from wrangler's own bundle** (2026-10-26).
+  Until adapter-cloudflare 8 the adapter bundled the Worker at build time, and
+  `_worker.js` named every module it inlined; the generator read it there
+  (worktop, and set-cookie-parser under SvelteKit 2). Adapter 8 writes its
+  entry unbundled and leaves the bundling to `wrangler deploy`, so read there
+  the list went quiet without failing — while SvelteKit 3's server runtime
+  brought esm-env into the Worker. The generator now has wrangler bundle the
+  Worker as a deploy would (`wrangler deploy --dry-run`, which uploads
+  nothing) and reads the path comments in that. worktop and set-cookie-parser
+  left the page with the adapter and SvelteKit 2; esm-env joined it.
 - **A package that ships no licence file** is read from its README's licence
   section, or from the notice that opens its main file (qrcode-generator's,
   which carries the DENSO WAVE trademark line), plus the MIT text it names.
-  Three ship no text at all and declare MIT — `@nodable/entities`,
-  `murmurhash-js`, `worktop`; for them the page shows the MIT licence with the
-  declared author as the holder, and says so. Anything else stops the
+  Two ship no text at all and declare MIT — `@nodable/entities` and
+  `murmurhash-js` (`worktop` was the third, until it stopped shipping); for
+  them the page shows the MIT licence with the declared author as the holder,
+  and says so. Anything else stops the
   generator until a person has read it.
 - **`pnpm licenses:gen --check` runs in CI after the build**, so a dependency
   that starts shipping without its licence on the page fails the pull request.

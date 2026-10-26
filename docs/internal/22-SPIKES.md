@@ -493,6 +493,12 @@ they cache on first real use.
   which is always truthy, so the wait returns instantly and the next assertion
   runs against a worker that has not registered. Use `expect.poll`.
 
+**SvelteKit 3 (2026-10-26).** `$service-worker` is gone: the worker reads
+`assets` and `prerendered` from `$app/manifest` and `version` from
+`$app/env`, lives in `src/service-worker/` with a tsconfig of its own, and is
+built as an ES module, which `core/pwa.svelte.ts` registers as one (doc 17
+§2). `e2e/s5-pwa` passed unchanged on it.
+
 ## S6 · MapLibre 6 × Vite 8 × the CSP — Week 6 spike M0 (2026-09-25)
 
 Timeboxed at the start of Week 6b, because a real map had **never run** in this

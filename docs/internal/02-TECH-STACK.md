@@ -20,8 +20,8 @@ Rule: pin minors in `package.json` (`^` within major), let Dependabot raise PRs
 | Component | Version | Role / rationale |
 |-----------|---------|------------------|
 | Svelte | **5.x** (runes) | Compiler output small; runes for all state. No legacy `$:` syntax anywhere. |
-| SvelteKit | **≥ 2.69.3** | App framework + server endpoints (`/api/*`) running in the Worker. **Floor is a security floor:** 2.57.1 patched a remote-functions auth bypass; never pin below it. We do not use remote functions in v1, but keep the floor anyway. |
-| @sveltejs/adapter-cloudflare | latest 7.x | Emits a single Worker with static assets; KV bindings via `platform.env`. |
+| SvelteKit | **3.1.x** | App framework + server endpoints (`/api/*`) running in the Worker. Configured by `sveltekit({...})` in `vite.config.ts` since 3.0; there is no `svelte.config.js` (note 9). **The major is a security floor:** 2.57.1 patched a remote-functions auth bypass, and 3.0.0 two low advisories in code this app does not reach (`use:enhance`, and `cache-control` taken from outside); never pin below it. We do not use remote functions in v1, but keep the floor anyway. |
+| @sveltejs/adapter-cloudflare | **8.x** | Emits a single Worker with static assets. Since 8.0 the bindings and `waitUntil` come from `cloudflare:workers`, not `platform`, and the edge cache it kept in front of SvelteKit lives in `hooks.server.ts` (doc 11 §2). |
 | Tailwind CSS | **4.3** | Same as SoftHarbor / poli0981.dev. CSS-first config (`@theme`), no `tailwind.config.js`. |
 | gridstack | **14.x** | MIT, zero-dep, TS, touch + RTL. Drives the dashboard grid imperatively (doc 06 §5). 12.6 until 2026-10-26, when Spike S1 ran green on 14.0 (note 9, doc 22 §S1). |
 | echarts | **6.1.x** | Apache-2.0. Design-token themes + dynamic theme switching (no dispose on dark/light toggle). Always lazy-imported per detail view; tree-shaken imports only (`echarts/core` + used charts/components). |
@@ -174,3 +174,33 @@ bundle budgets (doc 20 §6).
      paint over the top bar, the drawer or the detail. Since 13.1 the
      wrappers are reordered to match the layout after every change; the hosts
      are held by reference, so doc 06 §5's ownership is unchanged.
+   - **SvelteKit 3.1 and adapter-cloudflare 8.0**, in a change of their own.
+     `sv migrate sveltekit-3` did the mechanical part: the configuration left
+     svelte.config.js for `sveltekit({...})` in vite.config.ts (the CSP for
+     `src/lib/server/csp.ts`, which `security-headers.test.ts` reads too),
+     `$lib` became the `#lib/*` subpath import with explicit extensions,
+     `pushState` a shallow `goto`, and `resolve()` took pathnames without
+     their leading slash. By hand:
+     - **adapter 8 passes no `platform`, and says nothing.** The endpoints
+       and the gate read their bindings and `waitUntil` from
+       `cloudflare:workers`; the server tests point that import at a stub
+       (`_lib/__fixtures__/workers.ts`).
+     - **adapter 8 dropped the edge cache** it kept in front of SvelteKit.
+       `_lib/edge-cache.ts` keeps it, to worktop's rules, first thing in
+       `handle` and before the gate (doc 11 §2, doc 15 §3).
+     - **The service worker is an ES module**, in `src/service-worker/` with
+       a tsconfig of its own, reading `$app/manifest`; `core/pwa.svelte.ts`
+       registers it as a module, with SvelteKit's own registration off. A
+       module service worker needs Firefox 147, Safari 15 or Chrome 91, all
+       inside note 8's targets; an older browser keeps the app and loses
+       offline support only.
+     - **`handleError` sees every error**, told apart by `kind`. What was
+       meant — an `error()` thrown, anything SvelteKit refuses below 500 —
+       keeps its message, unlogged.
+     - **The licence appendix reads wrangler's bundle.** adapter 8 leaves the
+       Worker unbundled until deploy, so `licenses:gen` has wrangler bundle
+       it as a deploy would (`--dry-run`) and reads what it inlined: esm-env
+       among it, which the old read of `_worker.js` would have missed
+       (doc 16 §5).
+     - `version.pollInterval: 0` keeps SvelteKit 2's default: 3.0 polls
+       hourly for an `updated` flag nothing here reads (doc 17 §2).
