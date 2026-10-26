@@ -18,8 +18,9 @@ licence. There is no CLA. Signing off your commits under the
 
 ## Setting up
 
-Node 24 and pnpm 11 (`corepack enable` provides it). Then `pnpm install` and
-`pnpm dev`. The README says which tiles need keys, and `.dev.vars.example`
+Node 26 (`.node-version`) and pnpm 11. Node 26 ships without corepack:
+`npm install --global corepack@latest && corepack enable` provides the pnpm
+version `package.json` names. Then `pnpm install` and `pnpm dev`. The README says which tiles need keys, and `.dev.vars.example`
 names them.
 
 ## Making a change

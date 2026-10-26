@@ -6,6 +6,21 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Node 26 and TypeScript 7.** Building TilePier needs Node 26 (named in
+  `.node-version`). The code is checked by TypeScript 7's native compiler,
+  against ES2025, in under a second; the editor and lint tools read TypeScript
+  6.0 until they support 7.
+- The rest of the toolchain at its newest releases: Svelte 5.57, ESLint 10.13,
+  Playwright 1.64, Paraglide 2.29, and wrangler 4.152 with the Workers runtime
+  of 2026-10-19.
+
+### Fixed
+
+- **The toasts' buttons are 40 × 40**, the size every control outside a tile
+  keeps. The dismiss button was 21 × 32.
+
 ### Security
 
 - **DOMPurify 3.4.17.** It fixes a critical and a high advisory
@@ -17,11 +32,6 @@ follow [Semantic Versioning](https://semver.org/).
   now read the text once, with the same results.
 - Development tooling: Vite 8.3.5, Vitest 4.1.12, and undici 7.30.1 and zod
   4.6.7 underneath wrangler and knip.
-
-### Fixed
-
-- **The toasts' buttons are 40 × 40**, the size every control outside a tile
-  keeps. The dismiss button was 21 × 32.
 
 ## [1.0.1] - 2026-10-07
 

@@ -18,8 +18,9 @@ no cookie.
 
 ## Stack (do not substitute)
 
-Node 24 LTS · pnpm 11 · SvelteKit ≥2.69.3 (adapter-cloudflare) · Svelte 5
-**runes only** · TypeScript 6 strict · Vite 8 (Rolldown —
+Node 26 (`.node-version`) · pnpm 11 · SvelteKit ≥2.69.3 (adapter-cloudflare)
+· Svelte 5 **runes only** · TypeScript 7 strict, ES2025 (`tsc` is 7.0; the
+tools read the 6.0 API through an npm alias, doc 02) · Vite 8 (Rolldown —
 `build.rolldownOptions`) · Tailwind 4.3 (CSS-first `@theme`, no config js)
 · gridstack 12.6 · ECharts 6.1 (lazy, tree-shaken imports from
 `echarts/core`) · Dexie 4 · Paraglide JS 2 · MapLibre GL 6 + OpenFreeMap ·
@@ -39,7 +40,8 @@ pnpm run deploy:prod # build, then wrangler deploy (note: `pnpm deploy` is a
                     #   pnpm builtin and would NOT run this script)
 pnpm gen            # regenerate worker-configuration.d.ts from wrangler.jsonc
 pnpm clean          # remove build output
-pnpm lint           # prettier --check + eslint + svelte-check
+pnpm lint           # prettier --check + eslint + svelte-check + typecheck
+pnpm typecheck      # tsc --noEmit with TypeScript 7 (the app's tsconfig)
 pnpm format         # prettier --write
 pnpm test           # vitest (node + browser projects)
 pnpm test:cov       # the same, with doc 19 §2 coverage thresholds (what CI runs)

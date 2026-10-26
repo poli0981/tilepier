@@ -68,9 +68,12 @@ ghi nhận ở [trang giấy phép](https://tilepier.win/legal/licenses).
 
 ## Chạy trên máy
 
-Cần Node 24 và pnpm 11 (corepack cung cấp sẵn).
+Cần Node 26 (`.node-version` ghi rõ bản nào) và pnpm 11. Node 26 không còn kèm
+corepack, nên cài nó trước; sau đó corepack cung cấp đúng bản pnpm mà
+`package.json` ghi.
 
 ```bash
+npm install --global corepack@latest
 corepack enable
 pnpm install
 pnpm dev

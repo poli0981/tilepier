@@ -277,7 +277,8 @@ feed (VnExpress) arriving through the Worker's own egress.
   `pnpm-workspace.yaml` with its reason beside it, out again when the fix
   ships.
 - Release-age caution: Dependabot's `cooldown` holds version updates three
-  days (doc 21 §6). Security updates are not held.
+  days (doc 21 §6), and a version taken by hand is held the same three days.
+  Security updates are not held.
 - No postinstall scripts allowed. **Mechanism updated 2026-08-10:** pnpm 11 no
   longer reads the `pnpm` field from `package.json` and renamed the setting, so
   the allowlist is `allowBuilds` in **`pnpm-workspace.yaml`**. Deny by default;
@@ -320,6 +321,15 @@ feed (VnExpress) arriving through the Worker's own egress.
   merged: DOMPurify's critical and high advisories (published 2026-10-22, fixed
   in 3.4.17), vite's high, and zod's under knip, the last a lock refresh — the
   gate working as the paragraph above says, on a commit nobody had touched.
+  The `sharp` floor came out the same week: wrangler 4.152's miniflare pins
+  0.35.5 itself.
+- **The Node version is held by `.node-version`, not by `engines`**
+  (2026-10-26). `.npmrc`'s `engine-strict=true` had done nothing since
+  pnpm 11, which reads only auth and registry settings from that file, so
+  `engines.node` was never enforced; the file is gone. pnpm 11's own
+  `engineStrict` cannot replace it: svelte-eslint-parser declares
+  `engines.pnpm` 10.34, and every install would fail. CI's setup-node reads
+  `.node-version`, Workers Builds' `NODE_VERSION` matches it (doc 21 §4).
 - **An override is for a parent that will not move. A stale lock is the
   commoner case** (2026-10-06): five packages carried high or moderate
   advisories whose fixes sat inside their parents' own ranges — `devalue`

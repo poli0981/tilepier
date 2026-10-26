@@ -67,9 +67,12 @@ credited on [the licences page](https://tilepier.win/legal/licenses).
 
 ## Run it locally
 
-You need Node 24 and pnpm 11 (corepack provides it).
+You need Node 26 (`.node-version` says which) and pnpm 11. Node 26 no longer
+ships corepack, so install it first; it then provides the pnpm version
+`package.json` names.
 
 ```bash
+npm install --global corepack@latest
 corepack enable
 pnpm install
 pnpm dev

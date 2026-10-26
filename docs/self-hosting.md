@@ -3,7 +3,9 @@
 TilePier is one Cloudflare Worker that serves the app and its `/api/*` proxy,
 plus a KV namespace for the proxy's cache. This guide is what a copy of it on
 your own domain needs. It assumes a Cloudflare account with a zone (a domain)
-on it, Node 24 and pnpm 11.
+on it, Node 26 and pnpm 11 (`.node-version` and `package.json`'s
+`packageManager`). If you build with Workers Builds, set its `NODE_VERSION`
+and `PNPM_VERSION` variables to match: its own defaults are older.
 
 Some of the steps are not optional. A copy that skips them reports its visitors
 to the original's analytics, identifies itself to OpenStreetMap's servers as
@@ -66,10 +68,12 @@ with no keys at all.
 With Cloudflare's Git integration (Workers Builds), set in the Worker's
 Settings → Builds:
 
-| Field          | Value                |
-| -------------- | -------------------- |
-| Build command  | `pnpm run build`     |
-| Deploy command | `npx wrangler deploy` |
+| Field                        | Value                 |
+| ---------------------------- | --------------------- |
+| Build command                | `pnpm run build`      |
+| Deploy command               | `npx wrangler deploy` |
+| Variable `NODE_VERSION`      | `26`                  |
+| Variable `PNPM_VERSION`      | `11`                  |
 
 Leaving the build command empty fails the deploy: nothing produces
 `.svelte-kit/cloudflare/_worker.js`. From your own machine instead,
