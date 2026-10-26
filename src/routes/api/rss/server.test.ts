@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TpFeedPayload } from '#lib/api-types.js';
-import { RATE_LIMIT, cacheKey, feedUrlHash } from '#lib/shared-constants.js';
+import { cacheKey, feedUrlHash } from '#lib/shared-constants.js';
 import { HTML_PAGE, RSS_NEWS } from '../_lib/__fixtures__/feeds';
 import { GET } from './+server';
 import { bind, settle } from '../_lib/__fixtures__/workers';
@@ -161,24 +161,6 @@ describe('validation (doc 11 §3, doc 15 §5)', () => {
 		const { response } = await call({ kv: null });
 		expect(response.status).toBe(503);
 		expect((await envelope(response)).error?.code).toBe('UPSTREAM_DOWN');
-	});
-
-	it('is rate-gated like every other route (doc 11 §7)', async () => {
-		// One 10 s bucket for all 31 calls: on the real clock, a run that crossed
-		// a bucket edge started counting again and got a 200 for the 31st
-		// (2026-09-29, once in a full `pnpm verify`). Timers stay real.
-		vi.useFakeTimers({ toFake: ['Date'], now: Date.parse('2026-09-29T12:00:01Z') });
-		const kv = fakeKv();
-		seed(kv, await kvKey(), HELD, 0);
-		const headers = { 'cf-connecting-ip': '203.0.113.9' };
-
-		for (let i = 0; i < RATE_LIMIT.maxPerBucket; i += 1) {
-			expect((await call({ kv, headers })).response.status).toBe(200);
-		}
-		const { response } = await call({ kv, headers });
-
-		expect(response.status).toBe(429);
-		expect((await envelope(response)).error?.code).toBe('RATE_LIMITED');
 	});
 });
 

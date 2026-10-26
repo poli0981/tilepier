@@ -7,7 +7,7 @@
 | 404 route | SvelteKit `+error.svelte` | Custom page: tide-gauge illustration, "trang này chưa cập bến", link home + search? (no search — just home) |
 | 500 app error | `+error.svelte` (via `handleError` hook) | Custom page + "báo lỗi" button that opens the bug-report flow with the error pre-attached (doc 18 §4) |
 | API 4xx/5xx (`/api/*`) | JSON envelope only (doc 11 §2) | Widgets render inline error/stale states — **never** full-page |
-| 429 (zone rule or soft limiter) | JSON + `retry-after` | Global toast + per-widget backoff (§5) |
+| 429 (zone rule or Worker limiter) | Worker: JSON + `retry-after`; zone rule: Cloudflare's page, read as `RATE_LIMITED` (doc 11 §7) | Global toast + per-widget backoff (§5) |
 | Cloudflare edge errors (challenge, 52x) | CF default pages | Accepted: zone-level Custom Error Rules require a paid zone plan; not worth $20+/mo for edge-error cosmetics. Documented limitation. |
 | No internet | Service worker | `/offline` fallback for navigations; widgets degrade in place (§3) |
 

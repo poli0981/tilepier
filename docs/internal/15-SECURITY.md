@@ -358,9 +358,13 @@ feed (VnExpress) arriving through the Worker's own egress.
 ## 7. Privacy engineering (enforcement of doc 16 §3)
 
 - Coordinates rounded to 2 dp client-side before any request.
-- IP never stored by TilePier's code: soft limiter hashes with a rotating
-  daily salt held in KV (`kv:rl:salt:<date>`, generated via
-  `crypto.getRandomValues`, auto-TTL). **Cloudflare's platform is a different
+- IP never stored by TilePier's code. The rate limiter (doc 11 §7) hands
+  Cloudflare's Rate Limiting binding a SHA-256 of the address (an IPv6
+  address's /64), which lives in the binding's counter for one 10 s period
+  and has no read API. Until 2026-10-27 it was a KV counter keyed by
+  SHA-256(ip + a daily salt held in KV, `kv:rl:salt:<date>`); a counter that
+  outlived its window needed the rotating salt, and one nothing can read back
+  does not. **Cloudflare's platform is a different
   matter, and doc 16 §3 now says so.** Workers invocation logs are on
   (`wrangler.jsonc` `observability`) and keep request metadata, the address
   included, for 7 days. `POST /api/verify` also forwards the address to

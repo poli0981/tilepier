@@ -1,8 +1,11 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
 import { env } from 'cloudflare:workers';
 import { SECURITY_HEADERS } from '#lib/server/security-headers.js';
+import { hasDevToken } from './routes/api/_lib/dev-token';
 import { lookup, store } from './routes/api/_lib/edge-cache';
 import { guardApi } from './routes/api/_lib/gate';
+import { checkRateLimit, clientKey } from './routes/api/_lib/ratelimit';
+import { fail } from './routes/api/_lib/respond';
 
 /*
  * Security headers for dynamically rendered responses, doc 15 §2.
@@ -27,9 +30,10 @@ import { guardApi } from './routes/api/_lib/gate';
 type HandleInput = Parameters<Handle>[0];
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const response = event.url.pathname.startsWith('/api/')
-		? await api({ event, resolve })
-		: await resolve(event);
+	const isApi = event.url.pathname.startsWith('/api/');
+	const response =
+		(await limit(event.request, isApi)) ??
+		(isApi ? await api({ event, resolve }) : await resolve(event));
 
 	// HTML only. Hashed immutable assets do not need these, and /api/* returns
 	// JSON whose envelope carries its own cache headers (doc 11 §2).
@@ -42,6 +46,41 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	return response;
 };
+
+/**
+ * The Worker's rate limiter (doc 11 §7, `_lib/ratelimit.ts`), before anything
+ * else the Worker does — an edge-cache hit and a gate refusal included, since
+ * a flood of either still costs an invocation. `/api/*` and the pages the
+ * Worker renders (a 404, a spike page) count on separate bindings, so a burst
+ * of one never spends the other's allowance. Prerendered pages and static files
+ * are served by the ASSETS binding without reaching this code at all; the zone
+ * rule in front covers those.
+ *
+ * `null` lets the request through. Only a refused request pays for the
+ * operator's bearer check, which lets the S3 harness (doc 22) through as the
+ * gate does.
+ */
+async function limit(request: Request, isApi: boolean): Promise<Response | null> {
+	// Before the bindings are read: a page being prerendered has no address,
+	// and no env either.
+	const key = clientKey(request);
+	if (key === null) return null;
+
+	const verdict = await checkRateLimit(isApi ? env.API_LIMITER : env.PAGE_LIMITER, key);
+	if (verdict.allowed || (await hasDevToken(request, env.DEV_DASH_TOKEN))) return null;
+
+	if (isApi) {
+		const refusal = fail('RATE_LIMITED', verdict.retryAfterS);
+		refusal.headers.set('cache-control', 'no-store');
+		return refusal;
+	}
+	// No body: a sentence here would sit outside the message catalogue
+	// (CLAUDE.md rule 8), and no reader comes near this many rendered pages.
+	return new Response(null, {
+		status: 429,
+		headers: { 'retry-after': String(verdict.retryAfterS), 'cache-control': 'no-store' }
+	});
+}
 
 /**
  * An `/api/*` request. The edge cache answers first, before the gate, as the

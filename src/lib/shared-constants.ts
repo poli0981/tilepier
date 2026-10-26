@@ -430,14 +430,19 @@ export const STOCK_BUDGET = {
 
 /* ────────────────────────────────────────────── limits, breaker, upstream */
 
-/** In-Worker soft limiter (doc 11 §7). The zone rule is the real wall. */
+/**
+ * The Worker's rate limiter (doc 11 §7): Cloudflare's Rate Limiting binding,
+ * once for `/api/*` and once for the pages the Worker renders. The binding
+ * takes its numbers from `wrangler.jsonc`, not from here, so
+ * `shared-constants.test.ts` holds both `ratelimits` entries to this; the copy
+ * exists for the client that paces itself under it (`widgets/rss`). The zone
+ * rule is the real wall.
+ */
 export const RATE_LIMIT = {
-	/** Requests allowed per bucket, per hashed IP. */
+	/** Requests allowed per bucket, per client (an address, or an IPv6 /64). */
 	maxPerBucket: 30,
-	/** Bucket width. */
-	bucketMs: 10 * SECOND,
-	/** How long a bucket counter lives in KV. */
-	counterTtlMs: 60 * SECOND
+	/** Bucket width: the binding's `period`, which is 10 s or 60 s. */
+	bucketMs: 10 * SECOND
 } as const;
 
 /** Per-upstream circuit breaker (doc 11 §6). */
@@ -492,12 +497,15 @@ export const HARD_MAX_AGE_MS = 7 * DAY;
  * per IP. It lives in the dashboard rather than in code, so nothing enforces
  * this copy of it — it is here for the one client that has to pace itself
  * under it (`widgets/rss`), and `shared-constants.test.ts` holds it to doc
- * 11 §7's wording. Past it the zone **blocks every `/api/*` request for 60 s**,
+ * 11 §7's wording. Past it the zone **blocks every `/api/*` request for 10 s**,
  * not just the one that tripped it.
+ *
+ * Until 2026-10-27 this read 60 a minute with a 60 s block, which a Free zone
+ * cannot express: its one rule counts over 10 s and blocks for 10 s.
  */
 export const ZONE_RATE_LIMIT = {
 	maxPerWindow: 60,
-	windowMs: 60 * SECOND
+	windowMs: 10 * SECOND
 } as const;
 
 /* ────────────────────────────────────────────────────────────── storage */

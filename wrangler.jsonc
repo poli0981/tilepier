@@ -18,18 +18,15 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 
-	// Edge cache + fx snapshots + soft rate-limit counters (doc 03 §Environment,
-	// doc 11 §4-§7). Preview deploys point at the preview namespace so cache
-	// experiments cannot pollute production (doc 21 §4).
+	// Edge cache data + fx snapshots + breaker and budget state (doc 03
+	// §Environment, doc 11 §4-§6). Preview deploys point at the preview
+	// namespace so cache experiments cannot pollute production (doc 21 §4).
 	//
-	// **The account is on Workers Paid** (confirmed 2026-08-30), and that is a
-	// deployment fact rather than a billing one. On the free tier KV allows
-	// 1 000 writes a day, and `_lib/ratelimit.ts` spends one per `/api/*`
-	// request carrying an address — so roughly a thousand API requests would
-	// exhaust the day before a single cache write or fx snapshot. Paid removes
-	// that ceiling and meters writes instead, which turns the limiter's write
-	// from a wall into a cost line worth watching (doc 11 §7) and unblocks doc
-	// 10 §3's permanent daily fx snapshot.
+	// **The account is on Workers Paid** (confirmed 2026-08-30). Until
+	// 2026-10-27 that was a deployment fact: the KV rate limiter wrote once per
+	// `/api/*` request, and the free tier's 1 000 KV writes a day would have run
+	// out at about a thousand API requests. The limiter is the binding below
+	// now, and KV is written on a cache MISS, a snapshot and a breaker change.
 	//
 	// Not the same thing as the *zone* plan doc 11 §7 names for its one free
 	// WAF rate-limiting rule. That is a different dimension and unchanged.
@@ -38,6 +35,28 @@
 			"binding": "TILEPIER_CACHE",
 			"id": "1671381563ef4298997455c72f966db7",
 			"preview_id": "5e6dc952b15c45bd85b90f9941b55cf1"
+		}
+	],
+
+	// The Worker's rate limiter (doc 11 §7, `src/routes/api/_lib/ratelimit.ts`):
+	// per client, `/api/*` on one namespace and the pages the Worker renders on
+	// the other. The numbers are `RATE_LIMIT` in `src/lib/shared-constants.ts`,
+	// which the client paces under and `shared-constants.test.ts` holds this
+	// block to. A period is 10 or 60 seconds, nothing else.
+	//
+	// A namespace id is any positive integer, unique within the Cloudflare
+	// account: two Workers naming the same id share counters. A fork deploying
+	// to an account that already uses these picks its own.
+	"ratelimits": [
+		{
+			"name": "API_LIMITER",
+			"namespace_id": "27101",
+			"simple": { "limit": 30, "period": 10 }
+		},
+		{
+			"name": "PAGE_LIMITER",
+			"namespace_id": "27102",
+			"simple": { "limit": 30, "period": 10 }
 		}
 	],
 

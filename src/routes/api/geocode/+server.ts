@@ -11,7 +11,6 @@ import {
 } from '../_lib/breaker';
 import { readCache, ttlSeconds, writeCache } from '../_lib/kv-cache';
 import { normalizeNominatim, normalizePhoton } from '../_lib/normalize';
-import { checkRateLimit } from '../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../_lib/respond';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
 import { parseGeocodeQuery, type TpGeocodeQuery } from '../_lib/geocode-query';
@@ -25,8 +24,8 @@ import { parseGeocodeQuery, type TpGeocodeQuery } from '../_lib/geocode-query';
  * the condition of use. Photon leads because it has no such requirement and is
  * faster; Nominatim only sees traffic Photon could not answer.
  *
- * Same pipeline as `/api/weather`: validate → rate-gate → KV read → upstream →
- * normalize → KV write → respond.
+ * Same pipeline as `/api/weather`: validate → KV read → upstream → normalize →
+ * KV write → respond.
  */
 
 const PHOTON = 'https://photon.komoot.io/api/';
@@ -49,9 +48,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const parsed = parseGeocodeQuery(url);
 	if (parsed === null) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const key = cacheKey.geocode(parsed.lang, parsed.qNorm);
 	const cached = await readCache<TpGeocodePayload>(kv, 'geo', key);

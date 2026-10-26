@@ -74,9 +74,12 @@ here and not there counts its file as uncovered on the next change to it.
    only the constants module — as this line previously described — could never
    detect doc drift; corrected 2026-08-10 and verified by mutating a TTL in the
    doc and watching the suite fail. Also covers
-   breaker open/half-open/close, quota guard tiers (720/780), rate-limit
-   bucketing, SSRF url rejections (each rule in doc 15 §5), envelope
-   shapes.
+   breaker open/half-open/close, quota guard tiers (720/780), the rate
+   limiter's client key and fail-open (`_lib/ratelimit.test.ts`), SSRF url
+   rejections (each rule in doc 15 §5), envelope shapes. The limiter's binding
+   is faked there; `e2e/rate-limit.e2e.ts` bursts the real one in workerd, and
+   `shared-constants.test.ts` holds `wrangler.jsonc`'s `ratelimits` to
+   `RATE_LIMIT` (2026-10-27).
 6. **Sanitizers:** DOMPurify configs (notes vs RSS) against an XSS corpus
    (script, event handlers, javascript: URLs, svg payloads, data: images).
    Both halves exist since 2026-09-25: `sanitize.svelte.test.ts` (notes) and

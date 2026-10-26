@@ -6,7 +6,6 @@ import { fetchFeedDocument } from '../_lib/feed-fetch';
 import { parseFeed } from '../_lib/feed-parse';
 import { parseFeedQuery } from '../_lib/feed-query';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../_lib/kv-cache';
-import { checkRateLimit } from '../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../_lib/respond';
 import { UpstreamError } from '../_lib/upstream';
 
@@ -14,8 +13,8 @@ import { UpstreamError } from '../_lib/upstream';
  * `GET /api/rss?url=<https URL>` — doc 11 §3, doc 10 §7, doc 15 §5.
  *
  * Not one upstream but a class of them: whatever feed a reader points a tile
- * at. The pipeline is the other endpoints' — validate, rate-gate, KV, upstream,
- * normalise, write, respond — with three differences, each for that reason.
+ * at. The pipeline is the other endpoints' — validate, KV, upstream, normalise,
+ * write, respond — with three differences, each for that reason.
  *
  * **No breaker.** doc 11 §6 counts failures per upstream, and here every feed
  * is its own. One shared `rss` breaker would let three dead feeds switch off
@@ -62,9 +61,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const query = parseFeedQuery(url);
 	if (!query) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const key = cacheKey.rss(await feedUrlHash(query.url));
 	const now = Date.now();

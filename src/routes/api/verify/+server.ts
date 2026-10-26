@@ -4,7 +4,6 @@ import type { TpApiMeta, TpVerifyConfig, TpVerifyPass } from '#lib/api-types.js'
 import { readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
 import { gateState } from '../_lib/gate';
 import { issuePass } from '../_lib/pass';
-import { checkRateLimit } from '../_lib/ratelimit';
 import { fail, isCrossSite, okNoStore } from '../_lib/respond';
 import { MAX_TOKEN_LENGTH, siteverify } from '../_lib/turnstile';
 
@@ -51,9 +50,6 @@ export const POST: RequestHandler = async ({ request, url }) => {
 
 	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const token = await readToken(request);
 	if (token === null) return fail('BAD_REQUEST');

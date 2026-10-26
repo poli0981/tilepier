@@ -6,7 +6,6 @@ import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../..
 import { FINNHUB, finnhubHeaders, finnhubSearchUrl } from '../../_lib/finnhub';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { normalizeStockSearch } from '../../_lib/normalize';
-import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { parseStockSearchQuery } from '../../_lib/stock-query';
 import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
@@ -28,9 +27,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const query = parseStockSearchQuery(url);
 	if (!query) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const key = cacheKey.stockSearch(query.norm);
 	const cached = await readCache<TpStockSearchPayload>(kv, FAMILY, key);
