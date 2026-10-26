@@ -4,7 +4,7 @@ Every release of TilePier, newest first. The format follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-26
 
 ### Changed
 
@@ -19,6 +19,15 @@ follow [Semantic Versioning](https://semver.org/).
   music-metadata 12.
 - **The grid is gridstack 14.** Arranging and resizing the deck work as
   before.
+- **SvelteKit 3.** TilePier runs on SvelteKit 3.1 and its Cloudflare adapter 8.
+  The API keeps its edge cache, which the adapter no longer provides, to the
+  same rules, and the bot check still stands behind it.
+- **The offline worker is a JavaScript module**, as SvelteKit 3 builds it.
+  A browser too old to run one — Firefox before 147 — keeps the whole app and
+  loses only offline use.
+- **The licences page follows the Worker as it is deployed.** It lists
+  esm-env, which SvelteKit 3 brings into the Worker, and no longer lists
+  worktop and set-cookie-parser, which left with SvelteKit 2.
 
 ### Fixed
 
@@ -34,8 +43,12 @@ follow [Semantic Versioning](https://semver.org/).
   feed's publisher wrote — dates, markup, the author line — took seconds on a
   stuffed input, and the `M/D/YYYY` date took 45 seconds at 8,000 spaces. They
   now read the text once, with the same results.
-- Development tooling: Vite 8.3.5, Vitest 4.1.12, and undici 7.30.1 and zod
-  4.6.7 underneath wrangler and knip.
+- **SvelteKit 3.0** clears two low advisories in SvelteKit 2
+  (GHSA-pfhg-q3qv-9q6r, GHSA-27mw-82g8-phjj), in features TilePier does not
+  use: enhanced form actions, and a prerendered page's `cache-control` taken
+  from outside.
+- Development tooling: Vite 8.3.5, and undici 7.30.1 and zod 4.6.7 underneath
+  wrangler and knip.
 
 ## [1.0.1] - 2026-10-07
 
@@ -144,6 +157,6 @@ than tags. No 0.x version was ever cut.
 - **Two tabs at once.** The last write wins, and the contents of the database
   refresh on reload.
 
-[Unreleased]: https://github.com/poli0981/tilepier/compare/v1.0.1...HEAD
+[1.1.0]: https://github.com/poli0981/tilepier/releases/tag/v1.1.0
 [1.0.1]: https://github.com/poli0981/tilepier/releases/tag/v1.0.1
 [1.0.0]: https://github.com/poli0981/tilepier/releases/tag/v1.0.0
