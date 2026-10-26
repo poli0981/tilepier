@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { m } from '$lib/paraglide/messages';
-import { deck } from '$lib/stores/deck.svelte';
-import { ui } from '$lib/stores/ui.svelte';
+import { m } from '#lib/paraglide/messages.js';
+import { deck } from '#lib/stores/deck.svelte.js';
+import { ui } from '#lib/stores/ui.svelte.js';
 import TpAddDrawer from './TpAddDrawer.svelte';
 
 /**

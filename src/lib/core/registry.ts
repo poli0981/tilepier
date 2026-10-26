@@ -1,20 +1,20 @@
 import type { Component } from 'svelte';
-import type { TpIconName } from '$lib/ui/icons/names';
-import clock from '$lib/widgets/clock/manifest';
-import notes from '$lib/widgets/notes/manifest';
-import calc from '$lib/widgets/calc/manifest';
-import timer from '$lib/widgets/timer/manifest';
-import todo from '$lib/widgets/todo/manifest';
-import calendar from '$lib/widgets/calendar/manifest';
-import toolbox from '$lib/widgets/toolbox/manifest';
-import quote from '$lib/widgets/quote/manifest';
-import weather from '$lib/widgets/weather/manifest';
-import currency from '$lib/widgets/currency/manifest';
-import markets from '$lib/widgets/markets/manifest';
-import rss from '$lib/widgets/rss/manifest';
-import map from '$lib/widgets/map/manifest';
-import music from '$lib/widgets/music/manifest';
-import media from '$lib/widgets/media/manifest';
+import type { TpIconName } from '#lib/ui/icons/names.js';
+import clock from '#lib/widgets/clock/manifest.js';
+import notes from '#lib/widgets/notes/manifest.js';
+import calc from '#lib/widgets/calc/manifest.js';
+import timer from '#lib/widgets/timer/manifest.js';
+import todo from '#lib/widgets/todo/manifest.js';
+import calendar from '#lib/widgets/calendar/manifest.js';
+import toolbox from '#lib/widgets/toolbox/manifest.js';
+import quote from '#lib/widgets/quote/manifest.js';
+import weather from '#lib/widgets/weather/manifest.js';
+import currency from '#lib/widgets/currency/manifest.js';
+import markets from '#lib/widgets/markets/manifest.js';
+import rss from '#lib/widgets/rss/manifest.js';
+import map from '#lib/widgets/map/manifest.js';
+import music from '#lib/widgets/music/manifest.js';
+import media from '#lib/widgets/media/manifest.js';
 import {
 	CATEGORY_ORDER,
 	type TpDetailProps,

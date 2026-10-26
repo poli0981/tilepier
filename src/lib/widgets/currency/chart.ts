@@ -1,4 +1,4 @@
-import { baseOption, type TpChartOption } from '$lib/charts/options';
+import { baseOption, type TpChartOption } from '#lib/charts/options.js';
 import type { TpHistoryPoint } from './service';
 
 /**

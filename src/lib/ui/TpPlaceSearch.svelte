@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { TpGeocodeResult } from '$lib/api-types';
-	import { TpApiError } from '$lib/core/api';
+	import type { TpGeocodeResult } from '#lib/api-types.js';
+	import { TpApiError } from '#lib/core/api.js';
 	import {
 		contextOf,
 		dedupeResults,
@@ -8,13 +8,13 @@
 		SEARCH_DEBOUNCE_MS,
 		searchPlaces,
 		type TpPlacePick
-	} from '$lib/core/geocode';
-	import { browserPosition, coarsePosition, type TpPositionSource } from '$lib/core/geolocate';
-	import { logEntry } from '$lib/core/log-buffer';
-	import { m } from '$lib/paraglide/messages';
-	import { online } from '$lib/stores/online.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	} from '#lib/core/geocode.js';
+	import { browserPosition, coarsePosition, type TpPositionSource } from '#lib/core/geolocate.js';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { online } from '#lib/stores/online.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
 	 * Place search with "use my location" beside it — the weather tile's first

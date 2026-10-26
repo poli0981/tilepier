@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { cacheKey } from '$lib/shared-constants';
+import { cacheKey } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
 import { checkRateLimit } from '../_lib/ratelimit';
@@ -7,7 +7,7 @@ import { utcDateKey } from '../_lib/budget';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
 import { fail, isCrossSite, ok } from '../_lib/respond';
 import { fxAsOf, normalizeFx } from '../_lib/normalize';
-import type { TpFxPayload, TpFxSnapshotPayload } from '$lib/api-types';
+import type { TpFxPayload, TpFxSnapshotPayload } from '#lib/api-types.js';
 
 /**
  * `GET /api/fx` — doc 11 §3, upstream doc 10 §3.

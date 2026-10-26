@@ -1,4 +1,4 @@
-import type { TpApiResponse, TpStockQuotePayload } from '$lib/api-types';
+import type { TpApiResponse, TpStockQuotePayload } from '#lib/api-types.js';
 
 /**
  * A normalised `/api/stock/quote` envelope (doc 19 §1), the stock twin of

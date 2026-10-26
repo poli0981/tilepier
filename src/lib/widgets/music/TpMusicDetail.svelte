@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpSeekBar from '$lib/ui/TpSeekBar.svelte';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
+	import TpSeekBar from '#lib/ui/TpSeekBar.svelte';
 	import { collection } from './collection.svelte';
 	import { player } from './player.svelte';
 	import TpMusicCover from './TpMusicCover.svelte';

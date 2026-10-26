@@ -1,4 +1,4 @@
-import { FX_HISTORY_DAYS, FX_HISTORY_DEFAULT_DAYS } from '$lib/api-types';
+import { FX_HISTORY_DAYS, FX_HISTORY_DEFAULT_DAYS } from '#lib/api-types.js';
 
 /**
  * Query validation for `/api/fx/history` (doc 11 §3).

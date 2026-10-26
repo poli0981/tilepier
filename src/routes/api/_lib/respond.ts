@@ -1,4 +1,4 @@
-import type { TpApiErrorCode, TpApiMeta, TpApiResponse, TpCacheStatus } from '$lib/api-types';
+import type { TpApiErrorCode, TpApiMeta, TpApiResponse, TpCacheStatus } from '#lib/api-types.js';
 
 /**
  * The response envelope, doc 11 §2. Every `/api/*` endpoint returns through

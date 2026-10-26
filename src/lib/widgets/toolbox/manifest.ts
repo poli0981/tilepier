@@ -1,4 +1,4 @@
-import type { TpWidgetManifest } from '$lib/core/registry';
+import type { TpWidgetManifest } from '#lib/core/registry.js';
 
 /**
  * doc 06 §7, toolbox row. `multiInstance: false`: a second tile would be the

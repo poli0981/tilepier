@@ -1,11 +1,11 @@
 import type { RequestHandler } from './$types';
-import type { TpStockQuote, TpStockSeriesPayload } from '$lib/api-types';
+import type { TpStockQuote, TpStockSeriesPayload } from '#lib/api-types.js';
 import {
 	cacheKey,
 	stockSeriesFamily,
 	STOCK_BUDGET,
 	type TpCacheFamily
-} from '$lib/shared-constants';
+} from '#lib/shared-constants.js';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
 import {
 	markMinuteSpent,

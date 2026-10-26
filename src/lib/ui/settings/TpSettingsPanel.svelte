@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
-	import { downloadText } from '$lib/core/download';
-	import { fetchHealth, type TpHealthResult } from '$lib/core/health';
-	import { logEntry, readLog } from '$lib/core/log-buffer';
-	import { scheduler } from '$lib/core/scheduler';
-	import { swrCache } from '$lib/core/swr.svelte';
-	import { db } from '$lib/core/storage/db';
+	import { downloadText } from '#lib/core/download.js';
+	import { fetchHealth, type TpHealthResult } from '#lib/core/health.js';
+	import { logEntry, readLog } from '#lib/core/log-buffer.js';
+	import { scheduler } from '#lib/core/scheduler.js';
+	import { swrCache } from '#lib/core/swr.svelte.js';
+	import { db } from '#lib/core/storage/db.js';
 	import {
 		applyImport,
 		backupFilename,
@@ -17,13 +17,13 @@
 		type TpBackupTable,
 		type TpImportMode,
 		type TpImportSummary
-	} from '$lib/core/storage/exporter';
-	import { LOCALES, switchLocale, type TpLocale } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
-	import { LOCAL_KEYS } from '$lib/shared-constants';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpBugDialog from '$lib/ui/TpBugDialog.svelte';
+	} from '#lib/core/storage/exporter.js';
+	import { LOCALES, switchLocale, type TpLocale } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { LOCAL_KEYS } from '#lib/shared-constants.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpBugDialog from '#lib/ui/TpBugDialog.svelte';
 	import { ACCENTS, ACCENT_NAMES } from './accents';
 
 	/**

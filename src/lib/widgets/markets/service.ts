@@ -14,13 +14,13 @@ import {
 	type TpStockRange,
 	type TpStockSearchPayload,
 	type TpStockSeriesPayload
-} from '$lib/api-types';
-import { fetchEnvelope } from '$lib/core/api';
-import { logEntry } from '$lib/core/log-buffer';
-import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
-import type { TpTileStatus } from '$lib/core/tile-status';
-import type { TpSourceState } from '$lib/core/tile-view';
-import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
+} from '#lib/api-types.js';
+import { fetchEnvelope } from '#lib/core/api.js';
+import { logEntry } from '#lib/core/log-buffer.js';
+import { swr, type TpSwrFetcher, type TpSwrHandle } from '#lib/core/swr.svelte.js';
+import type { TpTileStatus } from '#lib/core/tile-status.js';
+import type { TpSourceState } from '#lib/core/tile-view.js';
+import { db as defaultDb, type TpDb } from '#lib/core/storage/db.js';
 import {
 	CACHE_POLICY,
 	cacheKey,
@@ -29,7 +29,7 @@ import {
 	stockSearchText,
 	stockSeriesFamily,
 	symbolSetKey
-} from '$lib/shared-constants';
+} from '#lib/shared-constants.js';
 import {
 	CRYPTO_TOP_LIST,
 	MARKETS_DEFAULTS,

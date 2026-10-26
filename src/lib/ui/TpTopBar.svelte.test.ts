@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { ui } from '$lib/stores/ui.svelte';
+import { ui } from '#lib/stores/ui.svelte.js';
 import TpTopBar from './TpTopBar.svelte';
 
 /**

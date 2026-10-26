@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { fmtDuration } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { fmtDuration } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { collection } from './collection.svelte';
 	import { marquee } from './marquee';
 	import { player } from './player.svelte';

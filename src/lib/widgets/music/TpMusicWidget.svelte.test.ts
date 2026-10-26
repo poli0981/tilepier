@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { resetPlayback } from '$lib/core/playback';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import type { TpTileSize } from '$lib/core/types';
-import { m } from '$lib/paraglide/messages';
-import { settings } from '$lib/stores/settings.svelte';
+import { resetPlayback } from '#lib/core/playback.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import type { TpTileSize } from '#lib/core/types.js';
+import { m } from '#lib/paraglide/messages.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { collection } from './collection.svelte';
 import { saveMusicRoot } from './library';
 import { player } from './player.svelte';

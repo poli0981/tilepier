@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { TpApiError } from '$lib/core/api';
-import { GEOCODE_EMPTY, GEOCODE_OK, GEOCODE_PAYLOAD } from '$lib/core/__fixtures__/geocode';
-import { roundCoord } from '$lib/shared-constants';
+import { TpApiError } from '#lib/core/api.js';
+import { GEOCODE_EMPTY, GEOCODE_OK, GEOCODE_PAYLOAD } from '#lib/core/__fixtures__/geocode.js';
+import { roundCoord } from '#lib/shared-constants.js';
 import {
 	contextOf,
 	dedupeResults,

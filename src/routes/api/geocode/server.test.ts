@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpGeocodePayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpGeocodePayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { normalizeQuery, parseGeocodeQuery } from '../_lib/geocode-query';
 

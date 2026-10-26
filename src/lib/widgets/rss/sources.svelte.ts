@@ -1,8 +1,8 @@
 import { untrack } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
-import { logEntry } from '$lib/core/log-buffer';
-import type { TpSwrHandle } from '$lib/core/swr.svelte';
-import { feedUrlHash } from '$lib/shared-constants';
+import { logEntry } from '#lib/core/log-buffer.js';
+import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
+import { feedUrlHash } from '#lib/shared-constants.js';
 import { feedView, type TpFeedReading, type TpFeedView } from './service';
 
 /**

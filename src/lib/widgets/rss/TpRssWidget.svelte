@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { TpDb } from '$lib/core/storage/db';
-	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
-	import { tileView } from '$lib/core/tile-view';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { fmtRelative } from '$lib/i18n/fmt';
-	import { monogramOf } from '$lib/i18n/monogram';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import { setTileStatus, type TpTileStatus } from '#lib/core/tile-status.js';
+	import { tileView } from '#lib/core/tile-view.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { fmtRelative } from '#lib/i18n/fmt.js';
+	import { monogramOf } from '#lib/i18n/monogram.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { problemText, troubleText } from './labels';
 	import { TpFeedSources } from './sources.svelte';
 	import TpRssAddFeed from './TpRssAddFeed.svelte';

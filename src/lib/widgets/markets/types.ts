@@ -1,4 +1,4 @@
-import { MARKETS_MAX_SYMBOLS } from '$lib/shared-constants';
+import { MARKETS_MAX_SYMBOLS } from '#lib/shared-constants.js';
 
 /**
  * The markets tile's settings, as they sit in `tp.layout.v1[].settings`

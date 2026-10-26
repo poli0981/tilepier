@@ -1,6 +1,6 @@
-import { dateKeyOf } from '$lib/core/date-key';
-import { newId } from '$lib/core/ids';
-import { db, type TpDb, type TpTodo, type TpTodoList } from '$lib/core/storage/db';
+import { dateKeyOf } from '#lib/core/date-key.js';
+import { newId } from '#lib/core/ids.js';
+import { db, type TpDb, type TpTodo, type TpTodoList } from '#lib/core/storage/db.js';
 
 /**
  * doc 07 §5's data layer.

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpStockSeriesPayload } from '$lib/api-types';
-import { cacheKey, STOCK_BUDGET } from '$lib/shared-constants';
+import type { TpStockSeriesPayload } from '#lib/api-types.js';
+import { cacheKey, STOCK_BUDGET } from '#lib/shared-constants.js';
 import { GET } from './+server';
 
 /**

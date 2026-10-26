@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { copyText } from '$lib/core/clipboard';
-	import { downloadBlob } from '$lib/core/download';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
+	import { copyText } from '#lib/core/clipboard.js';
+	import { downloadBlob } from '#lib/core/download.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
 	import {
 		contrastRatio,
 		contrastVerdict,

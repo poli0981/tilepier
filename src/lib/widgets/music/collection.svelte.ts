@@ -1,4 +1,4 @@
-import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
+import { db as defaultDb, type TpDb, type TpTrack } from '#lib/core/storage/db.js';
 import {
 	deleteOrphans as deleteOrphanedAudio,
 	estimateQuota,

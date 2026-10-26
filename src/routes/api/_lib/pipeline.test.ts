@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BREAKER, CACHE_POLICY, KV_PREFIX, RATE_LIMIT, STOCK_BUDGET } from '$lib/shared-constants';
+import {
+	BREAKER,
+	CACHE_POLICY,
+	KV_PREFIX,
+	RATE_LIMIT,
+	STOCK_BUDGET
+} from '#lib/shared-constants.js';
 import {
 	breakerVerdict,
 	msUntilUtcMidnight,
@@ -375,7 +381,7 @@ describe('soft rate limiter (doc 11 §7, doc 15 §7)', () => {
 });
 
 describe('coordinate handling (doc 15 §7)', () => {
-	// `roundCoord` and `geohash` moved to `$lib/shared-constants` so the client
+	// `roundCoord` and `geohash` moved to `#lib/shared-constants.js` so the client
 	// can spell its own cache key (doc 04 §5); their tests moved with them, to
 	// `shared-constants.test.ts`. What is left here is the half that reads a URL.
 	it('rounds to 2 dp, so a precise location never reaches KV', () => {

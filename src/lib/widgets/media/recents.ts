@@ -1,4 +1,4 @@
-import { db, type TpDb, type TpFsaHandle, type TpFsaRecent } from '$lib/core/storage/db';
+import { db, type TpDb, type TpFsaHandle, type TpFsaRecent } from '#lib/core/storage/db.js';
 import { POS_PREFIX, POSTER_PREFIX, readPoster } from './resume';
 import { lruVictims, readResume, shouldResume } from './service';
 import type { TpMediaFile } from './store.svelte';

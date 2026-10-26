@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import type { TpTileSize } from '$lib/core/types';
-import { settings } from '$lib/stores/settings.svelte';
+import type { TpTileSize } from '#lib/core/types.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpClockWidget from './TpClockWidget.svelte';
 
 /**

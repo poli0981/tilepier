@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { m } from '$lib/paraglide/messages';
-import { settings } from '$lib/stores/settings.svelte';
+import { m } from '#lib/paraglide/messages.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { calc } from './store.svelte';
 import TpCalcDetail from './TpCalcDetail.svelte';
 

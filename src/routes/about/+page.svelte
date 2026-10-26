@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
-	import TpProse from '$lib/ui/TpProse.svelte';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpProse from '#lib/ui/TpProse.svelte';
 
 	/**
 	 * doc 13 §11. Two other docs already pointed at this page for their

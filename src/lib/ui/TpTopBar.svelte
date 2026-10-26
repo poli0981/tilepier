@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { m } from '$lib/paraglide/messages';
-	import { online } from '$lib/stores/online.svelte';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import { online } from '#lib/stores/online.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 
 	/**
 	 * doc 13 §1. 48 px, logo-mark and wordmark on the left, centre deliberately

@@ -4,8 +4,8 @@ import {
 	isLocale,
 	locales,
 	setLocale
-} from '$lib/paraglide/runtime';
-import { settings } from '$lib/stores/settings.svelte';
+} from '#lib/paraglide/runtime.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 
 /**
  * Locale plumbing (doc 14 §1).

@@ -1,5 +1,5 @@
 import type { GridStackWidget } from 'gridstack';
-import { getManifest } from '$lib/core/registry';
+import { getManifest } from '#lib/core/registry.js';
 
 /**
  * Layout serialisation for `tp.layout.v1` (doc 05 §2).

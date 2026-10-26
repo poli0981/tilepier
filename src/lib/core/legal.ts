@@ -1,4 +1,4 @@
-import { LEGAL_VERSION, LOCAL_KEYS } from '$lib/shared-constants';
+import { LEGAL_VERSION, LOCAL_KEYS } from '#lib/shared-constants.js';
 
 /**
  * Legal gate state (doc 16 §2).

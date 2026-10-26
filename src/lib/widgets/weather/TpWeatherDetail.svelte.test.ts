@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import type { TpApiMeta } from '$lib/api-types';
-import { swrCache } from '$lib/core/swr.svelte';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
-import { WEATHER_OK, WEATHER_PAYLOAD } from '$lib/core/__fixtures__/weather';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import type { TpApiMeta } from '#lib/api-types.js';
+import { swrCache } from '#lib/core/swr.svelte.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { GEOCODE_OK } from '#lib/core/__fixtures__/geocode.js';
+import { WEATHER_OK, WEATHER_PAYLOAD } from '#lib/core/__fixtures__/weather.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpWeatherDetail from './TpWeatherDetail.svelte';
 import { weatherKey } from './service';
 

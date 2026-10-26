@@ -2,9 +2,9 @@
 	import { untrack } from 'svelte';
 	import type { TpMapCamera, TpMapPin, TpMapStatus } from './types';
 	import type { Map as MapLibreMap, Marker } from 'maplibre-gl';
-	import { logEntry } from '$lib/core/log-buffer';
-	import { online } from '$lib/stores/online.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import { online } from '#lib/stores/online.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { blankMissingImages, loadMapLibre, webgl2Available, type TpMapLibre } from './maplibre';
 	import { mapStyle } from './styles';
 	import './maplibre.css';

@@ -16,8 +16,8 @@ import type {
 	TpWeatherDay,
 	TpWeatherHour,
 	TpWeatherPayload
-} from '$lib/api-types';
-import { isMarketSymbol } from '$lib/shared-constants';
+} from '#lib/api-types.js';
+import { isMarketSymbol } from '#lib/shared-constants.js';
 import { FINNHUB_ATTRIBUTION } from './finnhub';
 import { TWELVEDATA_ATTRIBUTION } from './twelvedata';
 

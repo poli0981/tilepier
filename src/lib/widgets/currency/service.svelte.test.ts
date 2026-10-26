@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FX_PAYLOAD } from '$lib/core/__fixtures__/fx';
-import { createDb, pruneApiCache, type TpDb } from '$lib/core/storage/db';
+import { FX_PAYLOAD } from '#lib/core/__fixtures__/fx.js';
+import { createDb, pruneApiCache, type TpDb } from '#lib/core/storage/db.js';
 import { mirrorFxSnapshot, MIRROR_MAX_DAYS, readMirroredHistory } from './service';
 
 /**

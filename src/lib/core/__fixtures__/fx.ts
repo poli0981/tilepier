@@ -1,4 +1,4 @@
-import type { TpApiResponse, TpFxPayload } from '$lib/api-types';
+import type { TpApiResponse, TpFxPayload } from '#lib/api-types.js';
 
 /**
  * A recorded, trimmed `/api/fx` envelope (doc 19 §1).

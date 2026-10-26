@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { LOCALES } from '$lib/i18n';
-	import { REGISTER } from '$lib/legal/register';
-	import generated from '$lib/legal/licenses.generated.json';
-	import { m } from '$lib/paraglide/messages';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { REGISTER } from '#lib/legal/register.js';
+	import generated from '#lib/legal/licenses.generated.json';
+	import { m } from '#lib/paraglide/messages.js';
 
 	/**
 	 * doc 16 §5 in two halves. The register — what each source asks of us — is
-	 * `$lib/legal/register.ts`, held to the doc by its test. Below it, every
+	 * `#lib/legal/register.ts`, held to the doc by its test. Below it, every
 	 * licence that ships, which `pnpm licenses:gen` writes from the build itself
 	 * (scripts/licenses-gen.mjs explains the four places it looks).
 	 *

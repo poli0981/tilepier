@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDb, type TpDb } from '$lib/core/storage/db';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
 import { places } from './places.svelte';
 
 /**

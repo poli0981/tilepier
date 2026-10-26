@@ -1,5 +1,5 @@
-import type { TpWidgetId } from '$lib/core/types';
-import { m } from '$lib/paraglide/messages';
+import type { TpWidgetId } from '#lib/core/types.js';
+import { m } from '#lib/paraglide/messages.js';
 
 /**
  * The name and one-line description the drawer card and the tile header read

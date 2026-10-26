@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import type { TpApiMeta, TpFeed, TpFeedPayload } from '$lib/api-types';
-import { cacheKey, feedUrlHash } from '$lib/shared-constants';
+import type { TpApiMeta, TpFeed, TpFeedPayload } from '#lib/api-types.js';
+import { cacheKey, feedUrlHash } from '#lib/shared-constants.js';
 import { fetchFeedDocument } from '../_lib/feed-fetch';
 import { parseFeed } from '../_lib/feed-parse';
 import { parseFeedQuery } from '../_lib/feed-query';

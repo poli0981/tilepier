@@ -1,4 +1,4 @@
-import { UPSTREAM } from '$lib/shared-constants';
+import { UPSTREAM } from '#lib/shared-constants.js';
 
 /**
  * Guarded upstream fetch (doc 11 §8).

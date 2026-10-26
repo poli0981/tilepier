@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { db as defaultDb, type TpDb, type TpTrack } from '$lib/core/storage/db';
-	import { monogramOf } from '$lib/i18n/monogram';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { db as defaultDb, type TpDb, type TpTrack } from '#lib/core/storage/db.js';
+	import { monogramOf } from '#lib/i18n/monogram.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
 	 * A track's cover (doc 09 §2), or its first letter on a token colour when it

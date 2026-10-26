@@ -1,10 +1,10 @@
-import { LOCAL_KEYS } from '$lib/shared-constants';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
 import {
 	readVersioned,
 	subscribeVersioned,
 	writeVersioned,
 	type TpVersionedSpec
-} from '$lib/core/storage/local';
+} from '#lib/core/storage/local.js';
 
 /**
  * App settings (`tp.settings.v1`, doc 05 §2) and the post-hydration owner of

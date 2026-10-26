@@ -1,19 +1,19 @@
 <script lang="ts">
 	import { browser } from '$app/env';
 	import { resolve } from '$app/paths';
-	import { previousLegalVersion } from '$lib/core/legal';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { legalGate } from '$lib/stores/legal.svelte';
-	import { ui } from '$lib/stores/ui.svelte';
-	import TpAddDrawer from '$lib/ui/TpAddDrawer.svelte';
-	import TpBotCheck from '$lib/ui/TpBotCheck.svelte';
-	import TpCoachOverlay from '$lib/ui/TpCoachOverlay.svelte';
-	import TpToast from '$lib/ui/TpToast.svelte';
-	import TpShortcutsSheet from '$lib/ui/TpShortcutsSheet.svelte';
-	import TpTopBar from '$lib/ui/TpTopBar.svelte';
-	import type { TpWidgetId } from '$lib/core/types';
+	import { previousLegalVersion } from '#lib/core/legal.js';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpAddDrawer from '#lib/ui/TpAddDrawer.svelte';
+	import TpBotCheck from '#lib/ui/TpBotCheck.svelte';
+	import TpCoachOverlay from '#lib/ui/TpCoachOverlay.svelte';
+	import TpToast from '#lib/ui/TpToast.svelte';
+	import TpShortcutsSheet from '#lib/ui/TpShortcutsSheet.svelte';
+	import TpTopBar from '#lib/ui/TpTopBar.svelte';
+	import type { TpWidgetId } from '#lib/core/types.js';
 
 	let { children } = $props();
 

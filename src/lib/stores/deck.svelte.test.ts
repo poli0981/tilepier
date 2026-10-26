@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readLog } from '$lib/core/log-buffer';
-import { getManifest } from '$lib/core/registry';
-import { LOCAL_KEYS } from '$lib/shared-constants';
+import { readLog } from '#lib/core/log-buffer.js';
+import { getManifest } from '#lib/core/registry.js';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
 import { LAYOUT_DEBOUNCE_MS, deck, seedDeck } from './deck.svelte';
-import type { TpTile } from '$lib/core/grid/layout';
-import type { TpWidgetId } from '$lib/core/types';
+import type { TpTile } from '#lib/core/grid/layout.js';
+import type { TpWidgetId } from '#lib/core/types.js';
 
 /** A widget a later release removed — in no manifest and in no union. */
 const RETIRED = 'retired' as TpWidgetId;

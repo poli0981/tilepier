@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import type { TpStockSearchPayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpStockSearchPayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
 import { FINNHUB, finnhubHeaders, finnhubSearchUrl } from '../../_lib/finnhub';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';

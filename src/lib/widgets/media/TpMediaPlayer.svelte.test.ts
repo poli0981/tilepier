@@ -1,10 +1,10 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { claimPlayback, playbackOwner, resetPlayback } from '$lib/core/playback';
-import { db } from '$lib/core/storage/db';
-import { m } from '$lib/paraglide/messages';
-import { settings } from '$lib/stores/settings.svelte';
+import { claimPlayback, playbackOwner, resetPlayback } from '#lib/core/playback.js';
+import { db } from '#lib/core/storage/db.js';
+import { m } from '#lib/paraglide/messages.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { POSTER_MAX_BYTES } from './poster';
 import { loadPoster, loadPrefs, loadResume, resumeKey, saveResume } from './resume';
 import { media, type TpMediaFile } from './store.svelte';

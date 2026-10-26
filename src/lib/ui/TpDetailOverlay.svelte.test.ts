@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { forgetDetailComponent, type TpDetailState } from '$lib/core/detail';
-import { m } from '$lib/paraglide/messages';
-import { deck } from '$lib/stores/deck.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { forgetDetailComponent, type TpDetailState } from '#lib/core/detail.js';
+import { m } from '#lib/paraglide/messages.js';
+import { deck } from '#lib/stores/deck.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpDetailOverlay from './TpDetailOverlay.svelte';
 
 /**

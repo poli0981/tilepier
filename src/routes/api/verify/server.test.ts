@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TpVerifyConfig, TpVerifyPass } from '$lib/api-types';
-import { TURNSTILE_ACTION } from '$lib/shared-constants';
+import type { TpVerifyConfig, TpVerifyPass } from '#lib/api-types.js';
+import { TURNSTILE_ACTION } from '#lib/shared-constants.js';
 import { GET, POST } from './+server';
 import { verifyPass } from '../_lib/pass';
 

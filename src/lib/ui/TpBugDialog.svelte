@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { collectEnv, formatReport, issueUrl } from '$lib/core/bug-report';
-	import { copyText } from '$lib/core/clipboard';
-	import { downloadText } from '$lib/core/download';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { online } from '$lib/stores/online.svelte';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { collectEnv, formatReport, issueUrl } from '#lib/core/bug-report.js';
+	import { copyText } from '#lib/core/clipboard.js';
+	import { downloadText } from '#lib/core/download.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { online } from '#lib/stores/online.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
 	 * doc 18 §4. The report is assembled, shown, and *editable* before it goes

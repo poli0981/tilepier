@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cacheKey } from '$lib/shared-constants';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET as QUOTE } from './quote/+server';
 import { GET as SERIES } from './series/+server';
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LOCAL_KEYS } from '$lib/shared-constants';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
 import { defaultSettings, settings, type TpSettings } from './settings.svelte';
 
 /**

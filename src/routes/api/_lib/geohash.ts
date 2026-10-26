@@ -2,14 +2,14 @@
  * Query-string coordinate parsing.
  *
  * `geohash` and `roundCoord` used to live here and now live in
- * `$lib/shared-constants` beside `cacheKey`, because doc 04 §5's 1:1 guarantee
+ * `#lib/shared-constants` beside `cacheKey`, because doc 04 §5's 1:1 guarantee
  * only means anything once the *client* can spell the key too — and doc 03
  * forbids a widget to import from `routes/api`. This file keeps `parseCoords`,
  * which reads a `URL` and so belongs to request handling rather than to the
  * vocabulary both sides share.
  */
 
-import { roundCoord } from '$lib/shared-constants';
+import { roundCoord } from '#lib/shared-constants.js';
 
 export function parseCoords(url: URL): { lat: number; lon: number } | null {
 	const rawLat = url.searchParams.get('lat');

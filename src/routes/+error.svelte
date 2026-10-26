@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { m } from '$lib/paraglide/messages';
-	import TpBugDialog from '$lib/ui/TpBugDialog.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpBugDialog from '#lib/ui/TpBugDialog.svelte';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 
 	/**
 	 * doc 17 §1. One file for both cases, branching on status, and deliberately

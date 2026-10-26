@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { fmtBytes } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { fmtBytes } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { collection } from './collection.svelte';
 
 	/**

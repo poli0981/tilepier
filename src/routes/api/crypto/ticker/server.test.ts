@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpCryptoTickerPayload } from '$lib/api-types';
-import { cacheKey, symbolSetKey } from '$lib/shared-constants';
+import type { TpCryptoTickerPayload } from '#lib/api-types.js';
+import { cacheKey, symbolSetKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { parseCryptoTickerQuery } from '../../_lib/crypto-query';
 

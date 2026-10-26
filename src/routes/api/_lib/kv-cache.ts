@@ -1,5 +1,5 @@
-import { CACHE_POLICY, KV_PREFIX, type TpCacheFamily } from '$lib/shared-constants';
-import type { TpCacheStatus } from '$lib/api-types';
+import { CACHE_POLICY, KV_PREFIX, type TpCacheFamily } from '#lib/shared-constants.js';
+import type { TpCacheStatus } from '#lib/api-types.js';
 
 /**
  * KV cache with a stale-serve window (doc 11 §4).

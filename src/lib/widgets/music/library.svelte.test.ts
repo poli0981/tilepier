@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { installLogBuffer, readLog } from '$lib/core/log-buffer';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { applyImport, buildBackup } from '$lib/core/storage/exporter';
-import { defaultSettings } from '$lib/stores/settings.svelte';
+import { installLogBuffer, readLog } from '#lib/core/log-buffer.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { applyImport, buildBackup } from '#lib/core/storage/exporter.js';
+import { defaultSettings } from '#lib/stores/settings.svelte.js';
 import {
 	createTagParser,
 	deleteOrphans,

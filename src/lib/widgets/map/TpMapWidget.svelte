@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { TpPlacePick } from '$lib/core/geocode';
+	import type { TpPlacePick } from '#lib/core/geocode.js';
 	import {
 		browserGeoPermission,
 		type TpGeoPermission,
 		type TpPermissionSource,
 		type TpPositionSource
-	} from '$lib/core/geolocate';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import TpMap from '$lib/map/TpMap.svelte';
-	import type { TpMapPin, TpMapStatus } from '$lib/map/types';
-	import { osmUrl } from '$lib/map/styles';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
-	import TpPlaceSearch from '$lib/ui/TpPlaceSearch.svelte';
+	} from '#lib/core/geolocate.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import TpMap from '#lib/map/TpMap.svelte';
+	import type { TpMapPin, TpMapStatus } from '#lib/map/types.js';
+	import { osmUrl } from '#lib/map/styles.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
+	import TpPlaceSearch from '#lib/ui/TpPlaceSearch.svelte';
 	import { places } from './places.svelte';
 	import { coordinateText, placeLabel, readSettings } from './service';
 	import { HOME_ZOOM } from './types';

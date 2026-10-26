@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createDb, type TpDb } from '$lib/core/storage/db';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
 import { createNote, deleteNote, listNotes, saveNote, saveNoteNow, setPinned } from './service';
 
 /**

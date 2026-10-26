@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { logEntry } from '$lib/core/log-buffer';
-	import { useRefresh } from '$lib/core/refresh.svelte';
-	import type { TpEvent } from '$lib/core/storage/db';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { lunarMonthName } from '$lib/lunar/format';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import { useRefresh } from '#lib/core/refresh.svelte.js';
+	import type { TpEvent } from '#lib/core/storage/db.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { lunarMonthName } from '#lib/lunar/format.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import {
 		countByDateKey,
 		listEventsInRange,

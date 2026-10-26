@@ -1,4 +1,4 @@
-import type { TpApiResponse, TpHealthReport } from '$lib/api-types';
+import type { TpApiResponse, TpHealthReport } from '#lib/api-types.js';
 
 /**
  * The diagnostics panel's read of `GET /api/_health` (doc 13 §10, doc 11 §9).

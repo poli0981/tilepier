@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import type { StyleSpecification } from 'maplibre-gl';
-import { GEOCODE_OK } from '$lib/core/__fixtures__/geocode';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import type { TpTileSize } from '$lib/core/types';
-import { loadMapLibre } from '$lib/map/maplibre';
-import { mapStyleOverride } from '$lib/map/styles';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { GEOCODE_OK } from '#lib/core/__fixtures__/geocode.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import type { TpTileSize } from '#lib/core/types.js';
+import { loadMapLibre } from '#lib/map/maplibre.js';
+import { mapStyleOverride } from '#lib/map/styles.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { places } from './places.svelte';
 import TpMapWidget from './TpMapWidget.svelte';
 

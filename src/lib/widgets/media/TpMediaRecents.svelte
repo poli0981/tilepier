@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { SvelteMap } from 'svelte/reactivity';
-	import { fmtDuration } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { fmtDuration } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { forgetAllVideos, forgetVideo, reopen } from './recents';
 	import { media, type TpShelfItem } from './store.svelte';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import TpGrid from '$lib/core/grid/TpGrid.svelte';
-	import type { TpLayout, TpTile } from '$lib/core/grid/layout';
+	import TpGrid from '#lib/core/grid/TpGrid.svelte';
+	import type { TpLayout, TpTile } from '#lib/core/grid/layout.js';
 	import DummyWidget from './DummyWidget.svelte';
 
 	/**

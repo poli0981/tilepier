@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { m } from '$lib/paraglide/messages';
-	import TpProse from '$lib/ui/TpProse.svelte';
-	import TpSettingsPanel from '$lib/ui/settings/TpSettingsPanel.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpProse from '#lib/ui/TpProse.svelte';
+	import TpSettingsPanel from '#lib/ui/settings/TpSettingsPanel.svelte';
 
 	/**
 	 * doc 13 §10. A thin wrapper: the panel is a component so it can be rendered

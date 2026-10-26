@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { UPSTREAM } from '$lib/shared-constants';
+import { UPSTREAM } from '#lib/shared-constants.js';
 import { UpstreamError, fetchUpstream } from './upstream';
 
 /**

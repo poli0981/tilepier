@@ -1,4 +1,4 @@
-import type { TpWidgetManifest } from '$lib/core/registry';
+import type { TpWidgetManifest } from '#lib/core/registry.js';
 
 /**
  * doc 06 §7, calendar row. `multiInstance: false` because a second tile would

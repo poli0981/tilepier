@@ -6,8 +6,8 @@ import {
 	writeSessionPosition,
 	writeSessionState,
 	type TpMediaSession
-} from '$lib/core/media-session';
-import { claimPlayback, playbackOwner, releasePlayback } from '$lib/core/playback';
+} from '#lib/core/media-session.js';
+import { claimPlayback, playbackOwner, releasePlayback } from '#lib/core/playback.js';
 import { SKIP_SECONDS } from './service';
 
 /**

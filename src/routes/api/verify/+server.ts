@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { TpApiMeta, TpVerifyConfig, TpVerifyPass } from '$lib/api-types';
+import type { TpApiMeta, TpVerifyConfig, TpVerifyPass } from '#lib/api-types.js';
 import { readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
 import { gateState } from '../_lib/gate';
 import { issuePass } from '../_lib/pass';

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { logEntry } from '$lib/core/log-buffer';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
+	import { logEntry } from '#lib/core/log-buffer.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
 	import { notifyDone, notifyPermission, playChime } from './alert';
 	import {
 		complete,

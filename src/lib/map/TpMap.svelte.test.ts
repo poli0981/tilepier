@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
 import type { StyleSpecification } from 'maplibre-gl';
-import { settings } from '$lib/stores/settings.svelte';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { loadMapLibre } from './maplibre';
 import { mapStyleOverride } from './styles';
 import TpMap from './TpMap.svelte';

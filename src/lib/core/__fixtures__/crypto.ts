@@ -1,4 +1,4 @@
-import type { TpApiResponse, TpCryptoTickerPayload } from '$lib/api-types';
+import type { TpApiResponse, TpCryptoTickerPayload } from '#lib/api-types.js';
 
 /**
  * A recorded, trimmed `/api/crypto/ticker` envelope (doc 19 §1).

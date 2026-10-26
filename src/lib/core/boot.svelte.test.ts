@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { LEGAL_VERSION, LOCAL_KEYS } from '$lib/shared-constants';
-import { defaultSettings } from '$lib/stores/settings.svelte';
+import { LEGAL_VERSION, LOCAL_KEYS } from '#lib/shared-constants.js';
+import { defaultSettings } from '#lib/stores/settings.svelte.js';
 
 /**
  * static/boot.js, run (doc 05 §2, doc 12 §9, doc 16 §2).

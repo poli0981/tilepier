@@ -1,6 +1,6 @@
-import { haversineKm } from '$lib/core/geo-distance';
-import type { TpSavedPlace } from '$lib/core/storage/db';
-import { roundCoord } from '$lib/shared-constants';
+import { haversineKm } from '#lib/core/geo-distance.js';
+import type { TpSavedPlace } from '#lib/core/storage/db.js';
+import { roundCoord } from '#lib/shared-constants.js';
 import type { TpMapHome, TpMapSettings } from './types';
 
 /**

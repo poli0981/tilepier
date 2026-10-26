@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { TpPlaylist, TpTrack } from '$lib/core/storage/db';
-	import { m } from '$lib/paraglide/messages';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import type { TpPlaylist, TpTrack } from '#lib/core/storage/db.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { player } from './player.svelte';
 	import { playlists } from './playlists.svelte';
 	import { PLAYLIST_NAME_MAX } from './service';

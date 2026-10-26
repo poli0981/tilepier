@@ -1,5 +1,5 @@
-import { cacheKey } from '$lib/shared-constants';
-import type { TpFxHistoryPoint, TpFxSnapshotPayload } from '$lib/api-types';
+import { cacheKey } from '#lib/shared-constants.js';
+import type { TpFxHistoryPoint, TpFxSnapshotPayload } from '#lib/api-types.js';
 import { utcDateKey } from './budget';
 import { readCache } from './kv-cache';
 

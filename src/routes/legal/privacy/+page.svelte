@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
 
 	/**
 	 * The human-readable form of doc 16 §3, in the order that document sets.

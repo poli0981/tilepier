@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TpTrack } from '$lib/core/storage/db';
+import type { TpTrack } from '#lib/core/storage/db.js';
 import {
 	buildQueue,
 	currentId,

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { fmtDuration } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { fmtDuration } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { TpVideoController } from './controller.svelte';
 	import { pickSubtitles } from './picker';
 	import type { TpMediaFile } from './store.svelte';

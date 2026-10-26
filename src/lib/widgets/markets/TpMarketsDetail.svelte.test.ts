@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { CRYPTO_OK } from '$lib/core/__fixtures__/crypto';
-import { STOCK_OK } from '$lib/core/__fixtures__/stock';
-import { scheduler } from '$lib/core/scheduler';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { swrCache } from '$lib/core/swr.svelte';
-import { tileStatusChannel } from '$lib/core/tile-status';
-import { m } from '$lib/paraglide/messages';
-import { online } from '$lib/stores/online.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { CRYPTO_OK } from '#lib/core/__fixtures__/crypto.js';
+import { STOCK_OK } from '#lib/core/__fixtures__/stock.js';
+import { scheduler } from '#lib/core/scheduler.js';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { swrCache } from '#lib/core/swr.svelte.js';
+import { tileStatusChannel } from '#lib/core/tile-status.js';
+import { m } from '#lib/paraglide/messages.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpMarketsDetail from './TpMarketsDetail.svelte';
 
 /**

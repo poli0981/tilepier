@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TpWidgetProps } from '$lib/core/types';
+	import type { TpWidgetProps } from '#lib/core/types.js';
 
 	/**
 	 * A widget that does nothing, so a host can be mounted on its own.

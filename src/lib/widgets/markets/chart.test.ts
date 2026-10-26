@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TpCryptoCandle } from '$lib/api-types';
+import type { TpCryptoCandle } from '#lib/api-types.js';
 import { candleSummary, candlestickOption } from './chart';
 
 /**

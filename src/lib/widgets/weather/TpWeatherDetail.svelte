@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { TpMaybeNumber } from '$lib/api-types';
-	import TpChart from '$lib/charts/TpChart.svelte';
-	import type { TpPlacePick } from '$lib/core/geocode';
-	import type { TpPositionSource } from '$lib/core/geolocate';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpDetailProps } from '$lib/core/types';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
-	import { fmtRelative } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpWeatherIcon from '$lib/ui/icons/TpWeatherIcon.svelte';
-	import { wmoGlyph, type TpWmoGlyph } from '$lib/ui/icons/wmo';
-	import TpPlaceSearch from '$lib/ui/TpPlaceSearch.svelte';
+	import type { TpMaybeNumber } from '#lib/api-types.js';
+	import TpChart from '#lib/charts/TpChart.svelte';
+	import type { TpPlacePick } from '#lib/core/geocode.js';
+	import type { TpPositionSource } from '#lib/core/geolocate.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
+	import { fmtRelative } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpWeatherIcon from '#lib/ui/icons/TpWeatherIcon.svelte';
+	import { wmoGlyph, type TpWmoGlyph } from '#lib/ui/icons/wmo.js';
+	import TpPlaceSearch from '#lib/ui/TpPlaceSearch.svelte';
 	import { hourlyOption } from './chart';
 	import {
 		CHART_HOURS,

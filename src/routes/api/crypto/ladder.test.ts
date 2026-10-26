@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BREAKER } from '$lib/shared-constants';
-import { cacheKey } from '$lib/shared-constants';
+import { BREAKER } from '#lib/shared-constants.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET as TICKER } from './ticker/+server';
 import { GET as KLINES } from './klines/+server';
 

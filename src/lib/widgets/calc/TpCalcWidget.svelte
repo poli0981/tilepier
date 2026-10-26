@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { formatValue } from './engine';
 	import { calc } from './store.svelte';
 

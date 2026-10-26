@@ -1,5 +1,5 @@
-import { foldForSearch } from '$lib/i18n/fold';
-import { byCodeUnit } from '$lib/order';
+import { foldForSearch } from '#lib/i18n/fold.js';
+import { byCodeUnit } from '#lib/order.js';
 
 /**
  * doc 08 §3's data layer.

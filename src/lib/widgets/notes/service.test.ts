@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TpNote } from '$lib/core/storage/db';
+import type { TpNote } from '#lib/core/storage/db.js';
 import { resolveVisible, searchNotes, titleOf } from './service';
 
 /**

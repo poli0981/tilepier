@@ -1,4 +1,4 @@
-import type { TpWidgetManifest } from '$lib/core/registry';
+import type { TpWidgetManifest } from '#lib/core/registry.js';
 
 /**
  * doc 06 §7's `media` row, checked against the table by `core/registry.test.ts`

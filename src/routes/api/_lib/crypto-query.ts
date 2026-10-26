@@ -1,5 +1,5 @@
-import { CRYPTO_INTERVALS, CRYPTO_RANGES, type TpCryptoInterval } from '$lib/api-types';
-import { MARKETS_MAX_SYMBOLS, canonicalSymbols, isMarketSymbol } from '$lib/shared-constants';
+import { CRYPTO_INTERVALS, CRYPTO_RANGES, type TpCryptoInterval } from '#lib/api-types.js';
+import { MARKETS_MAX_SYMBOLS, canonicalSymbols, isMarketSymbol } from '#lib/shared-constants.js';
 
 /**
  * Query validation for `/api/crypto/*` (doc 11 §3, doc 10 §4).

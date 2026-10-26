@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { logEntry } from '$lib/core/log-buffer';
+	import { logEntry } from '#lib/core/log-buffer.js';
 
 	/**
 	 * One of the **two** `{@html}` in the application — the notes profile's.
@@ -26,7 +26,7 @@
 
 	let { source, label }: Props = $props();
 
-	type Pipeline = typeof import('$lib/core/markdown');
+	type Pipeline = typeof import('#lib/core/markdown.js');
 
 	let pipeline = $state<Pipeline | null>(null);
 	let html = $state('');
@@ -36,7 +36,7 @@
 		// after the first synchronous in practice.
 		let cancelled = false;
 
-		void import('$lib/core/markdown')
+		void import('#lib/core/markdown.js')
 			.then((module) => {
 				if (!cancelled) pipeline = module;
 			})

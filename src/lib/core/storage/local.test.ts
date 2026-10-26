@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CORRUPT_KEY_PREFIX, LOCAL_KEYS } from '$lib/shared-constants';
+import { CORRUPT_KEY_PREFIX, LOCAL_KEYS } from '#lib/shared-constants.js';
 import {
 	MAX_QUARANTINE_PER_KEY,
 	readVersioned,

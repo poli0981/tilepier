@@ -5,8 +5,8 @@
 	 * the one page that has to work when nothing else does.
 	 */
 	import { resolve } from '$app/paths';
-	import { LOCALES } from '$lib/i18n';
-	import { m } from '$lib/paraglide/messages';
+	import { LOCALES } from '#lib/i18n/index.js';
+	import { m } from '#lib/paraglide/messages.js';
 </script>
 
 <svelte:head><title>{m['common.offline.page_title']()}</title></svelte:head>

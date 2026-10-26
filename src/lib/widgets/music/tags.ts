@@ -1,4 +1,4 @@
-import { sha256Hex } from '$lib/core/hash';
+import { sha256Hex } from '#lib/core/hash.js';
 import { parseBlob, type IPicture } from 'music-metadata';
 
 /**

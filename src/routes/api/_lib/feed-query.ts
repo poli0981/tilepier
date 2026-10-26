@@ -1,4 +1,4 @@
-import { parseFeedUrl } from '$lib/shared-constants';
+import { parseFeedUrl } from '#lib/shared-constants.js';
 
 /**
  * `GET /api/rss?url=<https URL>` (doc 11 §3). In `_lib` for the reason

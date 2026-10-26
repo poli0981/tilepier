@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TpStockSearchPayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpStockSearchPayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 
 /** `/api/stock/search` (doc 11 §3): the manager's search-add, cached a day. */

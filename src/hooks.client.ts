@@ -1,9 +1,9 @@
 import type { ClientInit, HandleClientError } from '@sveltejs/kit/hooks';
-import { installLogBuffer, logEntry } from '$lib/core/log-buffer';
-import { installLocaleStrategy } from '$lib/i18n';
-import { online } from '$lib/stores/online.svelte';
-import { deck } from '$lib/stores/deck.svelte';
-import { settings } from '$lib/stores/settings.svelte';
+import { installLogBuffer, logEntry } from '#lib/core/log-buffer.js';
+import { installLocaleStrategy } from '#lib/i18n/index.js';
+import { online } from '#lib/stores/online.svelte.js';
+import { deck } from '#lib/stores/deck.svelte.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 
 /**
  * Client-side counterpart to hooks.server.ts.

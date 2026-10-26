@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { TpHealthReport } from '$lib/api-types';
-import { STOCK_BUDGET } from '$lib/shared-constants';
+import type { TpHealthReport } from '#lib/api-types.js';
+import { STOCK_BUDGET } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { UPSTREAMS } from '../_lib/breaker';
 import { DEV_TOKEN_MIN_LENGTH } from '../_lib/dev-token';

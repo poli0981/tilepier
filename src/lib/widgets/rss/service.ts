@@ -5,18 +5,18 @@ import type {
 	TpFeedPayload,
 	TpFeedUnavailable,
 	TpFeedUrlRejection
-} from '$lib/api-types';
-import { fetchEnvelope, TpApiError } from '$lib/core/api';
-import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
-import type { TpDb } from '$lib/core/storage/db';
-import type { TpSourceState } from '$lib/core/tile-view';
+} from '#lib/api-types.js';
+import { fetchEnvelope, TpApiError } from '#lib/core/api.js';
+import { swr, type TpSwrFetcher, type TpSwrHandle } from '#lib/core/swr.svelte.js';
+import type { TpDb } from '#lib/core/storage/db.js';
+import type { TpSourceState } from '#lib/core/tile-view.js';
 import {
 	CACHE_POLICY,
 	RATE_LIMIT,
 	ZONE_RATE_LIMIT,
 	cacheKey,
 	parseFeedUrl
-} from '$lib/shared-constants';
+} from '#lib/shared-constants.js';
 import { createPacer } from './pacing';
 import { MAX_FEEDS, type TpRssSettings } from './types';
 

@@ -1,5 +1,5 @@
-import type { TpApiResponse, TpVerifyConfig, TpVerifyPass } from '$lib/api-types';
-import { PASS_HEADER } from '$lib/shared-constants';
+import type { TpApiResponse, TpVerifyConfig, TpVerifyPass } from '#lib/api-types.js';
+import { PASS_HEADER } from '#lib/shared-constants.js';
 
 /**
  * The client half of the bot check (doc 15 §3): turns a Turnstile token into a

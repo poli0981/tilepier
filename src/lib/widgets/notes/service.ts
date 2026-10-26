@@ -1,6 +1,6 @@
-import { newId } from '$lib/core/ids';
-import { db, putNow, type TpDb, type TpNote } from '$lib/core/storage/db';
-import { foldForSearch } from '$lib/i18n/fold';
+import { newId } from '#lib/core/ids.js';
+import { db, putNow, type TpDb, type TpNote } from '#lib/core/storage/db.js';
+import { foldForSearch } from '#lib/i18n/fold.js';
 
 /**
  * doc 07 §4's data layer. Dexie in, plain objects out; nothing here knows what

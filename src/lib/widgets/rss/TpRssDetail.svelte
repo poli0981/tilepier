@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { downloadText } from '$lib/core/download';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpDetailProps } from '$lib/core/types';
-	import { fmtDate, fmtRelative, fmtTime } from '$lib/i18n/fmt';
-	import { monogramOf } from '$lib/i18n/monogram';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpFeedHtml from '$lib/ui/TpFeedHtml.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { downloadText } from '#lib/core/download.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpDetailProps } from '#lib/core/types.js';
+	import { fmtDate, fmtRelative, fmtTime } from '#lib/i18n/fmt.js';
+	import { monogramOf } from '#lib/i18n/monogram.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpFeedHtml from '#lib/ui/TpFeedHtml.svelte';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import { problemText, refusalText, troubleText } from './labels';
 	import { exportOpml, importOpml, OPML_MAX_BYTES, type TpOpmlSkip } from './opml';
 	import { TpFeedSources } from './sources.svelte';

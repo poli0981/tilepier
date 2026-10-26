@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { cacheKey, cryptoKlinesFamily, type TpCacheFamily } from '$lib/shared-constants';
+import { cacheKey, cryptoKlinesFamily, type TpCacheFamily } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
 import { checkRateLimit } from '../../_lib/ratelimit';
@@ -8,7 +8,7 @@ import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { normalizeCryptoKlines } from '../../_lib/normalize';
 import { klinesUrl } from '../../_lib/binance';
-import type { TpCryptoKlinesPayload } from '$lib/api-types';
+import type { TpCryptoKlinesPayload } from '#lib/api-types.js';
 
 /**
  * `GET /api/crypto/klines?symbol=BTCUSDT&interval=5m&limit=288` — doc 11 §3,

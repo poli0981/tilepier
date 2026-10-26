@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LOCAL_KEYS } from '$lib/shared-constants';
+import { LOCAL_KEYS } from '#lib/shared-constants.js';
 import { clearLog, logEntry } from './log-buffer';
 import { collectEnv, formatReport, issueUrl, shortHash } from './bug-report';
 

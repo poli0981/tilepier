@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { passGate, type TpPassStatus } from '$lib/core/pass';
-	import { m } from '$lib/paraglide/messages';
-	import { TURNSTILE_ACTION } from '$lib/shared-constants';
-	import { settings } from '$lib/stores/settings.svelte';
+	import { passGate, type TpPassStatus } from '#lib/core/pass.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { TURNSTILE_ACTION } from '#lib/shared-constants.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { loadTurnstile } from './turnstile';
 
 	/**

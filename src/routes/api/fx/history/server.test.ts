@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
+import { CACHE_POLICY, cacheKey } from '#lib/shared-constants.js';
 import { SNAPSHOT_BATCH } from '../../_lib/fx-snapshots';
 import { GET } from './+server';
 

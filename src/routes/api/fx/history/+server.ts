@@ -5,7 +5,7 @@ import { ttlSeconds } from '../../_lib/kv-cache';
 import { parseFxHistoryQuery } from '../../_lib/fx-history-query';
 import { assembleHistory, readSnapshots, snapshotDates } from '../../_lib/fx-snapshots';
 import { FX_ATTRIBUTION } from '../../_lib/normalize';
-import type { TpFxHistoryPayload } from '$lib/api-types';
+import type { TpFxHistoryPayload } from '#lib/api-types.js';
 
 /**
  * `GET /api/fx/history?pair=USD-VND&days=90` — doc 11 §3, doc 10 §3.

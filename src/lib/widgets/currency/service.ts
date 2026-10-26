@@ -1,10 +1,10 @@
-import type { TpApiMeta, TpFxHistoryPayload, TpFxPayload } from '$lib/api-types';
-import { fetchEnvelope } from '$lib/core/api';
-import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
-import { db as defaultDb, type TpDb } from '$lib/core/storage/db';
-import { logEntry } from '$lib/core/log-buffer';
-import { byCodeUnit } from '$lib/order';
-import { CACHE_POLICY, cacheKey } from '$lib/shared-constants';
+import type { TpApiMeta, TpFxHistoryPayload, TpFxPayload } from '#lib/api-types.js';
+import { fetchEnvelope } from '#lib/core/api.js';
+import { swr, type TpSwrFetcher, type TpSwrHandle } from '#lib/core/swr.svelte.js';
+import { db as defaultDb, type TpDb } from '#lib/core/storage/db.js';
+import { logEntry } from '#lib/core/log-buffer.js';
+import { byCodeUnit } from '#lib/order.js';
+import { CACHE_POLICY, cacheKey } from '#lib/shared-constants.js';
 import { CURRENCY_DEFAULTS, MAX_AMOUNT, MAX_TARGETS, type TpCurrencySettings } from './types';
 
 /**

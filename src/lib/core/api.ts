@@ -1,5 +1,5 @@
-import type { TpApiMeta, TpApiResponse } from '$lib/api-types';
-import { PASS_HEADER } from '$lib/shared-constants';
+import type { TpApiMeta, TpApiResponse } from '#lib/api-types.js';
+import { PASS_HEADER } from '#lib/shared-constants.js';
 import { passGate } from './pass';
 
 /**

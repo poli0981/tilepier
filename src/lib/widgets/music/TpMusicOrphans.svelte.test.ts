@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { createDb, type TpDb } from '$lib/core/storage/db';
-import { fmtBytes } from '$lib/i18n/fmt';
-import { m } from '$lib/paraglide/messages';
-import { settings } from '$lib/stores/settings.svelte';
+import { createDb, type TpDb } from '#lib/core/storage/db.js';
+import { fmtBytes } from '#lib/i18n/fmt.js';
+import { m } from '#lib/paraglide/messages.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import { collection } from './collection.svelte';
 import { player } from './player.svelte';
 import TpMusicOrphans from './TpMusicOrphans.svelte';

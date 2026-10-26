@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-svelte';
-import { scheduler } from '$lib/core/scheduler';
-import type { TpTileSize } from '$lib/core/types';
-import { m } from '$lib/paraglide/messages';
-import { settings } from '$lib/stores/settings.svelte';
+import { scheduler } from '#lib/core/scheduler.js';
+import type { TpTileSize } from '#lib/core/types.js';
+import { m } from '#lib/paraglide/messages.js';
+import { settings } from '#lib/stores/settings.svelte.js';
 import TpQuoteWidget from './TpQuoteWidget.svelte';
 import { bilingualPool, loadCatalogue, pickOfDay, quoteText } from './service';
 

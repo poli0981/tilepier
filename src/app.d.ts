@@ -24,7 +24,7 @@ declare global {
 		 * `core/detail.ts` narrows it before anything trusts it.
 		 */
 		interface PageState {
-			detail?: import('$lib/core/detail').TpDetailState;
+			detail?: import('#lib/core/detail.js').TpDetailState;
 		}
 
 		// interface Locals {}

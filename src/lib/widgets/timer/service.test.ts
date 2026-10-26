@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dateKeyOf } from '$lib/core/date-key';
+import { dateKeyOf } from '#lib/core/date-key.js';
 import {
 	complete,
 	formatRemaining,

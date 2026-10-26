@@ -7,18 +7,18 @@ import {
 	writeSessionPosition,
 	writeSessionState,
 	type TpMediaSession
-} from '$lib/core/media-session';
-import { claimPlayback, playbackOwner, releasePlayback } from '$lib/core/playback';
+} from '#lib/core/media-session.js';
+import { claimPlayback, playbackOwner, releasePlayback } from '#lib/core/playback.js';
 import {
 	db as defaultDb,
 	putPlaybackNow,
 	type TpDb,
 	type TpPlaybackRow,
 	type TpTrack
-} from '$lib/core/storage/db';
-import { m } from '$lib/paraglide/messages';
-import { deck } from '$lib/stores/deck.svelte';
-import { toasts } from '$lib/stores/toast.svelte';
+} from '#lib/core/storage/db.js';
+import { m } from '#lib/paraglide/messages.js';
+import { deck } from '#lib/stores/deck.svelte.js';
+import { toasts } from '#lib/stores/toast.svelte.js';
 import { fileAt, loadMusicRoot } from './library';
 import {
 	buildQueue,

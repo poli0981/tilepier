@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CRYPTO_RANGES, type TpCryptoKlinesPayload } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import { CRYPTO_RANGES, type TpCryptoKlinesPayload } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { parseCryptoKlinesQuery } from '../../_lib/crypto-query';
 

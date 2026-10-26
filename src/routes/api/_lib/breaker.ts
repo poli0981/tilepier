@@ -1,4 +1,4 @@
-import { BREAKER } from '$lib/shared-constants';
+import { BREAKER } from '#lib/shared-constants.js';
 
 /**
  * Per-upstream circuit breaker (doc 11 §6).

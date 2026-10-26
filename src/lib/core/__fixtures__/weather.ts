@@ -1,4 +1,4 @@
-import type { TpApiResponse, TpWeatherPayload } from '$lib/api-types';
+import type { TpApiResponse, TpWeatherPayload } from '#lib/api-types.js';
 
 /**
  * A recorded, trimmed `/api/weather` envelope (doc 19 §1).

@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { useRefresh } from '$lib/core/refresh.svelte';
-	import type { TpDb } from '$lib/core/storage/db';
-	import type { TpSwrHandle } from '$lib/core/swr.svelte';
-	import { setTileStatus, type TpTileStatus } from '$lib/core/tile-status';
-	import { tileView } from '$lib/core/tile-view';
-	import type { TpWidgetProps } from '$lib/core/types';
-	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '$lib/i18n/fmt';
-	import { m } from '$lib/paraglide/messages';
-	import { settings } from '$lib/stores/settings.svelte';
-	import TpIcon from '$lib/ui/icons/TpIcon.svelte';
+	import { useRefresh } from '#lib/core/refresh.svelte.js';
+	import type { TpDb } from '#lib/core/storage/db.js';
+	import type { TpSwrHandle } from '#lib/core/swr.svelte.js';
+	import { setTileStatus, type TpTileStatus } from '#lib/core/tile-status.js';
+	import { tileView } from '#lib/core/tile-view.js';
+	import type { TpWidgetProps } from '#lib/core/types.js';
+	import { changeDirection, fmtPercentChange, fmtPrice, fmtRelative } from '#lib/i18n/fmt.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
+	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 	import {
 		atClose,
 		cryptoSide,

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TpApiError, type TpApiErrorCode } from './api';
 import { createDb, type TpDb } from './storage/db';
-import { online } from '$lib/stores/online.svelte';
-import { toasts } from '$lib/stores/toast.svelte';
-import { BACKOFF } from '$lib/shared-constants';
+import { online } from '#lib/stores/online.svelte.js';
+import { toasts } from '#lib/stores/toast.svelte.js';
+import { BACKOFF } from '#lib/shared-constants.js';
 import { swr, swrCache, type TpSwrStatus } from './swr.svelte';
 
 /**

@@ -1,5 +1,5 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
-import { SECURITY_HEADERS } from '$lib/server/security-headers';
+import { SECURITY_HEADERS } from '#lib/server/security-headers.js';
 import { guardApi } from './routes/api/_lib/gate';
 
 /*
@@ -17,7 +17,7 @@ import { guardApi } from './routes/api/_lib/gate';
  *
  *  - **This hook does not cover prerendered pages at all.** They are served
  *    from the ASSETS binding without ever reaching `handle`, so `_headers`
- *    carries the same list for them; `$lib/server/security-headers` is that
+ *    carries the same list for them; `#lib/server/security-headers.js` is that
  *    list, and its test holds `_headers` to it.
  */
 

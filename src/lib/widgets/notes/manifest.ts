@@ -1,4 +1,4 @@
-import type { TpWidgetManifest } from '$lib/core/registry';
+import type { TpWidgetManifest } from '#lib/core/registry.js';
 
 /**
  * doc 06 §7, notes row. `multiInstance` because a second tile is a second

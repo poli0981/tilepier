@@ -1,4 +1,4 @@
-import { PASS_HEADER } from '$lib/shared-constants';
+import { PASS_HEADER } from '#lib/shared-constants.js';
 import { hasDevToken } from './dev-token';
 import { verifyPass } from './pass';
 import { fail } from './respond';

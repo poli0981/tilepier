@@ -233,7 +233,7 @@ describe('coordinates (doc 04 §5, doc 15 §7)', () => {
 		// the Worker's KV row would simply be different entries.
 		const raw = { lat: 21.028511, lon: 105.804817 };
 
-		// What a widget will compute, with nothing but `$lib`.
+		// What a widget will compute, with nothing but `#lib`.
 		const client = cacheKey.weather(geohash(roundCoord(raw.lat), roundCoord(raw.lon)));
 
 		// What `routes/api/weather/+server.ts` computes, through the same path it

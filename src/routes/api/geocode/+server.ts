@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import type { TpGeocodePayload, TpGeocodeResult } from '$lib/api-types';
-import { cacheKey } from '$lib/shared-constants';
+import type { TpGeocodePayload, TpGeocodeResult } from '#lib/api-types.js';
+import { cacheKey } from '#lib/shared-constants.js';
 import {
 	breakerVerdict,
 	readBreaker,

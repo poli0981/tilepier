@@ -1,4 +1,4 @@
-import type { TpApiResponse, TpGeocodePayload } from '$lib/api-types';
+import type { TpApiResponse, TpGeocodePayload } from '#lib/api-types.js';
 
 /**
  * A recorded, trimmed `/api/geocode` envelope (doc 19 §1), the search side of

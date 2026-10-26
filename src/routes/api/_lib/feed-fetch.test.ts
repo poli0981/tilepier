@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { UPSTREAM } from '$lib/shared-constants';
+import { UPSTREAM } from '#lib/shared-constants.js';
 import {
 	HTML_PAGE,
 	RSS_ENTITIES_BEHIND_A_COMMENT,

@@ -3,14 +3,14 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Component } from 'svelte';
-	import { loadDetailComponent } from '$lib/core/detail';
-	import { getManifest } from '$lib/core/registry';
-	import { isWidgetId, type TpDetailProps } from '$lib/core/types';
-	import { widgetLabels } from '$lib/i18n/widget-labels';
-	import { m } from '$lib/paraglide/messages';
-	import { deck } from '$lib/stores/deck.svelte';
-	import { legalGate } from '$lib/stores/legal.svelte';
-	import TpTideGauge from '$lib/ui/TpTideGauge.svelte';
+	import { loadDetailComponent } from '#lib/core/detail.js';
+	import { getManifest } from '#lib/core/registry.js';
+	import { isWidgetId, type TpDetailProps } from '#lib/core/types.js';
+	import { widgetLabels } from '#lib/i18n/widget-labels.js';
+	import { m } from '#lib/paraglide/messages.js';
+	import { deck } from '#lib/stores/deck.svelte.js';
+	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 
 	/**
 	 * Direct navigation to a detail (doc 13 §5.4): full-screen, no animation,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { widgetLabels } from '$lib/i18n/widget-labels';
-import { ICON_PATHS } from '$lib/ui/icons/names';
+import { widgetLabels } from '#lib/i18n/widget-labels.js';
+import { ICON_PATHS } from '#lib/ui/icons/names.js';
 import { MANIFESTS, getManifest, isOnDeck, listByCategory, type TpRefresh } from './registry';
 import { CATEGORY_ORDER, isWidgetId, type TpWidgetId } from './types';
 

@@ -1,10 +1,10 @@
-import type { TpApiMeta, TpMaybeNumber, TpWeatherHour, TpWeatherPayload } from '$lib/api-types';
-import { fetchEnvelope } from '$lib/core/api';
-import { swr, type TpSwrFetcher, type TpSwrHandle } from '$lib/core/swr.svelte';
-import type { TpPlacePick } from '$lib/core/geocode';
-import type { TpDb } from '$lib/core/storage/db';
-import { zoneOffsetMinutes } from '$lib/i18n/fmt';
-import { CACHE_POLICY, cacheKey, geohash, roundCoord } from '$lib/shared-constants';
+import type { TpApiMeta, TpMaybeNumber, TpWeatherHour, TpWeatherPayload } from '#lib/api-types.js';
+import { fetchEnvelope } from '#lib/core/api.js';
+import { swr, type TpSwrFetcher, type TpSwrHandle } from '#lib/core/swr.svelte.js';
+import type { TpPlacePick } from '#lib/core/geocode.js';
+import type { TpDb } from '#lib/core/storage/db.js';
+import { zoneOffsetMinutes } from '#lib/i18n/fmt.js';
+import { CACHE_POLICY, cacheKey, geohash, roundCoord } from '#lib/shared-constants.js';
 import { WEATHER_DEFAULTS, type TpWeatherPlace, type TpWeatherSettings } from './types';
 
 /**

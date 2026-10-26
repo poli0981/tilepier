@@ -4,10 +4,10 @@ import type {
 	TpCryptoQuote,
 	TpCryptoTickerPayload,
 	TpStockQuotePayload
-} from '$lib/api-types';
-import { CRYPTO_RANGES, STOCK_RANGES } from '$lib/api-types';
-import type { TpSwrStatus } from '$lib/core/swr.svelte';
-import { cacheKey, symbolSetKey } from '$lib/shared-constants';
+} from '#lib/api-types.js';
+import { CRYPTO_RANGES, STOCK_RANGES } from '#lib/api-types.js';
+import type { TpSwrStatus } from '#lib/core/swr.svelte.js';
+import { cacheKey, symbolSetKey } from '#lib/shared-constants.js';
 import {
 	atClose,
 	CLOSE_QUIET_MS,
@@ -44,7 +44,7 @@ import {
 	moveInWatchlist,
 	suggestions
 } from './service';
-import { tileView } from '$lib/core/tile-view';
+import { tileView } from '#lib/core/tile-view.js';
 import { CRYPTO_TOP_LIST, MARKETS_DEFAULTS, MAX_DISPLAY, MAX_WATCHLIST } from './types';
 
 /**

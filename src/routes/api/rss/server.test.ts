@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TpFeedPayload } from '$lib/api-types';
-import { RATE_LIMIT, cacheKey, feedUrlHash } from '$lib/shared-constants';
+import type { TpFeedPayload } from '#lib/api-types.js';
+import { RATE_LIMIT, cacheKey, feedUrlHash } from '#lib/shared-constants.js';
 import { HTML_PAGE, RSS_NEWS } from '../_lib/__fixtures__/feeds';
 import { GET } from './+server';
 

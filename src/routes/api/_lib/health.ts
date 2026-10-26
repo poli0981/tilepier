@@ -1,5 +1,5 @@
-import type { TpHealthBreaker, TpHealthReport } from '$lib/api-types';
-import { STOCK_BUDGET } from '$lib/shared-constants';
+import type { TpHealthBreaker, TpHealthReport } from '#lib/api-types.js';
+import { STOCK_BUDGET } from '#lib/shared-constants.js';
 import { breakerVerdict, readBreaker, UPSTREAMS } from './breaker';
 import { readSpend, utcDateKey } from './budget';
 import { gateState } from './gate';
