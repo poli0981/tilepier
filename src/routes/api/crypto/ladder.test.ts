@@ -3,6 +3,7 @@ import { BREAKER } from '#lib/shared-constants.js';
 import { cacheKey } from '#lib/shared-constants.js';
 import { GET as TICKER } from './ticker/+server';
 import { GET as KLINES } from './klines/+server';
+import { bind, settle } from '../_lib/__fixtures__/workers';
 
 /**
  * doc 23's "degradation ladder verified by fault injection", crypto half.
@@ -40,14 +41,7 @@ function fakeKv(): KVNamespace & { store: Map<string, string> } {
  * structurally identical and nominally incompatible. Cast once here instead of
  * at every call site.
  */
-type Handler = (event: {
-	request: Request;
-	url: URL;
-	platform?: {
-		env: { TILEPIER_CACHE: KVNamespace };
-		ctx: { waitUntil: (p: Promise<unknown>) => void };
-	};
-}) => Promise<Response>;
+type Handler = (event: { request: Request; url: URL }) => Promise<Response>;
 
 const ticker = TICKER as unknown as Handler;
 const klines = KLINES as unknown as Handler;
@@ -59,15 +53,11 @@ async function call(
 ): Promise<{ response: Response; settled: Promise<unknown> }> {
 	const url = new URL(`https://tilepier.win${path}`);
 	const request = new Request(url);
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv });
 
-	const response = await handler({
-		request,
-		url,
-		platform: { env: { TILEPIER_CACHE: kv }, ctx: { waitUntil: (p) => void pending.push(p) } }
-	});
+	const response = await handler({ request, url });
 
-	return { response, settled: Promise.all(pending) };
+	return { response, settled: settle() };
 }
 
 const TICKER_PATH = '/api/crypto/ticker?symbols=BTCUSDT';

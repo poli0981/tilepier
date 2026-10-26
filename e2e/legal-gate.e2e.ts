@@ -215,7 +215,7 @@ test('the licences page carries every licence that ships, and runs no script (do
 	// The devDependencies whose code ships, which `pnpm licenses list --prod`
 	// cannot see — the reason licenses:gen reads the build's module graph.
 	const appendix = page.getByTestId('licence-appendix');
-	for (const name of ['@sveltejs/kit', 'devalue', 'set-cookie-parser', 'worktop']) {
+	for (const name of ['@sveltejs/kit', 'devalue', 'cookie', 'esm-env']) {
 		await expect(appendix.locator('summary', { hasText: name }).first()).toBeAttached();
 	}
 	// The register's sources are links now.
@@ -309,10 +309,11 @@ async function metaPolicy(request: APIRequestContext, path: string) {
 }
 
 test('the CSP carries the hash for SvelteKit inline script', async ({ request }) => {
-	// SvelteKit emits the main policy itself (svelte.config.js kit.csp, hash
-	// mode) because it must include a hash for its hydration bootstrap. A bare
-	// `script-src 'self'` blocks that script, and the only visible symptom is
-	// that the page stops responding to clicks — so assert the hash is there.
+	// SvelteKit emits the main policy itself (its `csp` option,
+	// src/lib/server/csp.ts, hash mode) because it must include a hash for its
+	// hydration bootstrap. A bare `script-src 'self'` blocks that script, and
+	// the only visible symptom is that the page stops responding to clicks — so
+	// assert the hash is there.
 	const directives = await metaPolicy(request, '/');
 
 	const script = directives.get('script-src') ?? [];

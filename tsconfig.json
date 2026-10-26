@@ -10,16 +10,24 @@
 		"lib": ["es2025", "DOM", "DOM.Iterable"],
 		"types": ["$app/types", "./worker-configuration.d.ts"]
 	},
+	// SvelteKit 3's `$app/tsconfig` names no files, so these are this project's
+	// own. Paraglide's compiled JavaScript stays out: each file has a `.d.ts`
+	// beside it, which is what everything reads (`emitTsDeclarations`), and
+	// `checkJs` over generated code only reports Paraglide's types against
+	// Cloudflare's `Request`. The service worker has a project of its own
+	// (`src/service-worker/tsconfig.json`, on the worker's types).
+	//
+	// None of this stops svelte-check from reading build output: it walks the
+	// workspace directory itself, so `pnpm build` followed by `pnpm lint` still
+	// reports errors in the generated worker bundle. Run `pnpm clean` first, or
+	// lint before you build, as CI does (doc 21 §1).
+	"include": ["src", "vite.config.ts", "playwright.config.ts"],
 	"exclude": [
 		"node_modules/**",
 		".svelte-kit/output/**",
 		".svelte-kit/cloudflare/**",
-		"src/service-worker.js",
-		"src/service-worker/**/*.js",
-		"src/service-worker.ts",
-		"src/service-worker/**/*.ts",
-		"src/service-worker.d.ts",
-		"src/service-worker/**/*.d.ts"
-	],
-	"include": ["src", "vite.config.ts", "playwright.config.ts"]
+		".svelte-kit/cloudflare-tmp/**",
+		"src/lib/paraglide/**/*.js",
+		"src/service-worker"
+	]
 }

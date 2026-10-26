@@ -18,7 +18,7 @@
 	 * an offer to pin it, because the alternative is a page that can show
 	 * nothing and explain nothing.
 	 *
-	 * There is no overlay here and no `pushState`. The overlay is the deck's
+	 * There is no overlay here and no shallow `goto`. The overlay is the deck's
 	 * affordance; this route is the same detail component standing on its own,
 	 * which is the whole point of doc 06 §6 having two entry points.
 	 */
@@ -88,7 +88,7 @@
 
 <main class="tp-w">
 	<header>
-		<a class="tp-w__back" href={resolve('/')}>{m['common.back_to_deck']()}</a>
+		<a class="tp-w__back" href={resolve('/(app)')}>{m['common.back_to_deck']()}</a>
 		{#if title !== null}
 			<h1>{title}</h1>
 		{/if}

@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import type { TpStockSearchPayload } from '#lib/api-types.js';
 import { cacheKey } from '#lib/shared-constants.js';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
@@ -19,10 +20,10 @@ import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
 
 const FAMILY = 'stSearch';
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseStockSearchQuery(url);
@@ -35,7 +36,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 	const cached = await readCache<TpStockSearchPayload>(kv, FAMILY, key);
 	if (cached.status === 'HIT' && cached.value) return serve(cached.value, 'HIT', false);
 
-	const finnhubKey = platform?.env.FINNHUB_KEY ?? '';
+	const finnhubKey = env.FINNHUB_KEY ?? '';
 	const now = Date.now();
 	if (finnhubKey === '' || breakerVerdict(await readBreaker(kv, FINNHUB), now) === 'open') {
 		return serveStaleOr(cached.value);
@@ -50,8 +51,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 			writeCache(kv, FAMILY, key, payload, FINNHUB, now),
 			recordSuccess(kv, FINNHUB)
 		]).catch(() => undefined);
-		if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-		else void persist;
+		waitUntil(persist);
 
 		return ok(
 			payload,

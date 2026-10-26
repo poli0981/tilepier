@@ -84,7 +84,7 @@
 	onfocusout={onFocusOut}
 >
 	<div class="tp-bar__inner">
-		<a class="tp-bar__brand" href={resolve('/')}>
+		<a class="tp-bar__brand" href={resolve('/(app)')}>
 			<TpTideGauge level={0.55} animated size={22} />
 			<span class="tp-bar__wordmark">TilePier</span>
 		</a>

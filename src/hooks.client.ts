@@ -53,12 +53,16 @@ export const init: ClientInit = () => {
  * the id on the 500 page so a bug report can cite it.
  *
  * 404s are routing, not faults — they get the id (the page shape is shared) but
- * no ring-buffer entry, or a stray link would fill the buffer with noise.
+ * no ring-buffer entry, or a stray link would fill the buffer with noise. The
+ * same goes for anything else SvelteKit refuses below 500.
  */
-export const handleError: HandleClientError = ({ error, status, message }) => {
+export const handleError: HandleClientError = (caught) => {
 	const id = crypto.randomUUID();
-	if (status !== 404) {
-		logEntry('error', `[${id}] ${message}`, { src: 'boundary', error });
-	}
-	return { id, message };
+	// SvelteKit 3 passes every error, told apart by `kind`: one thrown on
+	// purpose is not a fault either, and keeps its message, as a 404 does.
+	if (caught.kind === 'app') return { id };
+	if (caught.kind === 'framework' && caught.error.status < 500) return { id };
+	const message = caught.kind === 'framework' ? caught.error.message : 'Internal Error';
+	logEntry('error', `[${id}] ${message}`, { src: 'boundary', error: caught.error });
+	return { id };
 };

@@ -11,9 +11,10 @@ import { fail } from './respond';
  * to guard it; the only way out is the exemption list below, keyed by route id
  * rather than by path so no spelling of a URL can slip past it.
  *
- * **What it protects is upstream spend, not the data.** The adapter's worker
- * replays any cacheable GET from `caches.default` before hooks run, so a URL
- * already in the edge cache answers without a pass for up to half its TTL.
+ * **What it protects is upstream spend, not the data.** The edge cache
+ * (`edge-cache.ts`) answers any cacheable GET before this gate runs, as
+ * adapter-cloudflare's worker did until version 8, so a URL already in it
+ * answers without a pass for up to half its TTL.
  * That is public data costing nothing; what a pass stands in front of is the
  * cache MISS — the request that reaches Twelve Data, Open-Meteo, Binance.US — which
  * is the quota-drain threat doc 15 §1(c) names.

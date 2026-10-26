@@ -26,11 +26,6 @@ allowBuilds:
 # Security floors for transitive dependencies whose parents have not moved yet.
 # Each entry names its advisory and comes out when the parent's own range does.
 overrides:
-  # GHSA-pxg6-pf52-xh8x (Dependabot, low): cookie < 0.7.0 accepts out-of-bounds
-  # characters in a cookie's name, path and domain. @sveltejs/kit 2.70.x still
-  # asks for ^0.6.0. 0.7 keeps 0.6's parse/serialize API, and this app sets no
-  # cookies of its own (doc 16 §3), so raising the floor changes nothing it does.
-  'cookie@<0.7.0': '^0.7.2'
   # Ten advisories in undici before 7.29.1 by npm's count, six as Dependabot
   # alerts (Week 8); the two high are GHSA-rfgv-xxqx-mfg5 and
   # GHSA-w293-vg96-wgc3. Through miniflare, which wrangler runs for

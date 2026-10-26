@@ -15,9 +15,9 @@
 		"deploy:prod": "pnpm run build && wrangler deploy",
 		"prepare": "svelte-kit sync || echo ''",
 		"gen": "wrangler types --env-file .dev.vars.example --strict-vars=false",
-		"clean": "node -e \"const fs=require('node:fs');fs.rmSync('.svelte-kit/output',{recursive:true,force:true});fs.rmSync('.svelte-kit/cloudflare',{recursive:true,force:true});fs.rmSync('.svelte-kit/tp-shipped',{recursive:true,force:true})\"",
+		"clean": "node -e \"const fs=require('node:fs');fs.rmSync('.svelte-kit/output',{recursive:true,force:true});fs.rmSync('.svelte-kit/cloudflare',{recursive:true,force:true});fs.rmSync('.svelte-kit/cloudflare-tmp',{recursive:true,force:true});fs.rmSync('.svelte-kit/tp-shipped',{recursive:true,force:true});fs.rmSync('.svelte-kit/tp-worker',{recursive:true,force:true})\"",
 		"check": "pnpm run gen --check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && pnpm run typecheck",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p src/service-worker",
 		"lint": "pnpm run i18n:compile && prettier --check . && eslint . && pnpm run check",
 		"format": "prettier --write .",
 		"test": "vitest run",
@@ -86,7 +86,6 @@
 		"wrangler": "^4.152.0"
 	},
 	"imports": {
-		"#lib": "./src/lib/index.js",
 		"#lib/*": "./src/lib/*"
 	}
 }

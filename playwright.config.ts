@@ -47,25 +47,31 @@ export default defineConfig({
 		launchOptions: { args: LAUNCH_ARGS },
 		screenshot: 'only-on-failure'
 	},
-	webServer: DEPLOYED
-		? undefined
+	// Spread rather than `webServer: undefined`: with exactOptionalPropertyTypes,
+	// which the type check now applies to this file too, an absent server is
+	// an absent key.
+	...(DEPLOYED
+		? {}
 		: {
-				// `wrangler dev` against the built worker, so the suite exercises the
-				// real Cloudflare runtime: the _headers rules and the prerendered gate
-				// both need that to mean anything.
-				//
-				// HTTPS locally is not optional. The CSP SvelteKit emits from
-				// svelte.config.js ends with `upgrade-insecure-requests`, which over
-				// plain HTTP rewrites every subresource request to https on a port that
-				// is not listening — the app never hydrates, and only the tests that
-				// need JavaScript fail, which is a genuinely confusing way to find out.
-				command: `pnpm build && pnpm exec wrangler dev .svelte-kit/cloudflare/_worker.js --port ${PORT} --local-protocol https`,
-				url: BASE_URL,
-				ignoreHTTPSErrors: true,
-				reuseExistingServer: !process.env.CI,
-				// Cold build plus workerd start-up.
-				timeout: 180_000,
-				stdout: 'pipe',
-				stderr: 'pipe'
-			}
+				webServer: {
+					// `wrangler dev` against the built worker, so the suite exercises the
+					// real Cloudflare runtime: the _headers rules and the prerendered gate
+					// both need that to mean anything.
+					//
+					// HTTPS locally is not optional. The CSP SvelteKit emits (its `csp`
+					// option, src/lib/server/csp.ts) ends with
+					// `upgrade-insecure-requests`, which over plain HTTP rewrites every
+					// subresource request to https on a port that is not listening — the
+					// app never hydrates, and only the tests that need JavaScript fail,
+					// which is a genuinely confusing way to find out.
+					command: `pnpm build && pnpm exec wrangler dev .svelte-kit/cloudflare/_worker.js --port ${PORT} --local-protocol https`,
+					url: BASE_URL,
+					ignoreHTTPSErrors: true,
+					reuseExistingServer: !process.env.CI,
+					// Cold build plus workerd start-up.
+					timeout: 180_000,
+					stdout: 'pipe',
+					stderr: 'pipe'
+				}
+			})
 });

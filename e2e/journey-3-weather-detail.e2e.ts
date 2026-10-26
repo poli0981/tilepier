@@ -14,7 +14,7 @@ import { acceptGate } from './_lib/gate';
  * wired for the node project only — there is no `mockServiceWorker.js` in
  * `static/`, and none is generated (msw 3 has no postinstall) — so the mechanism
  * here is Playwright's own `page.route`, which the service worker leaves alone
- * because it passes `/api/*` straight through (`src/service-worker.ts`).
+ * because it passes `/api/*` straight through (`src/service-worker/index.ts`).
  */
 
 const HANOI = { name: 'Hà Nội', lat: 21.02, lon: 105.85 };

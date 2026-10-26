@@ -11,8 +11,9 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 /** The message both music-metadata rules below give (doc 20 §7). */
 const MAIN_THREAD =
 	'music-metadata runs in the tag worker only: import it from widgets/music/tags.ts, and tags.ts only from tag-worker.ts (doc 20 §7).';
-/** `./tags` from inside widgets/music, or any path ending in music/tags. */
-const TAGS_MODULE = '^(\\./tags|.*/music/tags)$';
+/** `./tags` from inside widgets/music, or any path ending in music/tags — with
+ *  or without the extension SvelteKit 3's `#lib` imports spell out. */
+const TAGS_MODULE = '^(\\./tags|.*/music/tags)(\\.[jt]s)?$';
 
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),

@@ -6,6 +6,7 @@ import { UPSTREAMS } from '../_lib/breaker';
 import { DEV_TOKEN_MIN_LENGTH } from '../_lib/dev-token';
 import { sanitizeReason } from '../_lib/health';
 import { CRYPTO_PROBES, probeCrypto, type TpProbeReport } from '../_lib/probe';
+import { bind } from '../_lib/__fixtures__/workers';
 
 /**
  * `GET /api/_health` — doc 11 §9.
@@ -54,37 +55,20 @@ async function call(options: CallOptions = {}): Promise<Response> {
 	const headers: Record<string, string> = {};
 	if (options.authorization !== undefined) headers['authorization'] = options.authorization;
 
-	return (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: Partial<
-					Pick<
-						Env,
-						| 'FINNHUB_KEY'
-						| 'TWELVEDATA_KEY'
-						| 'DEV_DASH_TOKEN'
-						| 'TURNSTILE_SECRET_KEY'
-						| 'TURNSTILE_SITE_KEY'
-					>
-				> & {
-					TILEPIER_CACHE: KVNamespace | undefined;
-				};
-				cf?: { colo?: string };
-			};
-		}) => Promise<Response>
-	)({
-		request: new Request(url, { headers }),
-		url,
-		platform: {
-			env: {
-				...options.env,
-				...(options.secret === undefined ? {} : { DEV_DASH_TOKEN: options.secret }),
-				TILEPIER_CACHE: kv
-			},
-			...(options.colo === undefined ? {} : { cf: { colo: options.colo } })
-		}
+	bind({
+		...options.env,
+		...(options.secret === undefined ? {} : { DEV_DASH_TOKEN: options.secret }),
+		TILEPIER_CACHE: kv
+	});
+	const request = new Request(url, { headers });
+	// Cloudflare's own properties of an incoming request, which Node's lacks.
+	if (options.colo !== undefined) {
+		Object.defineProperty(request, 'cf', { value: { colo: options.colo } });
+	}
+
+	return (GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>)({
+		request,
+		url
 	});
 }
 
@@ -131,7 +115,7 @@ describe('who gets an answer', () => {
 	});
 
 	it('never lets any answer be stored, the refusal included', async () => {
-		// The adapter replays a cacheable GET before this handler runs, so a
+		// The edge cache answers a cacheable GET before this handler runs, so a
 		// cacheable 200 would reach the next caller without a token.
 		const allowed = await call({ secret: TOKEN, authorization: `Bearer ${TOKEN}` });
 		const refused = await call({ secret: TOKEN });

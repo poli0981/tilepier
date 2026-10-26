@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env } from 'cloudflare:workers';
 import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { ttlSeconds } from '../../_lib/kv-cache';
@@ -31,10 +32,10 @@ import type { TpFxHistoryPayload } from '#lib/api-types.js';
  * honest representation on the wire.
  */
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseFxHistoryQuery(url);

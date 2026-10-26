@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cacheKey } from '#lib/shared-constants.js';
 import { GET as QUOTE } from './quote/+server';
 import { GET as SERIES } from './series/+server';
+import { bind, settle } from '../_lib/__fixtures__/workers';
 
 /**
  * The stock half of doc 09 §1's degradation ladder, under fault injection —
@@ -16,14 +17,7 @@ import { GET as SERIES } from './series/+server';
  * go in through `fetch` and seeded KV only; the breaker itself is never mocked.
  */
 
-type Handler = (event: {
-	request: Request;
-	url: URL;
-	platform?: {
-		env: Record<string, unknown>;
-		ctx: { waitUntil: (p: Promise<unknown>) => void };
-	};
-}) => Promise<Response>;
+type Handler = (event: { request: Request; url: URL }) => Promise<Response>;
 
 const ENV = { TWELVEDATA_KEY: 'td', FINNHUB_KEY: 'fh' };
 const QUOTE_OK = { c: 227.5, dp: 0.8, h: 228, l: 225, o: 226, pc: 225.7, t: 1790175600 };
@@ -51,16 +45,9 @@ function fakeKv(): KVNamespace & { store: Map<string, string> } {
 
 async function call(handler: unknown, path: string, kv: KVNamespace): Promise<Response> {
 	const url = new URL(`https://tilepier.win${path}`);
-	const pending: Promise<unknown>[] = [];
-	const response = await (handler as Handler)({
-		request: new Request(url),
-		url,
-		platform: {
-			env: { TILEPIER_CACHE: kv, ...ENV },
-			ctx: { waitUntil: (p) => void pending.push(p) }
-		}
-	});
-	await Promise.all(pending);
+	bind({ TILEPIER_CACHE: kv, ...ENV });
+	const response = await (handler as Handler)({ request: new Request(url), url });
+	await settle();
 	return response;
 }
 

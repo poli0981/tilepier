@@ -7,8 +7,8 @@ import { isWidgetId, type TpDetailProps, type TpWidgetId } from './types';
  * The detail-expansion handshake (doc 06 §6, doc 13 §5), minus the animation.
  *
  * **What owns what.** Open/closed is not state this module keeps: it is
- * `page.state.detail`, written with SvelteKit's `pushState` and read back
- * through `$app/state`. That is the whole reason doc 06 §6 says "shallow
+ * `page.state.detail`, written by a shallow `goto` (SvelteKit's `pushState`
+ * until version 3) and read back through `$app/state`. That is the whole reason doc 06 §6 says "shallow
  * routing" — the browser's Back button then closes the overlay for free,
  * because SvelteKit restores the previous entry's state, and a popstate
  * handler of our own would be a second implementation of history racing the

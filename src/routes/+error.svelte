@@ -35,7 +35,7 @@
 	{/if}
 
 	<p class="tp-actions">
-		<a href={resolve('/')}>{m['common.back_to_deck']()}</a>
+		<a href={resolve('/(app)')}>{m['common.back_to_deck']()}</a>
 		{#if !notFound}
 			<button type="button" data-testid="error-report" onclick={() => (bugOpen = true)}>
 				{m['settings.report.open']()}

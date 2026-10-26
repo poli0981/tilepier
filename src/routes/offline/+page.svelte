@@ -17,7 +17,7 @@
 		<div data-locale={locale}>
 			<h1>{m['common.offline.title'](undefined, { locale })}</h1>
 			<p>{m['common.offline.body'](undefined, { locale })}</p>
-			<p><a href={resolve('/')}>{m['common.back_to_deck'](undefined, { locale })}</a></p>
+			<p><a href={resolve('/(app)')}>{m['common.back_to_deck'](undefined, { locale })}</a></p>
 		</div>
 	{/each}
 </main>

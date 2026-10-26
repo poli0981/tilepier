@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
-import { handle } from './hooks.server';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { handle, handleError } from './hooks.server';
+import { bind, settle } from './routes/api/_lib/__fixtures__/workers';
 
 /**
  * The hook's half of the gate (doc 15 §3): `/api/*` is guarded before the
  * endpoint runs, and nothing else is. `_lib/gate.test.ts` proves who gets
  * through; this proves the hook asks, and that a refusal never reaches the
- * endpoint at all.
+ * endpoint at all. The edge cache sits in front of both (`_lib/edge-cache.ts`),
+ * where adapter-cloudflare's worker kept it until version 8.
  */
 
 const ON = { TURNSTILE_SECRET_KEY: 'secret', TURNSTILE_SITE_KEY: 'sitekey' };
@@ -20,12 +22,8 @@ function input(
 ) {
 	const resolve = vi.fn(async () => answer());
 	const url = new URL(`https://tilepier.win${path}`);
-	const event = {
-		url,
-		request: new Request(url),
-		route: { id: routeId },
-		platform: { env }
-	};
+	bind(env);
+	const event = { url, request: new Request(url), route: { id: routeId } };
 	return { resolve, args: { event, resolve } as unknown as HandleInput };
 }
 
@@ -59,32 +57,125 @@ describe('handle', () => {
 		expect((await handle(args)).status).toBe(200);
 		expect(resolve).toHaveBeenCalledOnce();
 	});
+
+	it('gives HTML the security headers, and leaves JSON alone', async () => {
+		const html = input(
+			'/settings',
+			'/(app)/settings',
+			{},
+			() => new Response('<!doctype html>', { headers: { 'content-type': 'text/html' } })
+		);
+		const json = input('/api/fx', '/api/fx', {}, () => Response.json({ ok: true }));
+
+		expect((await handle(html.args)).headers.get('x-content-type-options')).toBe('nosniff');
+		expect((await handle(json.args)).headers.get('x-content-type-options')).toBeNull();
+	});
 });
 
-describe('pages', () => {
-	const PRELOAD = '<./_app/immutable/assets/1.css>; rel="preload"; as="style"; nopush';
-
-	function page(status: number): () => Response {
-		return () =>
-			new Response('<!doctype html>', {
-				status,
-				headers: { 'content-type': 'text/html', link: PRELOAD }
-			});
+describe('the edge cache', () => {
+	/** `caches.default` as far as the hook uses it, keyed by URL. */
+	function edge(): Map<string, Response> {
+		const entries = new Map<string, Response>();
+		vi.stubGlobal('caches', {
+			default: {
+				match: async (request: Request) => entries.get(request.url)?.clone(),
+				put: async (request: Request, response: Response) => void entries.set(request.url, response)
+			}
+		});
+		return entries;
 	}
 
-	it('drops the preload hints from a 404, which answers for images and icons too', async () => {
-		const { args } = input('/favicon.svg', null, {}, page(404));
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('answers a stored /api request before the gate asks for a pass', async () => {
+		const entries = edge();
+		entries.set(
+			'https://tilepier.win/api/fx',
+			Response.json({ ok: true }, { headers: { 'cache-control': 'public, max-age=60' } })
+		);
+		const { resolve, args } = input('/api/fx', '/api/fx', ON);
 
 		const response = await handle(args);
 
-		expect(response.status).toBe(404);
-		expect(response.headers.get('link')).toBeNull();
-		expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ ok: true });
+		expect(resolve).not.toHaveBeenCalled();
 	});
 
-	it('keeps them on a page that exists', async () => {
-		const { args } = input('/settings', '/(app)/settings', {}, page(200));
+	it('keeps what an endpoint answers for the next request', async () => {
+		const entries = edge();
+		const { args } = input('/api/fx', '/api/fx', {}, () =>
+			Response.json({ ok: true }, { headers: { 'cache-control': 'public, max-age=60' } })
+		);
 
-		expect((await handle(args)).headers.get('link')).toBe(PRELOAD);
+		await handle(args);
+		await settle();
+
+		expect(entries.has('https://tilepier.win/api/fx')).toBe(true);
+	});
+
+	it('never keeps the refusal, nor anything a page answers', async () => {
+		const entries = edge();
+		const refused = input('/api/fx', '/api/fx', ON);
+		expect((await handle(refused.args)).status).toBe(401);
+
+		const page = input(
+			'/settings',
+			'/(app)/settings',
+			{},
+			() =>
+				new Response('<!doctype html>', {
+					headers: { 'content-type': 'text/html', 'cache-control': 'public, max-age=60' }
+				})
+		);
+		await handle(page.args);
+		await settle();
+
+		expect(entries.size).toBe(0);
+	});
+});
+
+describe('handleError', () => {
+	type Caught = Parameters<typeof handleError>[0];
+
+	function caught(error: Omit<Caught, 'event'>): Caught {
+		return { ...error, event: {} } as Caught;
+	}
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('keeps the message of an error thrown on purpose, and logs nothing', async () => {
+		const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+		const answer = await handleError(caught({ kind: 'app', error: { id: '', message: 'gone' } }));
+
+		expect(answer).toEqual({ id: expect.any(String) });
+		expect(log).not.toHaveBeenCalled();
+	});
+
+	it('treats what SvelteKit refuses below 500 as the request’s doing', async () => {
+		const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+		for (const status of [404, 405]) {
+			const error = { status, message: 'refused' };
+			expect(await handleError(caught({ kind: 'framework', error }))).toEqual({
+				id: expect.any(String)
+			});
+		}
+		expect(log).not.toHaveBeenCalled();
+	});
+
+	it('logs a fault under the id the reader sees, and tells them nothing more', async () => {
+		const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+		const fault = new Error('KV said no: token=abc');
+
+		const answer = await handleError(caught({ kind: 'unknown', error: fault }));
+
+		expect(answer).toEqual({ id: expect.any(String), message: 'unexpected error' });
+		expect(log).toHaveBeenCalledWith(`[${(answer as { id: string }).id}]`, fault);
 	});
 });

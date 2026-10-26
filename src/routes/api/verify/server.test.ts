@@ -3,6 +3,7 @@ import type { TpVerifyConfig, TpVerifyPass } from '#lib/api-types.js';
 import { TURNSTILE_ACTION } from '#lib/shared-constants.js';
 import { GET, POST } from './+server';
 import { verifyPass } from '../_lib/pass';
+import { bind } from '../_lib/__fixtures__/workers';
 
 /**
  * `/api/verify` (doc 15 §3): whether there is a gate, and a pass for a token.
@@ -35,11 +36,7 @@ type Env = {
 	TURNSTILE_SITE_KEY?: string;
 	TILEPIER_CACHE?: KVNamespace;
 };
-type Handler = (event: {
-	request: Request;
-	url: URL;
-	platform?: { env: Env };
-}) => Response | Promise<Response>;
+type Handler = (event: { request: Request; url: URL }) => Response | Promise<Response>;
 
 const ON = (kv = fakeKv()): Env => ({
 	TURNSTILE_SECRET_KEY: SECRET,
@@ -49,7 +46,8 @@ const ON = (kv = fakeKv()): Env => ({
 
 async function get(env: Env): Promise<Response> {
 	const url = new URL(`${ORIGIN}/api/verify`);
-	return (GET as unknown as Handler)({ request: new Request(url), url, platform: { env } });
+	bind(env);
+	return (GET as unknown as Handler)({ request: new Request(url), url });
 }
 
 async function post(
@@ -63,7 +61,8 @@ async function post(
 		headers: { 'content-type': 'application/json', ...headers },
 		body: typeof body === 'string' ? body : JSON.stringify(body)
 	});
-	return (POST as unknown as Handler)({ request, url, platform: { env } });
+	bind(env);
+	return (POST as unknown as Handler)({ request, url });
 }
 
 function siteverifyAnswers(body: unknown, status = 200): void {

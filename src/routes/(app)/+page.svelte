@@ -208,7 +208,7 @@
 		// shape, and same reason, as the gate's `?lang=` links in +layout.svelte.
 		const url = `${resolve('/(app)/w/[id]', { id: tile.widgetId })}?i=${encodeURIComponent(instanceId)}`;
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(url, { shallow: true, state: { detail } });
+		void goto(url, { shallow: true, state: { detail } });
 	}
 
 	/** Narrowed rather than trusted: `page.state` is restored verbatim from a

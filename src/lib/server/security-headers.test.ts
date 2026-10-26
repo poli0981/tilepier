@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CSP } from './csp';
 import { SECURITY_HEADERS } from './security-headers';
 
 /**
@@ -49,11 +50,11 @@ function documented(): Record<string, string> {
 	return headers;
 }
 
-/** `frame-ancestors` as svelte.config.js configures it for SvelteKit's policy. */
+/** `frame-ancestors` as SvelteKit's policy configures it (`csp.ts`). */
 function configuredAncestors(): string {
-	const sources = /'frame-ancestors':\s*\[([^\]]*)\]/.exec(read('svelte.config.js'))?.[1];
-	expect(sources, 'svelte.config.js configures no frame-ancestors').toBeDefined();
-	return [...(sources ?? '').matchAll(/'([^']+)'/g)].map(([, source]) => `'${source}'`).join(' ');
+	const sources = CSP.directives?.['frame-ancestors'];
+	expect(sources, 'the CSP configures no frame-ancestors').toBeDefined();
+	return (sources ?? []).map((source) => `'${source}'`).join(' ');
 }
 
 describe('security headers (doc 15 §2)', () => {

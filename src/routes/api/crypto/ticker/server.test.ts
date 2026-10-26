@@ -3,6 +3,7 @@ import type { TpCryptoTickerPayload } from '#lib/api-types.js';
 import { cacheKey, symbolSetKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { parseCryptoTickerQuery } from '../../_lib/crypto-query';
+import { bind, settle } from '../../_lib/__fixtures__/workers';
 
 /**
  * doc 11 §3's fourth endpoint, and the first for markets.
@@ -61,24 +62,13 @@ async function call(options: CallOptions = {}): Promise<CallResult> {
 		`https://tilepier.win/api/crypto/ticker${options.search ?? '?symbols=BTCUSDT,ETHUSDT'}`
 	);
 	const request = new Request(url, { headers: options.headers ?? {} });
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv });
 
 	const response = await (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: { TILEPIER_CACHE: KVNamespace | undefined };
-				ctx: { waitUntil: (p: Promise<unknown>) => void };
-			};
-		}) => Promise<Response>
-	)({
-		request,
-		url,
-		platform: { env: { TILEPIER_CACHE: kv }, ctx: { waitUntil: (p) => void pending.push(p) } }
-	});
+		GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>
+	)({ request, url });
 
-	return { response, settled: Promise.all(pending) };
+	return { response, settled: settle() };
 }
 
 async function envelope(response: Response): Promise<{

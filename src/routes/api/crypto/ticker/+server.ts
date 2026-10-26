@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import { cacheKey } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
@@ -28,10 +29,10 @@ const UPSTREAM = 'binance-us';
 /** doc 11 §4's family for this payload. */
 const FAMILY = 'crTick';
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseCryptoTickerQuery(url);
@@ -75,8 +76,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 			writeCache(kv, FAMILY, key, payload, UPSTREAM, now),
 			recordSuccess(kv, UPSTREAM)
 		]).catch(() => undefined);
-		if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-		else void persist;
+		waitUntil(persist);
 
 		return ok(
 			payload,

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CACHE_POLICY, cacheKey } from '#lib/shared-constants.js';
 import { SNAPSHOT_BATCH } from '../../_lib/fx-snapshots';
 import { GET } from './+server';
+import { bind } from '../../_lib/__fixtures__/workers';
 
 /**
  * `/api/fx/history` — doc 11 §3, doc 10 §3.
@@ -53,13 +54,12 @@ function call(options: CallOptions = {}): Promise<Response> {
 	);
 	const request = new Request(url, { headers: options.headers ?? {} });
 
-	return (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: { env: { TILEPIER_CACHE: KVNamespace | undefined } };
-		}) => Promise<Response>
-	)({ request, url, platform: { env: { TILEPIER_CACHE: kv } } });
+	bind({ TILEPIER_CACHE: kv });
+
+	return (GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>)({
+		request,
+		url
+	});
 }
 
 function seedSnapshot(

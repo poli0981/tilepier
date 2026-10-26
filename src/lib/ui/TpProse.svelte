@@ -21,7 +21,7 @@
 	<p class="tp-back">
 		{#each LOCALES as locale (locale)}
 			<span data-locale={locale}>
-				<a href={resolve('/')}>{m['common.back_to_deck'](undefined, { locale })}</a>
+				<a href={resolve('/(app)')}>{m['common.back_to_deck'](undefined, { locale })}</a>
 			</span>
 		{/each}
 	</p>

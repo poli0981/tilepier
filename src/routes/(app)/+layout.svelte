@@ -118,8 +118,8 @@
 			     through a template literal, and the query is what carries the
 			     choice (doc 14 §6). -->
 			<!-- eslint-disable svelte/no-navigation-without-resolve -->
-			<a href={`${resolve('/')}?lang=vi`} hreflang="vi">Tiếng Việt</a>
-			<a href={`${resolve('/')}?lang=en`} hreflang="en">English</a>
+			<a href={`${resolve('/(app)')}?lang=vi`} hreflang="vi">Tiếng Việt</a>
+			<a href={`${resolve('/(app)')}?lang=en`} hreflang="en">English</a>
 			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</p>
 	</div>

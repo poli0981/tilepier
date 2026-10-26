@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import type { TpStockQuote, TpStockSeriesPayload } from '#lib/api-types.js';
 import {
 	cacheKey,
@@ -67,10 +68,10 @@ import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
  * and the daily stale window — seven days — is what covers an outage.
  */
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseStockSeriesQuery(url);
@@ -94,8 +95,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 			? serve(cached.value, 'STALE', true, family, query.limit)
 			: fail(code, retryAfterS);
 
-	const env = platform?.env;
-	const tdKey = env?.TWELVEDATA_KEY ?? '';
+	const tdKey = env.TWELVEDATA_KEY ?? '';
 	if (tdKey === '') return stale('UPSTREAM_DOWN');
 
 	const now = Date.now();
@@ -106,11 +106,11 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 
 	const persist = (work: Promise<unknown>) => {
 		const settled = work.catch(() => undefined);
-		if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(settled);
+		waitUntil(settled);
 		return settled;
 	};
 
-	const known = await knownSymbol(kv, query.symbol, env?.FINNHUB_KEY ?? '', now, persist);
+	const known = await knownSymbol(kv, query.symbol, env.FINNHUB_KEY ?? '', now, persist);
 	if (known === 'unverifiable') return stale('UPSTREAM_DOWN');
 	if (known === 'unknown') {
 		const empty = normalizeStockSeries({ values: [] }, query.symbol, query.interval);

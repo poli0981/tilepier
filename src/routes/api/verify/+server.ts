@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env } from 'cloudflare:workers';
 import type { TpApiMeta, TpVerifyConfig, TpVerifyPass } from '#lib/api-types.js';
 import { readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
 import { gateState } from '../_lib/gate';
@@ -12,8 +13,8 @@ import { MAX_TOKEN_LENGTH, siteverify } from '../_lib/turnstile';
  * (doc 15 §3). Exempt from the gate it serves, by definition.
  *
  * `GET` says whether there is a gate at all: the sitekey to render, or `null`.
- * `no-store`, because the adapter's edge cache would otherwise keep answering
- * "no gate" for minutes after the secret was put.
+ * `no-store`, because the edge cache (`_lib/edge-cache.ts`) would otherwise
+ * keep answering "no gate" for minutes after the secret was put.
  *
  * `POST {token}` asks siteverify and answers with a pass. Three outcomes:
  * a real token gets an hour; a refused one gets `VERIFY_REQUIRED`; and a token
@@ -31,13 +32,12 @@ function meta(now: number): TpApiMeta {
 	return { cachedAt: Math.floor(now / 1000), source: 'turnstile', stale: false };
 }
 
-export const GET: RequestHandler = ({ platform }) => {
-	const env = platform?.env;
-	const sitekey = gateState(env) === 'on' ? (env?.TURNSTILE_SITE_KEY ?? null) : null;
+export const GET: RequestHandler = () => {
+	const sitekey = gateState(env) === 'on' ? (env.TURNSTILE_SITE_KEY ?? null) : null;
 	return okNoStore<TpVerifyConfig>({ sitekey }, meta(Date.now()));
 };
 
-export const POST: RequestHandler = async ({ request, url, platform }) => {
+export const POST: RequestHandler = async ({ request, url }) => {
 	// SvelteKit's CSRF check covers form posts only; this one is JSON, so the
 	// origin is checked here. A browser always sends it on a cross-origin-capable
 	// POST, and anything else has no business trading tokens.
@@ -45,12 +45,11 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
 		return new Response(null, { status: 403 });
 	}
 
-	const env = platform?.env;
-	const secret = env?.TURNSTILE_SECRET_KEY ?? '';
+	const secret = env.TURNSTILE_SECRET_KEY ?? '';
 	// No gate, nothing to trade for — and a `misconfigured` gate is not enforced.
 	if (gateState(env) !== 'on') return fail('BAD_REQUEST');
 
-	const kv = env?.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const limit = await checkRateLimit(kv, request);

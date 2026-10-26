@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import type { TpGeocodePayload, TpGeocodeResult } from '#lib/api-types.js';
 import { cacheKey } from '#lib/shared-constants.js';
 import {
@@ -40,10 +41,10 @@ const LIMIT = 5;
 
 const ATTRIBUTION = 'Search by Photon/komoot, data © OpenStreetMap contributors (ODbL)';
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const parsed = parseGeocodeQuery(url);
@@ -102,8 +103,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 		writeCache(kv, 'geo', key, payload, attempt.source, cachedAt),
 		recordSuccess(kv, attempt.source)
 	]).catch(() => undefined);
-	if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-	else void persist;
+	waitUntil(persist);
 
 	return ok(
 		payload,

@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import { cacheKey } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
@@ -44,10 +45,10 @@ const NEXT_UPDATE_SLACK_MS = 5 * 60 * 1000;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export const GET: RequestHandler = async ({ request, platform }) => {
+export const GET: RequestHandler = async ({ request }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	// No query to validate — doc 11 §3 gives this route no parameters, which is
@@ -123,8 +124,7 @@ export const GET: RequestHandler = async ({ request, platform }) => {
 			snapshot(kv, payload, now),
 			recordSuccess(kv, UPSTREAM)
 		]).catch(() => undefined);
-		if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-		else void persist;
+		waitUntil(persist);
 
 		return ok(
 			payload,

@@ -3,6 +3,7 @@ import { CRYPTO_RANGES, type TpCryptoKlinesPayload } from '#lib/api-types.js';
 import { cacheKey } from '#lib/shared-constants.js';
 import { GET } from './+server';
 import { parseCryptoKlinesQuery } from '../../_lib/crypto-query';
+import { bind, settle } from '../../_lib/__fixtures__/workers';
 
 /**
  * doc 11 §3's fifth endpoint.
@@ -45,24 +46,13 @@ async function call(
 		`https://tilepier.win/api/crypto/klines${options.search ?? '?symbol=BTCUSDT&interval=5m&limit=288'}`
 	);
 	const request = new Request(url, { headers: options.headers ?? {} });
-	const pending: Promise<unknown>[] = [];
+	bind({ TILEPIER_CACHE: kv });
 
 	const response = await (
-		GET as unknown as (event: {
-			request: Request;
-			url: URL;
-			platform?: {
-				env: { TILEPIER_CACHE: KVNamespace | undefined };
-				ctx: { waitUntil: (p: Promise<unknown>) => void };
-			};
-		}) => Promise<Response>
-	)({
-		request,
-		url,
-		platform: { env: { TILEPIER_CACHE: kv }, ctx: { waitUntil: (p) => void pending.push(p) } }
-	});
+		GET as unknown as (event: { request: Request; url: URL }) => Promise<Response>
+	)({ request, url });
 
-	return { response, settled: Promise.all(pending) };
+	return { response, settled: settle() };
 }
 
 async function envelope(response: Response): Promise<{

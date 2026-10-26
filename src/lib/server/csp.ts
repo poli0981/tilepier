@@ -1,0 +1,52 @@
+import type { Config } from '@sveltejs/kit/vite';
+
+/**
+ * SvelteKit's Content-Security-Policy (doc 15 §2), as the `csp` option of
+ * `sveltekit()` in vite.config.ts. A module of its own since SvelteKit 3 moved
+ * the configuration out of svelte.config.js, so the config and
+ * `security-headers.test.ts` read one list instead of the test reading a file.
+ *
+ * Doc 15 §2 specifies `script-src 'self'` with no `'unsafe-inline'`, and
+ * claimed "Rolldown output complies". It does — but SvelteKit itself emits a
+ * small inline <script> to hand hydration data to the client, and a bare
+ * `script-src 'self'` blocks it. The failure mode is nasty: the page renders
+ * fine, so everything looks healthy, and only the parts that need JavaScript
+ * quietly stop working. Found 2026-08-10 by an e2e test where clicking
+ * "Tôi đồng ý" did nothing.
+ *
+ * `mode: 'hash'` makes SvelteKit hash its own inline scripts and emit the CSP
+ * with those hashes included. Hash mode rather than nonce because nonces need a
+ * fresh value per response, which prerendered pages cannot have.
+ */
+export const CSP: NonNullable<Config['csp']> = {
+	mode: 'hash',
+	directives: {
+		'default-src': ['self'],
+		// The two third-party scripts, and nothing else (doc 15 §2): Cloudflare
+		// Turnstile's api.js, which refuses to run from a proxied or bundled copy
+		// (doc 15 §3), and the Web Analytics beacon (doc 16 §3).
+		'script-src': [
+			'self',
+			'https://challenges.cloudflare.com',
+			'https://static.cloudflareinsights.com'
+		],
+		// Turnstile draws its challenge in an iframe from the same host. Without
+		// this, default-src 'self' would refuse the frame.
+		'frame-src': ['https://challenges.cloudflare.com'],
+		// Svelte writes inline styles for transitions — the pragmatic cost doc 15
+		// §2 already accepts.
+		'style-src': ['self', 'unsafe-inline'],
+		'img-src': ['self', 'data:', 'blob:', 'https://tiles.openfreemap.org'],
+		'media-src': ['self', 'blob:'],
+		// Map tiles (doc 10 §6), and where the analytics beacon reports (doc 16
+		// §3). Every data request goes through /api instead.
+		'connect-src': ['self', 'https://tiles.openfreemap.org', 'https://cloudflareinsights.com'],
+		'font-src': ['self'],
+		'worker-src': ['self'],
+		'frame-ancestors': ['none'],
+		'base-uri': ['self'],
+		'form-action': ['self'],
+		'object-src': ['none'],
+		'upgrade-insecure-requests': true
+	}
+};

@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import { cacheKey, geohash } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache } from '../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
@@ -44,10 +45,10 @@ const AIR_QUALITY =
 	'https://air-quality-api.open-meteo.com/v1/air-quality' +
 	'?hourly=european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide&timezone=auto&forecast_days=1';
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const coords = parseCoords(url);
@@ -117,8 +118,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 			writeCache(kv, 'wx', key, payload, 'open-meteo', cachedAt),
 			recordSuccess(kv, 'open-meteo')
 		]).catch(() => undefined);
-		if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-		else void persist;
+		waitUntil(persist);
 
 		return ok(
 			payload,

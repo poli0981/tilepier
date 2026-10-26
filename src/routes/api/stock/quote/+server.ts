@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { env, waitUntil } from 'cloudflare:workers';
 import type { TpStockQuote, TpStockQuotePayload } from '#lib/api-types.js';
 import { cacheKey } from '#lib/shared-constants.js';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
@@ -30,10 +31,10 @@ const FAMILY = 'stQuote';
 
 type Row = CachedValue<TpStockQuote | null>;
 
-export const GET: RequestHandler = async ({ request, url, platform }) => {
+export const GET: RequestHandler = async ({ request, url }) => {
 	if (isCrossSite(request)) return new Response(null, { status: 403 });
 
-	const kv = platform?.env.TILEPIER_CACHE;
+	const kv = env.TILEPIER_CACHE;
 	if (!kv) return fail('UPSTREAM_DOWN');
 
 	const query = parseStockQuoteQuery(url);
@@ -67,7 +68,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 	let upstreamDown = false;
 
 	if (missing.length > 0) {
-		const key = platform?.env.FINNHUB_KEY ?? '';
+		const key = env.FINNHUB_KEY ?? '';
 		const breaker = await readBreaker(kv, FINNHUB);
 		if (key === '' || breakerVerdict(breaker, now) === 'open') {
 			upstreamDown = true;
@@ -90,8 +91,7 @@ export const GET: RequestHandler = async ({ request, url, platform }) => {
 							immediate: outcome.failure.status === 429
 						})
 			]).catch(() => undefined);
-			if (platform?.ctx?.waitUntil) platform.ctx.waitUntil(persist);
-			else void persist;
+			waitUntil(persist);
 		}
 	}
 

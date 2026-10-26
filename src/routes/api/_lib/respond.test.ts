@@ -30,7 +30,7 @@ describe('ok', () => {
 });
 
 describe('okNoStore', () => {
-	// The adapter replays any cacheable GET before the handler runs, so this is
+	// The edge cache answers any cacheable GET before the handler runs, so this is
 	// the only thing standing between an authorised answer and the next caller.
 	it('is never cacheable, and carries the same envelope', async () => {
 		const response = okNoStore({ t: 21 }, META);
