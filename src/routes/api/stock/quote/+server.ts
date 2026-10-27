@@ -6,7 +6,6 @@ import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../..
 import { FINNHUB, FINNHUB_ATTRIBUTION, finnhubHeaders, finnhubQuoteUrl } from '../../_lib/finnhub';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { normalizeStockQuote } from '../../_lib/normalize';
-import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { parseStockQuoteQuery } from '../../_lib/stock-query';
 import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
@@ -39,9 +38,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const query = parseStockQuoteQuery(url);
 	if (!query) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const now = Date.now();
 	const fresh = new Map<string, Row>();

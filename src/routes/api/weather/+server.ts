@@ -3,7 +3,6 @@ import { env, waitUntil } from 'cloudflare:workers';
 import { cacheKey, geohash } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache } from '../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
-import { checkRateLimit } from '../_lib/ratelimit';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
 import { fail, isCrossSite, ok } from '../_lib/respond';
 import { parseCoords } from '../_lib/geohash';
@@ -13,9 +12,10 @@ import type { TpWeatherPayload } from '#lib/api-types.js';
 /**
  * `GET /api/weather?lat&lon` — doc 11 §3, upstream doc 10 §2.
  *
- * The reference implementation of the doc 11 §2 pipeline: validate →
- * rate-gate → KV read → upstream (maybe) → normalize → KV write → respond.
- * Every other endpoint follows this shape.
+ * The reference implementation of the doc 11 §2 pipeline: validate → KV read
+ * → upstream (maybe) → normalize → KV write → respond. Every other endpoint
+ * follows this shape. The rate limit and the gate ran before it, in
+ * `hooks.server.ts`.
  *
  * Open-Meteo needs no key, which is why S3 could measure this one for real.
  */
@@ -53,9 +53,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const coords = parseCoords(url);
 	if (!coords) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const key = cacheKey.weather(geohash(coords.lat, coords.lon));
 	const cached = await readCache<TpWeatherPayload>(kv, 'wx', key);

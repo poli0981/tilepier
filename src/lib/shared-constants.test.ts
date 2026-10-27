@@ -279,17 +279,50 @@ describe('doc 11 §7 rate limits', () => {
 	it('holds the zone rule the client paces under to the doc that states it', () => {
 		// The rule lives in the Cloudflare dashboard, so nothing in code enforces
 		// ZONE_RATE_LIMIT — this is what stops the copy drifting from the doc.
-		const minutes = ZONE_RATE_LIMIT.windowMs / 60_000;
+		const seconds = ZONE_RATE_LIMIT.windowMs / 1000;
 		expect(md).toContain(
-			`${String(ZONE_RATE_LIMIT.maxPerWindow)} req / ${String(minutes)} min per IP`
+			`${String(ZONE_RATE_LIMIT.maxPerWindow)} req / ${String(seconds)} s per IP`
 		);
+		// A Free zone's one rule counts over 10 s and nothing else, which the
+		// first version of this constant (60 a minute) could not have been.
+		expect(seconds).toBe(10);
 	});
 
 	it('holds the Worker limiter to the doc too', () => {
 		const seconds = RATE_LIMIT.bucketMs / 1000;
 		expect(md).toContain(`over ${String(RATE_LIMIT.maxPerBucket)}/${String(seconds)} s`);
 	});
+
+	it('holds both rate-limit bindings in wrangler.jsonc to RATE_LIMIT', () => {
+		// The binding reads its numbers from the Worker's config, not from this
+		// module, so without this the client's pacing could drift from the limit
+		// it paces under and nothing would say so.
+		const config = parseJsonc(readFileSync(join(process.cwd(), 'wrangler.jsonc'), 'utf8')) as {
+			ratelimits?: { name: string; namespace_id: string; simple: object }[];
+		};
+		const bindings = config.ratelimits ?? [];
+
+		expect(bindings.map((binding) => binding.name).sort()).toEqual(['API_LIMITER', 'PAGE_LIMITER']);
+		for (const binding of bindings) {
+			expect(binding.simple, binding.name).toEqual({
+				limit: RATE_LIMIT.maxPerBucket,
+				period: RATE_LIMIT.bucketMs / 1000
+			});
+		}
+		// Sharing a namespace would share the counters: a burst of 404s would
+		// spend the reader's API allowance.
+		expect(new Set(bindings.map((binding) => binding.namespace_id)).size).toBe(bindings.length);
+	});
 });
+
+/** JSONC as wrangler reads it: comments and trailing commas, outside strings. */
+function parseJsonc(text: string): unknown {
+	const stripped = text.replace(
+		/("(?:[^"\\]|\\.)*")|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
+		(_match: string, quoted: string | undefined) => quoted ?? ''
+	);
+	return JSON.parse(stripped.replace(/,(\s*[}\]])/g, '$1'));
+}
 
 /**
  * doc 04 §5's 1:1 guarantee, applied to a *set* rather than to a point.

@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
 import { env } from 'cloudflare:workers';
-import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { ttlSeconds } from '../../_lib/kv-cache';
 import { parseFxHistoryQuery } from '../../_lib/fx-history-query';
@@ -40,9 +39,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const query = parseFxHistoryQuery(url);
 	if (!query) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const dates = snapshotDates(query.days, Date.now());
 	const tables = await readSnapshots(kv, dates);

@@ -3,7 +3,6 @@ import { env, waitUntil } from 'cloudflare:workers';
 import { cacheKey, cryptoKlinesFamily, type TpCacheFamily } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../../_lib/breaker';
-import { checkRateLimit } from '../../_lib/ratelimit';
 import { parseCryptoKlinesQuery } from '../../_lib/crypto-query';
 import { fetchUpstream, UpstreamError } from '../../_lib/upstream';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
@@ -46,9 +45,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const query = parseCryptoKlinesQuery(url);
 	if (!query) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const family = cryptoKlinesFamily(query.interval);
 	const key = cacheKey.cryptoKlines(query.symbol, query.interval);

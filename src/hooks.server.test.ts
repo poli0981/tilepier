@@ -137,6 +137,96 @@ describe('the edge cache', () => {
 	});
 });
 
+describe('the rate limiter (doc 11 §7)', () => {
+	/** A binding that refuses everything, or allows everything. */
+	function limiter(success: boolean) {
+		return { limit: vi.fn(async () => ({ success })) } satisfies RateLimit;
+	}
+
+	const TOKEN = 'operator-token-'.padEnd(40, 'x');
+
+	function from(path: string, routeId: string | null, headers: Record<string, string>) {
+		const resolve = vi.fn(async () => new Response('from the route', { status: 200 }));
+		const url = new URL(`https://tilepier.win${path}`);
+		const event = { url, request: new Request(url, { headers }), route: { id: routeId } };
+		return { resolve, args: { event, resolve } as unknown as HandleInput };
+	}
+
+	const CLIENT = { 'cf-connecting-ip': '203.0.113.9' };
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('refuses /api before the edge cache, the gate or the endpoint, with an envelope', async () => {
+		// A stored answer is still an invocation, so a flood of cache hits counts.
+		const match = vi.fn(async () => Response.json({ ok: true }));
+		vi.stubGlobal('caches', { default: { match, put: vi.fn() } });
+		const api = limiter(false);
+		bind({ ...ON, API_LIMITER: api, PAGE_LIMITER: limiter(true) });
+		const { resolve, args } = from('/api/fx', '/api/fx', CLIENT);
+
+		const response = await handle(args);
+
+		expect(response.status).toBe(429);
+		expect(await response.json()).toEqual({
+			ok: false,
+			error: { code: 'RATE_LIMITED', retryAfterS: 10 }
+		});
+		expect(response.headers.get('retry-after')).toBe('10');
+		expect(response.headers.get('cache-control')).toBe('no-store');
+		expect(api.limit).toHaveBeenCalledOnce();
+		expect(match).not.toHaveBeenCalled();
+		expect(resolve).not.toHaveBeenCalled();
+	});
+
+	it('counts the pages the Worker renders on their own binding, and answers with no body', async () => {
+		const api = limiter(true);
+		const page = limiter(false);
+		bind({ API_LIMITER: api, PAGE_LIMITER: page });
+		const { resolve, args } = from('/no-such-page', null, CLIENT);
+
+		const response = await handle(args);
+
+		expect(response.status).toBe(429);
+		expect(await response.text()).toBe('');
+		expect(response.headers.get('retry-after')).toBe('10');
+		expect(page.limit).toHaveBeenCalledOnce();
+		expect(api.limit).not.toHaveBeenCalled();
+		expect(resolve).not.toHaveBeenCalled();
+	});
+
+	it('lets a request through while the binding allows it', async () => {
+		const api = limiter(true);
+		bind({ API_LIMITER: api });
+		const { resolve, args } = from('/api/fx', '/api/fx', CLIENT);
+
+		expect((await handle(args)).status).toBe(200);
+		expect(api.limit).toHaveBeenCalledOnce();
+		expect(resolve).toHaveBeenCalledOnce();
+	});
+
+	it("lets the operator's bearer through a refusal, as the gate does", async () => {
+		// The S3 load harness (doc 22) sends a burst from one address on purpose.
+		bind({ API_LIMITER: limiter(false), DEV_DASH_TOKEN: TOKEN });
+		const operator = from('/api/fx', '/api/fx', { ...CLIENT, authorization: `Bearer ${TOKEN}` });
+		const stranger = from('/api/fx', '/api/fx', { ...CLIENT, authorization: 'Bearer guess' });
+
+		expect((await handle(operator.args)).status).toBe(200);
+		expect((await handle(stranger.args)).status).toBe(429);
+	});
+
+	it('asks nothing for a request with no address — local dev, a prerender', async () => {
+		const api = limiter(false);
+		bind({ API_LIMITER: api });
+		const { resolve, args } = from('/api/fx', '/api/fx', {});
+
+		expect((await handle(args)).status).toBe(200);
+		expect(api.limit).not.toHaveBeenCalled();
+		expect(resolve).toHaveBeenCalledOnce();
+	});
+});
+
 describe('handleError', () => {
 	type Caught = Parameters<typeof handleError>[0];
 

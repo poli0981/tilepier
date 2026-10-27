@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CACHE_POLICY, RATE_LIMIT, cacheKey } from '#lib/shared-constants.js';
+import { CACHE_POLICY, cacheKey } from '#lib/shared-constants.js';
 import { ER_API_BODY, FX_PAYLOAD } from '#lib/core/__fixtures__/fx.js';
 import { GET } from './+server';
 import { bind, settle } from '../_lib/__fixtures__/workers';
@@ -126,19 +126,6 @@ describe('guards', () => {
 		const { response } = await call({ kv: null });
 		expect(response.status).toBe(503);
 		expect(await response.json()).toMatchObject({ ok: false, error: { code: 'UPSTREAM_DOWN' } });
-	});
-
-	it('refuses past the rate limit', async () => {
-		// The limiter buckets by address and deliberately allows a request that
-		// carries none (doc 11 §7), so a test that wants to trip it has to look
-		// like a caller rather than like nobody.
-		const kv = fakeKv();
-		const from = { headers: { 'cf-connecting-ip': '203.0.113.9' } };
-		for (let i = 0; i < RATE_LIMIT.maxPerBucket; i++) await call({ kv, ...from });
-
-		const { response } = await call({ kv, ...from });
-		expect(response.status).toBe(429);
-		expect(await response.json()).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
 	});
 });
 

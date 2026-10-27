@@ -3,7 +3,6 @@ import { env, waitUntil } from 'cloudflare:workers';
 import { cacheKey } from '#lib/shared-constants.js';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../_lib/kv-cache';
 import { breakerVerdict, readBreaker, recordFailure, recordSuccess } from '../_lib/breaker';
-import { checkRateLimit } from '../_lib/ratelimit';
 import { utcDateKey } from '../_lib/budget';
 import { fetchUpstream, UpstreamError } from '../_lib/upstream';
 import { fail, isCrossSite, ok } from '../_lib/respond';
@@ -53,9 +52,6 @@ export const GET: RequestHandler = async ({ request }) => {
 
 	// No query to validate — doc 11 §3 gives this route no parameters, which is
 	// the one step of the reference pipeline it legitimately has nothing to do.
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
-
 	const key = cacheKey.fx();
 	const cached = await readCache<TpFxPayload>(kv, 'fx', key);
 

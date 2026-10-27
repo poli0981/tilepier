@@ -10,8 +10,11 @@
    - Cloudflare's own invocation logs are on (`wrangler.jsonc`
      `observability`) and keep request metadata for 7 days. doc 16 §3 now
      says so, instead of "no persisted logs".
-2. Every endpoint: validate → rate-gate → KV read → upstream (maybe) →
-   normalize → KV write → respond. One shared pipeline in `routes/api/_lib`.
+2. Every endpoint: validate → KV read → upstream (maybe) → normalize → KV
+   write → respond. One shared pipeline in `routes/api/_lib`. The rate limit
+   and the gate run before any of it, once, in `hooks.server.ts` (§7,
+   doc 15 §3); until 2026-10-27 the limit was each route's own step after
+   validation.
 3. The Worker is the **only** holder of API keys.
 4. Responses are our normalized shapes with a stable envelope — upstream
    quirks die at the edge.
@@ -228,8 +231,8 @@ It also means `wrangler kv key list` shows what an entry *is*.
 
 KV consistency note: KV is eventually consistent (~60 s cross-PoP). For
 cache purposes that's fine — worst case a few PoPs refetch. Never use KV
-for anything requiring strict counters (see §6 for how the soft limiter
-copes).
+for anything requiring strict counters (see §6 for how the breaker copes;
+the rate limiter left KV for its own binding on 2026-10-27, §7).
 
 ## 5. Stock quota model (Twelve Data 800/day)
 
@@ -284,21 +287,85 @@ back-off, not perfection.
 ## 7. Rate limiting (defense in depth)
 
 1. **Cloudflare zone rule (free plan, 1 rule):** path `/api/*`,
-   60 req / 1 min per IP → block 60 s. Coarse hard wall.
-2. **In-Worker soft limiter:** KV counter `rl:<ipHash>:<bucket10s>`
-   (ipHash = SHA-256(ip + daily rotating salt), TTL 60 s) — over 30/10 s →
-   429 + `retry-after`. Eventual consistency makes it approximate; that's
-   fine (the zone rule is the wall). No raw IP is ever stored.
+   60 req / 10 s per IP → block 10 s. Coarse hard wall, before the Worker
+   runs. Set by hand in the dashboard; `docs/self-hosting.md` §4 has the steps.
 
-   **It writes to KV on every request**, which is the highest-volume write in
-   the app by a wide margin — higher than the cache, because a cache write
-   happens only on a MISS. On Workers **Free** that alone would exceed the
-   1 000 writes/day allowance at roughly a thousand API requests; the account
-   is on **Paid** (recorded in `wrangler.jsonc`, confirmed 2026-08-30), so it
-   is a metered cost rather than a ceiling. Worth revisiting if the write
-   volume ever shows up on a bill: a counter that only writes when a bucket is
-   near its limit would cost a fraction of this and lose little, since the
-   zone rule is the actual wall.
+   **Rewritten 2026-10-27.** This line said 60 req / 1 min with a 60 s block,
+   which a Free zone cannot express: its one rule may match on the path and
+   the verified-bot flag only, counts per IP over 10 s, and blocks for 10 s.
+
+   **`/api/*`, not the whole site, and measured that way.** A cold first visit
+   sent 406 requests to the origin within about a second (2026-10-27, local
+   build): 350 hashed chunks under `/_app/immutable/`, and 55 others, most of
+   them the service worker precaching the shell (doc 17 §2). All of it is
+   served by the assets layer without invoking the Worker — "requests to static
+   assets are free and unlimited" on Workers — and sits behind Cloudflare's
+   automatic DDoS protection. A per-IP rule tight enough to stop anything there
+   would block first visits; one loose enough not to (≥ 500 / 10 s) would stop
+   nothing. Excluding the hashed chunks still leaves 56 in one window, and the
+   shell is fetched again after every deploy. On `/api/*` the arithmetic is
+   clean: zone 60 > Worker 30 > rss's share 15, so a reader meets the Worker's
+   friendly 429 long before the wall.
+
+   **Its 429 is Cloudflare's, not our envelope.** Measured on tilepier.win
+   once the owner created the rule (2026-10-27): 100 requests in 0.7 s from
+   one client, 63 answered and 37 blocked. The block carries `Retry-After`
+   (10, then counting down) and is problem-details JSON (`type`, `title`:
+   "Error 1015: You are being rate limited") to a client that accepts JSON, as
+   the app does, an HTML page to a browser, and `error code: 1015` as text to
+   curl. `core/api.ts` reads any 429 without our envelope as `RATE_LIMITED`,
+   with the header's delay. Until 2026-10-27 all three read as `MALFORMED`,
+   so a zone block never paused the rss queue or raised the notice, and the
+   client test named for the zone rule served an envelope.
+2. **Worker limiter (Cloudflare's Rate Limiting binding):** `API_LIMITER` on
+   `/api/*`, `PAGE_LIMITER` on the pages the Worker renders (a 404, a spike
+   page) — over 30/10 s per client → 429 + `retry-after: 10`, the envelope's
+   `RATE_LIMITED` on `/api/*` and no body on a page. Declared in
+   `wrangler.jsonc`, enforced from `hooks.server.ts` before anything else the
+   Worker does, an edge-cache hit and a gate refusal included, so a route nobody
+   remembered to limit is limited anyway. `shared-constants.test.ts` holds both
+   bindings to `RATE_LIMIT`.
+   - **The client** is `cf-connecting-ip`, which the edge overwrites, never
+     `x-forwarded-for`, which the client writes. An IPv6 address counts as its
+     /64, since one subscriber can rotate through the whole /64. The binding
+     sees a SHA-256 of that, never the address (doc 15 §7).
+   - **Not counted:** a request with no address, and a loopback address —
+     that is `wrangler dev`, which stamps one on every request, and the edge
+     never sends one. `e2e/rate-limit.e2e.ts` sends a TEST-NET address instead,
+     which wrangler keeps.
+   - **The operator's bearer passes a refusal** (`DEV_DASH_TOKEN`), as it passes
+     the gate, so the S3 harness (doc 22) can burst. The zone rule still applies
+     to it: run S3 against a version preview URL, which is outside the zone.
+   - **Per Cloudflare location, approximate, and fails open**, as the platform
+     states and as a soft layer must. The binding says yes or no and nothing
+     about its window, so a refusal names one whole period.
+   - **Measured on Cloudflare**, on #70's branch preview (2026-10-27, one
+     client, `/api/verify`, which is outside the gate):
+
+     | Burst | Allowed | Then |
+     | --- | --- | --- |
+     | 100 requests in 1 s over keep-alive | 31 | 69 × 429 |
+     | 100 in 0.7 s, each on a fresh connection, 40 at a time | 41 | 59 × 429 |
+     | 60 one after another, in 7.8 s | 31 | 29 × 429 |
+     | 60 rendered 404s in 1.5 s | 31 | 29 × 429, no body |
+
+     The first burst after the version went up was the exception: 80 requests
+     over about 8 s, on fresh connections, and none refused. Each machine
+     counts from its own cache and the location catches up in the background,
+     so a client that spreads itself gets more than 30. That is why the zone
+     rule, not this, is the wall.
+   - **Keyed on the address despite Cloudflare's advice against it**, because
+     there is no account to key on, and a pass is minted by anyone who solves
+     the check. A reader's deck stays far below 30 in 10 s; the rss pacer, the
+     one pattern that could reach it, takes half.
+
+   **Until 2026-10-27 this was a KV counter** `rl:<ipHash>:<bucket10s>`
+   (ipHash = SHA-256(ip + daily rotating salt), TTL 60 s), called by each route
+   after its validation. It wrote KV on every `/api/*` request, the app's
+   highest-volume write and a metered cost on Paid, and KV's one write per
+   second per key meant a burst under-counted exactly when counting mattered —
+   and once took 5.5 % of a burst down with it (doc 22 §S3). The binding stores
+   nothing of TilePier's and costs no KV at all.
 3. **Client behavior:** on 429 respect `retry-after`, exponential backoff
    (max 5 min), single global toast not per-widget spam (doc 17 §5).
 
@@ -313,15 +380,15 @@ back-off, not perfection.
    **rss paces itself under both windows, since 2026-09-25.** One GET per feed
    (§3) on a `multiInstance` widget is the only request pattern in the app that
    can reach the zone rule on its own: three full tiles are thirty requests at
-   mount, and past sixty a minute the zone blocks *every* `/api/*` request for
-   a minute, the weather and the prices with the feeds. So each feed request
-   waits in `widgets/rss/pacing.ts`: two in flight, 500 ms between starts, and
-   at most half of each window (15 per 10 s, 30 per minute), leaving the other
-   half to the rest of the deck. A 429 pauses the whole queue for as long as it
-   names, or one bucket. The zone rule lives in the dashboard, so its numbers
-   are mirrored as `ZONE_RATE_LIMIT`, held to this section's wording by
-   `shared-constants.test.ts`. Per page, not per browser: two tabs pace
-   separately, which the half-share leaves room for.
+   mount, and past sixty in ten seconds the zone blocks *every* `/api/*`
+   request for ten seconds, the weather and the prices with the feeds. So each
+   feed request waits in `widgets/rss/pacing.ts`: two in flight, 500 ms between
+   starts, and at most half of each window (15 per 10 s of the Worker's, 30 per
+   10 s of the zone's), leaving the other half to the rest of the deck. A 429
+   pauses the whole queue for as long as it names, or one bucket. The zone rule
+   lives in the dashboard, so its numbers are mirrored as `ZONE_RATE_LIMIT`,
+   held to this section's wording by `shared-constants.test.ts`. Per page, not
+   per browser: two tabs pace separately, which the half-share leaves room for.
 
 ## 8. Validation & limits
 

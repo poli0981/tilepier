@@ -108,6 +108,7 @@ async function send<T>(url: string, signal: AbortSignal | undefined): Promise<Se
 		const body = JSON.parse(text) as TpApiResponse<T>;
 		return { response, text, body, pass: verification[PASS_HEADER] };
 	} catch {
+		if (response.status === 429) throw zoneRateLimited(response);
 		throw new TpApiError('MALFORMED', `not JSON (HTTP ${String(response.status)})`, {
 			snippet: text.slice(0, SNIPPET_MAX)
 		});
@@ -133,6 +134,23 @@ function headerSeconds(value: string | null): number | undefined {
 }
 
 /**
+ * A 429 without an envelope of ours is the zone rule (doc 11 §7): Cloudflare
+ * blocks before the Worker runs and answers on its own — problem-details JSON
+ * to this client, which asks for JSON, an HTML page to a browser, `error code:
+ * 1015` as text to curl, each with `Retry-After`. It is a rate limit all the
+ * same. Until
+ * 2026-10-27 it read as `MALFORMED`, so a zone block never paused the rss queue
+ * or raised the one global notice (doc 17 §5), and the test that named the zone
+ * rule served an envelope.
+ */
+function zoneRateLimited(response: Response): TpApiError {
+	const retryAfterS = headerSeconds(response.headers.get('retry-after'));
+	return new TpApiError('RATE_LIMITED', 'RATE_LIMITED (HTTP 429, no envelope)', {
+		...(retryAfterS === undefined ? {} : { retryAfterS })
+	});
+}
+
+/**
  * `GET` an `/api/*` endpoint and unwrap the envelope, or throw a `TpApiError`.
  *
  * Every failure mode of doc 17 §4 arrives here as one of seven codes, so a
@@ -155,13 +173,14 @@ export async function fetchEnvelope<T>(url: string, signal?: AbortSignal): Promi
 	const { response, text, body } = sent;
 	if (body.ok === true) return { data: body.data, meta: body.meta };
 
-	// An `ok: false` body carries the code; the header is the fallback for a
-	// 429 that reached us from the zone rule rather than from the Worker, which
-	// has no envelope at all (doc 11 §7).
+	// An `ok: false` body carries the code; the header is the fallback when the
+	// envelope names no delay.
 	const retryAfterS = body.error?.retryAfterS ?? headerSeconds(response.headers.get('retry-after'));
 	const code = body.error?.code;
 
 	if (code === undefined) {
+		// JSON, and not ours: the zone rule's problem details.
+		if (response.status === 429) throw zoneRateLimited(response);
 		throw new TpApiError('MALFORMED', 'envelope had no error code', {
 			snippet: text.slice(0, SNIPPET_MAX)
 		});

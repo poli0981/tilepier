@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-	BREAKER,
-	CACHE_POLICY,
-	KV_PREFIX,
-	RATE_LIMIT,
-	STOCK_BUDGET
-} from '#lib/shared-constants.js';
+import { BREAKER, CACHE_POLICY, KV_PREFIX, STOCK_BUDGET } from '#lib/shared-constants.js';
 import {
 	breakerVerdict,
 	msUntilUtcMidnight,
@@ -24,7 +18,6 @@ import {
 	utcDateKey
 } from './budget';
 import { readCache, ttlSeconds, writeCache } from './kv-cache';
-import { checkRateLimit } from './ratelimit';
 import { parseCoords } from './geohash';
 
 /**
@@ -333,50 +326,6 @@ describe('Twelve Data budget tiers (doc 11 §5)', () => {
 		expect(parseCreditsLeft(new Headers({ 'api-credits-left': '742' }))).toBe(742);
 		expect(parseCreditsLeft(new Headers())).toBeUndefined();
 		expect(parseCreditsLeft(new Headers({ 'api-credits-left': 'lots' }))).toBeUndefined();
-	});
-});
-
-describe('soft rate limiter (doc 11 §7, doc 15 §7)', () => {
-	let kv: ReturnType<typeof fakeKv>;
-	beforeEach(() => (kv = fakeKv()));
-
-	const req = (ip: string) =>
-		new Request('https://tilepier.win/api/weather', {
-			headers: { 'cf-connecting-ip': ip }
-		});
-
-	it('allows up to the bucket limit and then refuses', async () => {
-		const now = Date.parse('2026-08-10T12:00:00Z');
-		for (let i = 0; i < RATE_LIMIT.maxPerBucket; i++) {
-			expect((await checkRateLimit(kv, req('203.0.113.9'), now)).allowed, `request ${i}`).toBe(
-				true
-			);
-		}
-		const blocked = await checkRateLimit(kv, req('203.0.113.9'), now);
-		expect(blocked.allowed).toBe(false);
-		expect(blocked.retryAfterS).toBeGreaterThan(0);
-	});
-
-	it('counts per address, not globally', async () => {
-		const now = Date.parse('2026-08-10T12:00:00Z');
-		for (let i = 0; i < RATE_LIMIT.maxPerBucket; i++) {
-			await checkRateLimit(kv, req('203.0.113.9'), now);
-		}
-		expect((await checkRateLimit(kv, req('198.51.100.4'), now)).allowed).toBe(true);
-	});
-
-	it('never stores a raw IP address', async () => {
-		const now = Date.parse('2026-08-10T12:00:00Z');
-		await checkRateLimit(kv, req('203.0.113.9'), now);
-
-		const keys = [...kv.store.keys()].join('|');
-		expect(keys).not.toContain('203.0.113.9');
-		expect(keys).toMatch(/kv:rl:[0-9a-f]{20}:/);
-	});
-
-	it('allows requests with no address rather than inventing one', async () => {
-		const anonymous = new Request('https://tilepier.win/api/weather');
-		expect((await checkRateLimit(kv, anonymous)).allowed).toBe(true);
 	});
 });
 

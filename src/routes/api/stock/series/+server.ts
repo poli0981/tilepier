@@ -20,7 +20,6 @@ import {
 import { FINNHUB, finnhubHeaders, finnhubQuoteUrl } from '../../_lib/finnhub';
 import { readCache, ttlSeconds, writeCache, type CachedValue } from '../../_lib/kv-cache';
 import { normalizeStockQuote, normalizeStockSeries } from '../../_lib/normalize';
-import { checkRateLimit } from '../../_lib/ratelimit';
 import { fail, isCrossSite, ok } from '../../_lib/respond';
 import { parseStockSeriesQuery } from '../../_lib/stock-query';
 import {
@@ -76,9 +75,6 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 	const query = parseStockSeriesQuery(url);
 	if (!query) return fail('BAD_REQUEST');
-
-	const limit = await checkRateLimit(kv, request);
-	if (!limit.allowed) return fail('RATE_LIMITED', limit.retryAfterS);
 
 	const family = stockSeriesFamily(query.interval);
 	const key = cacheKey.stockSeries(query.symbol, query.interval);

@@ -21,7 +21,7 @@
 │  · Turnstile pass gate (hooks)          │  CF Turnstile (after the
 │  · normalize + hide API keys            │   legal gate; doc 15 §3)
 │  · KV cache (TILEPIER_CACHE)            │
-│  · soft rate limit + circuit breaker    │
+│  · rate limit + circuit breaker         │
 └───────┬─────────────────────────────────┘
         ▼
 External APIs: Open-Meteo · open.er-api.com · Binance.US · Finnhub
@@ -159,7 +159,8 @@ and `$lib` is the `#lib/*` subpath import that `package.json` declares.
 
 | Name | Kind | Purpose |
 |------|------|---------|
-| `TILEPIER_CACHE` | KV namespace | Edge cache + fx snapshots + soft rate-limit counters |
+| `TILEPIER_CACHE` | KV namespace | Edge cache data + fx snapshots + breaker and budget state |
+| `API_LIMITER`, `PAGE_LIMITER` | Rate Limiting | The Worker's rate limiter, 30 per 10 s per client (doc 11 §7) |
 | `FINNHUB_KEY` | secret | Stock quotes |
 | `TWELVEDATA_KEY` | secret | Stock series |
 | `TP_BUILD` | build-time define | version + short SHA injected via Vite `define` |
