@@ -334,6 +334,21 @@ back-off, not perfection.
    - **Per Cloudflare location, approximate, and fails open**, as the platform
      states and as a soft layer must. The binding says yes or no and nothing
      about its window, so a refusal names one whole period.
+   - **Measured on Cloudflare**, on #70's branch preview (2026-10-27, one
+     client, `/api/verify`, which is outside the gate):
+
+     | Burst | Allowed | Then |
+     | --- | --- | --- |
+     | 100 requests in 1 s over keep-alive | 31 | 69 × 429 |
+     | 100 in 0.7 s, each on a fresh connection, 40 at a time | 41 | 59 × 429 |
+     | 60 one after another, in 7.8 s | 31 | 29 × 429 |
+     | 60 rendered 404s in 1.5 s | 31 | 29 × 429, no body |
+
+     The first burst after the version went up was the exception: 80 requests
+     over about 8 s, on fresh connections, and none refused. Each machine
+     counts from its own cache and the location catches up in the background,
+     so a client that spreads itself gets more than 30. That is why the zone
+     rule, not this, is the wall.
    - **Keyed on the address despite Cloudflare's advice against it**, because
      there is no account to key on, and a pass is minted by anyone who solves
      the check. A reader's deck stays far below 30 in 10 s; the rss pacer, the
