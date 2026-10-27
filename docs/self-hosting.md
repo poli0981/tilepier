@@ -101,10 +101,11 @@ rebind a hostname. `workers_dev` is off, so the app has exactly one origin.
   | With the same characteristics | **IP** |
   | When rate exceeds | **60** requests per **10 seconds** |
   | Then take action | **Block** |
-  | Response | Default (Cloudflare's 429 page), or, if your plan offers a custom response: type `application/json`, status `429`, body `{"ok":false,"error":{"code":"RATE_LIMITED","retryAfterS":10}}` |
+  | Response | Default |
   | For duration | **10 seconds** |
 
-  Deploy it. The app reads either response as "rate limited" and backs off.
+  Deploy it. Cloudflare's own 429 carries `Retry-After`, and the app reads it as
+  "rate limited" and waits that long.
   `ZONE_RATE_LIMIT` in `src/lib/shared-constants.ts` mirrors these numbers for
   the feed reader, which paces itself to half of them; change both together.
 

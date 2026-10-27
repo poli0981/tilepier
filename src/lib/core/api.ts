@@ -135,8 +135,10 @@ function headerSeconds(value: string | null): number | undefined {
 
 /**
  * A 429 without an envelope of ours is the zone rule (doc 11 §7): Cloudflare
- * blocks before the Worker runs and answers with its own page — HTML unless
- * the rule was given a custom response. It is a rate limit all the same. Until
+ * blocks before the Worker runs and answers on its own — problem-details JSON
+ * to this client, which asks for JSON, an HTML page to a browser, `error code:
+ * 1015` as text to curl, each with `Retry-After`. It is a rate limit all the
+ * same. Until
  * 2026-10-27 it read as `MALFORMED`, so a zone block never paused the rss queue
  * or raised the one global notice (doc 17 §5), and the test that named the zone
  * rule served an envelope.
@@ -177,7 +179,7 @@ export async function fetchEnvelope<T>(url: string, signal?: AbortSignal): Promi
 	const code = body.error?.code;
 
 	if (code === undefined) {
-		// JSON, and not ours: a zone rule's custom response, say.
+		// JSON, and not ours: the zone rule's problem details.
 		if (response.status === 429) throw zoneRateLimited(response);
 		throw new TpApiError('MALFORMED', 'envelope had no error code', {
 			snippet: text.slice(0, SNIPPET_MAX)

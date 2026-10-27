@@ -105,17 +105,22 @@ describe('envelope errors (doc 17 §4)', () => {
 		await expect(fetchEnvelope(URL_WEATHER)).rejects.toMatchObject({ retryAfterS: 17 });
 	});
 
-	it("reads the zone rule's own 429 page as RATE_LIMITED, not MALFORMED", async () => {
-		// The zone rule (doc 11 §7) blocks before the Worker runs, so its 429 is
-		// Cloudflare's HTML page with no body of ours at all. This test said so
-		// until 2026-10-27 while serving an envelope, and the real page read as
-		// MALFORMED: no rss pause, no global notice.
+	it("reads the zone rule's own 429 as RATE_LIMITED, not MALFORMED", async () => {
+		// The zone rule (doc 11 §7) blocks before the Worker runs, so its 429 has
+		// no body of ours. This test said so until 2026-10-27 while serving an
+		// envelope, and the real answer read as MALFORMED: no rss pause, no
+		// global notice. Asked with `accept: application/json`, as this client
+		// asks, Cloudflare answers in problem-details JSON — the shape below is
+		// what tilepier.win's rule sent on 2026-10-27, with `Retry-After: 10`.
 		serve(
 			http.get(`${BASE}/api/weather`, () =>
-				HttpResponse.text('<!doctype html><title>Error 1015</title>You are being rate limited', {
-					status: 429,
-					headers: { 'content-type': 'text/html', 'retry-after': '10' }
-				})
+				HttpResponse.json(
+					{
+						type: 'https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-1xxx-errors/error-1015/',
+						title: 'Error 1015: You are being rate limited'
+					},
+					{ status: 429, headers: { 'retry-after': '10' } }
+				)
 			)
 		);
 
@@ -125,10 +130,15 @@ describe('envelope errors (doc 17 §4)', () => {
 		});
 	});
 
-	it('reads a 429 with JSON that is not ours — a custom zone response — the same way', async () => {
+	it("reads Cloudflare's HTML 429 page the same way", async () => {
+		// What a browser navigation gets, and what an Accept that is not JSON
+		// would.
 		serve(
 			http.get(`${BASE}/api/weather`, () =>
-				HttpResponse.json({ error: 'slow down' }, { status: 429 })
+				HttpResponse.text('<!doctype html><title>Error 1015</title>You are being rate limited', {
+					status: 429,
+					headers: { 'content-type': 'text/html' }
+				})
 			)
 		);
 

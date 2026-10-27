@@ -307,11 +307,16 @@ back-off, not perfection.
    clean: zone 60 > Worker 30 > rss's share 15, so a reader meets the Worker's
    friendly 429 long before the wall.
 
-   **Its 429 is Cloudflare's page, not our envelope.** `core/api.ts` reads any
-   429 without an envelope as `RATE_LIMITED`, with the `retry-after` header if
-   there is one. Until 2026-10-27 it read as `MALFORMED`, so a zone block never
-   paused the rss queue or raised the notice, and the client test named for
-   the zone rule served an envelope.
+   **Its 429 is Cloudflare's, not our envelope.** Measured on tilepier.win
+   once the owner created the rule (2026-10-27): 100 requests in 0.7 s from
+   one client, 63 answered and 37 blocked. The block carries `Retry-After`
+   (10, then counting down) and is problem-details JSON (`type`, `title`:
+   "Error 1015: You are being rate limited") to a client that accepts JSON, as
+   the app does, an HTML page to a browser, and `error code: 1015` as text to
+   curl. `core/api.ts` reads any 429 without our envelope as `RATE_LIMITED`,
+   with the header's delay. Until 2026-10-27 all three read as `MALFORMED`,
+   so a zone block never paused the rss queue or raised the notice, and the
+   client test named for the zone rule served an envelope.
 2. **Worker limiter (Cloudflare's Rate Limiting binding):** `API_LIMITER` on
    `/api/*`, `PAGE_LIMITER` on the pages the Worker renders (a 404, a spike
    page) — over 30/10 s per client → 429 + `retry-after: 10`, the envelope's
