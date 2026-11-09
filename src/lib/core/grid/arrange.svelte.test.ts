@@ -164,3 +164,50 @@ describe('the state it reports', () => {
 		expect(state).toMatchObject({ x: 2, y: 0, w: 3, h: 2, column: 6 });
 	});
 });
+
+describe('the edges of every step', () => {
+	it('offers nothing to a tile that fills the row, is one cell wide or one row tall', () => {
+		const full = engineOf([{ id: 'a', x: 0, y: 0, w: 12, h: 1 }]);
+		const fullCan = arrangeState(full, node(full, 'a')).can;
+		// Neither edge has room: wider has nowhere to grow, sideways nowhere to go.
+		expect(fullCan.wider).toBe(false);
+		expect(fullCan.left).toBe(false);
+		expect(fullCan.right).toBe(false);
+		expect(fullCan.shorter).toBe(false);
+
+		const thin = engineOf([{ id: 'a', x: 4, y: 0, w: 1, h: 2 }]);
+		expect(arrangeState(thin, node(thin, 'a')).can.narrower).toBe(false);
+	});
+
+	it('answers a tile the engine does not hold with its place and no step at all', () => {
+		// A wrapper TpGrid has already let go of: the dialog must show nothing it
+		// could press, rather than plan against a tile that is not on the grid.
+		const engine = engineOf([{ id: 'a', x: 0, y: 0, w: 3, h: 2 }]);
+		const stranger: GridStackNode = {};
+
+		const state = arrangeState(engine, stranger);
+
+		expect(state).toMatchObject({ x: 0, y: 0, w: 1, h: 1, column: 12 });
+		expect(Object.values(state.can).some(Boolean)).toBe(false);
+	});
+});
+
+describe('choosing the neighbour', () => {
+	it('swaps with the nearest tile, not the furthest, in a column of three', () => {
+		const engine = engineOf([
+			{ id: 'a', x: 0, y: 0, w: 3, h: 2 },
+			{ id: 'b', x: 0, y: 2, w: 3, h: 2 },
+			{ id: 'c', x: 0, y: 4, w: 3, h: 2 }
+		]);
+
+		expect(apply(engine, 'b', 'down')).toBe(true);
+		expect([at(engine, 'a').y, at(engine, 'c').y, at(engine, 'b').y]).toEqual([0, 2, 4]);
+
+		expect(apply(engine, 'b', 'up')).toBe(true);
+		expect([at(engine, 'a').y, at(engine, 'b').y, at(engine, 'c').y]).toEqual([0, 2, 4]);
+
+		// From the top, with two below: under the nearer one only.
+		expect(apply(engine, 'a', 'down')).toBe(true);
+		expect([at(engine, 'b').y, at(engine, 'a').y, at(engine, 'c').y]).toEqual([0, 2, 4]);
+	});
+});

@@ -115,3 +115,15 @@ describe('the Arrange dialog (doc 13 §8)', () => {
 		expect(ui.arranging).toBeNull();
 	});
 });
+
+describe('closing the Arrange dialog', () => {
+	it('closes it and leaves edit mode on', () => {
+		ui.toggleEdit();
+		ui.startArranging('wgt_a');
+
+		ui.stopArranging();
+
+		expect(ui.arranging).toBeNull();
+		expect(ui.editMode).toBe(true);
+	});
+});

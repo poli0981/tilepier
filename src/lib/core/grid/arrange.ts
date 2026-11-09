@@ -45,24 +45,25 @@ export interface TpArrangeState {
 	can: Record<TpArrangeMove, boolean>;
 }
 
-function overlapsColumns(a: GridStackPosition, b: GridStackPosition): boolean {
-	const ax = a.x ?? 0;
-	const bx = b.x ?? 0;
-	return ax < bx + (b.w ?? 1) && bx < ax + (a.w ?? 1);
+type Box = Required<GridStackPosition>;
+
+/** A node's box with gridstack's own defaults filled in, once, so the rules
+ *  below read as geometry rather than as a row of `?? 0`. */
+function boxOf(node: GridStackNode): Box {
+	return { x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 };
+}
+
+function samePos(a: Box, b: Box): boolean {
+	return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+}
+
+function overlapsColumns(a: Box, b: Box): boolean {
+	return a.x < b.x + b.w && b.x < a.x + a.w;
 }
 
 /** The position a step asks for, before gridstack resolves collisions. */
-function request(
-	node: GridStackNode,
-	others: readonly GridStackNode[],
-	column: number,
-	move: TpArrangeMove
-): GridStackPosition | null {
-	const x = node.x ?? 0;
-	const y = node.y ?? 0;
-	const w = node.w ?? 1;
-	const h = node.h ?? 1;
-
+function request(at: Box, others: readonly Box[], column: number, move: TpArrangeMove): Box | null {
+	const { x, y, w, h } = at;
 	switch (move) {
 		case 'left':
 			return x > 0 ? { x: x - 1, y, w, h } : null;
@@ -71,16 +72,16 @@ function request(
 		case 'up': {
 			// The nearest tile above that shares a column: take its row.
 			const above = others
-				.filter((other) => overlapsColumns(node, other) && (other.y ?? 0) + (other.h ?? 1) <= y)
-				.sort((a, b) => (b.y ?? 0) + (b.h ?? 1) - ((a.y ?? 0) + (a.h ?? 1)))[0];
-			return above === undefined ? null : { x, y: above.y ?? 0, w, h };
+				.filter((other) => overlapsColumns(at, other) && other.y + other.h <= y)
+				.sort((a, b) => b.y + b.h - (a.y + a.h))[0];
+			return above === undefined ? null : { x, y: above.y, w, h };
 		}
 		case 'down': {
 			// The nearest tile below that shares a column: go under it.
 			const below = others
-				.filter((other) => overlapsColumns(node, other) && (other.y ?? 0) >= y + h)
-				.sort((a, b) => (a.y ?? 0) - (b.y ?? 0))[0];
-			return below === undefined ? null : { x, y: (below.y ?? 0) + (below.h ?? 1), w, h };
+				.filter((other) => overlapsColumns(at, other) && other.y >= y + h)
+				.sort((a, b) => a.y - b.y)[0];
+			return below === undefined ? null : { x, y: below.y + below.h, w, h };
 		}
 		case 'wider':
 			// Grows to the right, or to the left against the right edge.
@@ -95,15 +96,6 @@ function request(
 	}
 }
 
-/** A node's box with gridstack's own defaults filled in. */
-function boxOf(node: GridStackNode): Required<GridStackPosition> {
-	return { x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 1, h: node.h ?? 1 };
-}
-
-function samePos(a: Required<GridStackPosition>, b: Required<GridStackPosition>): boolean {
-	return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
-}
-
 /**
  * The position to hand `grid.update()` for `move`, or null when the step would
  * leave every tile where it is. Runs the move on a clone, exactly as
@@ -113,16 +105,15 @@ export function planArrange(
 	engine: GridStackEngine,
 	node: GridStackNode,
 	move: TpArrangeMove
-): Required<GridStackPosition> | null {
+): Box | null {
 	const index = engine.nodes.indexOf(node);
-	if (index === -1) return null;
-	const others = engine.nodes.filter((other) => other !== node);
-	const asked = request(node, others, engine.column, move);
+	const others = engine.nodes.filter((other) => other !== node).map(boxOf);
+	const asked = index === -1 ? null : request(boxOf(node), others, engine.column, move);
 	if (asked === null) return null;
 
 	const twins = engine.nodes.map((other) => ({ ...other }));
-	const copy = twins[index];
-	if (copy === undefined) return null;
+	// `index` is a real position here, so the twin exists.
+	const copy = twins[index] as GridStackNode;
 	const clone = new GridStackEngine({ column: engine.column, mode: engine.mode, nodes: twins });
 
 	// By identity, not position in the list: the engine sorts its node array in
@@ -147,12 +138,5 @@ export function arrangeState(engine: GridStackEngine, node: GridStackNode): TpAr
 	const can = Object.fromEntries(
 		ARRANGE_MOVES.map((move) => [move, planArrange(engine, node, move) !== null])
 	) as Record<TpArrangeMove, boolean>;
-	return {
-		x: node.x ?? 0,
-		y: node.y ?? 0,
-		w: node.w ?? 1,
-		h: node.h ?? 1,
-		column: engine.column,
-		can
-	};
+	return { ...boxOf(node), column: engine.column, can };
 }
