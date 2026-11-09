@@ -99,7 +99,7 @@ after it reshaped the entire Week 1 commit plan.)
 | Detail chunks (excluding the shared echarts chunk) | ≤ 350 KB each — every detail, not only the three that chart |
 | Shared echarts core chunk (lazy, counted once) | ≤ 330 KB |
 | maplibre (vendored modules: main, shared, worker — on first map mount) | ≤ 300 KB |
-| music tag worker (music-metadata, one file — scans only) | ≤ 80 KB |
+| music tag worker (music-metadata, one file — scans only) | ≤ 88 KB |
 | Fonts total (both families, subsets) | ≤ 220 KB |
 
 > Corrected 2026-08-10, two ways. `timer` was listed as an ECharts detail
@@ -155,6 +155,14 @@ The major brought file-type 22 and grew the file by 11.6 KB; it passes, with
 2.3 KB to spare. The next growth meets the budget, and the answer then is the
 `'es'` split above, or dropping parsers for formats the widget never accepts,
 before it is a larger number.
+**Re-measured 2026-11-09 with music-metadata 12.3.2: 82.6 KB gz, over 80.**
+The minor added RIFF INFO copyright, Discogs album artists and Vorbis date
+precedence (+4.9 KB). The owner weighed the two answers above against the
+number and **raised the limit to 88 KB** instead: the worker loads only for a
+scan, runs off the main thread and is cached once, so 5 KB costs a reader
+nothing they would notice, while either rework reopens spike S7's measurements.
+The 88 leaves 5.4 KB, about one more minor like this one; the next breach
+takes one of the two answers above rather than another raise.
 
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit
