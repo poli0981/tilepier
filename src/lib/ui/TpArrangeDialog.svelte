@@ -188,13 +188,19 @@
 </div>
 
 <style>
-	/* Above the drawer (60/61), below the shortcuts sheet (70/71), which can be
-	   opened over it with `?`. */
+	/* Above everything that shares the foot of the screen: the toasts (200) and
+	   the bot check (200, its open panel 210). They dock where this does, and
+	   at 66 they painted over its move, size and Done buttons — a focused
+	   control hidden by something the reader did not open (WCAG 2.4.11; found
+	   on production in 1.3.0's release check). It is modal, so for as long as it
+	   is open it is the topmost layer; the notices are there again when it
+	   closes. The shortcuts sheet (`?`) is the one layer above it (230/231),
+	   as `ui.escape()` orders them. */
 	.tp-arrange {
 		position: fixed;
 		bottom: 1rem;
 		left: 50%;
-		z-index: 66;
+		z-index: 220;
 		transform: translateX(-50%);
 		width: min(30rem, calc(100% - 2rem));
 		/* As the other panels: scroll inside rather than lose the header at 400 %

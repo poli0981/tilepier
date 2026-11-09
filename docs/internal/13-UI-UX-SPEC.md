@@ -231,6 +231,12 @@ reader would notice changes the statement in the same PR.
   - In edit mode each tile shows **Arrange** beside Remove. It opens
     `ui/TpArrangeDialog.svelte`, docked at the foot of the screen with no
     scrim, so the tile — outlined while it is arranged — stays in sight.
+  - **It is above every notice** (z-index 220; the toasts and the bot check are
+    200–210, and dock at the same edge). At 66 they painted over its buttons —
+    found on production in 1.3.0's release check, before the tag. Only the
+    shortcuts sheet is above it (230/231), as `ui.escape()` orders the layers.
+    `TpArrangeDialog.svelte.test.ts` shows a toast and asks that every button's
+    centre is the button.
   - Eight buttons (move left, up, down, right; narrower, wider, shorter,
     taller) at 40 px, and the arrow keys while the dialog has focus, with Shift
     to resize. Its status region says the place after each step, 1-based:

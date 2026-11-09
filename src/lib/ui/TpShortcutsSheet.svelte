@@ -105,10 +105,12 @@
 {/if}
 
 <style>
+	/* The topmost layer, as `ui.escape()` orders them: `?` can open it over the
+	   Arrange dialog (220), which sits above the notices. */
 	.tp-sheet__scrim {
 		position: fixed;
 		inset: 0;
-		z-index: 70;
+		z-index: 230;
 		background: color-mix(in oklch, var(--color-ink-950) 80%, transparent);
 	}
 
@@ -116,7 +118,7 @@
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		z-index: 71;
+		z-index: 231;
 		transform: translate(-50%, -50%);
 		width: min(22rem, calc(100% - 2rem));
 		/* As the bug dialog: scroll inside, never lose the header (WCAG 1.4.10). */
