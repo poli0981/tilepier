@@ -91,6 +91,9 @@ pnpm test:e2e    # bộ Playwright, chạy trên Worker đã build
 [docs/self-hosting.md](docs/self-hosting.md) hướng dẫn chạy bản của riêng bạn.
 Báo lỗi bảo mật đi qua [SECURITY.md](SECURITY.md), không bao giờ qua issue
 công khai.
+[ACCESSIBILITY.md](ACCESSIBILITY.md) (tiếng Anh) nói TilePier hỗ trợ người dùng
+bàn phím và trình đọc màn hình ra sao, được kiểm tra thế nào, và cách báo một
+rào cản trợ năng.
 
 ## Giấy phép
 

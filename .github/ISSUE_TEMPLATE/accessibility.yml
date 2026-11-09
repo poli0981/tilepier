@@ -1,0 +1,58 @@
+# ACCESSIBILITY.md, doc 18 §3. Bilingual like the bug form. Nothing here is
+# required beyond what happened: a reader reporting a barrier should not need
+# to diagnose it first.
+name: Accessibility
+description: Báo một rào cản trợ năng / Report an accessibility barrier
+title: '[a11y] '
+labels: [accessibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn. Không cần biết nguyên nhân — chỉ cần kể điều đã xảy ra. Tiếng Việt hoặc tiếng Anh đều được.
+        Thank you. You do not need to know the cause; just say what happened. English or Vietnamese.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Bạn đang làm gì, và điều gì đã cản bạn? / What were you doing, and what got in the way?
+      description: Trang hoặc widget, bạn mong đợi gì, và thực tế ra sao. / The page or widget, what you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện / Steps to reproduce
+      description: Nếu được — kèm phím đã bấm hoặc lời trình đọc màn hình đọc ra. / If you can — the keys you pressed, or what the screen reader said.
+      placeholder: |
+        1.
+        2.
+        3.
+
+  - type: input
+    id: assistive-technology
+    attributes:
+      label: Công nghệ hỗ trợ và phiên bản / Assistive technology and version
+      description: Ví dụ NVDA 2026.3, Narrator, VoiceOver, TalkBack, chỉ bàn phím, phóng to, nhập bằng giọng nói. / For example NVDA 2026.3, Narrator, VoiceOver, TalkBack, keyboard only, zoom, speech input.
+
+  - type: input
+    id: browser
+    attributes:
+      label: Trình duyệt và phiên bản / Browser and version
+
+  - type: input
+    id: os
+    attributes:
+      label: Hệ điều hành / Operating system
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Mức ảnh hưởng / How much does it stop you?
+      description: Ước lượng của bạn là đủ; người bảo trì phân loại P0–P3. / Your estimate is enough; the maintainer triages it P0–P3.
+      options:
+        - Không dùng được ứng dụng / I cannot use the app at all
+        - Không làm được một việc / I cannot do one task
+        - Làm được, nhưng khó / I can, but it is hard
+        - Nhỏ / Minor

@@ -129,7 +129,8 @@ tilepier/
 ├─ .github/workflows/            # ci, e2e, codeql — authored here (doc 21)
 ├─ .github/dependabot.yml        # dependency updates (doc 21 §6)
 ├─ wrangler.jsonc                # Worker name, KV binding; the domain is bound in the dashboard (doc 21 §4)
-├─ README.md · README.vi.md · CONTRIBUTING.md · SECURITY.md · LICENSE
+├─ README.md · README.vi.md · CONTRIBUTING.md · SECURITY.md · ACCESSIBILITY.md · LICENSE
+├─ .github/ISSUE_TEMPLATE/       # bug_report, accessibility, config (doc 18 §3)
 ├─ eslint.config.js · knip.jsonc · prettier.config.js
 └─ package.json · pnpm-lock.yaml · vite.config.ts
 ```

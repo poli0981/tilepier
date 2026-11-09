@@ -47,9 +47,16 @@ draw, which the obvious 62-character version is not.
   "reducedMotion": "system",   // "system" | "on" | "off"
   "coachDismissed": false,     // doc 13 §9 one-time coach overlay
   "debug": false,              // doc 18 §5 diagnostics panel
-  "scrollbars": "shown"        // "shown" | "hidden" — optional, doc 12 §9
+  "scrollbars": "shown",       // "shown" | "hidden" — optional, doc 12 §9
+  "shortcuts": "on"            // "on" | "off" — optional, doc 13 §8 (1.3.0)
 }
 ```
+
+> Amended 2026-11-09 (1.3.0). **`shortcuts` added the same way**: optional, no
+> version bump, absent reads as `"on"`. It turns off the single-character keys
+> `e` and `?` (WCAG 2.1.4). The backup importer validates it through the same
+> `isSettings`, so a backup from before it restores, and one with a value that
+> is neither is refused like any other bad field.
 
 > Amended 2026-10-06. **`scrollbars` added as an optional field, with no
 > version bump** — the first field added since v1 shipped, and the reason §5

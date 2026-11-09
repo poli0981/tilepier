@@ -20,6 +20,18 @@ the code it guards: say which, and how. A test never seen red is not one. -->
 - [ ] `pnpm test:e2e`
 - [ ] The docs say what the code now does (docs 01–23, CLAUDE.md)
 
+## Accessibility (ACCESSIBILITY.md)
+
+<!-- Any change a person sees or operates. Delete this section when none did,
+and name what does not apply. -->
+
+- [ ] Every new control works from the keyboard, in a sensible order, and by a single tap or click (no drag-only gesture)
+- [ ] Focus is visible, goes into a new dialog or panel, and comes back when it closes
+- [ ] Each control and region has a name, a change is announced, and colour is not the only signal
+- [ ] New motion respects reduced motion; new states survive forced colours
+- [ ] The axe sweep (`e2e/a11y`) covers the new surface and is clean
+- [ ] Checked with a screen reader, or said here why not
+
 ## Widget Definition of Done (doc 19 §6)
 
 <!-- Delete this section when no widget changed. Name what does not apply. -->

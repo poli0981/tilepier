@@ -61,8 +61,18 @@ the log carries none of its names.
 Fields: `what-happened` (textarea, required) · `steps` (textarea) ·
 `env` (textarea, auto-paste target) · `logs` (textarea, render as code) ·
 `version` (input, prefilled) — plus labels `bug`, auto-title prefix
-`[bug] `. Also `config.yml` with blank_issues_enabled: false and links
-(feature request template, discussions).
+`[bug] `. Also `config.yml` with blank_issues_enabled: false and two
+links: Discussions (questions, ideas, feature requests — there is no feature
+template) and private security reporting (doc 15 §8). Corrected 2026-11-09:
+this line had promised a feature-request template that never existed.
+
+**The accessibility form** (`accessibility.yml`, 1.3.0), the reporting channel
+`ACCESSIBILITY.md` names. Bilingual like the bug form, label `accessibility`,
+title prefix `[a11y] `. Only what happened is required: a reader meeting a
+barrier should not have to diagnose it. It asks for the steps (the keys
+pressed, what the screen reader said), the assistive technology, browser and
+operating system with versions, and an estimate of the impact in plain words,
+which triage turns into P0–P3 below.
 
 **Severity is set at triage, not asked of the reporter** (2026-10-06): one of
 the labels `P0`–`P3`, as doc 19 §7 defines them. A reporter sees one

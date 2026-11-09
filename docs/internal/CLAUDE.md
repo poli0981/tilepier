@@ -151,6 +151,14 @@ fails the build. Slice commits vertically — a primitive plus its first consume
     a spinner or a blank.
 14. Conventional Commits with widget/area scope. PRs touching `core/` or
     `routes/api/` must pass full CI.
+15. **Accessibility: WCAG 2.2 AA** (doc 01 goal 7, doc 13 §8; public
+    statement `ACCESSIBILITY.md`). Every control has a keyboard path and a
+    single-pointer one — no drag-only gesture, no double-click-only action.
+    Focus is drawn as an outline (forced colours keep outlines, not borders or
+    shadows), goes into a dialog and comes back. A live region is on the page
+    before its words change. No new single-character shortcut outside the
+    Settings → Keyboard switch. A new surface joins `e2e/a11y`; a change a
+    reader would notice updates the statement.
 
 ## Layout of interest
 

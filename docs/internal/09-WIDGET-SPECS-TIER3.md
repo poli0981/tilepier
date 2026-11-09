@@ -309,7 +309,9 @@ only module allowed to import music-metadata:
   prev/play/next; h≥2 adds queue-peek line.
 - **Detail:** library table (virtualized — always, since Week 7, through
   `core/windowing.ts`: simple windowing,
-  no dep), search, sort, playlists CRUD (~~drag to reorder~~ up and down
+  no dep; each rendered row carries `aria-setsize` and `aria-posinset`, so a
+  screen reader says "12 of 840" although only the visible rows exist —
+  recorded 1.3.0, built in Week 7 as the roadmap's item K), search, sort, playlists CRUD (~~drag to reorder~~ up and down
   buttons — see Playlists), now-playing pane
   with large cover, and under it the next eight songs in play order
   ("coming up", Week 7) — choosing one plays it and keeps the queue, where a

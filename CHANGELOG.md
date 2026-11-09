@@ -4,6 +4,79 @@ Every release of TilePier, newest first. The format follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions
 follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-11-09
+
+### Added
+
+- **Tiles can be arranged without dragging.** In edit mode every tile has an
+  Arrange button. Its panel moves the tile with buttons or the arrow keys,
+  resizes it with Shift and the arrows, and says where the tile is after each
+  step. Until now a tile moved only by dragging its header with a mouse.
+- **The single-key shortcuts can be turned off**, in Settings → Keyboard. `e`
+  and `?` are single characters, which speech input and screen readers can set
+  off by accident. `Esc` keeps working, and a button in the same place opens
+  the list of shortcuts.
+- **A "Skip to main content" link** is the first stop on every page of the app.
+- **Windows contrast themes** keep pressed and selected choices, focus rings,
+  colour swatches and status dots visible.
+- **An accessibility statement**, `ACCESSIBILITY.md`, with what TilePier does,
+  how it is tested, what it does not do yet, and a form for reporting a barrier.
+  The About page links both.
+
+### Changed
+
+- **Every tile is a named region, and its buttons say which tile they belong
+  to**: "Open Weather detail" rather than fifteen buttons called "open detail".
+  Two tiles of the same widget are numbered. The drawer's Add buttons name their
+  widget too.
+- **Adding and removing a tile is announced**, and removing one moves focus to
+  the next tile instead of losing it.
+- **A notice stays while the pointer or focus is on it**, and screen readers
+  announce it reliably.
+- **Sliders say their value in words**: the meeting planner a time, volume a
+  percentage, the seek bar its position out of the length.
+- **The language of the parts**: a quote shown in its other language, and the
+  names of the two languages, carry their own language for screen readers.
+- The toolchain's patch and minor releases: SvelteKit 3.1.1, adapter-cloudflare
+  8.0.2, Svelte 5.57.3, wrangler 4.156, ESLint 10.14, knip 6.44, Paraglide
+  2.29.3, marked 18.1.2 and music-metadata 12.3.2. The music scanner's worker
+  grew to 82.6 KB gzipped, and its budget is now 88 KB.
+
+### Fixed
+
+- **To-do: "make the first one" makes the first list.** The tile's empty state
+  offered it since 1.0.0 and the button did nothing.
+- **To-do: a list can be renamed from the keyboard**, with F2. A double-click was
+  the only way.
+- **`Esc` in a rename field cancels the rename and nothing else.** In the to-do
+  and map details it closed the whole panel too, and the to-do detail kept the
+  name `Esc` was meant to discard.
+- **`Esc` in the add drawer's search box closes the drawer.** It did nothing.
+- **Eight text fields show a focus ring**: the drawer's search, the notes and
+  to-do tiles and details, and the clock's zone search. Only the caret showed
+  where focus was.
+- **The shortcuts list, the add drawer and the bug report keep focus inside**
+  while open and give it back when they close; the bug report now closes on
+  `Esc`.
+- **Reduce motion: on** now stops the loading shimmer and the map's flights as
+  well, not only when the system asks for reduced motion.
+- **The calendar's event dot is read out** with its count.
+
+### Accessibility
+
+- Checked by hand on 1.2.0 before this release: the keyboard alone with the
+  mouse disconnected, Narrator on Edge, Firefox and Brave, and VoiceOver or
+  TalkBack, with no failures. The new Arrange panel and announcements wait for
+  the same check on 1.3.0.
+- `svelte-check` now fails on any warning, Svelte's accessibility checks
+  included.
+
+### Security
+
+- **SvelteKit 3.1.1** hardens two paths: route resolution on the server no
+  longer loads code from another origin for a path that starts with `//`, and
+  remote form submissions are parsed in linear time.
+
 ## [1.2.0] - 2026-10-27
 
 ### Changed
@@ -183,6 +256,7 @@ than tags. No 0.x version was ever cut.
 - **Two tabs at once.** The last write wins, and the contents of the database
   refresh on reload.
 
+[1.3.0]: https://github.com/poli0981/tilepier/releases/tag/v1.3.0
 [1.2.0]: https://github.com/poli0981/tilepier/releases/tag/v1.2.0
 [1.1.0]: https://github.com/poli0981/tilepier/releases/tag/v1.1.0
 [1.0.1]: https://github.com/poli0981/tilepier/releases/tag/v1.0.1
