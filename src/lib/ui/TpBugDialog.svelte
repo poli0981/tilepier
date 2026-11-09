@@ -6,6 +6,7 @@
 	import { deck } from '#lib/stores/deck.svelte.js';
 	import { online } from '#lib/stores/online.svelte.js';
 	import { settings } from '#lib/stores/settings.svelte.js';
+	import { trapTab } from '#lib/ui/dialog-keys.js';
 	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
@@ -24,6 +25,34 @@
 
 	let body = $state('');
 	let copied = $state(false);
+	let panelEl = $state<HTMLElement | null>(null);
+
+	$effect(() => {
+		// doc 13 §8's focus contract, missing here until 1.3.0: in on open, back
+		// to "Report a bug" on close.
+		if (!open) return;
+		const trigger = document.activeElement;
+		panelEl?.focus();
+		return () => {
+			if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
+		};
+	});
+
+	/**
+	 * Tab stays inside, and Esc closes — which this dialog did not do at all.
+	 * On `document` and stopped there, as the detail panel does: the layout's
+	 * own Esc is on `window`, and would also leave edit mode.
+	 */
+	function onKeydown(event: KeyboardEvent): void {
+		if (!open) return;
+		if (event.key === 'Tab') {
+			if (panelEl !== null) trapTab(panelEl, event);
+			return;
+		}
+		if (event.key !== 'Escape') return;
+		event.stopPropagation();
+		onClose();
+	}
 
 	$effect(() => {
 		if (!open) return;
@@ -57,6 +86,8 @@
 	}
 </script>
 
+<svelte:document onkeydown={onKeydown} />
+
 {#if open}
 	<div class="tp-sheet__scrim" role="presentation" onclick={onClose} data-testid="bug-scrim"></div>
 
@@ -65,6 +96,8 @@
 		role="dialog"
 		aria-modal="true"
 		aria-label={m['settings.report.title']()}
+		tabindex="-1"
+		bind:this={panelEl}
 		data-testid="bug-dialog"
 	>
 		<header>

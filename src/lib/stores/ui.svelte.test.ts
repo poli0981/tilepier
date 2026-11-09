@@ -77,3 +77,53 @@ describe('the shortcuts sheet', () => {
 		expect(ui.shortcutsOpen).toBe(false);
 	});
 });
+
+describe('the Arrange dialog (doc 13 §8)', () => {
+	it('opens only in edit mode, and over the drawer', () => {
+		ui.startArranging('wgt_a');
+		expect(ui.arranging).toBeNull();
+
+		ui.openDrawer();
+		ui.startArranging('wgt_a');
+
+		expect(ui.arranging).toBe('wgt_a');
+		expect(ui.drawerOpen).toBe(false);
+	});
+
+	it('is the layer Esc closes before edit mode, so one Esc never does both', () => {
+		// The dialog leaves Esc to this store on purpose: the layout's listener is
+		// on `window` and runs first, so a handler of the dialog's own could not
+		// stop it, and one keystroke closed the dialog and left edit mode too.
+		ui.toggleEdit();
+		ui.startArranging('wgt_a');
+
+		expect(ui.escape()).toBe(true);
+		expect(ui.arranging).toBeNull();
+		expect(ui.editMode).toBe(true);
+	});
+
+	it('goes with edit mode, and gives way to the shortcuts sheet', () => {
+		ui.toggleEdit();
+		ui.startArranging('wgt_a');
+		ui.toggleShortcuts();
+
+		expect(ui.escape()).toBe(true);
+		expect(ui.shortcutsOpen).toBe(false);
+		expect(ui.arranging).toBe('wgt_a');
+
+		ui.toggleEdit();
+		expect(ui.arranging).toBeNull();
+	});
+});
+
+describe('closing the Arrange dialog', () => {
+	it('closes it and leaves edit mode on', () => {
+		ui.toggleEdit();
+		ui.startArranging('wgt_a');
+
+		ui.stopArranging();
+
+		expect(ui.arranging).toBeNull();
+		expect(ui.editMode).toBe(true);
+	});
+});

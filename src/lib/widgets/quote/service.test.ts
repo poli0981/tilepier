@@ -7,6 +7,7 @@ import {
 	filterQuotes,
 	loadCatalogue,
 	pickOfDay,
+	quoteLang,
 	quoteText,
 	readSettings,
 	tagsOf,
@@ -139,6 +140,20 @@ describe('quoteText', () => {
 		// key, not an `undefined` one, and `{ en: undefined }` is a type error.
 		expect(quoteText({ id: 'q1', vi: 'một', rights: 'public-domain' }, 'en')).toBe('một');
 		expect(quoteText({ id: 'q1', en: 'one', rights: 'public-domain' }, 'vi')).toBe('one');
+	});
+});
+
+describe('quoteLang (WCAG 3.1.2)', () => {
+	it("is the reader's language when the entry has it", () => {
+		expect(quoteLang(quote(), 'vi')).toBe('vi');
+		expect(quoteLang(quote(), 'en')).toBe('en');
+	});
+
+	it('names the fallback quoteText fell back to', () => {
+		// The case the attribute exists for: an en-only entry in a Vietnamese
+		// page, which a screen reader would otherwise read in a Vietnamese voice.
+		expect(quoteLang({ id: 'q1', vi: 'một', rights: 'public-domain' }, 'en')).toBe('vi');
+		expect(quoteLang({ id: 'q1', en: 'one', rights: 'public-domain' }, 'vi')).toBe('en');
 	});
 });
 

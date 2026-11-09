@@ -26,7 +26,29 @@ describe('TpToast', () => {
 		toasts.show({ kind: 'rate-limited' });
 
 		await expect.element(screen.getByTestId('toast')).toHaveAttribute('data-kind', 'rate-limited');
-		await expect.element(screen.getByText(m['common.toast.rate_limited']())).toBeVisible();
+		// textContent, not the matcher: the visible words are aria-hidden (the live
+		// region below says them), and the matcher reads what is exposed.
+		expect(screen.getByTestId('toast').element().textContent).toContain(
+			m['common.toast.rate_limited']()
+		);
+	});
+
+	it('says it through a live region that was there before the toast', async () => {
+		// doc 13 §8's rule for live regions, which this one broke until 1.3.0:
+		// `role="status"` arrived together with its words, and a region inserted
+		// with its text already in it is not reliably announced.
+		const screen = await render(TpToast);
+		const region = screen.getByTestId('toast-announce');
+		await expect.element(region).toHaveAttribute('role', 'status');
+		await expect.element(region).toHaveTextContent('');
+
+		toasts.show({ kind: 'rate-limited' });
+
+		await expect.element(region).toHaveTextContent(m['common.toast.rate_limited']());
+		// Read once: the visible words are hidden from the accessibility tree.
+		await expect
+			.element(screen.getByRole('status'))
+			.toHaveTextContent(m['common.toast.rate_limited']());
 	});
 
 	it('says a notice in whatever words it carries, resolved when it renders', async () => {
@@ -41,7 +63,10 @@ describe('TpToast', () => {
 			}
 		});
 
-		await expect.element(screen.getByText('Không phát được “Bài hát” — đã bỏ qua.')).toBeVisible();
+		await expect.element(screen.getByTestId('toast')).toBeInTheDocument();
+		expect(screen.getByTestId('toast').element().textContent).toContain(
+			'Không phát được “Bài hát” — đã bỏ qua.'
+		);
 		expect(resolved).toBeGreaterThan(0);
 	});
 

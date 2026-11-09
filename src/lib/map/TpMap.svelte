@@ -78,8 +78,15 @@
 
 	const camera: TpMapCamera = {
 		flyTo(toLat, toLon, toZoom) {
-			// Non-essential, so a reader who asked for reduced motion gets a jump.
-			map?.flyTo({ center: [toLon, toLat], zoom: toZoom ?? Math.max(map.getZoom(), 13) });
+			if (map === null) return;
+			const target = {
+				center: [toLon, toLat] as [number, number],
+				zoom: toZoom ?? Math.max(map.getZoom(), 13)
+			};
+			// Non-essential motion. MapLibre already jumps for the OS setting; the
+			// app's own setting (doc 12 §7, `motionOK`) has to be asked here.
+			if (settings.motionOK) map.flyTo(target);
+			else map.jumpTo(target);
 		}
 	};
 
@@ -272,5 +279,14 @@
 
 	.tp-map :global(.tp-map-pin--found) {
 		background: var(--color-warn);
+	}
+
+	/* Forced colours drop the pins' fills; an edge in the theme's own colour
+	   keeps each one on the map (doc 12 §10). The map itself is a canvas, which
+	   forced colours leave alone. */
+	@media (forced-colors: active) {
+		.tp-map :global(.tp-map-pin) {
+			border: 2px solid CanvasText;
+		}
 	}
 </style>

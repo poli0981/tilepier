@@ -45,14 +45,32 @@
 		// explicit undefined unless the type says so.
 		onOpenDetail?: ((instanceId: string) => void) | undefined;
 		onRemove?: ((instanceId: string) => void) | undefined;
+		onArrange?: ((instanceId: string) => void) | undefined;
 		onUpdateSettings?: ((instanceId: string, partial: Record<string, unknown>) => void) | undefined;
+		/**
+		 * This tile's number among tiles of the same widget, or 0 when it is the
+		 * only one. TpGrid sets it, since only the grid sees every tile; it is what
+		 * keeps two clocks' buttons from sharing one name (doc 13 §8).
+		 */
+		ordinal?: number;
 	}
 
-	let { tile, widget: Widget, onOpenDetail, onRemove, onUpdateSettings }: Props = $props();
+	let {
+		tile,
+		widget: Widget,
+		onOpenDetail,
+		onRemove,
+		onArrange,
+		onUpdateSettings,
+		ordinal = 0
+	}: Props = $props();
 
 	const manifest = $derived(getManifest(tile.widgetId));
 	const labels = $derived(manifest === undefined ? undefined : widgetLabels(manifest.id));
 	const title = $derived(labels?.title() ?? tile.widgetId);
+	/** The tile's name in every control and in its region's label (doc 13 §8). */
+	const name = $derived(ordinal > 0 ? m['common.tile.numbered']({ title, n: ordinal }) : title);
+	const titleId = $derived(`tp-tile-title-${tile.instanceId}`);
 
 	let contentEl = $state<HTMLElement | null>(null);
 	// Pixel box only. Grid units come from `tile` via $derived below — reading
@@ -107,9 +125,18 @@
 	});
 </script>
 
-<div
+<!--
+	doc 13 §8: a region named by the tile, so a screen reader can list the tiles
+	and land on one. `tabindex="-1"` and `data-tile-focus` are for TpGrid's
+	`focusTile`: after a removal, focus goes to the next tile rather than to the
+	page.
+-->
+<section
 	class="tp-host"
 	bind:this={contentEl}
+	aria-labelledby={titleId}
+	tabindex="-1"
+	data-tile-focus
 	data-tier={tier}
 	data-flat={tile.h <= 1}
 	data-badged={status !== undefined}
@@ -118,7 +145,7 @@
 		{#if manifest !== undefined}
 			<TpIcon name={manifest.icon} size={14} />
 		{/if}
-		<span class="tp-host__title">{title}</span>
+		<span class="tp-host__title" id={titleId}>{name}</span>
 		{#if status !== undefined}
 			<!--
 				doc 12 §4.2: never colour alone. The badge carries its own words, so
@@ -144,7 +171,7 @@
 				<button
 					type="button"
 					class="tp-host__retry"
-					aria-label={m['common.retry']()}
+					aria-label={m['common.tile.retry']({ name })}
 					data-testid="tile-retry"
 					onclick={status.retry}
 				>
@@ -155,10 +182,24 @@
 		<button
 			type="button"
 			class="tp-host__open"
-			aria-label={m['common.open_detail']()}
+			aria-label={m['common.tile.open_detail']({ name })}
 			onclick={() => onOpenDetail?.(tile.instanceId)}
 		>
 			<TpIcon name="expand" size={14} />
+		</button>
+		<!--
+			The keyboard and single-pointer way to move and resize a tile (WCAG 2.1.1
+			and 2.5.7): dragging the header is the only other one. Edit mode only,
+			revealed like the remove button below (doc 06 §5, doc 13 §8).
+		-->
+		<button
+			type="button"
+			class="tp-host__arrange"
+			aria-label={m['common.tile.arrange']({ name })}
+			data-testid="arrange-{tile.instanceId}"
+			onclick={() => onArrange?.(tile.instanceId)}
+		>
+			<TpIcon name="move" size={14} />
 		</button>
 		<!--
 			doc 13 §2: the remove control belongs to edit mode. It is always in the
@@ -172,7 +213,7 @@
 		<button
 			type="button"
 			class="tp-host__remove"
-			aria-label={m['common.remove_tile']()}
+			aria-label={m['common.tile.remove']({ name })}
 			title={m['common.remove_tile_hint']()}
 			data-testid="remove-{tile.instanceId}"
 			onclick={() => onRemove?.(tile.instanceId)}
@@ -219,7 +260,7 @@
 		host owns the frame, and Svelte owns the content. Removed 2026-08-27, when
 		the first widget with something real to put there was written.
 	-->
-</div>
+</section>
 
 <style>
 	.tp-host {
@@ -273,6 +314,7 @@
 		color: var(--color-beacon);
 	}
 
+	.tp-host__arrange,
 	.tp-host__remove {
 		display: none;
 		border: 0;
@@ -283,8 +325,20 @@
 		padding: 0.25rem;
 	}
 
+	:global(.tp-edit) .tp-host__arrange,
 	:global(.tp-edit) .tp-host__remove {
 		display: flex;
+	}
+
+	.tp-host__arrange:hover {
+		color: var(--color-beacon);
+	}
+
+	/* Focused by TpGrid after a removal; the region itself, so the ring goes
+	   round the whole tile. */
+	.tp-host:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 2px;
 	}
 
 	.tp-host__remove:hover {
@@ -306,6 +360,14 @@
 		flex: none;
 		border-radius: 50%;
 		background: currentcolor;
+	}
+
+	/* Forced colours drop backgrounds, and at h=1 the lamp is the badge's only
+	   mark on screen (doc 12 §10). */
+	@media (forced-colors: active) {
+		.tp-host__dot {
+			background: CanvasText;
+		}
 	}
 
 	.tp-host__badge[data-kind='stale'],
@@ -378,6 +440,7 @@
 	}
 
 	.tp-host[data-flat='true'] .tp-host__open,
+	.tp-host[data-flat='true'] .tp-host__arrange,
 	.tp-host[data-flat='true'] .tp-host__remove,
 	.tp-host[data-flat='true'] .tp-host__badge,
 	.tp-host[data-flat='true'] .tp-host__retry {
@@ -398,14 +461,14 @@
 	 * left-aligned, which is why this survived the header rule's own review.
 	 *
 	 * Two widths because the cluster has two sizes: the expand button alone in
-	 * view mode, and the remove button beside it in edit mode.
+	 * view mode, and the arrange and remove buttons beside it in edit mode.
 	 */
 	.tp-host[data-flat='true'] .tp-host__body {
 		padding-right: 2.25rem;
 	}
 
 	:global(.tp-edit) .tp-host[data-flat='true'] .tp-host__body {
-		padding-right: 4rem;
+		padding-right: 5.75rem;
 	}
 
 	/*
@@ -419,7 +482,7 @@
 	}
 
 	:global(.tp-edit) .tp-host[data-flat='true'][data-badged='true'] .tp-host__body {
-		padding-right: 5rem;
+		padding-right: 6.75rem;
 	}
 
 	.tp-host__crash {

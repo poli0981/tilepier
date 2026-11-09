@@ -6,6 +6,7 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { deck } from '#lib/stores/deck.svelte.js';
 	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { ui } from '#lib/stores/ui.svelte.js';
 	import TpAddDrawer from '#lib/ui/TpAddDrawer.svelte';
 	import TpBotCheck from '#lib/ui/TpBotCheck.svelte';
@@ -23,16 +24,34 @@
 	 * route.
 	 */
 	function onKeydown(event: KeyboardEvent): void {
-		const target = event.target;
-		// Never take a keystroke from something the user is typing into — the
-		// drawer's search field is one keypress away from this handler.
-		if (target instanceof HTMLElement && target.isContentEditable) return;
-		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
 		if (event.metaKey || event.ctrlKey || event.altKey) return;
 
+		// Esc closes the topmost layer from anywhere, a field included: in the
+		// drawer's search box it used to do nothing at all. A detail panel takes
+		// its own Esc on `document` first and stops it, so it never arrives here
+		// twice (TpDetailOverlay).
+		if (event.key === 'Escape') {
+			ui.escape();
+			return;
+		}
+
+		// Never take a keystroke from something the user is typing into — the
+		// drawer's search field is one keypress away from this handler — nor
+		// from a `<select>`, where a letter picks an option.
+		const target = event.target;
+		if (target instanceof HTMLElement && target.isContentEditable) return;
+		if (
+			target instanceof HTMLInputElement ||
+			target instanceof HTMLTextAreaElement ||
+			target instanceof HTMLSelectElement
+		)
+			return;
+
+		// WCAG 2.1.4: single-character shortcuts can be turned off (Settings →
+		// Keyboard), where a button opens the sheet `?` would.
+		if (settings.shortcuts === 'off') return;
 		if (event.key === 'e') ui.toggleEdit();
 		else if (event.key === '?') ui.toggleShortcuts();
-		else if (event.key === 'Escape') ui.escape();
 	}
 
 	/**
@@ -112,14 +131,15 @@
 			</div>
 		{/each}
 
-		<!-- Language names are not translated, so they render once. -->
+		<!-- Language names are not translated, so they render once, each in its own
+		     language (WCAG 3.1.2): "Tiếng Việt" read in an English voice is noise. -->
 		<p class="tp-gate__lang">
 			<!-- The path *is* resolved; the rule's heuristic cannot see resolve()
 			     through a template literal, and the query is what carries the
 			     choice (doc 14 §6). -->
 			<!-- eslint-disable svelte/no-navigation-without-resolve -->
-			<a href={`${resolve('/(app)')}?lang=vi`} hreflang="vi">Tiếng Việt</a>
-			<a href={`${resolve('/(app)')}?lang=en`} hreflang="en">English</a>
+			<a href={`${resolve('/(app)')}?lang=vi`} hreflang="vi" lang="vi">Tiếng Việt</a>
+			<a href={`${resolve('/(app)')}?lang=en`} hreflang="en" lang="en">English</a>
 			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</p>
 	</div>
@@ -128,6 +148,9 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="tp-app">
+	<!-- WCAG 2.4.1: past the bar to the page. Every page in this group has a
+	     <main id="tp-main">: the deck, a detail, and settings through TpProse. -->
+	<a class="tp-skip" href="#tp-main">{m['common.skip_to_main']()}</a>
 	<TpTopBar />
 	{@render children()}
 	<TpAddDrawer {onAdd} />

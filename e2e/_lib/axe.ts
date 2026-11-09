@@ -4,9 +4,11 @@ import type { Page } from '@playwright/test';
 /**
  * axe-core against the page as it stands (doc 19 §1, doc 13 §8).
  *
- * WCAG 2.0, 2.1 and 2.2 at A and AA — the level the charter commits to (doc 01
- * §3). The Turnstile frame is excluded: it is Cloudflare's document, which the
- * suite's host rules keep from loading anyway (`_lib/launch.ts`).
+ * WCAG 2.0, 2.1 and 2.2 at A and AA — the level the charter commits to (doc 01,
+ * goal 7) and ACCESSIBILITY.md states; `src/lib/accessibility-doc.test.ts`
+ * holds this list to that statement. The Turnstile frame is excluded: it is
+ * Cloudflare's document, which the suite's host rules keep from loading anyway
+ * (`_lib/launch.ts`).
  *
  * Returns one readable line per failing node rather than axe's result object,
  * so an assertion of `toEqual([])` prints exactly what is wrong and where.

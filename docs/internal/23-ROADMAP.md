@@ -1614,6 +1614,9 @@ build:**
 1. On production: the doc 19 §5 matrix; Lighthouse against doc 01's targets;
    NVDA, keyboard only, 200 % and 400 % zoom; a backup export and import; the
    rollback drill (doc 21 §4). A P0 or P1 found there is a 1.0.x.
+   **Keyboard only and a screen reader: done 2026-11-09 on 1.2.0** — mouse
+   disconnected; Narrator, and VoiceOver/TalkBack, rather than NVDA; Edge,
+   Firefox and Brave; no failures (doc 19 §5). The rest of this item is open.
 2. ~~Two decisions~~ — **made on 2026-10-07, when the owner handed them over.**
    The weather tile's Open-Meteo credit turned out not to be a choice. Read
    again, the licence says "You must include a link next to any location
@@ -1632,6 +1635,36 @@ build:**
 the first to carry a severity label, `P1`. It deploys when it merges. The tag,
 and the publish that announces it, wait on the owner, as doc 21 §1's release
 path has them.
+
+## After 1.0 — releases
+
+- **1.1.0 (2026-10-26)** — the toolchain: Node 26 and TypeScript 7, Vitest 5
+  and MSW 3, gridstack 14 (spike S1 re-run), SvelteKit 3.1 and adapter 8, the
+  Sonar analysis in CI, Dependabot and code scanning at zero.
+- **1.2.0 (2026-10-27)** — the Worker's rate limit on Cloudflare's Rate Limiting
+  binding, and the zone's `api flood` rule (`docs/self-hosting.md` §4).
+- **1.3.0 (2026-11-09) — accessibility.** Measured, not assumed: a read of the
+  code against WCAG 2.2 AA found what the Week 8 axe sweep could not see.
+  - Level A failures: tiles moved only by dragging (2.1.1, 2.5.7) — now the Arrange
+    dialog (doc 13 §8, doc 06 §5 rule 16); `e` and `?` could not be turned off
+    (2.1.4) — now Settings → Keyboard; a to-do list renamed only by
+    double-click — now F2.
+  - AA: eight fields with no focus ring (2.4.7); no forced-colours handling (doc
+    12 §10).
+  - The rest: three dialogs without the focus contract, tiles that were not
+    the named regions doc 13 §8 promised, focus lost on removal, no skip link,
+    `/settings`, `/about` and `/legal/*` with no main landmark, a toast
+    region inserted with its words, `Esc` in a rename closing the detail,
+    reduce motion "on" not reaching CSS, sliders without value text.
+  - Found while testing it from the keyboard: the to-do tile's "make the first
+    one" had done nothing since Week 2. Its test asked only that the button
+    exist — the shape this codebase keeps meeting.
+  - `ACCESSIBILITY.md` (the public statement), an accessibility issue form and
+    label, the PR template's checklist, doc 01's goal 7.
+  - Deps in the same release (#71, #75, #76): SvelteKit 3.1.1, wrangler 4.156,
+    marked 18.1.3, music-metadata 12.3.5 with its worker's budget at 88 KB (doc 20 §6).
+  - **Owner checks on 1.3.0:** the Arrange dialog and the add/remove
+    announcements with a screen reader; a Windows contrast theme on Edge.
 
 ## Release checklist (Week 8 gate, condensed)
 

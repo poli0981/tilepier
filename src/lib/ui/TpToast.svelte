@@ -16,10 +16,34 @@
 	 */
 </script>
 
+<!--
+	The live region is here from the first paint and only its words change: one
+	inserted with its text already in it is not reliably announced (the note on
+	the edit-mode region in TpTopBar). The visible copy below is hidden from the
+	accessibility tree so the words are not read twice.
+-->
+<p class="tp-sr" role="status" data-testid="toast-announce">
+	{#if toasts.current !== null}
+		{toasts.current.kind === 'notice' ? toasts.current.message() : m['common.toast.rate_limited']()}
+	{/if}
+</p>
+
 {#if toasts.current !== null}
 	{@const toast = toasts.current}
-	<div class="tp-toast" role="status" data-testid="toast" data-kind={toast.kind}>
-		<span>{toast.kind === 'notice' ? toast.message() : m['common.toast.rate_limited']()}</span>
+	<div
+		class="tp-toast"
+		role="group"
+		aria-label={m['common.toast.label']()}
+		data-testid="toast"
+		data-kind={toast.kind}
+		onpointerenter={() => toasts.hold()}
+		onpointerleave={() => toasts.release()}
+		onfocusin={() => toasts.hold()}
+		onfocusout={() => toasts.release()}
+	>
+		<span aria-hidden="true"
+			>{toast.kind === 'notice' ? toast.message() : m['common.toast.rate_limited']()}</span
+		>
 		<button
 			type="button"
 			class="tp-toast__dismiss"

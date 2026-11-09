@@ -104,6 +104,16 @@ export function quoteText(quote: TpQuote, locale: TpQuoteLocale): string {
 }
 
 /**
+ * The language `quoteText` answered in — the reader's, or the other one when
+ * the entry has nothing in theirs. A quote shown in its fallback carries it as
+ * `lang` (WCAG 3.1.2), or a screen reader reads Vietnamese in an English voice.
+ */
+export function quoteLang(quote: TpQuote, locale: TpQuoteLocale): TpQuoteLocale {
+	if ((locale === 'vi' ? quote.vi : quote.en) !== undefined) return locale;
+	return quote.vi !== undefined ? 'vi' : 'en';
+}
+
+/**
  * The line under the quote: whoever said it, or where it came from when nobody
  * did. Proverbs have a `source` and no author, which is not a missing field.
  */

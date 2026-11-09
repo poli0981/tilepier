@@ -8,6 +8,8 @@ Bugs go through the in-app report (Settings → Report a bug), which fills in th
 version and environment for you, or the
 [issue form](https://github.com/poli0981/tilepier/issues/new/choose).
 **Security problems never go in a public issue**: see [SECURITY.md](SECURITY.md).
+Accessibility barriers have a form of their own; [ACCESSIBILITY.md](ACCESSIBILITY.md)
+says what to include and how they are handled.
 
 ## The licence
 
@@ -40,6 +42,11 @@ names them.
 - **Nothing new from the network.** The browser talks only to the app's own
   origin and the three hosts CLAUDE.md names; everything else goes through
   `/api/*`, and nothing loads from a CDN.
+- **Keep it usable without a mouse and without sight.** The goal is WCAG 2.2
+  AA ([ACCESSIBILITY.md](ACCESSIBILITY.md)). A new control needs a keyboard
+  path and a single-pointer one, a name, and a visible focus ring; a new
+  surface joins the axe sweep in `e2e/a11y.e2e.ts`. The pull request template
+  has the checklist.
 - **Commits** follow [Conventional Commits](https://www.conventionalcommits.org/),
   scoped to the widget or area: `fix(weather): …`, `feat(settings): …`. Each
   commit passes on its own; `knip` fails a module that lands without its first

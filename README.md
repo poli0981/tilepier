@@ -89,6 +89,8 @@ pnpm test:e2e    # the Playwright suite, against the built Worker
 [CONTRIBUTING.md](CONTRIBUTING.md) explains how changes are made here.
 [docs/self-hosting.md](docs/self-hosting.md) covers running your own copy.
 Security reports go through [SECURITY.md](SECURITY.md), never a public issue.
+[ACCESSIBILITY.md](ACCESSIBILITY.md) says what TilePier does for keyboard and
+screen-reader users, how it is tested, and how to report a barrier.
 
 ## Licence
 

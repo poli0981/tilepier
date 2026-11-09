@@ -300,3 +300,40 @@ describe('scrollbars — an optional field (doc 12 §9, doc 05 §5)', () => {
 		expect(document.documentElement.hasAttribute('data-scrollbars')).toBe(false);
 	});
 });
+
+describe('shortcuts — an optional field (doc 13 §8, WCAG 2.1.4)', () => {
+	it('reads a value stored before the field existed as on, and leaves it be', () => {
+		const before: Record<string, unknown> = { ...defaultSettings() };
+		delete before['shortcuts'];
+		localStorage.setItem(LOCAL_KEYS.settings, JSON.stringify(before));
+
+		settings.hydrate();
+
+		expect(settings.shortcuts).toBe('on');
+		expect(Object.keys(localStorage).some((k) => k.startsWith('tp.corrupt.'))).toBe(false);
+		expect(stored().shortcuts).toBeUndefined();
+	});
+
+	it('writes off through, and reads it back', () => {
+		settings.hydrate();
+
+		settings.patch({ shortcuts: 'off' });
+		settings.dispose();
+		settings.hydrate();
+
+		expect(stored().shortcuts).toBe('off');
+		expect(settings.shortcuts).toBe('off');
+	});
+
+	it('quarantines a value that is neither', () => {
+		localStorage.setItem(
+			LOCAL_KEYS.settings,
+			JSON.stringify({ ...defaultSettings(), shortcuts: 'sometimes' })
+		);
+
+		settings.hydrate();
+
+		expect(settings.shortcuts).toBe('on');
+		expect(Object.keys(localStorage).some((k) => k.startsWith('tp.corrupt.'))).toBe(true);
+	});
+});

@@ -163,6 +163,8 @@ scan, runs off the main thread and is cached once, so 5 KB costs a reader
 nothing they would notice, while either rework reopens spike S7's measurements.
 The 88 leaves 5.4 KB, about one more minor like this one; the next breach
 takes one of the two answers above rather than another raise.
+**Re-measured the same day with 12.3.5** (Dependabot #76, a patch, in 1.3.0):
+**84.6 KB gz, 96 % of 88** — 2 KB more, and 3.4 KB left.
 
 Chunks are matched by the **source module** that produced them, taken from
 `.svelte-kit/output/client/.vite/manifest.json`, never by filename: SvelteKit

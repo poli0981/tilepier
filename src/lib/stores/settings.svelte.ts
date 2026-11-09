@@ -24,6 +24,7 @@ type TpLocale = 'vi' | 'en';
 type TpTheme = 'dark' | 'light' | 'system';
 type TpReducedMotion = 'system' | 'on' | 'off';
 type TpScrollbars = 'shown' | 'hidden';
+type TpShortcuts = 'on' | 'off';
 
 export interface TpSettings {
 	schemaVersion: 1;
@@ -46,10 +47,19 @@ export interface TpSettings {
 	 * a tab offline on the previous build's precache, or a second tab.
 	 */
 	scrollbars?: TpScrollbars;
+	/**
+	 * doc 13 §8's single-character keys, `e` and `?`. WCAG 2.1.4 asks that a
+	 * shortcut of one printable character can be turned off: a speech user's
+	 * dictated word, or a key pressed while a screen reader's browse mode is
+	 * off, would otherwise toggle edit mode. Optional for the same reason as
+	 * `scrollbars` above; absent reads as `'on'`.
+	 */
+	shortcuts?: TpShortcuts;
 }
 
 const LOCALES: readonly TpLocale[] = ['vi', 'en'];
 const SCROLLBARS: readonly TpScrollbars[] = ['shown', 'hidden'];
+const SHORTCUTS: readonly TpShortcuts[] = ['on', 'off'];
 
 /** Matches `--color-beacon` in app.css (doc 12 §2). Duplicated deliberately:
  *  the default has to exist before any stylesheet has been parsed. */
@@ -77,7 +87,8 @@ export function defaultSettings(): TpSettings {
 		reducedMotion: 'system',
 		coachDismissed: false,
 		debug: false,
-		scrollbars: 'shown'
+		scrollbars: 'shown',
+		shortcuts: 'on'
 	};
 }
 
@@ -108,7 +119,8 @@ export function isSettings(candidate: unknown): candidate is TpSettings {
 		typeof s['debug'] === 'boolean' &&
 		// Absent is a value stored before the field existed; anything else that
 		// is not one of the two quarantines like every other field.
-		(s['scrollbars'] === undefined || isOneOf(s['scrollbars'], SCROLLBARS))
+		(s['scrollbars'] === undefined || isOneOf(s['scrollbars'], SCROLLBARS)) &&
+		(s['shortcuts'] === undefined || isOneOf(s['shortcuts'], SHORTCUTS))
 	);
 }
 
@@ -157,6 +169,9 @@ class SettingsStore {
 	}
 	get scrollbars(): TpScrollbars {
 		return this.#value.scrollbars ?? 'shown';
+	}
+	get shortcuts(): TpShortcuts {
+		return this.#value.shortcuts ?? 'on';
 	}
 
 	/** `'system'` resolved against the media query, for anything that needs a

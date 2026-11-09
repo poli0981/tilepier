@@ -14,6 +14,10 @@
 	 * version line is baked into the prerendered HTML and needs no JavaScript.
 	 */
 	const REPO = 'https://github.com/poli0981/tilepier';
+	/** The accessibility statement (doc 13 §8) and its report form, kept beside
+	 *  the code they describe rather than copied into the app. */
+	const A11Y = 'https://github.com/poli0981/tilepier/blob/main/ACCESSIBILITY.md';
+	const A11Y_REPORT = 'https://github.com/poli0981/tilepier/issues/new?template=accessibility.yml';
 </script>
 
 <svelte:head><title>{m['about.page_title']()}</title></svelte:head>
@@ -26,6 +30,14 @@
 			<p>
 				{m['about.privacy_line'](undefined, { locale })}
 				<a href={resolve('legal/privacy')}>{m['legal.privacy.title'](undefined, { locale })}</a>
+			</p>
+
+			<h2>{m['about.accessibility.title'](undefined, { locale })}</h2>
+			<p>
+				{m['about.accessibility.body'](undefined, { locale })}
+				<a href={A11Y}>{m['about.accessibility.statement'](undefined, { locale })}</a>
+				·
+				<a href={A11Y_REPORT}>{m['about.accessibility.report'](undefined, { locale })}</a>
 			</p>
 
 			<h2>{m['about.limitations.title'](undefined, { locale })}</h2>

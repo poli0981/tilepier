@@ -161,6 +161,7 @@
 			step={PLANNER_STEP_MINUTES}
 			data-testid="planner-strip"
 			aria-label={m['widget.clock.detail.planner']()}
+			aria-valuetext={fmtTime(at, settings.locale, { hour12, timeZone: home })}
 			value={plannerMinutes ?? Math.round((now - startOfLocalDay(now, home)) / 60_000)}
 			oninput={(event) => (plannerMinutes = Number(event.currentTarget.value))}
 		/>
@@ -452,6 +453,14 @@
 		padding: 0 0.625rem;
 		margin-bottom: 0.5rem;
 		color: var(--color-fg-dim);
+	}
+
+	/* The field draws no ring of its own; its box does (WCAG 2.4.7). An
+	   outline, not the border, because forced colours repaint every border
+	   alike and a border change would vanish there (doc 12 §10). */
+	.tp-clockd__search:focus-within {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 2px;
 	}
 
 	.tp-clockd__search input {

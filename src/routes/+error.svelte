@@ -24,7 +24,7 @@
 	<title>{notFound ? m['error.not_found.title']() : m['error.crashed.title']()}</title>
 </svelte:head>
 
-<main>
+<main id="tp-main" tabindex="-1">
 	<TpTideGauge level={notFound ? 0.15 : 0.35} size={40} />
 
 	<h1>{notFound ? m['error.not_found.title']() : m['error.crashed.title']()}</h1>

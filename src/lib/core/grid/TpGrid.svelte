@@ -4,6 +4,7 @@
 	import { mount, unmount, untrack, type Component } from 'svelte';
 	import type { TpWidgetProps } from '#lib/core/types.js';
 	import TpWidgetHost from './TpWidgetHost.svelte';
+	import { arrangeState, planArrange, type TpArrangeMove, type TpArrangeState } from './arrange';
 	import { serialise, toGridStackWidget, type TpLayout, type TpTile } from './layout';
 
 	/**
@@ -34,6 +35,9 @@
 		onLayoutChange?: (layout: TpLayout) => void;
 		onOpenDetail?: (instanceId: string) => void;
 		onRemove?: (instanceId: string) => void;
+		/** The edit-mode Arrange button: the keyboard and single-pointer way to
+		 *  move and resize a tile (doc 06 §5, WCAG 2.1.1 and 2.5.7). */
+		onArrange?: (instanceId: string) => void;
 		onUpdateSettings?: (instanceId: string, partial: Record<string, unknown>) => void;
 		/** Fires whenever a host is mounted or unmounted — see the note on `hosts`. */
 		onHostsChange?: (count: number) => void;
@@ -46,6 +50,7 @@
 		onLayoutChange,
 		onOpenDetail,
 		onRemove,
+		onArrange,
 		onUpdateSettings,
 		onHostsChange
 	}: Props = $props();
@@ -69,7 +74,11 @@
 	 *  props after the fact. See `mountHost` for why that lever exists. */
 	const hosts = new Map<
 		string,
-		{ handle: ReturnType<typeof mount>; setTile: (t: TpTile) => void }
+		{
+			handle: ReturnType<typeof mount>;
+			setTile: (t: TpTile) => void;
+			setOrdinal: (n: number) => void;
+		}
 	>();
 	/** instanceId → tile record, so serialise() can rejoin positions with settings. */
 	const tileById = new Map<string, TpTile>();
@@ -98,6 +107,33 @@
 
 	function contentElOf(el: GridItemHTMLElement): HTMLElement | null {
 		return el.querySelector<HTMLElement>('.grid-stack-item-content');
+	}
+
+	/** The wrapper gridstack made for a tile. The `gs-id` selector is gridstack's
+	 *  DOM contract, and this file is the only one allowed to know it. */
+	function wrapperOf(instanceId: string): GridItemHTMLElement | null {
+		return (
+			containerEl?.querySelector<GridItemHTMLElement>(
+				`.grid-stack-item[gs-id="${CSS.escape(instanceId)}"]`
+			) ?? null
+		);
+	}
+
+	/**
+	 * Numbers the tiles that share a widget, in the order they joined the deck,
+	 * so "Open Clock detail" names one tile rather than two (doc 13 §8). A widget
+	 * on the deck once gets 0, which the host reads as "no number".
+	 */
+	function renumber(): void {
+		// Plain records: counts for one pass, read by nothing that renders.
+		const counts: Record<string, number> = {};
+		for (const tile of tileById.values()) counts[tile.widgetId] = (counts[tile.widgetId] ?? 0) + 1;
+		const seen: Record<string, number> = {};
+		for (const [instanceId, tile] of tileById) {
+			const nth = (seen[tile.widgetId] ?? 0) + 1;
+			seen[tile.widgetId] = nth;
+			hosts.get(instanceId)?.setOrdinal((counts[tile.widgetId] ?? 0) > 1 ? nth : 0);
+		}
 	}
 
 	/**
@@ -149,6 +185,9 @@
 		 * it is a whole-grid concern and not a per-tile one.
 		 */
 		let current = $state.raw(tile);
+		// Set by `renumber`, which only this component can run: it needs every
+		// tile, and a host sees its own.
+		let ordinal = $state(0);
 
 		const handle = mount(TpWidgetHost, {
 			target,
@@ -156,9 +195,13 @@
 				get tile() {
 					return current;
 				},
+				get ordinal() {
+					return ordinal;
+				},
 				widget,
 				onOpenDetail,
 				onRemove,
+				onArrange,
 				onUpdateSettings
 			}
 		});
@@ -169,8 +212,12 @@
 			handle,
 			setTile: (next: TpTile) => {
 				current = next;
+			},
+			setOrdinal: (n: number) => {
+				ordinal = n;
 			}
 		});
+		renumber();
 		onHostsChange?.(hosts.size);
 	}
 
@@ -227,14 +274,13 @@
 
 	export function removeTile(instanceId: string) {
 		if (!grid) return;
-		const el = containerEl?.querySelector<GridItemHTMLElement>(
-			`.grid-stack-item[gs-id="${CSS.escape(instanceId)}"]`
-		);
+		const el = wrapperOf(instanceId);
 		// Unmount first — doc 06 §5.2. Once removeWidget() discards the wrapper
 		// the content element is detached, and unmounting against a detached
 		// tree is what leaks.
 		unmountHost(instanceId);
 		tileById.delete(instanceId);
+		renumber();
 		if (el) grid.removeWidget(el, true, false);
 		emitLayout();
 	}
@@ -304,9 +350,7 @@
 	}
 
 	export function tileRect(instanceId: string): DOMRect | null {
-		const el = containerEl?.querySelector<GridItemHTMLElement>(
-			`.grid-stack-item[gs-id="${CSS.escape(instanceId)}"]`
-		);
+		const el = wrapperOf(instanceId);
 		// The content box, not the wrapper. gridstack sizes the wrapper edge to
 		// edge and insets the content by `margin` (12), so the wrapper is 24 px
 		// wider and taller than the tile a user can see. The FLIP scales from
@@ -314,6 +358,81 @@
 		// and lands it off-origin. The two were the same box only while the
 		// `inset: 0` in this file's style block was deleting the gutter.
 		return (el && contentElOf(el))?.getBoundingClientRect() ?? null;
+	}
+
+	/**
+	 * One step of the Arrange dialog (doc 06 §5, doc 13 §8): moves or resizes a
+	 * tile through `grid.update`, which fires gridstack's own `change` and so
+	 * reaches the store exactly as a drag does. `arrange.ts` works out where the
+	 * step goes and whether it changes anything; nothing here guesses.
+	 *
+	 * Returns the tile's place afterwards, or null when there is no such tile.
+	 */
+	export function arrange(instanceId: string, move: TpArrangeMove): TpArrangeState | null {
+		const el = wrapperOf(instanceId);
+		const node = el?.gridstackNode;
+		if (!grid || !el || !node) return null;
+
+		const position = planArrange(grid.engine, node, move);
+		if (position !== null) grid.update(el, position);
+		// The dialog docks at the foot of the screen, and the tile has to stay in
+		// sight while it moves.
+		contentElOf(el)?.scrollIntoView({ block: 'nearest' });
+		return arrangeState(grid.engine, node);
+	}
+
+	/** Where a tile is now and which steps are open to it, without moving it. */
+	export function arrangement(instanceId: string): TpArrangeState | null {
+		const node = wrapperOf(instanceId)?.gridstackNode;
+		return grid && node ? arrangeState(grid.engine, node) : null;
+	}
+
+	/**
+	 * Marks the tile the Arrange dialog is moving, or clears the mark. On the
+	 * content element, never the wrapper: the wrapper is gridstack's (doc 06 §5).
+	 */
+	export function markArranging(instanceId: string | null): void {
+		for (const marked of containerEl?.querySelectorAll('[data-arranging]') ?? [])
+			marked.removeAttribute('data-arranging');
+		if (instanceId === null) return;
+		const el = wrapperOf(instanceId);
+		const content = el && contentElOf(el);
+		content?.setAttribute('data-arranging', '');
+		content?.scrollIntoView({ block: 'nearest' });
+	}
+
+	/**
+	 * The tile a removal should leave focus on: the next one in reading order,
+	 * or the one before when it was the last. gridstack keeps the wrappers in
+	 * that order (`_sortDom`), which is also the Tab order. Asked *before* the
+	 * removal, since the reconcile effect removes it later (doc 13 §8).
+	 */
+	export function neighbourOf(instanceId: string): string | null {
+		const ids = [...(containerEl?.querySelectorAll<GridItemHTMLElement>('.grid-stack-item') ?? [])]
+			.map((el) => el.getAttribute('gs-id'))
+			.filter((id): id is string => id !== null);
+		const index = ids.indexOf(instanceId);
+		if (index === -1) return null;
+		return ids[index + 1] ?? ids[index - 1] ?? null;
+	}
+
+	/** The tile's name as its own controls say it: TpWidgetHost's title,
+	 *  numbered when the widget is on the deck more than once. */
+	export function tileName(instanceId: string): string | null {
+		const el = wrapperOf(instanceId);
+		const region = el && contentElOf(el)?.querySelector<HTMLElement>('[aria-labelledby]');
+		const id = region?.getAttribute('aria-labelledby');
+		return (id ? document.getElementById(id)?.textContent?.trim() : undefined) ?? null;
+	}
+
+	/** Puts focus on a tile's first control meant to receive it (TpWidgetHost
+	 *  marks it). Answers whether there was one to focus. */
+	export function focusTile(instanceId: string): boolean {
+		const el = wrapperOf(instanceId);
+		const target = el && contentElOf(el)?.querySelector<HTMLElement>('[data-tile-focus]');
+		if (!target) return false;
+		target.focus();
+		return document.activeElement === target;
 	}
 
 	// ── lifecycle ────────────────────────────────────────────────────────────
@@ -488,5 +607,13 @@
 	 */
 	.grid-stack :global(.grid-stack-item-content) {
 		overflow: visible;
+	}
+
+	/* The tile the Arrange dialog is moving (`markArranging`). An outline, so it
+	   takes no room and survives forced colours (doc 12 §10). */
+	.grid-stack :global(.grid-stack-item-content[data-arranging]) {
+		border-radius: var(--radius-tile);
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 3px;
 	}
 </style>

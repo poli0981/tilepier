@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { m } from '#lib/paraglide/messages.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { ui } from '#lib/stores/ui.svelte.js';
+	import { trapTab } from '#lib/ui/dialog-keys.js';
 	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
@@ -23,6 +25,31 @@
 		{ key: () => 'F', label: 'common.shortcuts.video_fullscreen' },
 		{ key: () => 'C', label: 'common.shortcuts.video_captions' }
 	] as const;
+
+	/** The Arrange dialog's keys (doc 13 §8), which work while it has focus. */
+	const ARRANGE_KEYS = [
+		{ key: '← → ↑ ↓', label: 'common.shortcuts.arrange_move' },
+		{ key: 'Shift + ← → ↑ ↓', label: 'common.shortcuts.arrange_resize' }
+	] as const;
+
+	let panelEl = $state<HTMLElement | null>(null);
+
+	$effect(() => {
+		// doc 13 §8's focus contract, which every other panel had and this one
+		// did not until 1.3.0: in on open, back to where it was on close — `?`
+		// leaves focus wherever the reader was, Settings' button is an opener.
+		// Esc stays with the layout's handler, which closes this layer first.
+		if (!ui.shortcutsOpen) return;
+		const trigger = document.activeElement;
+		panelEl?.focus();
+		return () => {
+			if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
+		};
+	});
+
+	function onKeydown(event: KeyboardEvent): void {
+		if (event.key === 'Tab' && panelEl !== null) trapTab(panelEl, event);
+	}
 </script>
 
 {#if ui.shortcutsOpen}
@@ -38,6 +65,9 @@
 		role="dialog"
 		aria-modal="true"
 		aria-label={m['common.shortcuts.title']()}
+		tabindex="-1"
+		bind:this={panelEl}
+		onkeydown={onKeydown}
 		data-testid="shortcuts"
 	>
 		<header>
@@ -46,8 +76,20 @@
 				<TpIcon name="close" size={18} />
 			</button>
 		</header>
+		{#if settings.shortcuts === 'off'}
+			<p class="tp-sheet__off" data-testid="shortcuts-off-note">
+				{m['common.shortcuts.off_note']()}
+			</p>
+		{/if}
 		<dl>
 			{#each KEYS as entry (entry.key)}
+				<dt><kbd>{entry.key}</kbd></dt>
+				<dd>{m[entry.label]()}</dd>
+			{/each}
+		</dl>
+		<h3>{m['common.shortcuts.arrange']()}</h3>
+		<dl data-testid="shortcuts-arrange">
+			{#each ARRANGE_KEYS as entry (entry.label)}
 				<dt><kbd>{entry.key}</kbd></dt>
 				<dd>{m[entry.label]()}</dd>
 			{/each}
@@ -111,6 +153,12 @@
 		background: none;
 		color: var(--color-fg-mute);
 		cursor: pointer;
+	}
+
+	.tp-sheet__off {
+		margin: 0 0 0.75rem;
+		color: var(--color-fg-mute);
+		font-size: var(--text-xs);
 	}
 
 	h3 {

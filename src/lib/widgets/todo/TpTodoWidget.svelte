@@ -7,6 +7,7 @@
 	import TpTideGauge from '#lib/ui/TpTideGauge.svelte';
 	import {
 		countDone,
+		createList,
 		createTodo,
 		dueState,
 		listLists,
@@ -50,6 +51,18 @@
 			typeof tileSettings['listId'] === 'string' &&
 			list === null
 	);
+
+	/**
+	 * The empty state's one action (doc 06 §3): make the first list and show it.
+	 * From Week 2 until 1.3.0 this button set `listId` to undefined — what it
+	 * already was — so "make the first one" did nothing at all, and the tile's
+	 * test only asked that the button exist. Found by the 1.3.0 keyboard pass.
+	 */
+	async function addFirstList(): Promise<void> {
+		const created = await createList(m['widget.todo.new_list']());
+		onUpdateSettings?.({ listId: created.id });
+		lists = await listLists();
+	}
 
 	const ordered = $derived(sortTodos(todos));
 	const open = $derived(ordered.filter((todo) => !todo.done));
@@ -174,7 +187,7 @@
 				type="button"
 				class="tp-todo__action"
 				data-testid="todo-first-list"
-				onclick={() => onUpdateSettings?.({ listId: undefined })}
+				onclick={() => void addFirstList()}
 			>
 				{m['widget.todo.no_lists_action']()}
 			</button>
@@ -304,7 +317,14 @@
 		font: inherit;
 		font-size: var(--text-xs);
 		min-height: 32px;
-		outline: none;
+	}
+
+	/* WCAG 2.4.7: a ring of its own, drawn inside so a tile's or a row's
+	   clipping cannot cut it off. Until 1.3.0 `outline: none` here left the
+	   caret as the only sign of focus. */
+	.tp-todo__add input:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: -2px;
 	}
 
 	.tp-todo__add button {

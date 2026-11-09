@@ -32,6 +32,11 @@ One sentence: **"Your new-tab page, if it were built like an instrument panel."*
    edge caching of free-tier APIs (docs 10–11).
 6. Public GPL-3.0 repo with reproducible builds, CI, and a bug-report flow that
    attaches console logs to a structured issue template.
+7. **Accessible to WCAG 2.2 Level AA** — the target every surface is tested
+   against (axe-core's A and AA rules for 2.0, 2.1 and 2.2 on every PR, doc 19
+   §1; the manual pass of doc 19 §5). Added in 1.3.0, when the target the
+   sweep had run since Week 8 was written down where the sweep cited it, and the
+   public statement of it became `ACCESSIBILITY.md` at the repository root.
 
 ## Non-goals (v1.0)
 

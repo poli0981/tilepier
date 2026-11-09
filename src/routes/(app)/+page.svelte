@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { untrack, type Component } from 'svelte';
+	import { tick, untrack, type Component } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { isDetailState, type TpDetailState } from '#lib/core/detail.js';
+	import type { TpArrangeMove, TpArrangeState } from '#lib/core/grid/arrange.js';
 	import type TpGridType from '#lib/core/grid/TpGrid.svelte';
 	import type { TpLayout, TpTile } from '#lib/core/grid/layout.js';
 	import { getManifest } from '#lib/core/registry.js';
@@ -11,7 +12,9 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { deck } from '#lib/stores/deck.svelte.js';
 	import { legalGate } from '#lib/stores/legal.svelte.js';
+	import { settings } from '#lib/stores/settings.svelte.js';
 	import { ui } from '#lib/stores/ui.svelte.js';
+	import TpArrangeDialog from '#lib/ui/TpArrangeDialog.svelte';
 	import TpDetailOverlay from '#lib/ui/TpDetailOverlay.svelte';
 	import TpWidgetUnavailable from '#lib/ui/TpWidgetUnavailable.svelte';
 	import { warmDetails } from '#lib/core/warm.js';
@@ -96,9 +99,12 @@
 			}
 
 			const next = new Map(tiles.map((tile) => [tile.instanceId, tile]));
+			const added = tiles.filter((tile) => !synced?.has(tile.instanceId));
 			for (const tile of tiles) {
 				const before = synced.get(tile.instanceId);
-				if (before === undefined) void addLoaded(grid, tile);
+				// One tile is the drawer's Add; more at once is an import or a reset,
+				// which says so itself rather than as a string of announcements.
+				if (before === undefined) void addLoaded(grid, tile, added.length === 1);
 				else if (before !== tile) grid.updateTile(tile);
 			}
 			for (const id of synced.keys()) {
@@ -121,18 +127,33 @@
 	 * The loaded component is kept, so a second tile of the same widget does not
 	 * wait again.
 	 */
-	async function addLoaded(grid: ReturnType<typeof TpGridType>, tile: TpTile): Promise<void> {
+	async function addLoaded(
+		grid: ReturnType<typeof TpGridType>,
+		tile: TpTile,
+		announce: boolean
+	): Promise<void> {
 		const known = components?.[tile.widgetId];
 		if (known !== undefined) {
 			grid.addTile(tile, known);
-			return;
+		} else {
+			const loaded = await loadTile(tile.widgetId);
+			if (loaded === null) return;
+			components = { ...(components ?? {}), [tile.widgetId]: loaded };
+			grid.addTile(tile, loaded);
+			if (isWidgetId(tile.widgetId)) warmDetails([tile.widgetId]);
 		}
+		if (announce) say(m['common.deck.added']({ name: grid.tileName(tile.instanceId) ?? '' }));
+	}
 
-		const loaded = await loadTile(tile.widgetId);
-		if (loaded === null) return;
-		components = { ...(components ?? {}), [tile.widgetId]: loaded };
-		grid.addTile(tile, loaded);
-		if (isWidgetId(tile.widgetId)) warmDetails([tile.widgetId]);
+	/**
+	 * doc 13 §8: adding and removing a tile, said aloud. The region below is on
+	 * the page from the first paint, because one inserted with its text already
+	 * in it is not reliably announced.
+	 */
+	let announcement = $state('');
+
+	function say(text: string): void {
+		announcement = text;
 	}
 
 	/**
@@ -156,11 +177,51 @@
 		deck.applyLayout(layout);
 	}
 
-	function onRemove(instanceId: string): void {
+	async function onRemove(instanceId: string): Promise<void> {
+		// Asked before the removal: afterwards the tile and its place are gone.
+		const neighbour = gridRef?.neighbourOf(instanceId) ?? null;
+		const name = gridRef?.tileName(instanceId) ?? '';
+
 		// doc 06 §4: removing a tile never deletes the underlying data, so there
 		// is nothing to confirm. The reconcile effect takes it off the grid.
 		deck.remove(instanceId);
+		say(m['common.deck.removed']({ name }));
+
+		// The button that was pressed is gone, and focus with it. doc 13 §8:
+		// it goes to the next tile, or to Add widget when the deck is empty.
+		await tick();
+		if (neighbour !== null && gridRef?.focusTile(neighbour) === true) return;
+		document.getElementById('tp-open-drawer')?.focus();
 	}
+
+	/**
+	 * The Arrange dialog's tile (doc 13 §8). `ui.arranging` is the layer, so Esc
+	 * and leaving edit mode close it in the documented order; this is where the
+	 * tile is now, read back from gridstack after every step.
+	 */
+	let arrangeState = $state<TpArrangeState | null>(null);
+	let arrangeName = $state('');
+
+	function onArrange(instanceId: string): void {
+		ui.startArranging(instanceId);
+	}
+
+	function onArrangeMove(move: TpArrangeMove): void {
+		const id = ui.arranging;
+		if (id === null || gridRef === null) return;
+		arrangeState = gridRef.arrange(id, move) ?? arrangeState;
+	}
+
+	$effect(() => {
+		const id = ui.arranging;
+		const grid = gridRef;
+		if (grid === null) return;
+		untrack(() => {
+			grid.markArranging(id);
+			arrangeState = id === null ? null : grid.arrangement(id);
+			arrangeName = id === null ? '' : (grid.tileName(id) ?? '');
+		});
+	});
 
 	function onUpdateSettings(instanceId: string, partial: Record<string, unknown>): void {
 		deck.updateSettings(instanceId, partial);
@@ -221,9 +282,14 @@
 	<meta name="description" content={m['common.deck.description']()} />
 </svelte:head>
 
-<main data-edit={ui.editMode ? 'on' : 'off'}>
+<main id="tp-main" tabindex="-1" data-edit={ui.editMode ? 'on' : 'off'}>
+	<!-- doc 13 §8: the deck's name for a screen reader's list of headings. -->
+	<h1 class="tp-sr">{m['common.deck.heading']()}</h1>
 	{#if deck.loaded && deck.tiles.length === 0}
-		<p class="tp-deck__empty">{m['common.deck.empty']()}</p>
+		<!-- "Press e" is no help once single-key shortcuts are off (WCAG 2.1.4). -->
+		<p class="tp-deck__empty">
+			{settings.shortcuts === 'off' ? m['common.deck.empty_no_keys']() : m['common.deck.empty']()}
+		</p>
 	{:else if TpGrid !== null && components !== null}
 		<TpGrid
 			bind:this={gridRef}
@@ -232,11 +298,22 @@
 			editMode={ui.editMode}
 			{onLayoutChange}
 			{onOpenDetail}
-			{onRemove}
+			onRemove={(instanceId) => void onRemove(instanceId)}
+			{onArrange}
 			{onUpdateSettings}
 		/>
 	{/if}
+	<p class="tp-sr" role="status" data-testid="deck-announce">{announcement}</p>
 </main>
+
+{#if ui.arranging !== null && arrangeState !== null}
+	<TpArrangeDialog
+		name={arrangeName}
+		place={arrangeState}
+		onMove={onArrangeMove}
+		onClose={() => ui.stopArranging()}
+	/>
+{/if}
 
 {#if detailTarget !== null}
 	<!--

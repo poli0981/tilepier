@@ -121,6 +121,23 @@ describe('the h=1 strip (doc 13 §3)', () => {
 		expect(parseFloat(getComputedStyle(body).paddingRight)).toBeGreaterThan(bare);
 	});
 
+	it('keeps the body clear of the edit-mode buttons it floats over', async () => {
+		// Edit mode puts Arrange and Remove beside Open: three buttons over the
+		// body's right edge. The reserve was sized for two until 1.3.0.
+		const screen = await render(TpWidgetHost, { tile: tile({ w: 2, h: 1 }), widget: TpStubWidget });
+		screen.container.classList.add('tp-edit');
+		const body = screen.container.querySelector('.tp-host__body') as HTMLElement;
+		const buttons = [...screen.container.querySelectorAll<HTMLElement>('header button')].filter(
+			(button) => getComputedStyle(button).display !== 'none'
+		);
+
+		expect(buttons).toHaveLength(3);
+		const box = body.getBoundingClientRect();
+		const contentRight = box.right - parseFloat(getComputedStyle(body).paddingRight);
+		const leftmost = Math.min(...buttons.map((button) => button.getBoundingClientRect().left));
+		expect(contentRight).toBeLessThanOrEqual(leftmost);
+	});
+
 	it('drops the words and keeps the lamp when the header has no room', async () => {
 		const screen = await render(TpWidgetHost, { tile: tile({ w: 2, h: 1 }), widget: TpStubWidget });
 		setTileStatus('wgt_a', { kind: 'stale', age: 'a while ago', retry: null });
@@ -137,6 +154,59 @@ describe('the h=1 strip (doc 13 §3)', () => {
 	});
 });
 
+describe('names (doc 13 §8)', () => {
+	it('is a region named by its tile, and its buttons say which tile they belong to', async () => {
+		// Every tile used to be a div whose buttons were all "open detail" and
+		// "Remove from deck": a screen reader's list of buttons named no tile.
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget });
+		const title = m['widget.clock.title']();
+
+		await expect.element(screen.getByRole('region', { name: title })).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', { name: m['common.tile.open_detail']({ name: title }) }))
+			.toBeInTheDocument();
+		await expect
+			.element(
+				screen.getByRole('button', {
+					name: m['common.tile.arrange']({ name: title }),
+					includeHidden: true
+				})
+			)
+			.toBeInTheDocument();
+	});
+
+	it('numbers a tile that shares its widget, in its region and every button', async () => {
+		const screen = await render(TpWidgetHost, {
+			tile: tile(),
+			widget: TpStubWidget,
+			ordinal: 2
+		});
+		const name = m['common.tile.numbered']({ title: m['widget.clock.title'](), n: 2 });
+
+		await expect.element(screen.getByRole('region', { name })).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', { name: m['common.tile.open_detail']({ name }) }))
+			.toBeInTheDocument();
+		await expect
+			.element(
+				screen.getByRole('button', {
+					name: m['common.tile.remove']({ name }),
+					includeHidden: true
+				})
+			)
+			.toBeInTheDocument();
+	});
+
+	it('hands the Arrange button its own tile', async () => {
+		const onArrange = vi.fn();
+		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget, onArrange });
+		screen.container.classList.add('tp-edit');
+
+		await screen.getByTestId('arrange-wgt_a').click();
+		expect(onArrange).toHaveBeenCalledWith('wgt_a');
+	});
+});
+
 describe('removal (doc 06 §4)', () => {
 	it('says, on the button itself, that removing a tile keeps its data', async () => {
 		// A music library is the data readers are most afraid to lose, and
@@ -145,7 +215,7 @@ describe('removal (doc 06 §4)', () => {
 		const screen = await render(TpWidgetHost, { tile: tile(), widget: TpStubWidget, onRemove });
 
 		const remove = screen.getByRole('button', {
-			name: m['common.remove_tile'](),
+			name: m['common.tile.remove']({ name: m['widget.clock.title']() }),
 			includeHidden: true
 		});
 		await expect.element(remove).toHaveAttribute('title', m['common.remove_tile_hint']());

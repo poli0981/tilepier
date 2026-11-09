@@ -193,12 +193,66 @@ show "on deck" disabled state. Search filters by name.
   other global event a reader can meet: the Turnstile check could not finish
   (doc 15 §3). It stays until a retry succeeds rather than timing out, because
   live data is paused until it does.
+  **1.3.0: the four seconds hold while a pointer or focus is on the toast**
+  (`toasts.hold()` / `release()`, WCAG 2.2.1), and leaving gives it the whole
+  four seconds again. Still one slot: a new toast replaces a held one. Its words
+  are spoken from a `role="status"` region that is on the page from the first
+  paint; the old one arrived together with its text, which is the pattern the
+  edit-mode region below exists to avoid. The visible copy is `aria-hidden`, so
+  the words are read once.
 
 ## 8. Keyboard & a11y
+
+The public side of this section is `ACCESSIBILITY.md` at the repository root:
+the WCAG 2.2 AA target (doc 01, goal 7), what is built, how it is tested, the
+known limitations and how a barrier is reported. `src/lib/accessibility-doc.test.ts`
+holds it to the axe tags, the version and its links. A change here that a
+reader would notice changes the statement in the same PR.
 
 - Global: `/` focuses widget-search-in-drawer? no — v1 keeps global keys
   minimal: `e` toggles edit, `Esc` closes topmost layer, `?` opens a
   shortcuts sheet. Media keys via Media Session (doc 09 §2).
+  - **1.3.0: the two single-character keys can be turned off** (WCAG 2.1.4):
+    Settings → Keyboard, the optional `shortcuts` field of `tp.settings.v1`
+    (doc 05 §2). The same section has a button that opens the sheet, which is
+    otherwise reachable only by `?`. The empty deck's hint stops saying "press
+    e" while they are off.
+  - They are never taken from a text field, a text area, contenteditable or a
+    `<select>` (where a letter picks an option; 1.3.0 added it).
+  - **`Esc` is taken from a field too** (1.3.0). In the drawer's search box it
+    did nothing. A detail panel takes its own `Esc` on `document` and stops it,
+    so it never reaches the layout's `window` handler as well; a rename field
+    inside one stops it before the panel does (below).
+  - The `Esc` order is `ui.escape()`'s: the shortcuts sheet, the Arrange
+    dialog, the drawer, edit mode.
+- **Tiles are arranged without dragging** (1.3.0; WCAG 2.1.1, 2.5.7). Until
+  then a tile moved and resized only by dragging its header, which no
+  keyboard, switch or single-pointer user could do.
+  - In edit mode each tile shows **Arrange** beside Remove. It opens
+    `ui/TpArrangeDialog.svelte`, docked at the foot of the screen with no
+    scrim, so the tile — outlined while it is arranged — stays in sight.
+  - Eight buttons (move left, up, down, right; narrower, wider, shorter,
+    taller) at 40 px, and the arrow keys while the dialog has focus, with Shift
+    to resize. Its status region says the place after each step, 1-based:
+    "Column 3 of 12, row 1, 4 wide and 2 tall".
+  - A step that would change nothing is `aria-disabled` rather than
+    `disabled`, so focus stays on it at the edge, and pressing it says so.
+  - Modal for the keyboard (Tab trapped, focus in and back to the Arrange
+    button). `Esc` is `ui.escape()`'s, not its own, for the reason given above.
+  - Where a step lands is `core/grid/arrange.ts`'s, simulated on a copy of
+    gridstack's engine (doc 06 §5 rule 16).
+- **Every dialog keeps the focus contract** (1.3.0). The shortcuts sheet, the
+  drawer and the bug report now take focus on open, trap Tab and give focus
+  back on close, as the detail panel has since Week 7b; the bug report closes
+  on `Esc`, on `document` with the event stopped. The drawer and the sheet leave
+  `Esc` to the layout, which closes them in order.
+- **A rename field's `Esc` cancels the rename and nothing else** (1.3.0). The
+  to-do and map details' list and place renames let it bubble to the detail's
+  document listener, which closed the panel; the to-do one then saved the name
+  on the field's `blur`. Both stop it now, as the music library always did, and
+  the to-do commit has the map's `renaming !== id` guard. A to-do list renames
+  with **F2** as well as a double-click (`aria-keyshortcuts`), which had been
+  the only way in; focus goes into the field and back to the list after.
 - Detail panel = `role="dialog"` with focus trap + return-focus to tile.
   **The trap was built in Week 7b** (`ui/dialog-keys.ts`). Until then this line
   promised it, while Tab walked out of the panel into the deck behind the scrim.
@@ -214,6 +268,44 @@ show "on deck" disabled state. Search filters by name.
   - Escape and modified keys pass on.
   - The shortcuts sheet lists them under "In a video".
 - Tiles are `section` landmarks labeled by widget title + instance name.
+  **Built in 1.3.0**; until then a tile was a `div` with its title in a
+  `span`, and every tile's buttons were the same "open detail" and "Remove from
+  deck". Now the host is a `<section aria-labelledby>` on its title, and the
+  open, retry, arrange and remove buttons carry the name ("Open Weather
+  detail"). "Instance name" is a number: TpGrid's `renumber` gives each tile of
+  a widget on the deck more than once its place in the order they joined
+  ("Clock 2"), since no other per-instance name exists. The drawer's Add buttons
+  name their widget the same way, the visible word first (WCAG 2.5.3).
+- **Adding and removing a tile is announced** (1.3.0), from a `role="status"`
+  region on the deck present from the first paint. One tile added is said; an
+  import or reset that adds many says nothing per tile. Removing one moves
+  focus to the next tile in reading order (`TpGrid.neighbourOf` /
+  `focusTile`, the region itself, `tabindex="-1"`), or to Add widget when the
+  deck is empty: the pressed button is gone, and focus went with it.
+- **Landmarks and a skip link** (1.3.0, WCAG 2.4.1). Every page has one
+  `<main id="tp-main" tabindex="-1">` — the deck, the detail page, the offline
+  and error pages, and through `TpProse` settings, About and the legal pages,
+  which had none. The deck has a visually hidden `h1`. The first stop in the
+  `(app)` group is "Skip to main content", clipped like `.tp-sr` until focused
+  and then a 40 px target over the bar.
+- **The language of the parts** (WCAG 3.1.2). Feeds since Week 6; 1.3.0 adds a
+  quote shown in its fallback language (`quoteLang`, tile and detail) and the
+  names "Tiếng Việt" and "English" in Settings and on the gate.
+- **Sliders say their value** (1.3.0): the seek bar's `aria-valuetext` is the
+  position out of the length, the volume sliders a percentage, the clock's
+  meeting planner the time. The calendar's event dot is a named `role="img"`;
+  its count was in `title` alone, which a role-less span does not expose.
+- **Focus is always drawn** (1.3.0, WCAG 2.4.7). Eight text fields set
+  `outline: none` with no ring of their own — the drawer's search, the clock
+  detail's zone search, the notes tile and detail editors and search, the to-do
+  tile's add field and the to-do detail's rename and item fields — so the caret
+  was the only mark of focus. axe has no rule for it. Search boxes now ring
+  their box on `:focus-within`; fields inside a tile or a row get an inset
+  outline that clipping cannot cut. Every ring is an outline, because forced
+  colours repaint borders alike and drop shadows (doc 12 §10); the two fields
+  that marked focus by border colour alone keep that and add a transparent
+  outline the mode draws. `e2e/focus-visible` focuses each one and asks for a
+  drawn outline.
 - **Edit mode is said aloud and kept clear of** (Week 8). A status region in
   the bar, present from the first paint so its change is announced, says the
   deck is being edited however edit mode was entered — the bar's toggle had
@@ -348,13 +440,14 @@ swatches were read out as six hex digits.
 |---|---------|----------|-------|
 | 1 | Ngôn ngữ / Language | vi \| en segmented control; changing it reloads (doc 14 §1) | Week 1 |
 | 2 | Giao diện / Appearance | theme (dark \| light \| system), accent swatches + custom, reduced motion (system \| on \| off), scrollbars (shown \| hidden, doc 12 §9 — added Week 8) | Week 1 |
+| 2a | Bàn phím / Keyboard | single-key shortcuts (on \| off, §8 — WCAG 2.1.4), and a button that opens the shortcuts sheet | 1.3.0 |
 | 3 | Hiển thị / Display | 24-hour clock, week starts on | Week 1 |
 | 4 | Bàn làm việc / Deck | reset layout to the seeded default (confirm) | Week 1 |
 | 5 | Sao lưu / Backup | export JSON, import with dry-run diff (doc 05 §6) | Week 2 ✓ |
 | 6 | Bộ nhớ / Storage | `navigator.storage.estimate()`, warn > 80 %, "Xóa toàn bộ dữ liệu" (doc 16 §3.6) | Week 1 |
 | 7 | Báo lỗi / Report a bug | the doc 18 §4 dialog | Week 1 |
 | 8 | Chẩn đoán / Diagnostics | ring buffer, scheduler table, swr cache ages, breaker states — hidden unless `?debug=1` or `tp.settings.v1.debug` | Week 1, partial |
-| 9 | Giới thiệu / About | version + short SHA, links to `/about`, `/legal/*`, repository, licence | Week 1 |
+| 9 | Giới thiệu / About | version + short SHA, links to `/about` and `/legal/*`; the repository and the licence are one step on, on `/about` | Week 1 |
 
 Section 5 was **omitted entirely** until it landed — an empty section header is
 noise, and a disabled control that has never worked is worse. It arrived on
@@ -437,3 +530,9 @@ the reason this page has to exist at all — **the two documented limitations**:
 layout is stored once rather than per breakpoint (§6 above), and two open tabs
 are last-writer-wins (doc 04 §7). Both docs already point here; the page did
 not exist.
+
+**1.3.0 adds an Accessibility section** above the limitations: the WCAG 2.2 AA
+target in two sentences, a link to `ACCESSIBILITY.md` on GitHub and one to its
+issue form (`?template=accessibility.yml`). Links, not a copy: the statement
+lives beside the code it describes, and `accessibility-doc.test.ts` checks this
+page still points at it.

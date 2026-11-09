@@ -353,6 +353,14 @@
 		color: var(--color-fg-dim);
 	}
 
+	/* The field draws no ring of its own; its box does (WCAG 2.4.7). An
+	   outline, not the border, because forced colours repaint every border
+	   alike and a border change would vanish there (doc 12 §10). */
+	.tp-notesd__search:focus-within {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 2px;
+	}
+
 	.tp-notesd__search input {
 		flex: 1 1 auto;
 		min-width: 0;
@@ -496,8 +504,15 @@
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
 		line-height: 1.5;
-		outline: none;
 		padding: 0.6rem;
+	}
+
+	/* WCAG 2.4.7: a ring of its own, drawn inside so a tile's or a row's
+	   clipping cannot cut it off. Until 1.3.0 `outline: none` here left the
+	   caret as the only sign of focus. */
+	textarea:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: -2px;
 	}
 
 	textarea:focus-visible {

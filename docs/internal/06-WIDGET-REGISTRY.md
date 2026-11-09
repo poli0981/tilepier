@@ -332,6 +332,38 @@ The single most dangerous integration point. Fixed rules:
     refilled; that did not reproduce — with the clock or with a widget the page
     had never loaded — and both cases are now held by tests of their own.)
 
+16. **Arranging without a drag goes through `grid.update`, and asks the engine
+    first.** The Arrange dialog (doc 13 §8, 1.3.0) is the keyboard and
+    single-pointer path that dragging is not. `TpGrid.arrange(instanceId,
+    move)` applies one of eight steps with `grid.update(el, position)`, which
+    fires gridstack's own synchronous `change`, so `emitLayout` stores it
+    exactly as a drag is stored and rule 9's one-way flow holds. Two things
+    are not obvious:
+    - **A step is not `y + 1`.** The grid runs gridstack's default `'top'`
+      mode: a tile asked one row down pushes the tile below it, then both float
+      back up, so the deck ends where it began and no `change` fires —
+      `e2e/journey-2` records the same for a drag. "Down" asks for the row under
+      the nearest tile below (`below.y + below.h`), "up" for the nearest tile
+      above's own row; after the float, the two have swapped.
+    - **Whether a step does anything is simulated, not guessed.**
+      `core/grid/arrange.ts` copies the engine's nodes into a fresh
+      `GridStackEngine`, clamps the target with `nodeBoundFix` (the manifest
+      bounds, rule 14) and runs `moveNodeCheck` on the copy, as gridstack's own
+      `moveNodeCheck` does for `maxRow`. A step that leaves every tile where it
+      was is offered disabled. Nodes are matched by identity: the engine sorts
+      its node array in place, so an index means a different tile afterwards
+      (the first draft compared by index and offered no down step at all).
+
+    It is the same path as a drag in every other way, including below twelve
+    columns: positions are the active column count's, and §6 of doc 13 (one
+    stored layout, not one per width) applies to an arranged tile as it does to
+    a dragged one. The dialog, the mark on the tile being arranged, and focus
+    after a removal (`neighbourOf`, `focusTile`) are TpGrid methods because the
+    `gs-id` selector is gridstack's DOM contract and this file is the one that
+    knows it. Tests: `arrange.svelte.test.ts` against the real engine (the
+    `y + 1` trap included), `e2e/journey-keyboard` at 1440 px for twelve
+    columns.
+
 S1 verdict (2026-08-10): **green**, with rules 7 and 8 added. The pass
 criterion is now enforced by `e2e/s1-grid.e2e.ts` rather than a Memory panel:
 wrapper count, mounted host count, and serialised tile count must agree after

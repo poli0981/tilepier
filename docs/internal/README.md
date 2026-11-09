@@ -4,12 +4,13 @@
 **Repo:** `poli0981/tilepier` · **Prefix:** `Tp*` · **License:** GPL-3.0-only
 **Target domain:** `tilepier.win` (Cloudflare Workers custom domain)
 **Suite version:** 1.0 · **Date:** 2026-07-19
-**Status:** 1.0.0 released 2026-10-06 (Weeks 0–8); 1.0.1, the weather tile's
-Open-Meteo link, merged 2026-10-07, with its tag waiting on the owner. The
-owner's production checks remain (doc 23, Week 8). The public side of the
-repository is the
-root README, CONTRIBUTING.md, SECURITY.md and `docs/self-hosting.md`; this
-suite is the source of truth behind them.
+**Status:** 1.0.0 released 2026-10-06 (Weeks 0–8), then 1.0.1 (the weather
+tile's Open-Meteo link), 1.1.0 (the toolchain), 1.2.0 (rate limiting) and 1.3.0
+(accessibility, 2026-11-09) — doc 23, "After 1.0". Of the owner's production
+checks, keyboard-only and a screen reader are done (doc 19 §5); the rest remain.
+The public side of the repository is the root README, CONTRIBUTING.md,
+SECURITY.md, ACCESSIBILITY.md and `docs/self-hosting.md`; this suite is the
+source of truth behind them.
 
 TilePier is a local-first, account-free dashboard of movable/resizable widgets
 (weather, markets, music, notes, calendar with Vietnamese lunar dates, and more).

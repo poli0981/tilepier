@@ -284,6 +284,13 @@ the whole WMO range onto the seven, so nothing upstream sends falls through to
   does not fit **and** motion is welcome (`:root[data-motion='ok']`);
   otherwise it ends in an ellipsis, and the song's line carries the whole
   title in its `title` attribute.
+- **The CSS backstop covers the app's own setting too** (1.3.0). `app.css`
+  had one blunt rule for `prefers-reduced-motion`, which cannot see the
+  setting, so with Reduce motion "on" and the system's off the loading shimmer
+  (chart, weather, quote) kept running. The same rule now also applies under
+  `html[data-motion='reduced']`, which the settings store writes from
+  `motionOK`. MapLibre jumps for the system setting by itself; `TpMap`'s
+  `flyTo` asks `motionOK` and jumps for the app's.
 
 ## 8. Voice
 
@@ -323,3 +330,29 @@ Added 2026-10-06, at the owner's request (doc 23, Week 8).
   boundary width; that is the reader's own action, like resizing the window.
 - How it is tested: computed style in `ui/scrollbars.svelte.test.ts` and pixels
   in `e2e/scrollbars`, the one spec that runs with real scrollbars (doc 19 §4).
+
+## 10. Forced colours
+
+Added in 1.3.0. Windows contrast themes (and any `forced-colors: active`)
+repaint every colour from a small system palette and drop backgrounds and
+shadows. Text and borders survive; a state shown by a fill alone does not.
+
+- **Pressed, current and selected states get an outline in `Highlight`**
+  (`app.css`): `[aria-pressed='true']`, `[aria-current]`,
+  `[aria-selected='true']` and `.selected`. The segmented controls in
+  Settings, the chosen swatch and today in the calendar were indistinguishable
+  from their neighbours before.
+- **Focus rings are outlines, never borders or shadows** (doc 13 §8), and in this
+  mode they are drawn in `Highlight`. A field that marks focus by border colour
+  alone also carries `outline: 2px solid transparent`, which the mode paints.
+- **Colour that is the content keeps its colour**: the accent swatches set
+  `forced-color-adjust: none` and take a `CanvasText` edge.
+- **Marks drawn as fills get a system colour**: the tile's status lamp, the
+  calendar's event dot (`CanvasText`) and the map's pins (a `CanvasText`
+  border). The map itself is a canvas, which the mode leaves alone.
+- A step the Arrange dialog cannot take is greyed by opacity, which the mode
+  ignores, so it is `GrayText` there.
+
+`e2e/focus-visible` emulates the mode in Chromium: a pressed choice must
+compute an outline its neighbour does not, a swatch must keep its colour, and a
+field must still show its ring.

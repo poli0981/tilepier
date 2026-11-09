@@ -8,7 +8,7 @@
 | Component | Vitest 5 browser mode (`@vitest/browser-playwright` + `vitest-browser-svelte` 3) | widget states (loading/empty/stale/error), settings round-trips, a11y roles. `render` is awaited, and text matches whole: `toMatchTextContent` or `exact: false` when a test means a part (since 2026-10-26) |
 | API (Worker) | Vitest 5 (node env): each handler called directly, on a fake KV. `cloudflare:workers` is a stub there (`_lib/__fixtures__/workers.ts`; `bind` sets the bindings, `settle` awaits `waitUntil`), since adapter-cloudflare 8 passes no `platform` (2026-10-26) | endpoint validation, KV cache hit/miss/stale, breaker transitions, envelope shapes, the edge cache in front of them |
 | Mocked network | MSW 3 | upstream fixtures per API (recorded, trimmed); an unhandled request fails the test (`onUnhandledFrame: 'error'`) |
-| A11y | axe-core through `@axe-core/playwright`, WCAG 2.2 A + AA (`e2e/a11y`, Week 8) | every surface; targets ≥ 40 px outside tiles |
+| A11y | axe-core through `@axe-core/playwright`, WCAG 2.2 A + AA (`e2e/a11y`, Week 8); focus rings and forced colours (`e2e/focus-visible`), the keyboard journey (`e2e/journey-keyboard`), and `svelte-check --fail-on-warnings` (1.3.0) | every surface; targets ≥ 40 px outside tiles; the public statement is `ACCESSIBILITY.md` |
 | E2E | Playwright — **Chromium only** (corrected 2026-09-29: `playwright.config.ts` has never defined `projects`, although `e2e.yml` installs all three; Firefox and Safari are §5's manual matrix) | smoke journeys (§4) |
 
 Test files co-located: `foo.ts` + `foo.test.ts`; fixtures in
@@ -346,6 +346,31 @@ error state is scanned too. Three things it taught:
   without names, and the calculator's 17–19 px keys — with the 40 px rule
   itself unheld across the chrome and the details.
 
+**What axe cannot see, 1.3.0.** A sweep that is clean says nothing about a
+control with no keyboard path, a ring that is not drawn, or a state forced
+colours repaint away — every one of those passed it. Three suites now hold
+them, each seen red on 1.2.0:
+- `e2e/journey-keyboard` (1440 px, twelve columns): a tile arranged, swapped
+  and resized from the keyboard survives a reload; single-key shortcuts off
+  leave `e` and `?` dead and Settings' button the way to the sheet; `Esc` in
+  the drawer search closes the drawer only; `Esc` in a list rename keeps both
+  the detail and the name; removing a tile leaves focus on the next one; the
+  first Tab is the skip link.
+- `e2e/focus-visible`: each of the eight fields that drew `outline: none`
+  shows a drawn outline while focused, and under emulated forced colours a
+  pressed choice keeps an outline its neighbours lack, a swatch its colour, a
+  field its ring.
+- Component tests for the focus contract of every dialog
+  (`ui/dialog-focus.svelte.test.ts`, `TpArrangeDialog.svelte.test.ts`), the
+  toast's persistent live region and hold, the tiles' names
+  (`TpWidgetHost.svelte.test.ts`), and the Arrange planner against the real
+  gridstack engine (`core/grid/arrange.svelte.test.ts`).
+- `accessibility-doc.test.ts` holds `ACCESSIBILITY.md` to the axe tags, the
+  minor version it was reviewed for, and its links.
+- `svelte-check` reported no warnings across 1,655 files, so
+  `--fail-on-warnings` turned on with nothing to fix: Svelte's own
+  accessibility warnings now fail the build instead of scrolling past.
+
 And an eighth, found on 2026-10-06: **no test had ever seen a scrollbar.**
 Playwright launches headless Chromium with `--hide-scrollbars`, in this suite
 and in Vitest's browser mode alike, so every width the suite measured was taken
@@ -372,8 +397,20 @@ scrollbar, which is the fallback.) Music FSA path: Chromium only + fallback veri
 Chromium without File System Access (switched off by default), so it is a
 fallback browser too: 100+ songs imported and played there, and in Firefox, on
 production on 2026-09-29 (doc 22 §S7).
-Reduced-motion, 200 % zoom, keyboard-only pass, screen-reader spot check
-(NVDA) on dashboard + one detail.
+Reduced-motion, 200 % and 400 % zoom, keyboard-only pass (mouse disconnected),
+screen-reader spot check on dashboard + one detail, and a Windows contrast
+theme. The screen reader was NVDA in this line until 1.3.0; it is whichever the
+owner has, named in the record below and in `ACCESSIBILITY.md`'s table. The
+zoom figure was 200 % here while CHANGELOG 1.0.0 claimed 400 % reflow and doc 23
+listed both; both are checked.
+
+**Keyboard and screen reader, recorded 2026-11-09, on production 1.2.0, by the
+owner.** Keyboard only with the mouse disconnected, Narrator on Windows, and
+VoiceOver/TalkBack; Edge, Firefox and Brave. No failures. Not covered by that
+pass: NVDA and JAWS, Safari, reduced motion, 200 % and 400 % zoom on
+production, a Windows contrast theme, and Lighthouse (doc 01). They stay on
+this matrix. The arranging of tiles and the announcements that 1.3.0 added
+were built after it, and are in that release's own owner checks.
 
 Added 2026-09-23, because the suite cannot reach these (its browser maps the
 Cloudflare hosts to nowhere, and CI has no Turnstile secret):
@@ -437,7 +474,7 @@ not the symbol, since no decoder is available to it; a phone is the decoder, and
 this is the step that closes that gap. Everything returned what was expected.
 
 The browser sweep, keyboard-only and NVDA remain Week 8 work and have not been
-run.
+run. (Keyboard-only and a screen reader were run on 2026-11-09; see above.)
 
 **Week 2 spot check, 2026-08-27, on production.** All clear. The tier-1 widgets
 and the detail overlay were exercised by hand after deploy, and the layout held
@@ -446,7 +483,7 @@ figure, and worth recording because the grid collapses by *grid width*
 (doc 06 §5.4) rather than by viewport width, so it was not obvious the
 breakpoints would behave at that extreme. The rest of the matrix above — the
 browser sweep, keyboard-only and NVDA — remains Week 8 work and has not been
-run.
+run. (Keyboard-only and a screen reader: 2026-11-09, above.)
 
 ## 6. Widget Definition of Done (per widget, tracked in PR template)
 

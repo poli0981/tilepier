@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { logEntry } from '#lib/core/log-buffer.js';
 	import type { TpTodo, TpTodoList } from '#lib/core/storage/db.js';
 	import type { TpDetailProps } from '#lib/core/types.js';
@@ -45,6 +45,8 @@
 	let due = $state('');
 	let renaming = $state<string | null>(null);
 	let renameText = $state('');
+	let renameInput = $state<HTMLInputElement | null>(null);
+	let listEl = $state<HTMLElement | null>(null);
 	let confirmingDelete = $state<string | null>(null);
 
 	const selected = $derived((lists ?? []).find((list) => list.id === selectedId) ?? null);
@@ -113,7 +115,29 @@
 		await reloadLists(id === selectedId ? null : selectedId);
 	}
 
+	function startRename(id: string, name: string): void {
+		renaming = id;
+		renameText = name;
+	}
+
+	$effect(() => {
+		// The field replaces the button that had focus, so focus goes into it —
+		// from F2 a keyboard reader was otherwise left on nothing.
+		renameInput?.focus();
+		renameInput?.select();
+	});
+
+	/** Back to the list's own button once the field is gone (Enter or Esc). */
+	async function refocusList(id: string): Promise<void> {
+		await tick();
+		listEl?.querySelector<HTMLElement>(`[data-list-id="${CSS.escape(id)}"]`)?.focus();
+	}
+
 	async function commitRename(id: string): Promise<void> {
+		// Esc ends the rename by unrendering the input, and a removed input can
+		// still fire `blur`: without this, the name Esc meant to discard was saved
+		// (the map detail has had the same guard since it was written).
+		if (renaming !== id) return;
 		if (renameText.trim() !== '') await renameList(id, renameText);
 		renaming = null;
 		await reloadLists(id);
@@ -191,19 +215,28 @@
 			</p>
 		{/if}
 
-		<ul>
+		<ul bind:this={listEl}>
 			{#each lists ?? [] as list, index (list.id)}
 				<li class:selected={list.id === selectedId}>
 					{#if renaming === list.id}
 						<input
 							class="tp-todod__rename"
 							bind:value={renameText}
+							bind:this={renameInput}
 							aria-label={m['widget.todo.list_name']()}
 							data-testid="todo-rename-input"
 							onblur={() => void commitRename(list.id)}
 							onkeydown={(event) => {
-								if (event.key === 'Enter') void commitRename(list.id);
-								if (event.key === 'Escape') renaming = null;
+								if (event.key === 'Enter') {
+									void commitRename(list.id).then(() => refocusList(list.id));
+								}
+								if (event.key === 'Escape') {
+									// Cancels the rename, and only that: unstopped, it reached
+									// the detail's document listener and closed the whole panel.
+									event.stopPropagation();
+									renaming = null;
+									void refocusList(list.id);
+								}
 							}}
 						/>
 					{:else}
@@ -211,11 +244,19 @@
 							type="button"
 							class="tp-todod__list"
 							title={m['widget.todo.rename']()}
+							aria-keyshortcuts="F2"
+							data-list-id={list.id}
 							data-testid="todo-list"
 							onclick={() => (selectedId = list.id)}
-							ondblclick={() => {
-								renaming = list.id;
-								renameText = list.name;
+							ondblclick={() => startRename(list.id, list.name)}
+							onkeydown={(event) => {
+								// The keyboard's way in (WCAG 2.1.1): until 1.3.0 a rename
+								// started on a double-click and nothing else. F2 is the
+								// platform's rename key, and aria-keyshortcuts says so.
+								if (event.key === 'F2') {
+									event.preventDefault();
+									startRename(list.id, list.name);
+								}
 							}}
 						>
 							{list.name}
@@ -469,7 +510,14 @@
 
 	.tp-todod__rename {
 		cursor: text;
-		outline: none;
+	}
+
+	/* WCAG 2.4.7: a ring of its own, drawn inside so a tile's or a row's
+	   clipping cannot cut it off. Until 1.3.0 `outline: none` here left the
+	   caret as the only sign of focus. */
+	.tp-todod__rename:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: -2px;
 	}
 
 	.tp-todod__nudge {
@@ -588,7 +636,14 @@
 		font: inherit;
 		font-size: var(--text-xs);
 		min-height: 36px;
-		outline: none;
+	}
+
+	/* WCAG 2.4.7: a ring of its own, drawn inside so a tile's or a row's
+	   clipping cannot cut it off. Until 1.3.0 `outline: none` here left the
+	   caret as the only sign of focus. */
+	.tp-todod__text:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: -2px;
 	}
 
 	.tp-todod__text.done {
