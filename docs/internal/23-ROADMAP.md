@@ -1661,8 +1661,8 @@ path has them.
     exist — the shape this codebase keeps meeting.
   - `ACCESSIBILITY.md` (the public statement), an accessibility issue form and
     label, the PR template's checklist, doc 01's goal 7.
-  - Deps in the same release (#71, #75): SvelteKit 3.1.1, wrangler 4.156,
-    music-metadata 12.3.2 with its worker's budget at 88 KB (doc 20 §6).
+  - Deps in the same release (#71, #75, #76): SvelteKit 3.1.1, wrangler 4.156,
+    marked 18.1.3, music-metadata 12.3.5 with its worker's budget at 88 KB (doc 20 §6).
   - **Owner checks on 1.3.0:** the Arrange dialog and the add/remove
     announcements with a screen reader; a Windows contrast theme on Edge.
 
