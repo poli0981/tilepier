@@ -76,6 +76,9 @@ follow [Semantic Versioning](https://semver.org/).
 - **SvelteKit 3.1.1** hardens two paths: route resolution on the server no
   longer loads code from another origin for a path that starts with `//`, and
   remote form submissions are parsed in linear time.
+- **minimatch 11.0.5** under ESLint, for a pattern-amplification denial of
+  service (GHSA-g3hv-75wg-m249) that only a glob from outside could reach; lint
+  runs on this repository's own. Development tooling only.
 
 ## [1.2.0] - 2026-10-27
 

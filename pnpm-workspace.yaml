@@ -39,3 +39,10 @@ overrides:
   # GHSA-4qv8-2p9j-2685 and GHSA-f72v-6w45-q472. miniflare now pins 7.29.1,
   # still below every fix, so the floor moves rather than going.
   'undici@<7.30.1': '^7.30.1'
+  # GHSA-g3hv-75wg-m249 (medium, Dependabot alert #45, 2026-11-09): glob-pattern
+  # amplification in minimatch before 11.0.1, a denial of service on an
+  # attacker's pattern. Through ESLint (config-array) and typescript-estree:
+  # lint time only, on this repository's own globs, so not reachable — taken
+  # anyway, since no 10.x fix exists and the parents still ask for ^10. The
+  # floor crosses a major; ESLint, knip and the Paraglide compile run on it.
+  'minimatch@<11.0.1': '^11.0.5'
