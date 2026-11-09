@@ -40,7 +40,7 @@ follow [Semantic Versioning](https://semver.org/).
 - The toolchain's patch and minor releases: SvelteKit 3.1.1, adapter-cloudflare
   8.0.2, Svelte 5.57.3, wrangler 4.156, ESLint 10.14, knip 6.44, Paraglide
   2.29.3, marked 18.1.3 and music-metadata 12.3.5. The music scanner's worker
-  grew to 82.6 KB gzipped with 12.3.2, and its budget is now 88 KB.
+  grew to 84.6 KB gzipped, and its budget is now 88 KB.
 
 ### Fixed
 
