@@ -151,6 +151,18 @@ describe('validation', () => {
 		);
 	});
 
+	it('accepts settings written before the shortcut setting existed', async () => {
+		// The same rule for 1.3.0's `shortcuts`: every older backup restores.
+		const backup = await sample();
+		const before: Record<string, unknown> = { ...backup.settings };
+		delete before['shortcuts'];
+
+		expect(isBackup({ ...backup, settings: before })).toBe(true);
+		expect(isBackup({ ...backup, settings: { ...backup.settings, shortcuts: 'sometimes' } })).toBe(
+			false
+		);
+	});
+
 	it('rejects a table that is not rows with ids', async () => {
 		const backup = await sample();
 		expect(isBackup({ ...backup, dexie: { ...backup.dexie, notes: 'nope' } })).toBe(false);

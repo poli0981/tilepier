@@ -23,6 +23,7 @@
 	import { LOCAL_KEYS } from '#lib/shared-constants.js';
 	import { deck } from '#lib/stores/deck.svelte.js';
 	import { settings } from '#lib/stores/settings.svelte.js';
+	import { ui } from '#lib/stores/ui.svelte.js';
 	import TpBugDialog from '#lib/ui/TpBugDialog.svelte';
 	import { ACCENTS, ACCENT_NAMES } from './accents';
 
@@ -46,6 +47,7 @@
 	const THEMES = ['dark', 'light', 'system'] as const;
 	const MOTION = ['system', 'on', 'off'] as const;
 	const SCROLLBARS = ['shown', 'hidden'] as const;
+	const SHORTCUTS = ['on', 'off'] as const;
 
 	let estimate = $state<{ usage: number; quota: number } | null>(null);
 	let eraseArmed = $state(false);
@@ -243,6 +245,7 @@
 					<button
 						type="button"
 						aria-pressed={settings.locale === locale}
+						lang={locale}
 						data-testid="locale-{locale}"
 						onclick={() => switchLocale(locale as TpLocale)}
 					>
@@ -330,6 +333,41 @@
 			</div>
 		</div>
 		<p class="tp-note">{m['settings.appearance.scrollbars_note']()}</p>
+	</section>
+
+	<!-- doc 13 §8, WCAG 2.1.4: `e` and `?` are single characters, so a reader can
+	     turn them off. The button is the sheet's other way in, and with the keys
+	     off its only one. -->
+	<section aria-labelledby="s-keyboard">
+		<h2 id="s-keyboard">{m['settings.keyboard.title']()}</h2>
+
+		<div class="tp-row">
+			<span id="s-shortcuts">{m['settings.keyboard.shortcuts']()}</span>
+			<div class="tp-segmented" role="group" aria-labelledby="s-shortcuts">
+				{#each SHORTCUTS as value (value)}
+					<button
+						type="button"
+						aria-pressed={settings.shortcuts === value}
+						data-testid="shortcuts-{value}"
+						onclick={() => settings.patch({ shortcuts: value })}
+					>
+						{m[`settings.keyboard.shortcuts_${value}`]()}
+					</button>
+				{/each}
+			</div>
+		</div>
+		<p class="tp-note">{m['settings.keyboard.shortcuts_note']()}</p>
+
+		<div class="tp-row">
+			<button
+				type="button"
+				class="tp-action"
+				data-testid="open-shortcuts"
+				onclick={() => ui.toggleShortcuts()}
+			>
+				{m['settings.keyboard.show']()}
+			</button>
+		</div>
 	</section>
 
 	<section aria-labelledby="s-display">
@@ -818,6 +856,16 @@
 
 	.tp-swatch.selected {
 		border-color: var(--color-fg);
+	}
+
+	/* Forced colours would repaint every swatch as the same Canvas: the colour
+	   *is* the content here, so it is kept, with an edge the theme draws
+	   (doc 12 §10). The chosen one carries app.css's Highlight outline. */
+	@media (forced-colors: active) {
+		.tp-swatch {
+			forced-color-adjust: none;
+			border-color: CanvasText;
+		}
 	}
 
 	.tp-swatches input[type='color'] {

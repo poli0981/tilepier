@@ -374,6 +374,11 @@ html[lang='en'] [data-locale]:not([data-locale='en']) {
 	position: absolute;
 	width: 1px;
 	height: 1px;
+	/* Pulls the pixel back inside the box it sits after. A region that is on the
+	   page from the first paint (1.3.0's toast and deck announcements) sat at
+	   the foot of a page that exactly fit, and made it one pixel too tall to fit:
+	   a scrollbar, and a column count change (e2e/scrollbars). */
+	margin: -1px;
 	overflow: hidden;
 	clip-path: inset(50%);
 	white-space: nowrap;
@@ -404,5 +409,73 @@ html[lang='en'] [data-locale]:not([data-locale='en']) {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 		scroll-behavior: auto !important;
+	}
+}
+
+/* The same backstop for the app's own setting (Settings → Appearance → Reduce
+   motion: on), which the media query cannot see. Until 1.3.0 only the OS
+   setting reached CSS, so three loading shimmers (chart, weather, quote) kept
+   running for a reader who had turned motion off here. `data-motion` is
+   written by the settings store from `motionOK` (doc 12 §7). */
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0.01ms !important;
+	scroll-behavior: auto !important;
+}
+
+/* "Skip to main content" (WCAG 2.4.1), first in the app's tab order. Clipped
+   like `.tp-sr` until it has focus, then a 40 px target over the bar. */
+.tp-skip {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 120;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.tp-skip:focus,
+.tp-skip:focus-visible {
+	display: inline-flex;
+	align-items: center;
+	width: auto;
+	height: auto;
+	min-height: 40px;
+	overflow: visible;
+	clip-path: none;
+	border-radius: var(--radius-ctl);
+	background: var(--color-ink-850);
+	color: var(--color-fg);
+	padding: 0 0.875rem;
+	box-shadow: var(--shadow-tile);
+}
+
+/* Forced colours — Windows contrast themes (doc 12 §10). The browser repaints
+   every colour with the system palette and drops backgrounds and shadows, so
+   a state shown only by a fill vanishes: a pressed segment, a selected list
+   row, the chosen swatch. Each gets an outline the system colours keep. */
+@media (forced-colors: active) {
+	[aria-pressed='true'],
+	[aria-current]:not([aria-current='false']),
+	[aria-selected='true'],
+	.selected {
+		outline: 2px solid Highlight;
+		outline-offset: 1px;
+	}
+
+	:focus-visible {
+		outline: 2px solid Highlight;
+		outline-offset: 2px;
+	}
+
+	/* A disabled step in the Arrange dialog is greyed by opacity alone. */
+	[aria-disabled='true'] {
+		color: GrayText;
 	}
 }

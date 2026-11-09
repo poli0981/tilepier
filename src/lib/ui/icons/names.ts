@@ -39,6 +39,7 @@ export type TpIconName =
 	| 'plus'
 	| 'close'
 	| 'expand'
+	| 'move'
 	| 'settings'
 	| 'trash'
 	| 'search'
@@ -59,6 +60,9 @@ export const ICON_PATHS: Record<TpIconName, readonly string[]> = {
 	// Points down; the currency detail rotates it for "move up". One glyph for one
 	// idea, because two would drift apart the first time either is touched.
 	chevron: ['M6 9l6 6 6-6'],
+	// Arrange a tile without dragging it (doc 13 §8): four arrows on a cross, after
+	// Lucide's move glyph.
+	move: ['M12 3v18', 'M3 12h18', 'M9 6l3-3 3 3', 'M9 18l3 3 3-3', 'M6 9l-3 3 3 3', 'M18 9l3 3-3 3'],
 	timer: ['M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'M12 10v4', 'M9 2h6'],
 	calculator: ['M5 3h14v18H5z', 'M8 7h8', 'M8 12h.01', 'M12 12h.01', 'M16 12h.01', 'M8 16h8'],
 	note: ['M5 3h9l5 5v13H5z', 'M14 3v5h5', 'M9 13h6', 'M9 17h4'],

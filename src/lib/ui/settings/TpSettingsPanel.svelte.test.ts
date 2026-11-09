@@ -6,6 +6,7 @@ import { m } from '#lib/paraglide/messages.js';
 import { LOCAL_KEYS } from '#lib/shared-constants.js';
 import { deck } from '#lib/stores/deck.svelte.js';
 import { settings } from '#lib/stores/settings.svelte.js';
+import { ui } from '#lib/stores/ui.svelte.js';
 import TpSettingsPanel from './TpSettingsPanel.svelte';
 
 /**
@@ -73,6 +74,22 @@ describe('round-trips', () => {
 			.toBeVisible();
 	});
 
+	it('turns single-key shortcuts off, and opens their list from a button (WCAG 2.1.4)', async () => {
+		// With `e` and `?` off, `?` can no longer open the sheet, so the button is
+		// the only way to it.
+		const screen = await render(TpSettingsPanel);
+
+		await screen.getByTestId('shortcuts-off').click();
+
+		expect(settings.shortcuts).toBe('off');
+		expect(stored()?.['shortcuts']).toBe('off');
+
+		ui.reset();
+		await screen.getByTestId('open-shortcuts').click();
+		expect(ui.shortcutsOpen).toBe(true);
+		ui.reset();
+	});
+
 	it('toggles the 24-hour clock', async () => {
 		const screen = await render(TpSettingsPanel);
 
@@ -102,7 +119,8 @@ describe('names for assistive technology', () => {
 			m['settings.language.label'](),
 			m['settings.appearance.theme'](),
 			m['settings.appearance.motion'](),
-			m['settings.appearance.scrollbars']()
+			m['settings.appearance.scrollbars'](),
+			m['settings.keyboard.shortcuts']()
 		]) {
 			await expect.element(screen.getByRole('group', { name: label, exact: true })).toBeVisible();
 		}

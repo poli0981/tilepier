@@ -15,6 +15,7 @@
 		filterQuotes,
 		loadCatalogue,
 		pickOfDay,
+		quoteLang,
 		quoteText,
 		readSettings,
 		tagsOf,
@@ -57,6 +58,9 @@
 	 * a keep only by finding the quote again in the list below.
 	 */
 	const todayText = $derived(todayQuote === null ? '' : quoteText(todayQuote, settings.locale));
+	const todayLang = $derived(
+		todayQuote === null ? settings.locale : quoteLang(todayQuote, settings.locale)
+	);
 	const todayAttribution = $derived(todayQuote === null ? '' : attributionOf(todayQuote));
 	const todayKept = $derived(todayQuote !== null && prefs.favourites.includes(todayQuote.id));
 
@@ -143,7 +147,7 @@
 		{#if todayQuote !== null}
 			<section class="tp-quoted__today" aria-label={m['widget.quote.today']()}>
 				<h3>{m['widget.quote.today']()}</h3>
-				<blockquote data-testid="today-text">{todayText}</blockquote>
+				<blockquote lang={todayLang} data-testid="today-text">{todayText}</blockquote>
 				<div class="tp-quoted__foot">
 					{#if todayAttribution !== ''}
 						<cite>{todayAttribution}</cite>
@@ -228,7 +232,9 @@
 					{#each results.slice(0, 60) as entry (entry.id)}
 						<li>
 							<div class="tp-quoted__entry">
-								<blockquote>{quoteText(entry, settings.locale)}</blockquote>
+								<blockquote lang={quoteLang(entry, settings.locale)}>
+									{quoteText(entry, settings.locale)}
+								</blockquote>
 								{#if attributionOf(entry) !== ''}
 									<cite>{attributionOf(entry)}</cite>
 								{/if}

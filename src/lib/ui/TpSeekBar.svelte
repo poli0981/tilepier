@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '#lib/paraglide/messages.js';
 	import { fmtDuration } from '#lib/i18n/fmt.js';
 	import { settings } from '#lib/stores/settings.svelte.js';
 
@@ -50,7 +51,10 @@
 		value={shown}
 		{disabled}
 		aria-label={label}
-		aria-valuetext={fmtDuration(shown, settings.locale)}
+		aria-valuetext={m['common.seek.valuetext']({
+			position: fmtDuration(shown, settings.locale),
+			duration: fmtDuration(durationMs, settings.locale)
+		})}
 		oninput={input}
 		onchange={commit}
 		data-testid={testid}

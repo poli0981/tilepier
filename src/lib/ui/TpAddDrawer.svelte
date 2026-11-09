@@ -6,6 +6,7 @@
 	import { m } from '#lib/paraglide/messages.js';
 	import { deck } from '#lib/stores/deck.svelte.js';
 	import { ui } from '#lib/stores/ui.svelte.js';
+	import { trapTab } from '#lib/ui/dialog-keys.js';
 	import TpIcon from '#lib/ui/icons/TpIcon.svelte';
 
 	/**
@@ -56,6 +57,12 @@
 			query = '';
 		};
 	});
+
+	/** doc 13 §8: Tab stays in the sheet, as in every modal panel here. Esc is
+	 *  the layout's, so the drawer and edit mode close in order. */
+	function onKeydown(event: KeyboardEvent): void {
+		if (event.key === 'Tab' && panelEl !== null) trapTab(panelEl, event);
+	}
 </script>
 
 {#if ui.drawerOpen}
@@ -75,6 +82,7 @@
 		aria-label={m['common.add_widget']()}
 		tabindex="-1"
 		bind:this={panelEl}
+		onkeydown={onKeydown}
 		data-testid="add-drawer"
 	>
 		<header>
@@ -120,10 +128,16 @@
 							{manifest.sizes.default.w}×{manifest.sizes.default.h}
 						</span>
 
+						<!-- Named with the widget (WCAG 2.4.6): fifteen buttons called
+						     "Add" say nothing in a screen reader's list. The visible word
+						     starts the name (2.5.3). -->
 						<button
 							type="button"
 							class="tp-card__add"
 							disabled={taken}
+							aria-label={taken
+								? m['common.on_deck_named']({ name: labels.title() })
+								: m['common.add_named']({ name: labels.title() })}
 							data-testid="add-{manifest.id}"
 							onclick={() => onAdd(manifest.id)}
 						>
@@ -215,6 +229,14 @@
 		background: var(--color-ink-900);
 		padding: 0 0.625rem;
 		color: var(--color-fg-dim);
+	}
+
+	/* The field draws no ring of its own; its box does (WCAG 2.4.7). An
+	   outline, not the border, because forced colours repaint every border
+	   alike and a border change would vanish there (doc 12 §10). */
+	.tp-drawer__search:focus-within {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: 2px;
 	}
 
 	.tp-drawer__search input {

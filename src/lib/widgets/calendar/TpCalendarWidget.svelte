@@ -170,7 +170,13 @@
 								<span class="tp-cal__lunarday tp-num">{lunarText(cell)}</span>
 							{/if}
 							{#if count > 0}
-								<span class="tp-cal__dot" title={m['widget.calendar.events_count']({ count })}
+								<!-- A name, not only a tooltip: `title` on a role-less span is not
+								     read, so a screen reader met the day and none of its events. -->
+								<span
+									class="tp-cal__dot"
+									role="img"
+									aria-label={m['widget.calendar.events_count']({ count })}
+									title={m['widget.calendar.events_count']({ count })}
 								></span>
 							{/if}
 						</td>
@@ -302,6 +308,14 @@
 		bottom: 1px;
 		left: 50%;
 		translate: -50% 0;
+	}
+
+	/* Forced colours drop the fill; the dot is the only mark of a day's events
+	   (doc 12 §10). */
+	@media (forced-colors: active) {
+		.tp-cal__dot {
+			background: CanvasText;
+		}
 	}
 
 	.tp-cal__error {

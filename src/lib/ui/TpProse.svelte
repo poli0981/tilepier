@@ -15,17 +15,21 @@
 	let { children }: { children: Snippet } = $props();
 </script>
 
-<article>
-	{@render children()}
+<!-- The page's one main landmark (WCAG 1.3.1, 2.4.1), and the skip link's
+     target on /settings. tabindex=-1 so following that link moves focus too. -->
+<main id="tp-main" tabindex="-1">
+	<article>
+		{@render children()}
 
-	<p class="tp-back">
-		{#each LOCALES as locale (locale)}
-			<span data-locale={locale}>
-				<a href={resolve('/(app)')}>{m['common.back_to_deck'](undefined, { locale })}</a>
-			</span>
-		{/each}
-	</p>
-</article>
+		<p class="tp-back">
+			{#each LOCALES as locale (locale)}
+				<span data-locale={locale}>
+					<a href={resolve('/(app)')}>{m['common.back_to_deck'](undefined, { locale })}</a>
+				</span>
+			{/each}
+		</p>
+	</article>
+</main>
 
 <style>
 	article {

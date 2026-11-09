@@ -12,7 +12,7 @@
 <svelte:head><title>{m['common.offline.page_title']()}</title></svelte:head>
 
 <!-- Prerendered prose, so both locales ship and CSS picks (doc 14 §6). -->
-<main>
+<main id="tp-main" tabindex="-1">
 	{#each LOCALES as locale (locale)}
 		<div data-locale={locale}>
 			<h1>{m['common.offline.title'](undefined, { locale })}</h1>

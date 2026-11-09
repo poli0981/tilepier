@@ -325,7 +325,11 @@
 										aria-label={m['widget.map.rename_label']({ place: name })}
 										onkeydown={(event) => {
 											if (event.key === 'Enter') void finishRename(place.id);
-											if (event.key === 'Escape') renaming = null;
+											if (event.key === 'Escape') {
+												// Cancels the rename, not the detail (TpTodoDetail).
+												event.stopPropagation();
+												renaming = null;
+											}
 										}}
 										onblur={() => void finishRename(place.id)}
 									/>
@@ -485,7 +489,10 @@
 	.tp-mapd__name input:focus-visible,
 	.tp-mapd__rename:focus-visible {
 		border-color: var(--color-beacon);
-		outline: none;
+		/* Invisible here; forced colours draw it, where the border change is
+		   repainted away (doc 12 §10). */
+		outline: 2px solid transparent;
+		outline-offset: 1px;
 	}
 
 	.tp-mapd__context,

@@ -225,8 +225,15 @@
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
 		line-height: 1.5;
-		outline: none;
 		padding: 0;
+	}
+
+	/* WCAG 2.4.7: a ring of its own, drawn inside so a tile's or a row's
+	   clipping cannot cut it off. Until 1.3.0 `outline: none` here left the
+	   caret as the only sign of focus. */
+	.tp-notes__editor:focus-visible {
+		outline: 2px solid var(--color-beacon);
+		outline-offset: -2px;
 	}
 
 	/* A button rather than a div with a click handler, so the whole preview is

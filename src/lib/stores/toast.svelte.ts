@@ -65,6 +65,24 @@ class ToastStore {
 		this.#current = null;
 	}
 
+	/**
+	 * Holds the toast while a pointer or focus is on it (WCAG 2.2.1), so its
+	 * dismiss button, or the words, cannot vanish under a reader who reached
+	 * for them. `release` gives it the whole four seconds again. Still one slot:
+	 * a new `show()` replaces a held toast as it replaces any other (doc 13 §7).
+	 */
+	hold(): void {
+		this.#clearTimer();
+	}
+
+	release(): void {
+		if (this.#current === null || this.#timer !== null) return;
+		this.#timer = setTimeout(() => {
+			this.#current = null;
+			this.#timer = null;
+		}, TOAST_MS);
+	}
+
 	/** Test seam, in the shape `ui`, `online` and `swrCache` already use. */
 	reset(): void {
 		this.dismiss();

@@ -14,6 +14,7 @@
 		bilingualPool,
 		loadCatalogue,
 		pickOfDay,
+		quoteLang,
 		quoteText,
 		readSettings,
 		toggleFavourite,
@@ -76,6 +77,7 @@
 
 	const quote = $derived(pool === null ? null : pickOfDay(pool, today));
 	const text = $derived(quote === null ? '' : quoteText(quote, settings.locale));
+	const textLang = $derived(quote === null ? settings.locale : quoteLang(quote, settings.locale));
 	const attribution = $derived(quote === null ? '' : attributionOf(quote));
 	const isKept = $derived(quote !== null && prefs.favourites.includes(quote.id));
 
@@ -150,7 +152,7 @@
 			{/if}
 		</div>
 	{:else if quote !== null}
-		<blockquote class="tp-quote__text" data-testid="quote-text">{text}</blockquote>
+		<blockquote class="tp-quote__text" lang={textLang} data-testid="quote-text">{text}</blockquote>
 		{#if !short}
 			<footer>
 				{#if attribution !== ''}

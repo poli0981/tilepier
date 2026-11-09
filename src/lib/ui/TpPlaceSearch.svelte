@@ -245,6 +245,10 @@
 	.tp-pick__field:focus-within {
 		border-color: var(--color-beacon);
 		color: var(--color-beacon);
+		/* Invisible here; forced colours draw it, where the border change above
+		   is repainted away (doc 12 §10). */
+		outline: 2px solid transparent;
+		outline-offset: 2px;
 	}
 
 	.tp-pick__field input {

@@ -55,6 +55,20 @@ describe('the todo tile (doc 07 §5)', () => {
 		await expect.element(screen.getByTestId('todo-first-list')).toBeInTheDocument();
 	});
 
+	it('empty: its one action makes the first list and opens it', async () => {
+		// The button above was there since Week 2 and did nothing: it set the
+		// tile's `listId` to undefined, which it already was. Red on that code.
+		const onUpdateSettings = vi.fn();
+		const screen = await render(TpTodoWidget, { ...props(), onUpdateSettings });
+
+		await screen.getByTestId('todo-first-list').click();
+
+		await expect.element(screen.getByTestId('todo-input')).toBeInTheDocument();
+		const lists = await db.todoLists.toArray();
+		expect(lists).toHaveLength(1);
+		expect(onUpdateSettings).toHaveBeenCalledWith({ listId: lists[0]?.id });
+	});
+
 	it('empty: a list with nothing on it says so', async () => {
 		const list = await createList('Chợ', db);
 		const screen = await render(TpTodoWidget, props({ listId: list.id }));

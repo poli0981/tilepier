@@ -107,6 +107,9 @@
 					step="0.05"
 					value={player.volume}
 					aria-label={m['widget.music.volume']()}
+					aria-valuetext={m['common.volume.valuetext']({
+						percent: Math.round(player.volume * 100)
+					})}
 					oninput={(event) => player.setVolume(Number(event.currentTarget.value))}
 				/>
 			</label>

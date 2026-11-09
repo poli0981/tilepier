@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
+import { m } from '#lib/paraglide/messages.js';
 import { settings } from '#lib/stores/settings.svelte.js';
 import TpSeekBar from './TpSeekBar.svelte';
 
@@ -34,7 +35,13 @@ describe('TpSeekBar', () => {
 		});
 
 		const range = screen.getByRole('slider', { name: 'position' });
-		await expect.element(range).toHaveAttribute('aria-valuetext', '1:05');
+		// The length too: '1:05' alone told a screen reader where, never out of what.
+		await expect
+			.element(range)
+			.toHaveAttribute(
+				'aria-valuetext',
+				m['common.seek.valuetext']({ position: '1:05', duration: '3:07' })
+			);
 		await expect.element(screen.getByText('3:07')).toBeVisible();
 	});
 

@@ -100,6 +100,7 @@
 		<nav class="tp-bar__actions">
 			<button
 				type="button"
+				id="tp-open-drawer"
 				class="tp-bar__button"
 				data-testid="open-drawer"
 				aria-label={m['common.add_widget']()}

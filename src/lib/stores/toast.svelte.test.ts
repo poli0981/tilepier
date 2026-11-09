@@ -80,3 +80,46 @@ describe('the window it lives in', () => {
 		expect(TOAST_MS).toBeLessThan(BACKOFF.toastThrottleMs);
 	});
 });
+
+describe('hold and release (WCAG 2.2.1)', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		toasts.reset();
+	});
+
+	afterEach(() => {
+		toasts.reset();
+		vi.useRealTimers();
+	});
+
+	it('stays while held, however long, and gets its four seconds back on release', () => {
+		toasts.show({ kind: 'rate-limited' });
+		vi.advanceTimersByTime(TOAST_MS - 100);
+
+		toasts.hold();
+		vi.advanceTimersByTime(TOAST_MS * 10);
+		expect(toasts.current).not.toBeNull();
+
+		toasts.release();
+		vi.advanceTimersByTime(TOAST_MS - 1);
+		expect(toasts.current).not.toBeNull();
+		vi.advanceTimersByTime(1);
+		expect(toasts.current).toBeNull();
+	});
+
+	it('is still one slot: a new toast replaces a held one', () => {
+		toasts.show({ kind: 'notice', message: () => 'first' });
+		toasts.hold();
+		toasts.show({ kind: 'rate-limited' });
+
+		expect(toasts.current?.kind).toBe('rate-limited');
+		vi.advanceTimersByTime(TOAST_MS);
+		expect(toasts.current).toBeNull();
+	});
+
+	it('does nothing on release when nothing is showing', () => {
+		toasts.release();
+		vi.advanceTimersByTime(TOAST_MS);
+		expect(toasts.current).toBeNull();
+	});
+});

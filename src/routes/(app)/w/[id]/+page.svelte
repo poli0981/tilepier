@@ -86,7 +86,7 @@
 	<title>{title ?? 'TilePier'}</title>
 </svelte:head>
 
-<main class="tp-w">
+<main class="tp-w" id="tp-main" tabindex="-1">
 	<header>
 		<a class="tp-w__back" href={resolve('/(app)')}>{m['common.back_to_deck']()}</a>
 		{#if title !== null}

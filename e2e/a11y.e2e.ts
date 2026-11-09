@@ -222,6 +222,20 @@ test.describe('the light theme', () => {
 		await expectTargets(page);
 	});
 
+	test('the Arrange dialog', async ({ page }) => {
+		// 1.3.0's way to move a tile without dragging it (doc 13 §8). Docked over
+		// the deck with no scrim, so the scan sees the dialog and the deck at once.
+		await seed(page, { theme: 'light' });
+		await deck(page);
+		await page.keyboard.press('e');
+		await page.getByTestId('arrange-wgt_a11y_clock').click();
+		await expect(page.getByTestId('arrange-dialog')).toBeVisible();
+		await page.keyboard.press('ArrowRight');
+		await expect(page.getByTestId('arrange-status')).not.toBeEmpty();
+		await expectClean(page);
+		await expectTargets(page);
+	});
+
 	test('the first-run coach', async ({ page }) => {
 		await seed(page, { theme: 'light', coach: true });
 		await deck(page);

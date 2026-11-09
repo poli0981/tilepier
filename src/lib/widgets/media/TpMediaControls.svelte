@@ -109,6 +109,9 @@
 			step="0.05"
 			value={muted ? 0 : volume}
 			aria-label={m['widget.media.volume']()}
+			aria-valuetext={m['common.volume.valuetext']({
+				percent: Math.round((muted ? 0 : volume) * 100)
+			})}
 			oninput={(event) => onVolume(Number(event.currentTarget.value))}
 		/>
 
