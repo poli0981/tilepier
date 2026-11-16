@@ -34,8 +34,8 @@ importers:
         specifier: ^18.1.3
         version: 18.1.3
       music-metadata:
-        specifier: ^12.3.5
-        version: 12.3.5(supports-color@10.2.2)
+        specifier: ^12.5.0
+        version: 12.5.0(supports-color@10.2.2)
       qrcode-generator:
         specifier: ^2.0.4
         version: 2.0.4
@@ -2475,8 +2475,8 @@ packages:
   murmurhash-js@1.0.0:
     resolution: {integrity: sha512-TvmkNhkv8yct0SVBSy+o8wYzXjE4Zz3PCesbfs8HiCXXdcTuocApFv11UWlNFWKYsP2okqrhb7JNlSm9InBhIw==}
 
-  music-metadata@12.3.5:
-    resolution: {integrity: sha512-U/+Bj30qfT8ZHIRQzdV36X3kxT69fEpHEkRaUuYb4PtwevQHb2uTE4BF10tY9SQZKgeCnIMRnxCF8TX0AOKGEg==}
+  music-metadata@12.5.0:
+    resolution: {integrity: sha512-+o2irTJVlskl1JuNp8/3MxtZ4DUstfkvOo5eYBYKzcm7L8IK9oTTO/GTpJxqky7IEJctN1/CjzGGPDYXC3Kewg==}
     engines: {node: '>=22'}
 
   mute-stream@3.0.0:
@@ -5088,7 +5088,7 @@ snapshots:
 
   murmurhash-js@1.0.0: {}
 
-  music-metadata@12.3.5(supports-color@10.2.2):
+  music-metadata@12.5.0(supports-color@10.2.2):
     dependencies:
       '@borewit/text-codec': 0.2.3
       '@tokenizer/token': 0.3.0
